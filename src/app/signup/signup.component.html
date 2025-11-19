@@ -1,0 +1,91 @@
+<div class="signup-container">
+  <div class="left-section">
+    <h1 class="app-title">SIApp</h1>
+  </div>
+  <div class="right-section">
+    <div class="signup-form-container">
+      <h2 class="form-title">新規登録</h2>
+      <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="email">メールアドレス</label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-input"
+            placeholder="example@email.com"
+          />
+          <div
+            *ngIf="signupForm.get('email')?.invalid && signupForm.get('email')?.touched"
+            class="error-message"
+          >
+            <span *ngIf="signupForm.get('email')?.errors?.['required']">
+              メールアドレスを入力してください
+            </span>
+            <span *ngIf="signupForm.get('email')?.errors?.['email']">
+              有効なメールアドレスを入力してください
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">パスワード</label>
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            class="form-input"
+            placeholder="パスワードを入力（6文字以上）"
+          />
+          <div
+            *ngIf="signupForm.get('password')?.invalid && signupForm.get('password')?.touched"
+            class="error-message"
+          >
+            <span *ngIf="signupForm.get('password')?.errors?.['required']">
+              パスワードを入力してください
+            </span>
+            <span *ngIf="signupForm.get('password')?.errors?.['minlength']">
+              パスワードは6文字以上で入力してください
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">パスワード（確認）</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            class="form-input"
+            placeholder="パスワードを再入力"
+          />
+          <div
+            *ngIf="(signupForm.get('confirmPassword')?.invalid || passwordMismatchError) && signupForm.get('confirmPassword')?.touched"
+            class="error-message"
+          >
+            <span *ngIf="signupForm.get('confirmPassword')?.errors?.['required']">
+              パスワード（確認）を入力してください
+            </span>
+            <span *ngIf="passwordMismatchError">
+              パスワードが一致しません
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="signup-button"
+          [disabled]="signupForm.invalid"
+        >
+          アカウント作成
+        </button>
+      </form>
+
+      <div class="login-link">
+        <a routerLink="/login">既にアカウントをお持ちの方はこちら</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
