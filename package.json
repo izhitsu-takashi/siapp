@@ -5,9 +5,12 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:SIApp": "node dist/siapp/server/server.mjs"
+    "serve:ssr:SIApp": "node dist/siapp/server/server.mjs",
+    "deploy": "npm run build:prod && firebase deploy --only hosting",
+    "deploy:hosting": "firebase deploy --only hosting"
   },
   "private": true,
   "dependencies": {
