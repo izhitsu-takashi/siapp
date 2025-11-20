@@ -148,7 +148,7 @@
   font-weight: 600;
   color: #333;
   margin: 0;
-  padding: 2rem 0;
+  padding: 1rem 0;
 }
 
 /* メインページレイアウト */
@@ -943,6 +943,151 @@ select.form-input {
   .application-table th,
   .application-table td {
     padding: 0.75rem 0.5rem;
+  }
+}
+
+/* 保険・扶養ページ */
+.insurance-dependents-page {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.insurance-dependents-page .page-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.info-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.info-section .section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-item .info-label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.info-item .info-value {
+  font-size: 1rem;
+  color: #333;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.dependents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+  font-style: italic;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.dependent-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dependent-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.dependent-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #667eea;
+  margin: 0;
+}
+
+.dependent-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.dependent-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dependent-info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.dependent-info-item .dependent-label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.dependent-info-item .dependent-value {
+  font-size: 0.95rem;
+  color: #333;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  word-break: break-word;
+}
+
+/* レスポンシブ対応（保険・扶養ページ） */
+@media (max-width: 768px) {
+  .insurance-dependents-page {
+    padding: 1rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dependent-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dependent-info-item.full-width {
+    grid-column: 1;
   }
 }
 

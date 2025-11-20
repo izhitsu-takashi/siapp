@@ -903,7 +903,79 @@
         </ng-container>
 
         <!-- その他のタブ -->
-        <ng-container *ngIf="currentTab !== '情報設定' && currentTab !== '各種申請' && currentTab !== 'メインページ'">
+        <!-- 保険・扶養ページ -->
+        <ng-container *ngIf="currentTab === '保険・扶養'">
+          <div class="insurance-dependents-page">
+            <h2 class="page-title">保険・扶養情報</h2>
+            
+            <!-- 保険者種別情報 -->
+            <section class="info-section">
+              <h3 class="section-title">保険者種別</h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">健康保険者種別:</span>
+                  <span class="info-value">{{ insuranceData?.healthInsuranceType || '未設定' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">介護保険者種別:</span>
+                  <span class="info-value">{{ insuranceData?.nursingInsuranceType || '未設定' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">厚生年金保険者種別:</span>
+                  <span class="info-value">{{ insuranceData?.pensionInsuranceType || '未設定' }}</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- 扶養者情報 -->
+            <section class="info-section">
+              <h3 class="section-title">扶養者情報</h3>
+              <div class="dependents-list">
+                <div *ngIf="dependentsData.length === 0" class="no-data-message">
+                  扶養者が登録されていません。
+                </div>
+                <div *ngFor="let dependent of dependentsData; let i = index" class="dependent-card">
+                  <div class="dependent-header">
+                    <h4 class="dependent-title">扶養者 {{ i + 1 }}</h4>
+                  </div>
+                  <div class="dependent-info-grid">
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">氏名:</span>
+                      <span class="dependent-value">{{ dependent.name || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">氏名（ヨミガナ）:</span>
+                      <span class="dependent-value">{{ dependent.nameKana || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">続柄:</span>
+                      <span class="dependent-value">{{ dependent.relationship || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">生年月日:</span>
+                      <span class="dependent-value">{{ dependent.birthDate ? (dependent.birthDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">マイナンバー:</span>
+                      <span class="dependent-value">{{ dependent.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item full-width">
+                      <span class="dependent-label">住所:</span>
+                      <span class="dependent-value">{{ dependent.address || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item full-width" *ngIf="dependent.notes">
+                      <span class="dependent-label">備考:</span>
+                      <span class="dependent-value">{{ dependent.notes }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </ng-container>
+
+        <!-- ナレッジページ（その他のページ） -->
+        <ng-container *ngIf="currentTab !== '情報設定' && currentTab !== '各種申請' && currentTab !== 'メインページ' && currentTab !== '保険・扶養'">
           <h2 class="page-title">{{ currentTab }}のページです</h2>
         </ng-container>
       </div>

@@ -30,6 +30,10 @@ export class EmployeeDashboardComponent {
   employeeData: any = null;
   hrRequests: any[] = [];
   applications: any[] = [];
+  
+  // 保険・扶養ページ用データ
+  insuranceData: any = null;
+  dependentsData: any[] = [];
 
   // フォーム
   settingsForm: FormGroup;
@@ -94,6 +98,8 @@ export class EmployeeDashboardComponent {
       const data = await this.firestoreService.getEmployeeData(this.employeeNumber);
       if (data) {
         this.populateForm(data);
+        // 保険・扶養ページ用データを設定
+        this.loadInsuranceAndDependentsData(data);
       }
       // データ読み込み後、編集モードでない場合はフォームを無効化
       if (!this.isEditMode) {
@@ -101,6 +107,31 @@ export class EmployeeDashboardComponent {
       }
     } catch (error) {
       console.error('Error loading employee data:', error);
+    }
+  }
+
+  // 保険・扶養ページ用データを読み込む
+  loadInsuranceAndDependentsData(data: any) {
+    // 保険者種別情報
+    this.insuranceData = {
+      healthInsuranceType: data.healthInsuranceType || '未設定',
+      nursingInsuranceType: data.nursingInsuranceType || '未設定',
+      pensionInsuranceType: data.pensionInsuranceType || '未設定'
+    };
+    
+    // 扶養者情報
+    if (data.dependents && Array.isArray(data.dependents) && data.dependents.length > 0) {
+      this.dependentsData = data.dependents.map((dep: any) => ({
+        name: dep.name || '',
+        nameKana: dep.nameKana || '',
+        relationship: dep.relationship || '',
+        birthDate: dep.birthDate || '',
+        myNumber: dep.myNumber || '',
+        address: dep.address || '',
+        notes: dep.notes || ''
+      }));
+    } else {
+      this.dependentsData = [];
     }
   }
 
