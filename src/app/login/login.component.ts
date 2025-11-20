@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { FirestoreService } from '../services/firestore.service';
 
 @Component({
   selector: 'app-login',
@@ -13,27 +14,62 @@ import { Router, RouterModule } from '@angular/router';
 export class LoginComponent {
   loginForm: FormGroup;
   loginType: 'employee' | 'hr' = 'employee';
+  isLoading = false;
+  errorMessage = '';
 
-  constructor(private fb: FormBuilder, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private firestoreService: FirestoreService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['']
     });
   }
 
   switchLoginType(type: 'employee' | 'hr') {
     this.loginType = type;
     this.loginForm.reset();
+    this.errorMessage = '';
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (this.loginForm.valid) {
-      console.log('Login attempt:', this.loginForm.value, 'Type:', this.loginType);
+      this.isLoading = true;
+      this.errorMessage = '';
       
-      if (this.loginType === 'employee') {
-        this.router.navigate(['/dashboard/employee']);
-      } else {
-        this.router.navigate(['/dashboard/hr']);
+      // ローディング中はフォームを無効化
+      this.loginForm.disable();
+
+      try {
+        if (this.loginType === 'employee') {
+          // 従業員ログイン: メールアドレスが社員情報管理テーブルに存在するかチェック
+          const email = this.loginForm.value.email;
+          const employee = await this.firestoreService.getEmployeeByEmail(email);
+          
+          if (employee) {
+            // ログイン成功: 社員番号をセッションストレージに保存（ブラウザ環境でのみ）
+            if (employee.employeeNumber && isPlatformBrowser(this.platformId)) {
+              sessionStorage.setItem('employeeNumber', employee.employeeNumber);
+              sessionStorage.setItem('employeeName', employee.name || '');
+            }
+            this.router.navigate(['/dashboard/employee']);
+          } else {
+            this.errorMessage = 'このメールアドレスは登録されていません。社員情報管理で登録されているメールアドレスでログインしてください。';
+          }
+        } else {
+          // 人事用ログイン: 現時点では検証なし（後で実装可能）
+          this.router.navigate(['/dashboard/hr']);
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        this.errorMessage = 'ログイン中にエラーが発生しました。もう一度お試しください。';
+      } finally {
+        this.isLoading = false;
+        // ローディング終了後はフォームを有効化
+        this.loginForm.enable();
       }
     }
   }

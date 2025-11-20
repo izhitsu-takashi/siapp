@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FirestoreService } from '../../services/firestore.service';
@@ -22,9 +22,9 @@ export class EmployeeDashboardComponent {
     { id: 'knowledge', name: 'ナレッジ' }
   ];
 
-  // サンプルデータ（実際の実装では認証サービスから取得）
-  employeeNumber = 'EMP001';
-  employeeName = '山田 太郎';
+  // 社員情報（セッションストレージから取得）
+  employeeNumber = '';
+  employeeName = '';
 
   // フォーム
   settingsForm: FormGroup;
@@ -52,10 +52,28 @@ export class EmployeeDashboardComponent {
   constructor(
     private router: Router, 
     private fb: FormBuilder,
-    private firestoreService: FirestoreService
+    private firestoreService: FirestoreService,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
+    // settingsFormを初期化（必須）
     this.settingsForm = this.createForm();
-    this.loadEmployeeData();
+    
+    // ブラウザ環境でのみセッションストレージにアクセス
+    if (isPlatformBrowser(this.platformId)) {
+      const storedEmployeeNumber = sessionStorage.getItem('employeeNumber');
+      const storedEmployeeName = sessionStorage.getItem('employeeName');
+      
+      if (!storedEmployeeNumber) {
+        // 社員番号がない場合はログインページにリダイレクト
+        this.router.navigate(['/login']);
+        return;
+      }
+      
+      this.employeeNumber = storedEmployeeNumber;
+      this.employeeName = storedEmployeeName || '';
+      
+      this.loadEmployeeData();
+    }
   }
 
   async loadEmployeeData() {
@@ -63,6 +81,10 @@ export class EmployeeDashboardComponent {
       const data = await this.firestoreService.getEmployeeData(this.employeeNumber);
       if (data) {
         this.populateForm(data);
+      }
+      // データ読み込み後、編集モードでない場合はフォームを無効化
+      if (!this.isEditMode) {
+        this.disableFormControls();
       }
     } catch (error) {
       console.error('Error loading employee data:', error);
@@ -136,6 +158,13 @@ export class EmployeeDashboardComponent {
 
     // 残りのフィールドを設定
     this.settingsForm.patchValue(formData);
+    
+    // sameAsCurrentAddressがtrueの場合、住民票住所フィールドを無効化
+    if (this.sameAsCurrentAddress) {
+      this.settingsForm.get('residentAddress')?.disable();
+      this.settingsForm.get('residentAddressKana')?.disable();
+      this.settingsForm.get('residentHouseholdHead')?.disable();
+    }
   }
 
   calculateAge(birthDate: string) {
@@ -171,6 +200,17 @@ export class EmployeeDashboardComponent {
         residentAddressKana: currentAddressKana,
         residentHouseholdHead: currentHouseholdHead
       });
+      // 住民票住所フィールドを無効化
+      this.settingsForm.get('residentAddress')?.disable();
+      this.settingsForm.get('residentAddressKana')?.disable();
+      this.settingsForm.get('residentHouseholdHead')?.disable();
+    } else {
+      // 住民票住所フィールドを有効化（編集モードの場合のみ）
+      if (this.isEditMode) {
+        this.settingsForm.get('residentAddress')?.enable();
+        this.settingsForm.get('residentAddressKana')?.enable();
+        this.settingsForm.get('residentHouseholdHead')?.enable();
+      }
     }
   }
 
@@ -183,11 +223,70 @@ export class EmployeeDashboardComponent {
 
   startEdit() {
     this.isEditMode = true;
+    this.enableFormControls();
   }
 
   cancelEdit() {
     this.isEditMode = false;
+    this.disableFormControls();
     this.loadEmployeeData();
+  }
+
+  private enableFormControls() {
+    // すべてのフォームコントロールを有効化
+    Object.keys(this.settingsForm.controls).forEach(key => {
+      const control = this.settingsForm.get(key);
+      if (control) {
+        control.enable();
+      }
+    });
+    
+    // ネストされたフォームグループも有効化
+    const emergencyContact = this.settingsForm.get('emergencyContact') as FormGroup;
+    if (emergencyContact) {
+      Object.keys(emergencyContact.controls).forEach(key => {
+        emergencyContact.get(key)?.enable();
+      });
+    }
+    
+    const bankAccount = this.settingsForm.get('bankAccount') as FormGroup;
+    if (bankAccount) {
+      Object.keys(bankAccount.controls).forEach(key => {
+        bankAccount.get(key)?.enable();
+      });
+    }
+    
+    // sameAsCurrentAddressがtrueの場合、住民票住所フィールドは無効化のまま
+    if (this.sameAsCurrentAddress) {
+      this.settingsForm.get('residentAddress')?.disable();
+      this.settingsForm.get('residentAddressKana')?.disable();
+      this.settingsForm.get('residentHouseholdHead')?.disable();
+    }
+  }
+
+  private disableFormControls() {
+    // すべてのフォームコントロールを無効化
+    Object.keys(this.settingsForm.controls).forEach(key => {
+      const control = this.settingsForm.get(key);
+      if (control) {
+        control.disable();
+      }
+    });
+    
+    // ネストされたフォームグループも無効化
+    const emergencyContact = this.settingsForm.get('emergencyContact') as FormGroup;
+    if (emergencyContact) {
+      Object.keys(emergencyContact.controls).forEach(key => {
+        emergencyContact.get(key)?.disable();
+      });
+    }
+    
+    const bankAccount = this.settingsForm.get('bankAccount') as FormGroup;
+    if (bankAccount) {
+      Object.keys(bankAccount.controls).forEach(key => {
+        bankAccount.get(key)?.disable();
+      });
+    }
   }
 
   createForm(): FormGroup {
@@ -279,6 +378,11 @@ export class EmployeeDashboardComponent {
   }
 
   logout() {
+    // ブラウザ環境でのみセッションストレージをクリア
+    if (isPlatformBrowser(this.platformId)) {
+      sessionStorage.removeItem('employeeNumber');
+      sessionStorage.removeItem('employeeName');
+    }
     this.router.navigate(['/login']);
   }
 
@@ -395,6 +499,7 @@ export class EmployeeDashboardComponent {
         
         // 編集モードを終了
         this.isEditMode = false;
+        this.disableFormControls();
         
         alert('情報を保存しました');
       } catch (error) {

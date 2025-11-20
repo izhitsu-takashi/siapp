@@ -1,6 +1,168 @@
-<div class="dashboard-container">
-  <div class="dashboard-content">
-    <h1 class="dashboard-title">人事用のダッシュボードです</h1>
+<div class="dashboard-wrapper">
+  <!-- ヘッダー -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <h1 class="app-name">SIApp</h1>
+    </div>
+    <div class="header-right">
+      <span class="hr-info">
+        <span class="hr-name">{{ hrName }}</span>
+      </span>
+      <button class="logout-button" (click)="logout()">ログアウト</button>
+    </div>
+  </header>
+
+  <!-- メインコンテンツエリア -->
+  <div class="dashboard-body">
+    <!-- サイドバー -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <button
+          *ngFor="let tab of tabs"
+          class="sidebar-item"
+          [class.active]="currentTab === tab.name"
+          (click)="switchTab(tab.name)"
+        >
+          {{ tab.name }}
+        </button>
+      </nav>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+      <div class="content-area">
+        <!-- メインページ -->
+        <ng-container *ngIf="currentTab === 'メインページ'">
+          <h2 class="page-title">{{ currentTab }}のページです</h2>
+        </ng-container>
+
+        <!-- 社員情報管理ページ -->
+        <ng-container *ngIf="currentTab === '社員情報管理'">
+          <div class="page-header">
+            <h2 class="page-title">社員情報管理</h2>
+            <button class="add-employee-button" (click)="openAddModal()">
+              社員を追加
+            </button>
+          </div>
+
+          <!-- 社員一覧テーブル -->
+          <div class="table-container">
+            <table class="employee-table">
+              <thead>
+                <tr>
+                  <th>社員番号</th>
+                  <th>氏名</th>
+                  <th>メールアドレス</th>
+                  <th>雇用形態</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let employee of employees">
+                  <td>{{ employee.employeeNumber }}</td>
+                  <td>{{ employee.name }}</td>
+                  <td>{{ employee.email }}</td>
+                  <td>{{ employee.employmentType }}</td>
+                </tr>
+                <tr *ngIf="employees.length === 0">
+                  <td colspan="4" class="empty-message">社員データがありません</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+      </div>
+    </main>
+  </div>
+
+  <!-- 社員追加モーダル -->
+  <div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">新規社員追加</h3>
+        <button class="modal-close" (click)="closeAddModal()">×</button>
+      </div>
+      
+      <form [formGroup]="addEmployeeForm" (ngSubmit)="addEmployees()" class="add-employee-form">
+        <div formArrayName="employees">
+          <div 
+            *ngFor="let employee of employeesFormArray.controls; let i = index"
+            [formGroupName]="i"
+            class="employee-form-row"
+          >
+            <div class="form-row-header">
+              <h4>社員 {{ i + 1 }}</h4>
+              <button 
+                *ngIf="employeesFormArray.length > 1"
+                type="button" 
+                class="remove-row-button" 
+                (click)="removeEmployeeRow(i)"
+              >
+                削除
+              </button>
+            </div>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label [for]="'employeeNumber' + i">社員番号 <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  [id]="'employeeNumber' + i"
+                  formControlName="employeeNumber" 
+                  class="form-input"
+                  placeholder="例: EMP001"
+                >
+              </div>
+              <div class="form-group">
+                <label [for]="'name' + i">氏名 <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  [id]="'name' + i"
+                  formControlName="name" 
+                  class="form-input"
+                  placeholder="例: 山田 太郎"
+                >
+              </div>
+              <div class="form-group">
+                <label [for]="'email' + i">メールアドレス <span class="required">*</span></label>
+                <input 
+                  type="email" 
+                  [id]="'email' + i"
+                  formControlName="email" 
+                  class="form-input"
+                  placeholder="例: example@email.com"
+                >
+              </div>
+              <div class="form-group">
+                <label [for]="'employmentType' + i">雇用形態 <span class="required">*</span></label>
+                <select 
+                  [id]="'employmentType' + i"
+                  formControlName="employmentType" 
+                  class="form-input"
+                >
+                  <option value="">選択してください</option>
+                  <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="add-row-button" (click)="addEmployeeRow()">
+            + 行を追加
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="cancel-button" (click)="closeAddModal()">
+            キャンセル
+          </button>
+          <button type="submit" class="submit-button" [disabled]="addEmployeeForm.invalid">
+            追加
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 

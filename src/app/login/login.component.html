@@ -50,34 +50,28 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="password">パスワード</label>
+        <div class="form-group" *ngIf="loginType === 'employee'">
+          <label for="password">パスワード（任意）</label>
           <input
             type="password"
             id="password"
             formControlName="password"
             class="form-input"
-            placeholder="パスワードを入力"
+            placeholder="パスワードを入力（任意）"
           />
-          <div
-            *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-            class="error-message"
-          >
-            <span *ngIf="loginForm.get('password')?.errors?.['required']">
-              パスワードを入力してください
-            </span>
-            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">
-              パスワードは6文字以上で入力してください
-            </span>
-          </div>
+        </div>
+
+        <div *ngIf="errorMessage" class="error-message general-error">
+          {{ errorMessage }}
         </div>
 
         <button
           type="submit"
           class="login-button"
-          [disabled]="loginForm.invalid"
+          [disabled]="loginForm.invalid || isLoading"
         >
-          ログイン
+          <span *ngIf="!isLoading">ログイン</span>
+          <span *ngIf="isLoading">ログイン中...</span>
         </button>
       </form>
 

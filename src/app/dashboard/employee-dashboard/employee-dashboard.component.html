@@ -100,7 +100,6 @@
                     id="gender" 
                     formControlName="gender" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
@@ -123,7 +122,6 @@
                     id="idDocument" 
                     formControlName="idDocument" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                     accept=".pdf,.jpg,.jpeg,.png"
                   >
                 </div>
@@ -200,7 +198,6 @@
                     id="employmentStatus" 
                     formControlName="employmentStatus" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let status of employmentStatuses" [value]="status">{{ status }}</option>
@@ -259,7 +256,6 @@
                     id="office" 
                     formControlName="office" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let office of offices" [value]="office">{{ office }}</option>
@@ -271,7 +267,6 @@
                     id="workContent" 
                     formControlName="workContent" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let content of workContents" [value]="content">{{ content }}</option>
@@ -283,7 +278,6 @@
                     id="employmentType" 
                     formControlName="employmentType" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
@@ -295,7 +289,6 @@
                     id="paymentType" 
                     formControlName="paymentType" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
@@ -314,7 +307,6 @@
                     id="department" 
                     formControlName="department" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
@@ -326,7 +318,6 @@
                     id="position" 
                     formControlName="position" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let pos of positions" [value]="pos">{{ pos }}</option>
@@ -375,7 +366,6 @@
                     id="currentHouseholdHead" 
                     formControlName="currentHouseholdHead" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
@@ -394,7 +384,6 @@
                       type="checkbox" 
                       [checked]="sameAsCurrentAddress" 
                       (change)="onSameAddressChange($event)"
-                      [disabled]="!isEditMode"
                     >
                     住所（現住所と同じ）
                   </label>
@@ -425,7 +414,6 @@
                     id="residentHouseholdHead" 
                     formControlName="residentHouseholdHead" 
                     class="form-input"
-                    [disabled]="!isEditMode || sameAsCurrentAddress"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
@@ -445,7 +433,6 @@
                     id="resume" 
                     formControlName="resume" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   >
                 </div>
@@ -456,7 +443,6 @@
                     id="careerHistory" 
                     formControlName="careerHistory" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   >
                 </div>
@@ -553,7 +539,6 @@
                       id="accountType" 
                       formControlName="accountType" 
                       class="form-input"
-                      [disabled]="!isEditMode"
                     >
                       <option value="">選択してください</option>
                       <option value="普通">普通</option>
@@ -652,7 +637,6 @@
                     formControlName="pensionHistoryStatus" 
                     class="form-input" 
                     (change)="onPensionHistoryChange($event)"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let option of pensionHistoryOptions" [value]="option">{{ option }}</option>
@@ -695,7 +679,6 @@
                     id="basicPensionNumberDoc" 
                     formControlName="basicPensionNumberDoc" 
                     class="form-input"
-                    [disabled]="!isEditMode"
                     accept=".pdf,.jpg,.jpeg,.png"
                   >
                 </div>
@@ -713,7 +696,6 @@
                     formControlName="spouseStatus" 
                     class="form-input"
                     (change)="onSpouseStatusChange($event)"
-                    [disabled]="!isEditMode"
                   >
                     <option value="">選択してください</option>
                     <option *ngFor="let option of spouseOptions" [value]="option">{{ option }}</option>

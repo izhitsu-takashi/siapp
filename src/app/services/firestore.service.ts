@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, Firestore } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 const firebaseConfig = {
   projectId: 'kensyu10117'
@@ -42,6 +42,49 @@ export class FirestoreService {
       }
     } catch (error) {
       console.error('Error getting employee data:', error);
+      throw error;
+    }
+  }
+
+  async getAllEmployees(): Promise<any[]> {
+    try {
+      const employeesCollection = collection(this.db, 'employees');
+      const querySnapshot = await getDocs(employeesCollection);
+      
+      const employees: any[] = [];
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        employees.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      return employees;
+    } catch (error) {
+      console.error('Error getting all employees:', error);
+      throw error;
+    }
+  }
+
+  async getEmployeeByEmail(email: string): Promise<any | null> {
+    try {
+      const employeesCollection = collection(this.db, 'employees');
+      const querySnapshot = await getDocs(employeesCollection);
+      
+      let employee = null;
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        if (data['email'] === email) {
+          employee = {
+            id: doc.id,
+            ...data
+          };
+        }
+      });
+      
+      return employee;
+    } catch (error) {
+      console.error('Error getting employee by email:', error);
       throw error;
     }
   }
