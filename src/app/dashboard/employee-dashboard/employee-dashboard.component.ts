@@ -26,6 +26,11 @@ export class EmployeeDashboardComponent {
   employeeNumber = '';
   employeeName = '';
 
+  // メインページ用データ
+  employeeData: any = null;
+  hrRequests: any[] = [];
+  applications: any[] = [];
+
   // フォーム
   settingsForm: FormGroup;
   showMyNumber = false;
@@ -80,6 +85,7 @@ export class EmployeeDashboardComponent {
       this.employeeName = storedEmployeeName || '';
       
       this.loadEmployeeData();
+      this.loadMainPageData();
     }
   }
 
@@ -617,6 +623,40 @@ export class EmployeeDashboardComponent {
     const totalLength = part1.length + part2.length + part3.length;
     if (totalLength === 0) return '';
     return '●'.repeat(Math.min(totalLength, 12));
+  }
+
+  openApplicationModal(applicationType: string) {
+    // TODO: 申請モーダルを開く処理を実装
+    alert(`${applicationType}の申請フォームを開きます（実装予定）`);
+  }
+
+  async loadMainPageData() {
+    try {
+      // 自分の情報を読み込む
+      const data = await this.firestoreService.getEmployeeData(this.employeeNumber);
+      if (data) {
+        this.employeeData = data;
+      }
+
+      // 人事からの依頼を読み込む（TODO: 実装予定）
+      this.hrRequests = [];
+
+      // 申請一覧を読み込む
+      await this.loadApplications();
+    } catch (error) {
+      console.error('Error loading main page data:', error);
+    }
+  }
+
+  async loadApplications() {
+    try {
+      // TODO: Firestoreから申請データを読み込む
+      // 現在は空の配列
+      this.applications = [];
+    } catch (error) {
+      console.error('Error loading applications:', error);
+      this.applications = [];
+    }
   }
 }
 

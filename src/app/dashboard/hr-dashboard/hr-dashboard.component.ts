@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { FirestoreService } from '../../services/firestore.service';
 
 interface Employee {
@@ -14,7 +14,7 @@ interface Employee {
 @Component({
   selector: 'app-hr-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
   templateUrl: './hr-dashboard.component.html',
   styleUrl: './hr-dashboard.component.css'
 })
@@ -64,6 +64,14 @@ export class HrDashboardComponent {
   offices = ['本社', '支社A', '支社B', '支社C'];
   workContents = ['営業', '開発', '事務', '管理', 'その他'];
   spouseOptions = ['有', '無'];
+  
+  // 人事専用選択肢
+  healthInsuranceTypes = ['健康保険被保険者', '健康保険被扶養者', '任意継続被保険者'];
+  nursingInsuranceTypes = ['介護保険第1号被保険者', '介護保険第2号被保険者', '任意継続被保険者', '介護保険の被保険者でない者', '特定被保険者'];
+  pensionInsuranceTypes = ['国民年金第1号被保険者', '国民年金第2号被保険者', '国民年金第3号被保険者'];
+  
+  // 扶養者一覧
+  dependents: any[] = [];
 
   constructor(
     private router: Router,
@@ -178,6 +186,7 @@ export class HrDashboardComponent {
   // 社員情報編集モーダルを開く
   async openEmployeeEditModal(employeeNumber: string) {
     this.selectedEmployeeNumber = employeeNumber;
+    this.resetEmployeeEditForm(); // フォームをリセット
     this.showEmployeeEditModal = true;
     await this.loadEmployeeData(employeeNumber);
   }
@@ -202,6 +211,7 @@ export class HrDashboardComponent {
     this.resumeFile = null;
     this.careerHistoryFile = null;
     this.basicPensionNumberDocFile = null;
+    this.dependents = [];
   }
 
   // 社員情報編集フォームを作成
@@ -279,7 +289,18 @@ export class HrDashboardComponent {
       
       // 配偶者情報
       spouseStatus: [''],
-      spouseAnnualIncome: ['']
+      spouseAnnualIncome: [''],
+      
+      // 人事専用情報（給与）
+      fixedSalary: [''], // 固定的賃金
+      bonusAmount: [''], // 賞与額
+      bonusYear: [''], // 賞与年月（年）
+      bonusMonth: [''], // 賞与年月（月）
+      
+      // 人事専用情報（保険者種別）
+      healthInsuranceType: [''], // 健康保険者種別
+      nursingInsuranceType: [''], // 介護保険者種別
+      pensionInsuranceType: [''] // 厚生年金保険者種別
     });
   }
 
@@ -355,11 +376,30 @@ export class HrDashboardComponent {
       this.calculateAge(data.birthDate);
     }
 
+    // 扶養者一覧を最初に読み込む（formDataを操作する前に）
+    if (data.dependents && Array.isArray(data.dependents) && data.dependents.length > 0) {
+      // 深いコピーを作成して、元のデータを変更しないようにする
+      this.dependents = data.dependents.map((dep: any) => ({
+        name: dep.name || '',
+        nameKana: dep.nameKana || '',
+        relationship: dep.relationship || '',
+        birthDate: dep.birthDate || '',
+        myNumber: dep.myNumber || '',
+        address: dep.address || '',
+        notes: dep.notes || ''
+      }));
+      console.log('Loaded dependents:', this.dependents);
+    } else {
+      this.dependents = [];
+      console.log('No dependents found, initializing empty array');
+    }
+
     // その他のフィールドを設定
     const formData: any = { ...data };
     delete formData.myNumber;
     delete formData.basicPensionNumber;
     delete formData.updatedAt;
+    delete formData.dependents; // 既に読み込んだので削除
 
     // ネストされたフォームグループを個別に設定
     if (formData.emergencyContact) {
@@ -599,8 +639,25 @@ export class HrDashboardComponent {
         delete formData.basicPensionNumberPart1;
         delete formData.basicPensionNumberPart2;
 
+        // 扶養者一覧を追加（深いコピーを作成）
+        formData.dependents = this.dependents.map(dep => ({
+          name: dep.name || '',
+          nameKana: dep.nameKana || '',
+          relationship: dep.relationship || '',
+          birthDate: dep.birthDate || '',
+          myNumber: dep.myNumber || '',
+          address: dep.address || '',
+          notes: dep.notes || ''
+        }));
+
+        // デバッグ用ログ
+        console.log('Saving dependents:', formData.dependents);
+
         // undefinedの値を削除（サービス側でも処理されるが、事前に削除）
         const cleanedData = this.removeUndefinedValues(formData);
+        
+        // デバッグ用ログ
+        console.log('Cleaned data with dependents:', cleanedData.dependents);
 
         // Firestoreに保存（サービス側で最終的な正規化が行われる）
         await this.firestoreService.saveEmployeeData(this.selectedEmployeeNumber, cleanedData);
@@ -608,8 +665,8 @@ export class HrDashboardComponent {
         // 社員一覧を再読み込み
         await this.loadEmployees();
         
-        // モーダルを閉じる
-        this.closeEmployeeEditModal();
+        // 保存したデータを再読み込みしてフォームを更新（モーダルは開いたまま）
+        await this.loadEmployeeData(this.selectedEmployeeNumber);
         
         alert('社員情報を保存しました');
       } catch (error) {
@@ -630,6 +687,38 @@ export class HrDashboardComponent {
     const totalLength = part1.length + part2.length + part3.length;
     if (totalLength === 0) return '';
     return '●'.repeat(Math.min(totalLength, 12));
+  }
+
+  // 扶養者を追加
+  addDependent() {
+    this.dependents.push({
+      name: '',
+      nameKana: '',
+      relationship: '',
+      birthDate: '',
+      myNumber: '',
+      address: '',
+      notes: ''
+    });
+  }
+
+  // 扶養者を削除
+  removeDependent(index: number) {
+    this.dependents.splice(index, 1);
+  }
+
+  // 年月の選択肢を生成
+  getYears(): number[] {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    for (let i = currentYear; i >= currentYear - 10; i--) {
+      years.push(i);
+    }
+    return years;
+  }
+
+  getMonths(): number[] {
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   }
 }
 

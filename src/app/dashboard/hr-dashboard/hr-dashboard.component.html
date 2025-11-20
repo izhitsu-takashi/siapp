@@ -248,7 +248,7 @@
           <h3 class="section-title">マイナンバー</h3>
           <div class="form-grid">
             <div class="form-group full-width">
-              <label for="hr-myNumber">マイナンバー</label>
+              <label for="hr-myNumberPart1">マイナンバー</label>
               <div class="my-number-container">
                 <div class="my-number-inputs">
                   <input 
@@ -715,7 +715,7 @@
               >
             </div>
             <div class="form-group">
-              <label for="hr-basicPensionNumber">基礎年金番号</label>
+              <label for="hr-basicPensionNumberPart1">基礎年金番号</label>
               <div class="basic-pension-number-container">
                 <input 
                   type="text" 
@@ -815,6 +815,199 @@
                 formControlName="spouseAnnualIncome" 
                 class="form-input"
               >
+            </div>
+          </div>
+        </section>
+
+        <!-- 給与欄（人事専用） -->
+        <section class="form-section hr-only-section">
+          <h3 class="section-title">給与情報（人事専用）</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-fixedSalary">固定的賃金</label>
+              <input 
+                type="number" 
+                id="hr-fixedSalary" 
+                formControlName="fixedSalary" 
+                class="form-input"
+                placeholder="例: 300000"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-bonusAmount">賞与額</label>
+              <input 
+                type="number" 
+                id="hr-bonusAmount" 
+                formControlName="bonusAmount" 
+                class="form-input"
+                placeholder="例: 500000"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-bonusYear">賞与年月（年）</label>
+              <select 
+                id="hr-bonusYear" 
+                formControlName="bonusYear" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let year of getYears()" [value]="year">{{ year }}年</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-bonusMonth">賞与年月（月）</label>
+              <select 
+                id="hr-bonusMonth" 
+                formControlName="bonusMonth" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let month of getMonths()" [value]="month">{{ month }}月</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 保険者種別欄（人事専用） -->
+        <section class="form-section hr-only-section">
+          <h3 class="section-title">保険者種別（人事専用）</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-healthInsuranceType">健康保険者種別</label>
+              <select 
+                id="hr-healthInsuranceType" 
+                formControlName="healthInsuranceType" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of healthInsuranceTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-nursingInsuranceType">介護保険者種別</label>
+              <select 
+                id="hr-nursingInsuranceType" 
+                formControlName="nursingInsuranceType" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of nursingInsuranceTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-pensionInsuranceType">厚生年金保険者種別</label>
+              <select 
+                id="hr-pensionInsuranceType" 
+                formControlName="pensionInsuranceType" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of pensionInsuranceTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 扶養者情報欄（人事専用） -->
+        <section class="form-section hr-only-section">
+          <h3 class="section-title">扶養者情報（人事専用）</h3>
+          <div class="dependents-container">
+            <div class="dependents-header">
+              <h4>扶養者一覧</h4>
+              <button type="button" class="add-dependent-button" (click)="addDependent()">
+                + 扶養者を追加
+              </button>
+            </div>
+            
+            <div *ngFor="let dependent of dependents; let i = index" class="dependent-item">
+              <div class="dependent-header">
+                <h5>扶養者 {{ i + 1 }}</h5>
+                <button type="button" class="remove-dependent-button" (click)="removeDependent(i)">
+                  削除
+                </button>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label [for]="'hr-dependent-name-' + i">氏名</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-name-' + i"
+                    [(ngModel)]="dependent.name"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 山田 花子"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-nameKana-' + i">氏名（ヨミガナ）</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-nameKana-' + i"
+                    [(ngModel)]="dependent.nameKana"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: ヤマダ ハナコ"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-relationship-' + i">続柄</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-relationship-' + i"
+                    [(ngModel)]="dependent.relationship"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 妻、長男"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-birthDate-' + i">生年月日</label>
+                  <input 
+                    type="date" 
+                    [id]="'hr-dependent-birthDate-' + i"
+                    [(ngModel)]="dependent.birthDate"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-myNumber-' + i">マイナンバー</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-myNumber-' + i"
+                    [(ngModel)]="dependent.myNumber"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 1234-5678-9012"
+                  >
+                </div>
+                <div class="form-group full-width">
+                  <label [for]="'hr-dependent-address-' + i">住所</label>
+                  <textarea 
+                    [id]="'hr-dependent-address-' + i"
+                    [(ngModel)]="dependent.address"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input" 
+                    rows="2"
+                    placeholder="住所を入力"
+                  ></textarea>
+                </div>
+                <div class="form-group full-width">
+                  <label [for]="'hr-dependent-notes-' + i">備考</label>
+                  <textarea 
+                    [id]="'hr-dependent-notes-' + i"
+                    [(ngModel)]="dependent.notes"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input" 
+                    rows="2"
+                    placeholder="備考を入力"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="dependents.length === 0" class="no-data">
+              扶養者が登録されていません。「+ 扶養者を追加」ボタンから追加してください。
             </div>
           </div>
         </section>

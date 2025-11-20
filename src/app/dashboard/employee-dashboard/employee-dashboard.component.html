@@ -135,7 +135,7 @@
               <h3 class="section-title">マイナンバー</h3>
               <div class="form-grid">
                 <div class="form-group full-width">
-                  <label for="myNumber">マイナンバー</label>
+                  <label for="myNumberPart1">マイナンバー</label>
                   <div class="my-number-container">
                     <div class="my-number-inputs">
                       <input 
@@ -623,7 +623,7 @@
                   >
                 </div>
                 <div class="form-group">
-                  <label for="basicPensionNumber">基礎年金番号</label>
+                  <label for="basicPensionNumberPart1">基礎年金番号</label>
                   <div class="basic-pension-number-container">
                     <input 
                       type="text" 
@@ -743,8 +743,167 @@
           </form>
         </ng-container>
 
+        <!-- 各種申請ページ -->
+        <ng-container *ngIf="currentTab === '各種申請'">
+          <div class="page-header">
+            <h2 class="page-title">各種申請</h2>
+          </div>
+          
+          <div class="application-grid">
+            <button class="application-button" (click)="openApplicationModal('扶養家族追加')">
+              <span class="application-icon">👨‍👩‍👧</span>
+              <span class="application-label">扶養家族追加</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('扶養削除申請')">
+              <span class="application-icon">❌</span>
+              <span class="application-label">扶養削除申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('マイナンバー変更申請')">
+              <span class="application-icon">🔢</span>
+              <span class="application-label">マイナンバー変更申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('住所変更申請')">
+              <span class="application-icon">🏠</span>
+              <span class="application-label">住所変更申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('氏名変更申請')">
+              <span class="application-icon">✏️</span>
+              <span class="application-label">氏名変更申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('産前産後休業申請')">
+              <span class="application-icon">🤰</span>
+              <span class="application-label">産前産後休業申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('育児休業申請')">
+              <span class="application-icon">👶</span>
+              <span class="application-label">育児休業申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('介護休業申請')">
+              <span class="application-icon">👴</span>
+              <span class="application-label">介護休業申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('勤務形態変更申請')">
+              <span class="application-icon">🔄</span>
+              <span class="application-label">勤務形態変更申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('退職申請')">
+              <span class="application-icon">🚪</span>
+              <span class="application-label">退職申請</span>
+            </button>
+            
+            <button class="application-button" (click)="openApplicationModal('任意保険継続申請')">
+              <span class="application-icon">🏥</span>
+              <span class="application-label">任意保険継続申請</span>
+            </button>
+          </div>
+        </ng-container>
+
+        <!-- メインページ -->
+        <ng-container *ngIf="currentTab === 'メインページ'">
+          <div class="main-page-layout">
+            <!-- 上部エリア：自分の情報欄と人事からの依頼欄 -->
+            <div class="main-page-top">
+              <!-- 自分の情報欄 -->
+              <div class="info-card my-info-card">
+                <h3 class="card-title">自分の情報</h3>
+                <div class="info-content" *ngIf="employeeData">
+                  <div class="info-row">
+                    <span class="info-label">社員番号:</span>
+                    <span class="info-value">{{ employeeData.employeeNumber || employeeNumber }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">氏名:</span>
+                    <span class="info-value">{{ employeeData.name || employeeName }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">部署:</span>
+                    <span class="info-value">{{ employeeData.department || '-' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">役職:</span>
+                    <span class="info-value">{{ employeeData.position || '-' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">雇用形態:</span>
+                    <span class="info-value">{{ employeeData.employmentType || '-' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">在籍状況:</span>
+                    <span class="info-value">{{ employeeData.employmentStatus || '在籍' }}</span>
+                  </div>
+                </div>
+                <div class="info-content" *ngIf="!employeeData">
+                  <p class="no-data">情報を読み込み中...</p>
+                </div>
+              </div>
+
+              <!-- 人事からの依頼欄 -->
+              <div class="info-card hr-request-card">
+                <h3 class="card-title">人事からの依頼</h3>
+                <div class="request-content">
+                  <div *ngIf="hrRequests.length === 0" class="no-data">
+                    現在、依頼はありません
+                  </div>
+                  <div *ngFor="let request of hrRequests" class="request-item">
+                    <div class="request-header">
+                      <span class="request-title">{{ request.title }}</span>
+                      <span class="request-date">{{ request.date | date:'yyyy/MM/dd' }}</span>
+                    </div>
+                    <p class="request-message">{{ request.message }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 申請一覧テーブル -->
+            <div class="application-list-section">
+              <div class="section-header">
+                <h3 class="section-title">申請一覧</h3>
+              </div>
+              <div class="table-container">
+                <table class="application-table">
+                  <thead>
+                    <tr>
+                      <th>申請日</th>
+                      <th>申請種類</th>
+                      <th>ステータス</th>
+                      <th>備考</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let application of applications">
+                      <td>{{ application.date | date:'yyyy/MM/dd' }}</td>
+                      <td>{{ application.type }}</td>
+                      <td>
+                        <span class="status-badge" [class.status-pending]="application.status === '申請中'"
+                              [class.status-approved]="application.status === '承認'"
+                              [class.status-rejected]="application.status === '却下'">
+                          {{ application.status }}
+                        </span>
+                      </td>
+                      <td>{{ application.notes || '-' }}</td>
+                    </tr>
+                    <tr *ngIf="applications.length === 0">
+                      <td colspan="4" class="empty-message">申請履歴がありません</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
         <!-- その他のタブ -->
-        <ng-container *ngIf="currentTab !== '情報設定'">
+        <ng-container *ngIf="currentTab !== '情報設定' && currentTab !== '各種申請' && currentTab !== 'メインページ'">
           <h2 class="page-title">{{ currentTab }}のページです</h2>
         </ng-container>
       </div>
