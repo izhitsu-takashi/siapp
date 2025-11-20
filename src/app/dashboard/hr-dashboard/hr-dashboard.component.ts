@@ -25,7 +25,8 @@ export class HrDashboardComponent {
   tabs = [
     { id: 'main', name: 'メインページ' },
     { id: 'employee-management', name: '社員情報管理' },
-    { id: 'social-insurance', name: '社会保険料' }
+    { id: 'social-insurance', name: '社会保険料' },
+    { id: 'settings', name: '設定' }
   ];
 
   // サンプルデータ（実際の実装では認証サービスから取得）
@@ -39,6 +40,27 @@ export class HrDashboardComponent {
   
   // 等級テーブルデータ
   gradeTable: any = null;
+  
+  // 設定ページ用データ
+  settingsForm!: FormGroup;
+  companyInfo: any = {
+    companyName: '',
+    address: '',
+    corporateNumber: '',
+    officeCode: ''
+  };
+  healthInsuranceType: string = '協会けんぽ';
+  selectedPrefecture: string = '';
+  insuranceRates: any = {
+    healthInsurance: 0,
+    nursingInsurance: 0,
+    pensionInsurance: 0
+  };
+  hrUsers: any[] = [];
+  allUsers: any[] = [];
+  
+  // 健康保険料率データ
+  kenpoRates: any[] = [];
   showAddModal = false;
   addEmployeeForm: FormGroup;
   employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
@@ -91,8 +113,282 @@ export class HrDashboardComponent {
       employees: this.fb.array([this.createEmployeeFormGroup()])
     });
     this.employeeEditForm = this.createEmployeeEditForm();
+    this.settingsForm = this.createSettingsForm();
     this.loadEmployees();
     this.loadGradeTable();
+    this.loadKenpoRates();
+    this.loadSettings();
+  }
+  
+  // 健康保険料率データを読み込む
+  async loadKenpoRates() {
+    try {
+      const data = await this.http.get<any[]>('/assets/kenpo-rates.json').toPromise();
+      if (data) {
+        this.kenpoRates = data;
+      }
+    } catch (error) {
+      console.error('Error loading kenpo rates:', error);
+      this.kenpoRates = [];
+    }
+  }
+  
+  // 健康保険種別が変更されたときの処理
+  onHealthInsuranceTypeChange() {
+    const type = this.settingsForm.get('healthInsuranceType')?.value;
+    if (type !== '協会けんぽ') {
+      // 組合保険を選択した場合、都道府県をリセット
+      this.settingsForm.patchValue({ prefecture: '' });
+      this.selectedPrefecture = '';
+    }
+  }
+  
+  // 都道府県が選択されたときの処理
+  onPrefectureChange() {
+    const prefecture = this.settingsForm.get('prefecture')?.value;
+    if (prefecture && this.kenpoRates.length > 0) {
+      // 選択された都道府県に対応する保険料率を取得
+      const rateData = this.kenpoRates.find((rate: any) => rate.prefecture === prefecture);
+      if (rateData) {
+        // 健康保険料率と介護保険料率を自動設定
+        this.settingsForm.patchValue({
+          healthInsuranceRate: rateData.healthRate,
+          nursingInsuranceRate: rateData.careRate
+        });
+        this.selectedPrefecture = prefecture;
+      }
+    }
+  }
+  
+  // 設定フォームを作成
+  createSettingsForm(): FormGroup {
+    return this.fb.group({
+      // 企業情報
+      companyName: [''],
+      address: [''],
+      corporateNumber: [''],
+      officeCode: [''],
+      // 健康保険設定
+      healthInsuranceType: ['協会けんぽ'],
+      prefecture: [''], // 都道府県（協会けんぽ選択時のみ）
+      // 保険料率設定
+      healthInsuranceRate: [0],
+      nursingInsuranceRate: [0],
+      pensionInsuranceRate: [0]
+    });
+  }
+  
+  // 設定を読み込む
+  async loadSettings() {
+    try {
+      // Firestoreから設定を読み込む
+      const settings = await this.firestoreService.getSettings();
+      
+      if (settings) {
+        // 企業情報を読み込む
+        if (settings.companyInfo) {
+          this.companyInfo = {
+            companyName: settings.companyInfo.companyName || '',
+            address: settings.companyInfo.address || '',
+            corporateNumber: settings.companyInfo.corporateNumber || '',
+            officeCode: settings.companyInfo.officeCode || ''
+          };
+        }
+        
+        // 健康保険設定を読み込む
+        if (settings.healthInsuranceType) {
+          this.healthInsuranceType = settings.healthInsuranceType;
+        }
+        if (settings.prefecture) {
+          this.selectedPrefecture = settings.prefecture;
+        }
+        
+        // 保険料率設定を読み込む
+        if (settings.insuranceRates) {
+          this.insuranceRates = {
+            healthInsurance: settings.insuranceRates.healthInsurance || 0,
+            nursingInsurance: settings.insuranceRates.nursingInsurance || 0,
+            pensionInsurance: settings.insuranceRates.pensionInsurance || 0
+          };
+        }
+      }
+      
+      // フォームに値を設定
+      this.settingsForm.patchValue({
+        companyName: this.companyInfo.companyName,
+        address: this.companyInfo.address,
+        corporateNumber: this.companyInfo.corporateNumber,
+        officeCode: this.companyInfo.officeCode,
+        healthInsuranceType: this.healthInsuranceType,
+        prefecture: this.selectedPrefecture,
+        healthInsuranceRate: this.insuranceRates.healthInsurance,
+        nursingInsuranceRate: this.insuranceRates.nursingInsurance,
+        pensionInsuranceRate: this.insuranceRates.pensionInsurance
+      });
+      
+      // 全ユーザーを読み込む（人事権限設定用）
+      await this.loadAllUsers();
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  }
+  
+  // 全ユーザーを読み込む
+  async loadAllUsers() {
+    try {
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      this.allUsers = allEmployees.map((emp: any) => ({
+        employeeNumber: emp.employeeNumber || '',
+        name: emp.name || '',
+        email: emp.email || '',
+        hasHrPermission: emp.hasHrPermission || false
+      }));
+      this.hrUsers = this.allUsers.filter((user: any) => user.hasHrPermission);
+    } catch (error) {
+      console.error('Error loading all users:', error);
+      this.allUsers = [];
+      this.hrUsers = [];
+    }
+  }
+  
+  // 企業情報を保存
+  async saveCompanyInfo() {
+    try {
+      const formValue = this.settingsForm.value;
+      
+      // 企業情報を更新
+      this.companyInfo = {
+        companyName: formValue.companyName || '',
+        address: formValue.address || '',
+        corporateNumber: formValue.corporateNumber || '',
+        officeCode: formValue.officeCode || ''
+      };
+      
+      // Firestoreから現在の設定を取得してマージ
+      const currentSettings = await this.firestoreService.getSettings() || {};
+      
+      // Firestoreに保存
+      await this.firestoreService.saveSettings({
+        ...currentSettings,
+        companyInfo: this.companyInfo
+      });
+      
+      alert('企業情報を保存しました');
+    } catch (error) {
+      console.error('Error saving company info:', error);
+      alert('企業情報の保存中にエラーが発生しました');
+    }
+  }
+  
+  // 健康保険設定を保存
+  async saveHealthInsuranceSetting() {
+    try {
+      const formValue = this.settingsForm.value;
+      
+      // 健康保険設定を更新
+      this.healthInsuranceType = formValue.healthInsuranceType || '協会けんぽ';
+      this.selectedPrefecture = formValue.prefecture || '';
+      
+      // 協会けんぽで都道府県が選択されている場合、保険料率も自動更新
+      if (this.healthInsuranceType === '協会けんぽ' && this.selectedPrefecture) {
+        const rateData = this.kenpoRates.find((rate: any) => rate.prefecture === this.selectedPrefecture);
+        if (rateData) {
+          this.insuranceRates.healthInsurance = rateData.healthRate;
+          this.insuranceRates.nursingInsurance = rateData.careRate;
+          // フォームにも反映
+          this.settingsForm.patchValue({
+            healthInsuranceRate: rateData.healthRate,
+            nursingInsuranceRate: rateData.careRate
+          });
+        }
+      }
+      
+      // Firestoreから現在の設定を取得してマージ
+      const currentSettings = await this.firestoreService.getSettings() || {};
+      
+      // Firestoreに保存
+      await this.firestoreService.saveSettings({
+        ...currentSettings,
+        healthInsuranceType: this.healthInsuranceType,
+        prefecture: this.selectedPrefecture,
+        insuranceRates: this.insuranceRates
+      });
+      
+      alert('健康保険設定を保存しました');
+    } catch (error) {
+      console.error('Error saving health insurance setting:', error);
+      alert('健康保険設定の保存中にエラーが発生しました');
+    }
+  }
+  
+  // 保険料率設定を保存
+  async saveInsuranceRates() {
+    try {
+      const formValue = this.settingsForm.value;
+      
+      // 保険料率設定を更新
+      this.insuranceRates = {
+        healthInsurance: Number(formValue.healthInsuranceRate) || 0,
+        nursingInsurance: Number(formValue.nursingInsuranceRate) || 0,
+        pensionInsurance: Number(formValue.pensionInsuranceRate) || 0
+      };
+      
+      // Firestoreから現在の設定を取得してマージ
+      const currentSettings = await this.firestoreService.getSettings() || {};
+      
+      // Firestoreに保存
+      await this.firestoreService.saveSettings({
+        ...currentSettings,
+        insuranceRates: this.insuranceRates
+      });
+      
+      alert('保険料率設定を保存しました');
+    } catch (error) {
+      console.error('Error saving insurance rates:', error);
+      alert('保険料率設定の保存中にエラーが発生しました');
+    }
+  }
+  
+  // 人事権限を付与
+  async grantHrPermission(employeeNumber: string) {
+    try {
+      // Firestoreでユーザーの人事権限を更新
+      const employee = await this.firestoreService.getEmployeeData(employeeNumber);
+      if (employee) {
+        await this.firestoreService.saveEmployeeData(employeeNumber, {
+          ...employee,
+          hasHrPermission: true
+        });
+        
+        // リストを更新
+        await this.loadAllUsers();
+        alert('人事権限を付与しました');
+      }
+    } catch (error) {
+      console.error('Error granting HR permission:', error);
+      alert('人事権限の付与中にエラーが発生しました');
+    }
+  }
+  
+  // 人事権限を削除
+  async revokeHrPermission(employeeNumber: string) {
+    try {
+      // Firestoreでユーザーの人事権限を削除
+      const employee = await this.firestoreService.getEmployeeData(employeeNumber);
+      if (employee) {
+        await this.firestoreService.saveEmployeeData(employeeNumber, {
+          ...employee,
+          hasHrPermission: false
+        });
+        
+        // リストを更新
+        await this.loadAllUsers();
+        alert('人事権限を削除しました');
+      }
+    } catch (error) {
+      console.error('Error revoking HR permission:', error);
+      alert('人事権限の削除中にエラーが発生しました');
+    }
   }
   
   // 等級テーブルを読み込む
@@ -173,6 +469,22 @@ export class HrDashboardComponent {
         console.error('Error in loadInsuranceList:', err);
       });
     }
+    // 設定タブが選択された場合、設定を読み込む
+    if (tabName === '設定') {
+      this.loadSettings().catch(err => {
+        console.error('Error in loadSettings:', err);
+      });
+    }
+  }
+  
+  // 50円単位で切り上げ/切り捨てする関数
+  roundToFifty(amount: number): number {
+    const remainder = amount % 100;
+    if (remainder <= 50) {
+      return Math.floor(amount / 100) * 100;
+    } else {
+      return Math.ceil(amount / 100) * 100;
+    }
   }
   
   // 社会保険料一覧を読み込む
@@ -180,6 +492,12 @@ export class HrDashboardComponent {
     try {
       // 全社員データを取得
       const allEmployees = await this.firestoreService.getAllEmployees();
+      
+      // 設定から保険料率を取得
+      const settings = await this.firestoreService.getSettings();
+      const healthInsuranceRate = settings?.insuranceRates?.healthInsurance || this.insuranceRates.healthInsurance || 0;
+      const nursingInsuranceRate = settings?.insuranceRates?.nursingInsurance || this.insuranceRates.nursingInsurance || 0;
+      const pensionInsuranceRate = settings?.insuranceRates?.pensionInsurance || this.insuranceRates.pensionInsurance || 0;
       
       // 保険料一覧データを構築（社員番号と氏名があるもののみ）
       if (Array.isArray(allEmployees)) {
@@ -192,16 +510,34 @@ export class HrDashboardComponent {
             const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
             const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
             
+            // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
+            // 小数第2位まで保持（表示用）
+            const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
+            const nursingInsuranceRaw = standardMonthlySalary * (nursingInsuranceRate / 100);
+            const pensionInsuranceRaw = standardMonthlySalary * (pensionInsuranceRate / 100);
+            
+            // 社員負担額を計算
+            // (健康保険料 + 介護保険料) ÷ 2 を50円単位で切り上げ/切り捨て
+            const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
+            const healthNursingBurden = this.roundToFifty(healthNursingHalf);
+            
+            // 厚生年金保険料 ÷ 2 を50円単位で切り上げ/切り捨て
+            const pensionHalf = pensionInsuranceRaw / 2;
+            const pensionBurden = this.roundToFifty(pensionHalf);
+            
+            // 社員負担額（合計）
+            const employeeBurden = healthNursingBurden + pensionBurden;
+            
             return {
               employeeNumber: emp.employeeNumber || '',
               name: emp.name || '',
               fixedSalary: fixedSalary,
               grade: grade,
               standardMonthlySalary: standardMonthlySalary,
-              healthInsurance: 0, // 健康保険料（計算ロジック未実装）
-              nursingInsurance: 0, // 介護保険料（計算ロジック未実装）
-              pensionInsurance: 0, // 厚生年金保険料（計算ロジック未実装）
-              personalBurden: 0 // 個人負担額（計算ロジック未実装）
+              healthInsurance: healthInsuranceRaw, // 小数第2位まで
+              nursingInsurance: nursingInsuranceRaw, // 小数第2位まで
+              pensionInsurance: pensionInsuranceRaw, // 小数第2位まで
+              employeeBurden: employeeBurden // 社員負担額
             };
           });
       } else {
@@ -212,10 +548,49 @@ export class HrDashboardComponent {
       this.insuranceList = [];
     }
   }
+  
+  // 事業主負担額合計を計算
+  getTotalEmployerBurden(): number {
+    let totalInsurance = 0;
+    let totalEmployeeBurden = 0;
+    
+    this.insuranceList.forEach((item: any) => {
+      // 保険料の合計（小数点以下切り捨て）
+      const healthInsurance = Math.floor(item.healthInsurance);
+      const nursingInsurance = Math.floor(item.nursingInsurance);
+      const pensionInsurance = Math.floor(item.pensionInsurance);
+      totalInsurance += healthInsurance + nursingInsurance + pensionInsurance;
+      
+      // 社員負担額の合計
+      totalEmployeeBurden += item.employeeBurden || 0;
+    });
+    
+    // 事業主負担額 = 保険料合計 - 社員負担額合計
+    return totalInsurance - totalEmployeeBurden;
+  }
 
   // トラッキング関数（パフォーマンス向上）
   trackByEmployeeNumber(index: number, item: any): string {
     return item.employeeNumber || index.toString();
+  }
+  
+  // 保険料を小数第2位まで表示（一番下の桁が0の場合は表示しない）
+  formatInsuranceAmount(amount: number): string {
+    if (!amount || amount === 0) {
+      return '0';
+    }
+    
+    // 小数第2位まで表示
+    const formatted = amount.toFixed(2);
+    
+    // 一番下の桁が0の場合は表示しない
+    if (formatted.endsWith('.00')) {
+      return formatted.replace('.00', '');
+    } else if (formatted.endsWith('0')) {
+      return formatted.slice(0, -1);
+    }
+    
+    return formatted;
   }
 
   logout() {

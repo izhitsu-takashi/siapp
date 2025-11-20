@@ -132,5 +132,40 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 設定を保存する
+   */
+  async saveSettings(settings: any): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'settings', 'company');
+      await setDoc(docRef, {
+        ...settings,
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 設定を読み込む
+   */
+  async getSettings(): Promise<any | null> {
+    try {
+      const docRef = doc(this.db, 'settings', 'company');
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return docSnap.data();
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting settings:', error);
+      throw error;
+    }
+  }
 }
 
