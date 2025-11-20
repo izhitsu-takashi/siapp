@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { FirestoreService } from '../../services/firestore.service';
 
 interface Employee {
@@ -35,6 +36,9 @@ export class HrDashboardComponent {
   
   // 社会保険料一覧データ
   insuranceList: any[] = [];
+  
+  // 等級テーブルデータ
+  gradeTable: any = null;
   showAddModal = false;
   addEmployeeForm: FormGroup;
   employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
@@ -80,13 +84,62 @@ export class HrDashboardComponent {
   constructor(
     private router: Router,
     private fb: FormBuilder,
-    private firestoreService: FirestoreService
+    private firestoreService: FirestoreService,
+    private http: HttpClient
   ) {
     this.addEmployeeForm = this.fb.group({
       employees: this.fb.array([this.createEmployeeFormGroup()])
     });
     this.employeeEditForm = this.createEmployeeEditForm();
     this.loadEmployees();
+    this.loadGradeTable();
+  }
+  
+  // 等級テーブルを読み込む
+  async loadGradeTable() {
+    try {
+      const data = await this.http.get<any>('/assets/grade-table.json').toPromise();
+      this.gradeTable = data;
+    } catch (error) {
+      console.error('Error loading grade table:', error);
+      // フォールバック: 直接インポートを試みる
+      this.loadGradeTableFallback();
+    }
+  }
+  
+  // フォールバック: JSONファイルを直接読み込む
+  async loadGradeTableFallback() {
+    try {
+      const response = await fetch('/assets/grade-table.json');
+      if (response.ok) {
+        const data = await response.json();
+        this.gradeTable = data;
+      }
+    } catch (error) {
+      console.error('Error loading grade table fallback:', error);
+    }
+  }
+  
+  // 固定的賃金から標準報酬月額を計算
+  calculateStandardMonthlySalary(fixedSalary: number): { grade: number; monthlyStandard: number } | null {
+    if (!this.gradeTable || !this.gradeTable.hyouzyungetugakuReiwa7) {
+      return null;
+    }
+    
+    const salary = Number(fixedSalary) || 0;
+    const gradeList = this.gradeTable.hyouzyungetugakuReiwa7;
+    
+    // from ~ to の範囲内に当てはまる等級を検索
+    for (const gradeItem of gradeList) {
+      if (salary >= gradeItem.from && salary <= gradeItem.to) {
+        return {
+          grade: gradeItem.grade,
+          monthlyStandard: gradeItem.monthlyStandard
+        };
+      }
+    }
+    
+    return null;
   }
 
   createEmployeeFormGroup(): FormGroup {
@@ -132,16 +185,25 @@ export class HrDashboardComponent {
       if (Array.isArray(allEmployees)) {
         this.insuranceList = allEmployees
           .filter((emp: any) => emp && emp.employeeNumber && emp.name)
-          .map((emp: any) => ({
-            employeeNumber: emp.employeeNumber || '',
-            name: emp.name || '',
-            fixedSalary: Number(emp.fixedSalary) || 0,
-            standardMonthlySalary: 0, // 標準報酬月額（計算ロジック未実装）
-            healthInsurance: 0, // 健康保険料（計算ロジック未実装）
-            nursingInsurance: 0, // 介護保険料（計算ロジック未実装）
-            pensionInsurance: 0, // 厚生年金保険料（計算ロジック未実装）
-            personalBurden: 0 // 個人負担額（計算ロジック未実装）
-          }));
+          .map((emp: any) => {
+            const fixedSalary = Number(emp.fixedSalary) || 0;
+            // 標準報酬月額を計算
+            const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
+            const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
+            const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+            
+            return {
+              employeeNumber: emp.employeeNumber || '',
+              name: emp.name || '',
+              fixedSalary: fixedSalary,
+              grade: grade,
+              standardMonthlySalary: standardMonthlySalary,
+              healthInsurance: 0, // 健康保険料（計算ロジック未実装）
+              nursingInsurance: 0, // 介護保険料（計算ロジック未実装）
+              pensionInsurance: 0, // 厚生年金保険料（計算ロジック未実装）
+              personalBurden: 0 // 個人負担額（計算ロジック未実装）
+            };
+          });
       } else {
         this.insuranceList = [];
       }
