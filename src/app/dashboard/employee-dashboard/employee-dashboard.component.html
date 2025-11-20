@@ -120,10 +120,12 @@
                   <input 
                     type="file" 
                     id="idDocument" 
-                    formControlName="idDocument" 
                     class="form-input"
                     accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'idDocument')"
+                    [disabled]="!isEditMode"
                   >
+                  <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
                 </div>
               </div>
             </section>
@@ -431,20 +433,24 @@
                   <input 
                     type="file" 
                     id="resume" 
-                    formControlName="resume" 
                     class="form-input"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'resume')"
+                    [disabled]="!isEditMode"
                   >
+                  <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
                 </div>
                 <div class="form-group full-width">
                   <label for="careerHistory">職務経歴書添付</label>
                   <input 
                     type="file" 
                     id="careerHistory" 
-                    formControlName="careerHistory" 
                     class="form-input"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'careerHistory')"
+                    [disabled]="!isEditMode"
                   >
+                  <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
                 </div>
               </div>
             </section>
@@ -495,13 +501,25 @@
                     >
                   </div>
                   <div class="form-group full-width">
+                    <label>
+                      <input 
+                        type="checkbox" 
+                        [checked]="sameAsCurrentAddressForEmergency"
+                        (change)="onSameAddressForEmergencyChange($event)"
+                        [disabled]="!isEditMode"
+                        class="checkbox-input"
+                      >
+                      現住所と同じ
+                    </label>
+                  </div>
+                  <div class="form-group full-width">
                     <label for="emergencyAddress">住所</label>
                     <textarea 
                       id="emergencyAddress" 
                       formControlName="address" 
                       class="form-input" 
                       rows="2"
-                      [readonly]="!isEditMode"
+                      [readonly]="!isEditMode || sameAsCurrentAddressForEmergency"
                     ></textarea>
                   </div>
                   <div class="form-group full-width">
@@ -511,7 +529,7 @@
                       formControlName="addressKana" 
                       class="form-input" 
                       rows="2"
-                      [readonly]="!isEditMode"
+                      [readonly]="!isEditMode || sameAsCurrentAddressForEmergency"
                     ></textarea>
                   </div>
                 </div>
@@ -677,10 +695,12 @@
                   <input 
                     type="file" 
                     id="basicPensionNumberDoc" 
-                    formControlName="basicPensionNumberDoc" 
                     class="form-input"
                     accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'basicPensionNumberDoc')"
+                    [disabled]="!isEditMode"
                   >
+                  <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
                 </div>
               </div>
             </section>

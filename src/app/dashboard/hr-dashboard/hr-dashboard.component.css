@@ -194,8 +194,12 @@
   transition: background-color 0.2s ease;
 }
 
-.employee-table tbody tr:hover {
-  background-color: #f8f9fa;
+.employee-table tbody tr.employee-row {
+  cursor: pointer;
+}
+
+.employee-table tbody tr.employee-row:hover {
+  background-color: #f0f0f0;
 }
 
 .employee-table tbody tr:last-child {
@@ -238,6 +242,175 @@
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.employee-edit-modal {
+  max-width: 1200px;
+  max-height: 95vh;
+}
+
+.employee-edit-form {
+  padding: 1.5rem;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.required {
+  color: #f5576c;
+}
+
+.form-input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #f093fb;
+  box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
+}
+
+.form-input[readonly] {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.birth-date-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.age-display {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.my-number-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.my-number-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.my-number-part {
+  width: 80px;
+  text-align: center;
+}
+
+.my-number-separator {
+  color: #666;
+  font-weight: 500;
+}
+
+.toggle-button {
+  padding: 0.5rem 1rem;
+  background: #6c757d;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.toggle-button:hover {
+  background: #5a6268;
+}
+
+.masked-value {
+  font-size: 1.2rem;
+  color: #666;
+  letter-spacing: 0.1em;
+}
+
+.basic-pension-number-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.basic-pension-part {
+  width: 100px;
+  text-align: center;
+}
+
+.basic-pension-separator {
+  color: #666;
+  font-weight: 500;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  width: auto;
+  margin: 0;
+}
+
+.nested-form {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.file-name {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
 }
 
 .modal-header {

@@ -335,6 +335,18 @@ textarea.form-input[readonly] {
   cursor: pointer;
 }
 
+.form-input[type="file"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.file-name {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}
+
 textarea.form-input {
   resize: vertical;
   min-height: 80px;

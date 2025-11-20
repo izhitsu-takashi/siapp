@@ -57,7 +57,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let employee of employees">
+                <tr *ngFor="let employee of employees" (click)="openEmployeeEditModal(employee.employeeNumber)" class="employee-row">
                   <td>{{ employee.employeeNumber }}</td>
                   <td>{{ employee.name }}</td>
                   <td>{{ employee.email }}</td>
@@ -159,6 +159,673 @@
           </button>
           <button type="submit" class="submit-button" [disabled]="addEmployeeForm.invalid">
             追加
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 社員情報編集モーダル -->
+  <div *ngIf="showEmployeeEditModal" class="modal-overlay" (click)="closeEmployeeEditModal()">
+    <div class="modal-content employee-edit-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">社員情報編集</h3>
+        <button class="modal-close" (click)="closeEmployeeEditModal()">×</button>
+      </div>
+      
+      <form [formGroup]="employeeEditForm" (ngSubmit)="saveEmployeeData()" class="employee-edit-form">
+        <!-- 基本情報欄 -->
+        <section class="form-section">
+          <h3 class="section-title">基本情報</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-name">氏名 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="hr-name" 
+                formControlName="name" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-nameKana">氏名（ヨミガナ）</label>
+              <input 
+                type="text" 
+                id="hr-nameKana" 
+                formControlName="nameKana" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-birthDate">生年月日 <span class="required">*</span></label>
+              <div class="birth-date-container">
+                <input 
+                  type="date" 
+                  id="hr-birthDate" 
+                  formControlName="birthDate" 
+                  class="form-input"
+                  (change)="onBirthDateChange()"
+                >
+                <span *ngIf="age !== null" class="age-display">（{{ age }}歳）</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="hr-gender">戸籍上の性別 <span class="required">*</span></label>
+              <select 
+                id="hr-gender" 
+                formControlName="gender" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-email">メールアドレス <span class="required">*</span></label>
+              <input 
+                type="email" 
+                id="hr-email" 
+                formControlName="email" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="hr-idDocument">本人確認書類添付</label>
+              <input 
+                type="file" 
+                id="hr-idDocument" 
+                class="form-input"
+                accept=".pdf,.jpg,.jpeg,.png"
+                (change)="onFileSelected($event, 'idDocument')"
+              >
+              <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- マイナンバー欄 -->
+        <section class="form-section">
+          <h3 class="section-title">マイナンバー</h3>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="hr-myNumber">マイナンバー</label>
+              <div class="my-number-container">
+                <div class="my-number-inputs">
+                  <input 
+                    type="text" 
+                    id="hr-myNumberPart1" 
+                    formControlName="myNumberPart1" 
+                    class="form-input my-number-part"
+                    [type]="showMyNumber ? 'text' : 'password'"
+                    [readonly]="!showMyNumber"
+                    maxlength="4"
+                    (input)="formatMyNumberInput($event, 1)"
+                    placeholder="0000"
+                  >
+                  <span class="my-number-separator">-</span>
+                  <input 
+                    type="text" 
+                    id="hr-myNumberPart2" 
+                    formControlName="myNumberPart2" 
+                    class="form-input my-number-part"
+                    [type]="showMyNumber ? 'text' : 'password'"
+                    [readonly]="!showMyNumber"
+                    maxlength="4"
+                    (input)="formatMyNumberInput($event, 2)"
+                    placeholder="0000"
+                  >
+                  <span class="my-number-separator">-</span>
+                  <input 
+                    type="text" 
+                    id="hr-myNumberPart3" 
+                    formControlName="myNumberPart3" 
+                    class="form-input my-number-part"
+                    [type]="showMyNumber ? 'text' : 'password'"
+                    [readonly]="!showMyNumber"
+                    maxlength="4"
+                    (input)="formatMyNumberInput($event, 3)"
+                    placeholder="0000"
+                  >
+                </div>
+                <span *ngIf="!showMyNumber && getMaskedMyNumber()" class="masked-value">
+                  {{ getMaskedMyNumber() }}
+                </span>
+                <button 
+                  type="button" 
+                  class="toggle-button" 
+                  (click)="toggleMyNumber()"
+                >
+                  {{ showMyNumber ? '非表示' : '表示' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 入退社情報欄 -->
+        <section class="form-section">
+          <h3 class="section-title">入退社情報</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-employmentStatus">在籍状況</label>
+              <select 
+                id="hr-employmentStatus" 
+                formControlName="employmentStatus" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let status of employmentStatuses" [value]="status">{{ status }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-joinDate">入社年月日</label>
+              <input 
+                type="date" 
+                id="hr-joinDate" 
+                formControlName="joinDate" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-resignationDate">退職年月日</label>
+              <input 
+                type="date" 
+                id="hr-resignationDate" 
+                formControlName="resignationDate" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="hr-resignationReason">退職事由</label>
+              <textarea 
+                id="hr-resignationReason" 
+                formControlName="resignationReason" 
+                class="form-input" 
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- 業務情報欄 -->
+        <section class="form-section">
+          <h3 class="section-title">業務情報</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-employeeNumber">社員番号 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="hr-employeeNumber" 
+                formControlName="employeeNumber" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-office">事業所</label>
+              <select 
+                id="hr-office" 
+                formControlName="office" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let office of offices" [value]="office">{{ office }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-workContent">業務内容</label>
+              <select 
+                id="hr-workContent" 
+                formControlName="workContent" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let content of workContents" [value]="content">{{ content }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-employmentType">雇用形態</label>
+              <select 
+                id="hr-employmentType" 
+                formControlName="employmentType" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-paymentType">給与支給形態</label>
+              <select 
+                id="hr-paymentType" 
+                formControlName="paymentType" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 部署・役職情報 -->
+        <section class="form-section">
+          <h3 class="section-title">部署・役職情報</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-department">部署</label>
+              <select 
+                id="hr-department" 
+                formControlName="department" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hr-position">役職</label>
+              <select 
+                id="hr-position" 
+                formControlName="position" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let pos of positions" [value]="pos">{{ pos }}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 現住所と連絡先欄 -->
+        <section class="form-section">
+          <h3 class="section-title">現住所と連絡先</h3>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="hr-currentAddress">現住所</label>
+              <textarea 
+                id="hr-currentAddress" 
+                formControlName="currentAddress" 
+                class="form-input" 
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label for="hr-currentAddressKana">現住所（ヨミガナ）</label>
+              <textarea 
+                id="hr-currentAddressKana" 
+                formControlName="currentAddressKana" 
+                class="form-input" 
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="hr-phoneNumber">電話番号</label>
+              <input 
+                type="tel" 
+                id="hr-phoneNumber" 
+                formControlName="phoneNumber" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-currentHouseholdHead">世帯主（本人/親族）</label>
+              <select 
+                id="hr-currentHouseholdHead" 
+                formControlName="currentHouseholdHead" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 住民票住所欄 -->
+        <section class="form-section">
+          <h3 class="section-title">住民票住所</h3>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  [checked]="sameAsCurrentAddress" 
+                  (change)="onSameAddressChange($event)"
+                >
+                住所（現住所と同じ）
+              </label>
+            </div>
+            <div class="form-group full-width">
+              <label for="hr-residentAddress">住所</label>
+              <textarea 
+                id="hr-residentAddress" 
+                formControlName="residentAddress" 
+                class="form-input" 
+                rows="2"
+                [readonly]="sameAsCurrentAddress"
+              ></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label for="hr-residentAddressKana">住所（ヨミガナ）</label>
+              <textarea 
+                id="hr-residentAddressKana" 
+                formControlName="residentAddressKana" 
+                class="form-input" 
+                rows="2"
+                [readonly]="sameAsCurrentAddress"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="hr-residentHouseholdHead">世帯主（本人/親族）</label>
+              <select 
+                id="hr-residentHouseholdHead" 
+                formControlName="residentHouseholdHead" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 履歴書・職務経歴書欄 -->
+        <section class="form-section">
+          <h3 class="section-title">履歴書・職務経歴書</h3>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="hr-resume">履歴書添付</label>
+              <input 
+                type="file" 
+                id="hr-resume" 
+                class="form-input"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                (change)="onFileSelected($event, 'resume')"
+              >
+              <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
+            </div>
+            <div class="form-group full-width">
+              <label for="hr-careerHistory">職務経歴書添付</label>
+              <input 
+                type="file" 
+                id="hr-careerHistory" 
+                class="form-input"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                (change)="onFileSelected($event, 'careerHistory')"
+              >
+              <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 緊急連絡先欄 -->
+        <section class="form-section">
+          <h3 class="section-title">緊急連絡先</h3>
+          <div formGroupName="emergencyContact" class="nested-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="hr-emergencyName">氏名</label>
+                <input 
+                  type="text" 
+                  id="hr-emergencyName" 
+                  formControlName="name" 
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="hr-emergencyNameKana">氏名（ヨミガナ）</label>
+                <input 
+                  type="text" 
+                  id="hr-emergencyNameKana" 
+                  formControlName="nameKana" 
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="hr-emergencyRelationship">続柄</label>
+                <input 
+                  type="text" 
+                  id="hr-emergencyRelationship" 
+                  formControlName="relationship" 
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="hr-emergencyPhone">緊急連絡先電話番号</label>
+                <input 
+                  type="tel" 
+                  id="hr-emergencyPhone" 
+                  formControlName="phone" 
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group full-width">
+                <label>
+                  <input 
+                    type="checkbox" 
+                    [checked]="sameAsCurrentAddressForEmergency"
+                    (change)="onSameAddressForEmergencyChange($event)"
+                    class="checkbox-input"
+                  >
+                  現住所と同じ
+                </label>
+              </div>
+              <div class="form-group full-width">
+                <label for="hr-emergencyAddress">住所</label>
+                <textarea 
+                  id="hr-emergencyAddress" 
+                  formControlName="address" 
+                  class="form-input" 
+                  rows="2"
+                  [readonly]="sameAsCurrentAddressForEmergency"
+                ></textarea>
+              </div>
+              <div class="form-group full-width">
+                <label for="hr-emergencyAddressKana">住所（ヨミガナ）</label>
+                <textarea 
+                  id="hr-emergencyAddressKana" 
+                  formControlName="addressKana" 
+                  class="form-input" 
+                  rows="2"
+                  [readonly]="sameAsCurrentAddressForEmergency"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 口座情報欄 -->
+        <section class="form-section">
+          <h3 class="section-title">口座情報</h3>
+          <div formGroupName="bankAccount" class="nested-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="hr-bankName">銀行名</label>
+                <input 
+                  type="text" 
+                  id="hr-bankName" 
+                  formControlName="bankName" 
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="hr-accountType">預金種別</label>
+                <select 
+                  id="hr-accountType" 
+                  formControlName="accountType" 
+                  class="form-input"
+                >
+                  <option value="">選択してください</option>
+                  <option value="普通">普通</option>
+                  <option value="当座">当座</option>
+                  <option value="貯蓄">貯蓄</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="hr-accountHolder">名義（カタカナ）</label>
+                <input 
+                  type="text" 
+                  id="hr-accountHolder" 
+                  formControlName="accountHolder" 
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="hr-branchName">支店名</label>
+                <input 
+                  type="text" 
+                  id="hr-branchName" 
+                  formControlName="branchName" 
+                  class="form-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="hr-accountNumber">口座番号</label>
+                <input 
+                  type="text" 
+                  id="hr-accountNumber" 
+                  formControlName="accountNumber" 
+                  class="form-input"
+                >
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 社会保険欄 -->
+        <section class="form-section">
+          <h3 class="section-title">社会保険</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-healthInsuranceNumber">健康保険の被保険者整理番号</label>
+              <input 
+                type="text" 
+                id="hr-healthInsuranceNumber" 
+                formControlName="healthInsuranceNumber" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-pensionInsuranceNumber">厚生年金保険の被保険者整理番号</label>
+              <input 
+                type="text" 
+                id="hr-pensionInsuranceNumber" 
+                formControlName="pensionInsuranceNumber" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-basicPensionNumber">基礎年金番号</label>
+              <div class="basic-pension-number-container">
+                <input 
+                  type="text" 
+                  id="hr-basicPensionNumberPart1" 
+                  formControlName="basicPensionNumberPart1" 
+                  class="form-input basic-pension-part"
+                  maxlength="4"
+                  (input)="formatBasicPensionNumberInput($event, 1)"
+                  placeholder="0000"
+                >
+                <span class="basic-pension-separator">-</span>
+                <input 
+                  type="text" 
+                  id="hr-basicPensionNumberPart2" 
+                  formControlName="basicPensionNumberPart2" 
+                  class="form-input basic-pension-part"
+                  maxlength="6"
+                  (input)="formatBasicPensionNumberInput($event, 2)"
+                  placeholder="000000"
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="hr-pensionHistoryStatus">厚生年金加入履歴</label>
+              <select 
+                id="hr-pensionHistoryStatus" 
+                formControlName="pensionHistoryStatus" 
+                class="form-input" 
+                (change)="onPensionHistoryChange($event)"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let option of pensionHistoryOptions" [value]="option">{{ option }}</option>
+              </select>
+            </div>
+            <div class="form-group full-width" *ngIf="hasPensionHistory">
+              <label for="hr-pensionHistory">厚生年金加入履歴（詳細）</label>
+              <textarea 
+                id="hr-pensionHistory" 
+                formControlName="pensionHistory" 
+                class="form-input" 
+                rows="4"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="hr-socialInsuranceAcquisitionDate">社会保険の資格取得年月日</label>
+              <input 
+                type="date" 
+                id="hr-socialInsuranceAcquisitionDate" 
+                formControlName="socialInsuranceAcquisitionDate" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-socialInsuranceLossDate">社会保険の資格喪失年月日</label>
+              <input 
+                type="date" 
+                id="hr-socialInsuranceLossDate" 
+                formControlName="socialInsuranceLossDate" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="hr-basicPensionNumberDoc">基礎年金番号確認書類添付</label>
+              <input 
+                type="file" 
+                id="hr-basicPensionNumberDoc" 
+                class="form-input"
+                accept=".pdf,.jpg,.jpeg,.png"
+                (change)="onFileSelected($event, 'basicPensionNumberDoc')"
+              >
+              <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 配偶者情報欄 -->
+        <section class="form-section">
+          <h3 class="section-title">配偶者情報</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-spouseStatus">配偶者の有無</label>
+              <select 
+                id="hr-spouseStatus" 
+                formControlName="spouseStatus" 
+                class="form-input"
+                (change)="onSpouseStatusChange($event)"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let option of spouseOptions" [value]="option">{{ option }}</option>
+              </select>
+            </div>
+            <div class="form-group" *ngIf="hasSpouse">
+              <label for="hr-spouseAnnualIncome">配偶者の年収</label>
+              <input 
+                type="number" 
+                id="hr-spouseAnnualIncome" 
+                formControlName="spouseAnnualIncome" 
+                class="form-input"
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- 送信ボタン -->
+        <div class="modal-actions">
+          <button type="button" class="cancel-button" (click)="closeEmployeeEditModal()">
+            キャンセル
+          </button>
+          <button type="submit" class="submit-button" [disabled]="employeeEditForm.invalid || isSaving">
+            {{ isSaving ? '保存中...' : '保存' }}
           </button>
         </div>
       </form>

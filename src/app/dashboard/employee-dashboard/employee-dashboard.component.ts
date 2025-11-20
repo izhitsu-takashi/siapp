@@ -33,8 +33,15 @@ export class EmployeeDashboardComponent {
   isSaving = false;
   isEditMode = false;
   sameAsCurrentAddress = false;
+  sameAsCurrentAddressForEmergency = false;
   hasSpouse = false;
   age: number | null = null;
+  
+  // ファイル入力（フォームコントロールから分離）
+  idDocumentFile: File | null = null;
+  resumeFile: File | null = null;
+  careerHistoryFile: File | null = null;
+  basicPensionNumberDocFile: File | null = null;
 
   // 選択肢
   employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
@@ -121,12 +128,25 @@ export class EmployeeDashboardComponent {
     if (data.sameAsCurrentAddress !== undefined) {
       this.sameAsCurrentAddress = data.sameAsCurrentAddress;
       if (this.sameAsCurrentAddress && data.currentAddress) {
+        // データから直接値を取得（保存された値を使用）
         this.settingsForm.patchValue({
-          residentAddress: data.currentAddress,
-          residentAddressKana: data.currentAddressKana || '',
-          residentHouseholdHead: data.currentHouseholdHead || ''
+          residentAddress: data.residentAddress || data.currentAddress,
+          residentAddressKana: data.residentAddressKana || data.currentAddressKana || '',
+          residentHouseholdHead: data.residentHouseholdHead || data.currentHouseholdHead || ''
+        });
+      } else if (data.residentAddress) {
+        // sameAsCurrentAddressがfalseの場合、保存された住民票住所を使用
+        this.settingsForm.patchValue({
+          residentAddress: data.residentAddress,
+          residentAddressKana: data.residentAddressKana || '',
+          residentHouseholdHead: data.residentHouseholdHead || ''
         });
       }
+    }
+
+    // 緊急連絡先住所が現住所と同じかチェック
+    if (data.sameAsCurrentAddressForEmergency !== undefined) {
+      this.sameAsCurrentAddressForEmergency = data.sameAsCurrentAddressForEmergency;
     }
 
     // 配偶者の有無
@@ -147,6 +167,11 @@ export class EmployeeDashboardComponent {
 
     // ネストされたフォームグループを個別に設定
     if (formData.emergencyContact) {
+      // sameAsCurrentAddressForEmergencyがtrueの場合、現住所の値を緊急連絡先住所にコピー
+      if (this.sameAsCurrentAddressForEmergency && data.currentAddress) {
+        formData.emergencyContact.address = formData.emergencyContact.address || data.currentAddress;
+        formData.emergencyContact.addressKana = formData.emergencyContact.addressKana || data.currentAddressKana || '';
+      }
       this.settingsForm.get('emergencyContact')?.patchValue(formData.emergencyContact);
       delete formData.emergencyContact;
     }
@@ -164,6 +189,12 @@ export class EmployeeDashboardComponent {
       this.settingsForm.get('residentAddress')?.disable();
       this.settingsForm.get('residentAddressKana')?.disable();
       this.settingsForm.get('residentHouseholdHead')?.disable();
+    }
+    
+    // sameAsCurrentAddressForEmergencyがtrueの場合、緊急連絡先住所フィールドを無効化
+    if (this.sameAsCurrentAddressForEmergency) {
+      this.settingsForm.get('emergencyContact.address')?.disable();
+      this.settingsForm.get('emergencyContact.addressKana')?.disable();
     }
   }
 
@@ -214,10 +245,51 @@ export class EmployeeDashboardComponent {
     }
   }
 
+  onSameAddressForEmergencyChange(event: any) {
+    this.sameAsCurrentAddressForEmergency = event.target.checked;
+    if (this.sameAsCurrentAddressForEmergency) {
+      const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
+      const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
+      this.settingsForm.get('emergencyContact')?.patchValue({
+        address: currentAddress,
+        addressKana: currentAddressKana
+      });
+      // 緊急連絡先住所フィールドを無効化
+      this.settingsForm.get('emergencyContact.address')?.disable();
+      this.settingsForm.get('emergencyContact.addressKana')?.disable();
+    } else {
+      // 緊急連絡先住所フィールドを有効化（編集モードの場合のみ）
+      if (this.isEditMode) {
+        this.settingsForm.get('emergencyContact.address')?.enable();
+        this.settingsForm.get('emergencyContact.addressKana')?.enable();
+      }
+    }
+  }
+
   onSpouseStatusChange(event: any) {
     this.hasSpouse = event.target.value === '有';
     if (!this.hasSpouse) {
       this.settingsForm.get('spouseAnnualIncome')?.setValue('');
+    }
+  }
+
+  onFileSelected(event: any, fileType: string) {
+    const file = event.target.files?.[0];
+    if (file) {
+      switch (fileType) {
+        case 'idDocument':
+          this.idDocumentFile = file;
+          break;
+        case 'resume':
+          this.resumeFile = file;
+          break;
+        case 'careerHistory':
+          this.careerHistoryFile = file;
+          break;
+        case 'basicPensionNumberDoc':
+          this.basicPensionNumberDocFile = file;
+          break;
+      }
     }
   }
 
@@ -262,6 +334,12 @@ export class EmployeeDashboardComponent {
       this.settingsForm.get('residentAddressKana')?.disable();
       this.settingsForm.get('residentHouseholdHead')?.disable();
     }
+    
+    // sameAsCurrentAddressForEmergencyがtrueの場合、緊急連絡先住所フィールドは無効化のまま
+    if (this.sameAsCurrentAddressForEmergency) {
+      this.settingsForm.get('emergencyContact.address')?.disable();
+      this.settingsForm.get('emergencyContact.addressKana')?.disable();
+    }
   }
 
   private disableFormControls() {
@@ -297,7 +375,6 @@ export class EmployeeDashboardComponent {
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      idDocument: [''], // 本人確認書類
       
       // マイナンバー
       myNumberPart1: [''],
@@ -333,9 +410,7 @@ export class EmployeeDashboardComponent {
       residentAddressKana: [''],
       residentHouseholdHead: [''],
       
-      // 履歴書・職務経歴書
-      resume: [''], // 履歴書
-      careerHistory: [''], // 職務経歴書
+      // 履歴書・職務経歴書（ファイル入力はフォームから分離）
       
       // 緊急連絡先
       emergencyContact: this.fb.group({
@@ -365,7 +440,7 @@ export class EmployeeDashboardComponent {
       pensionHistory: [''],
       socialInsuranceAcquisitionDate: [''],
       socialInsuranceLossDate: [''],
-      basicPensionNumberDoc: [''], // 基礎年金番号確認書類
+      // 基礎年金番号確認書類（ファイル入力はフォームから分離）
       
       // 配偶者情報
       spouseStatus: [''],
@@ -477,20 +552,41 @@ export class EmployeeDashboardComponent {
           ...formValue,
           myNumber: myNumber || null,
           basicPensionNumber: basicPensionNumber || null,
-          sameAsCurrentAddress: this.sameAsCurrentAddress
+          sameAsCurrentAddress: this.sameAsCurrentAddress,
+          sameAsCurrentAddressForEmergency: this.sameAsCurrentAddressForEmergency
         };
 
-        // 一時的な入力フィールドを削除
+        // sameAsCurrentAddressがtrueの場合、現住所の値を住民票住所にコピー
+        if (this.sameAsCurrentAddress) {
+          const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
+          const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
+          const currentHouseholdHead = this.settingsForm.get('currentHouseholdHead')?.value || '';
+          formData.residentAddress = currentAddress;
+          formData.residentAddressKana = currentAddressKana;
+          formData.residentHouseholdHead = currentHouseholdHead;
+        }
+
+        // sameAsCurrentAddressForEmergencyがtrueの場合、現住所の値を緊急連絡先住所にコピー
+        if (this.sameAsCurrentAddressForEmergency) {
+          const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
+          const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
+          if (formData.emergencyContact) {
+            formData.emergencyContact.address = currentAddress;
+            formData.emergencyContact.addressKana = currentAddressKana;
+          }
+        }
+
+        // 一時的な入力フィールドを削除（サービス側で正規化されるが、明示的に削除）
         delete formData.myNumberPart1;
         delete formData.myNumberPart2;
         delete formData.myNumberPart3;
         delete formData.basicPensionNumberPart1;
         delete formData.basicPensionNumberPart2;
 
-        // undefinedの値を削除
+        // undefinedの値を削除（サービス側でも処理されるが、事前に削除）
         const cleanedData = this.removeUndefinedValues(formData);
 
-        // Firestoreに保存
+        // Firestoreに保存（サービス側で最終的な正規化が行われる）
         const employeeNumber = this.settingsForm.get('employeeNumber')?.value;
         await this.firestoreService.saveEmployeeData(employeeNumber, cleanedData);
         
