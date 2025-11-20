@@ -224,6 +224,72 @@
   font-style: italic;
 }
 
+/* 社会保険料ページ */
+.insurance-list-page {
+  padding: 2rem;
+}
+
+.insurance-list-page .page-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.insurance-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.insurance-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.insurance-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.insurance-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.insurance-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.insurance-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.insurance-table td {
+  padding: 1rem;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.insurance-table .number-cell {
+  text-align: right;
+  font-weight: 500;
+}
+
+.insurance-table .total-cell {
+  font-weight: 600;
+  color: #667eea;
+  font-size: 1rem;
+}
+
 /* モーダル */
 .modal-overlay {
   position: fixed;
@@ -813,6 +879,23 @@
   .cancel-button,
   .submit-button {
     width: 100%;
+  }
+
+  .insurance-list-page {
+    padding: 1rem;
+  }
+
+  .insurance-table {
+    font-size: 0.85rem;
+  }
+
+  .insurance-table th,
+  .insurance-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .insurance-table th {
+    font-size: 0.8rem;
   }
 }
 

@@ -36,6 +36,45 @@
           <h2 class="page-title">{{ currentTab }}のページです</h2>
         </ng-container>
 
+        <!-- 社会保険料ページ -->
+        <ng-container *ngIf="currentTab === '社会保険料'">
+          <div class="insurance-list-page">
+            <h2 class="page-title">社会保険料一覧</h2>
+            
+            <div class="table-container">
+              <table class="insurance-table">
+                <thead>
+                  <tr>
+                    <th>社員番号</th>
+                    <th>氏名</th>
+                    <th>固定的賃金</th>
+                    <th>標準報酬月額</th>
+                    <th>健康保険料</th>
+                    <th>介護保険料</th>
+                    <th>厚生年金保険料</th>
+                    <th>個人負担額</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of insuranceList; trackBy: trackByEmployeeNumber">
+                    <td>{{ item.employeeNumber }}</td>
+                    <td>{{ item.name }}</td>
+                    <td class="number-cell">{{ item.fixedSalary | number:'1.0-0' }}円</td>
+                    <td class="number-cell">{{ item.standardMonthlySalary | number:'1.0-0' }}円</td>
+                    <td class="number-cell">{{ item.healthInsurance | number:'1.0-0' }}円</td>
+                    <td class="number-cell">{{ item.nursingInsurance | number:'1.0-0' }}円</td>
+                    <td class="number-cell">{{ item.pensionInsurance | number:'1.0-0' }}円</td>
+                    <td class="number-cell total-cell">{{ item.personalBurden | number:'1.0-0' }}円</td>
+                  </tr>
+                  <tr *ngIf="insuranceList && insuranceList.length === 0">
+                    <td colspan="8" class="empty-message">データがありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ng-container>
+
         <!-- 社員情報管理ページ -->
         <ng-container *ngIf="currentTab === '社員情報管理'">
           <div class="page-header">

@@ -23,7 +23,8 @@ export class HrDashboardComponent {
   
   tabs = [
     { id: 'main', name: 'メインページ' },
-    { id: 'employee-management', name: '社員情報管理' }
+    { id: 'employee-management', name: '社員情報管理' },
+    { id: 'social-insurance', name: '社会保険料' }
   ];
 
   // サンプルデータ（実際の実装では認証サービスから取得）
@@ -31,6 +32,9 @@ export class HrDashboardComponent {
 
   // 社員一覧
   employees: Employee[] = [];
+  
+  // 社会保険料一覧データ
+  insuranceList: any[] = [];
   showAddModal = false;
   addEmployeeForm: FormGroup;
   employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
@@ -110,6 +114,46 @@ export class HrDashboardComponent {
 
   switchTab(tabName: string) {
     this.currentTab = tabName;
+    // 社会保険料タブが選択された場合、データを読み込む
+    if (tabName === '社会保険料') {
+      this.loadInsuranceList().catch(err => {
+        console.error('Error in loadInsuranceList:', err);
+      });
+    }
+  }
+  
+  // 社会保険料一覧を読み込む
+  async loadInsuranceList() {
+    try {
+      // 全社員データを取得
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      
+      // 保険料一覧データを構築（社員番号と氏名があるもののみ）
+      if (Array.isArray(allEmployees)) {
+        this.insuranceList = allEmployees
+          .filter((emp: any) => emp && emp.employeeNumber && emp.name)
+          .map((emp: any) => ({
+            employeeNumber: emp.employeeNumber || '',
+            name: emp.name || '',
+            fixedSalary: Number(emp.fixedSalary) || 0,
+            standardMonthlySalary: 0, // 標準報酬月額（計算ロジック未実装）
+            healthInsurance: 0, // 健康保険料（計算ロジック未実装）
+            nursingInsurance: 0, // 介護保険料（計算ロジック未実装）
+            pensionInsurance: 0, // 厚生年金保険料（計算ロジック未実装）
+            personalBurden: 0 // 個人負担額（計算ロジック未実装）
+          }));
+      } else {
+        this.insuranceList = [];
+      }
+    } catch (error) {
+      console.error('Error loading insurance list:', error);
+      this.insuranceList = [];
+    }
+  }
+
+  // トラッキング関数（パフォーマンス向上）
+  trackByEmployeeNumber(index: number, item: any): string {
+    return item.employeeNumber || index.toString();
   }
 
   logout() {

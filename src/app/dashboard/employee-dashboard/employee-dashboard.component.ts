@@ -32,7 +32,11 @@ export class EmployeeDashboardComponent {
   applications: any[] = [];
   
   // 保険・扶養ページ用データ
-  insuranceData: any = null;
+  insuranceData: any = {
+    healthInsuranceType: '未設定',
+    nursingInsuranceType: '未設定',
+    pensionInsuranceType: '未設定'
+  };
   dependentsData: any[] = [];
 
   // フォーム
@@ -88,8 +92,17 @@ export class EmployeeDashboardComponent {
       this.employeeNumber = storedEmployeeNumber;
       this.employeeName = storedEmployeeName || '';
       
-      this.loadEmployeeData();
-      this.loadMainPageData();
+      // 非同期処理を並列実行（エラーハンドリングを追加）
+      Promise.all([
+        this.loadEmployeeData().catch(err => {
+          console.error('Error in loadEmployeeData:', err);
+        }),
+        this.loadMainPageData().catch(err => {
+          console.error('Error in loadMainPageData:', err);
+        })
+      ]).catch(err => {
+        console.error('Error loading initial data:', err);
+      });
     }
   }
 
@@ -112,25 +125,38 @@ export class EmployeeDashboardComponent {
 
   // 保険・扶養ページ用データを読み込む
   loadInsuranceAndDependentsData(data: any) {
-    // 保険者種別情報
-    this.insuranceData = {
-      healthInsuranceType: data.healthInsuranceType || '未設定',
-      nursingInsuranceType: data.nursingInsuranceType || '未設定',
-      pensionInsuranceType: data.pensionInsuranceType || '未設定'
-    };
-    
-    // 扶養者情報
-    if (data.dependents && Array.isArray(data.dependents) && data.dependents.length > 0) {
-      this.dependentsData = data.dependents.map((dep: any) => ({
-        name: dep.name || '',
-        nameKana: dep.nameKana || '',
-        relationship: dep.relationship || '',
-        birthDate: dep.birthDate || '',
-        myNumber: dep.myNumber || '',
-        address: dep.address || '',
-        notes: dep.notes || ''
-      }));
-    } else {
+    try {
+      // 保険者種別情報
+      if (data) {
+        this.insuranceData = {
+          healthInsuranceType: data.healthInsuranceType || '未設定',
+          nursingInsuranceType: data.nursingInsuranceType || '未設定',
+          pensionInsuranceType: data.pensionInsuranceType || '未設定'
+        };
+        
+        // 扶養者情報
+        if (data.dependents && Array.isArray(data.dependents) && data.dependents.length > 0) {
+          this.dependentsData = data.dependents.map((dep: any) => ({
+            name: dep.name || '',
+            nameKana: dep.nameKana || '',
+            relationship: dep.relationship || '',
+            birthDate: dep.birthDate || '',
+            myNumber: dep.myNumber || '',
+            address: dep.address || '',
+            notes: dep.notes || ''
+          }));
+        } else {
+          this.dependentsData = [];
+        }
+      }
+    } catch (error) {
+      console.error('Error loading insurance and dependents data:', error);
+      // エラーが発生してもデフォルト値を保持
+      this.insuranceData = {
+        healthInsuranceType: '未設定',
+        nursingInsuranceType: '未設定',
+        pensionInsuranceType: '未設定'
+      };
       this.dependentsData = [];
     }
   }
