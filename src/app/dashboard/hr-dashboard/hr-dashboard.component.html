@@ -313,10 +313,44 @@
 
         <!-- 申請管理ページ -->
         <ng-container *ngIf="currentTab === '申請管理'">
-          <div class="page-content">
+          <div class="application-management-page">
             <h2 class="page-title">申請管理</h2>
             <p class="page-description">従業員からの申請を確認・承認・却下できます。</p>
-            <!-- 今後実装予定 -->
+            
+            <div class="table-container">
+              <table class="application-management-table">
+                <thead>
+                  <tr>
+                    <th>申請ID</th>
+                    <th>申請種類</th>
+                    <th>申請者</th>
+                    <th>社員番号</th>
+                    <th>ステータス</th>
+                    <th>申請日</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let application of allApplications">
+                    <td>{{ application.applicationId }}</td>
+                    <td>{{ application.applicationType }}</td>
+                    <td>{{ application.employeeName || '-' }}</td>
+                    <td>{{ application.employeeNumber || '-' }}</td>
+                    <td>
+                      <span class="status-badge" 
+                            [class.status-pending]="application.status === '承認待ち'"
+                            [class.status-approved]="application.status === '承認'"
+                            [class.status-rejected]="application.status === '却下'">
+                        {{ application.status }}
+                      </span>
+                    </td>
+                    <td>{{ getApplicationDate(application) | date:'yyyy/MM/dd' }}</td>
+                  </tr>
+                  <tr *ngIf="allApplications.length === 0">
+                    <td colspan="6" class="empty-message">申請がありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </ng-container>
 

@@ -1267,6 +1267,30 @@ select.form-input {
   padding-left: 0.5rem;
 }
 
+.application-form .info-message {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #f0f0f0;
+  border-radius: 4px;
+  border-left: 3px solid #667eea;
+}
+
+.application-form .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.application-form .checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
 /* ステータスバッジ（モーダル用） */
 .status-badge.status-pending {
   background: #ff9800;

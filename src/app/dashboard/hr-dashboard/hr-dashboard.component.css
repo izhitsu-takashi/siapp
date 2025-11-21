@@ -149,6 +149,89 @@
   padding: 2rem;
 }
 
+/* 申請管理ページ */
+.application-management-page {
+  padding: 2rem;
+}
+
+.application-management-page .page-title {
+  margin-bottom: 1rem;
+}
+
+.application-management-page .page-description {
+  margin-bottom: 2rem;
+}
+
+.application-management-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.application-management-table thead {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.application-management-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.application-management-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.application-management-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.application-management-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.application-management-table td {
+  padding: 1rem;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.application-management-table .empty-message {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.application-management-table .status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.application-management-table .status-badge.status-pending {
+  background: #ff9800;
+  color: white;
+}
+
+.application-management-table .status-badge.status-approved {
+  background: #4caf50;
+  color: white;
+}
+
+.application-management-table .status-badge.status-rejected {
+  background: #f44336;
+  color: white;
+}
+
 /* 社員情報管理ページ */
 .page-header {
   display: flex;

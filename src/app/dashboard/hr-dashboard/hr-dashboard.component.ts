@@ -43,6 +43,9 @@ export class HrDashboardComponent {
   // 社会保険料一覧データ
   insuranceList: any[] = [];
   
+  // 申請一覧データ
+  allApplications: any[] = [];
+  
   // 等級テーブルデータ
   gradeTable: any = null;
   
@@ -474,6 +477,12 @@ export class HrDashboardComponent {
         console.error('Error in loadInsuranceList:', err);
       });
     }
+    // 申請管理タブが選択された場合、申請一覧を読み込む
+    if (tabName === '申請管理') {
+      this.loadAllApplications().catch(err => {
+        console.error('Error in loadAllApplications:', err);
+      });
+    }
     // 設定タブが選択された場合、設定を読み込む
     if (tabName === '設定') {
       this.loadSettings().catch(err => {
@@ -577,6 +586,55 @@ export class HrDashboardComponent {
   // トラッキング関数（パフォーマンス向上）
   trackByEmployeeNumber(index: number, item: any): string {
     return item.employeeNumber || index.toString();
+  }
+  
+  // 申請一覧を読み込む
+  async loadAllApplications() {
+    try {
+      const applications = await this.firestoreService.getAllApplications();
+      // FirestoreのTimestampをDateに変換
+      this.allApplications = applications.map((app: any) => {
+        if (app.createdAt && typeof app.createdAt.toDate === 'function') {
+          app.createdAt = app.createdAt.toDate();
+        }
+        if (app.updatedAt && typeof app.updatedAt.toDate === 'function') {
+          app.updatedAt = app.updatedAt.toDate();
+        }
+        return app;
+      });
+      
+      // 申請者情報を取得
+      for (const app of this.allApplications) {
+        if (app.employeeNumber) {
+          try {
+            const employee = await this.firestoreService.getEmployeeData(app.employeeNumber);
+            if (employee) {
+              app.employeeName = employee.name || '';
+            }
+          } catch (error) {
+            console.error(`Error loading employee data for ${app.employeeNumber}:`, error);
+            app.employeeName = '';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading all applications:', error);
+      this.allApplications = [];
+    }
+  }
+  
+  // 申請日を取得（Date型に変換）
+  getApplicationDate(application: any): Date | null {
+    if (!application.createdAt) {
+      return null;
+    }
+    if (application.createdAt instanceof Date) {
+      return application.createdAt;
+    }
+    if (typeof application.createdAt.toDate === 'function') {
+      return application.createdAt.toDate();
+    }
+    return null;
   }
   
   // 保険料を小数第2位まで表示（一番下の桁が0の場合は表示しない）

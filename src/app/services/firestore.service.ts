@@ -251,5 +251,36 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 全申請一覧を取得する（人事用）
+   */
+  async getAllApplications(): Promise<any[]> {
+    try {
+      const applicationsCollection = collection(this.db, 'applications');
+      const querySnapshot = await getDocs(applicationsCollection);
+      
+      const applications: any[] = [];
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        applications.push({
+          id: doc.id,
+          ...data
+        });
+      });
+      
+      // 申請IDでソート（新しい順）
+      applications.sort((a, b) => {
+        const idA = a.applicationId || 0;
+        const idB = b.applicationId || 0;
+        return idB - idA;
+      });
+      
+      return applications;
+    } catch (error) {
+      console.error('Error getting all applications:', error);
+      throw error;
+    }
+  }
 }
 

@@ -35,6 +35,17 @@ export class EmployeeDashboardComponent {
   showApplicationModal = false;
   currentApplicationType = '';
   dependentApplicationForm!: FormGroup;
+  dependentRemovalForm!: FormGroup;
+  addressChangeForm!: FormGroup;
+  nameChangeForm!: FormGroup;
+  maternityLeaveForm!: FormGroup;
+  sameAsNewAddress = false;
+  
+  // 氏名変更申請用ファイル
+  nameChangeIdDocumentFile: File | null = null;
+  
+  // 産前産後休業申請用ファイル
+  maternityLeaveDocumentFile: File | null = null;
   
   // 申請詳細モーダル用
   showApplicationDetailModal = false;
@@ -94,6 +105,14 @@ export class EmployeeDashboardComponent {
     this.settingsForm = this.createForm();
     // 扶養家族追加申請フォームを初期化
     this.dependentApplicationForm = this.createDependentApplicationForm();
+    // 扶養削除申請フォームを初期化
+    this.dependentRemovalForm = this.createDependentRemovalForm();
+    // 住所変更申請フォームを初期化
+    this.addressChangeForm = this.createAddressChangeForm();
+    // 氏名変更申請フォームを初期化
+    this.nameChangeForm = this.createNameChangeForm();
+    // 産前産後休業申請フォームを初期化
+    this.maternityLeaveForm = this.createMaternityLeaveForm();
     
     // ブラウザ環境でのみセッションストレージにアクセス
     if (isPlatformBrowser(this.platformId)) {
@@ -368,6 +387,12 @@ export class EmployeeDashboardComponent {
           break;
         case 'basicPensionNumberDoc':
           this.basicPensionNumberDocFile = file;
+          break;
+        case 'nameChangeIdDocument':
+          this.nameChangeIdDocumentFile = file;
+          break;
+        case 'maternityLeaveDocument':
+          this.maternityLeaveDocumentFile = file;
           break;
       }
     }
@@ -704,6 +729,19 @@ export class EmployeeDashboardComponent {
     if (applicationType === '扶養家族追加') {
       this.dependentApplicationForm = this.createDependentApplicationForm();
       this.showApplicationModal = true;
+    } else if (applicationType === '扶養削除申請') {
+      this.dependentRemovalForm = this.createDependentRemovalForm();
+      this.showApplicationModal = true;
+    } else if (applicationType === '住所変更申請') {
+      this.addressChangeForm = this.createAddressChangeForm();
+      this.sameAsNewAddress = false;
+      this.showApplicationModal = true;
+    } else if (applicationType === '氏名変更申請') {
+      this.nameChangeForm = this.createNameChangeForm();
+      this.showApplicationModal = true;
+    } else if (applicationType === '産前産後休業申請') {
+      this.maternityLeaveForm = this.createMaternityLeaveForm();
+      this.showApplicationModal = true;
     } else {
       // 他の申請タイプは今後実装
       alert(`${applicationType}の申請フォームを開きます（実装予定）`);
@@ -714,11 +752,18 @@ export class EmployeeDashboardComponent {
     this.showApplicationModal = false;
     this.currentApplicationType = '';
     this.dependentApplicationForm = this.createDependentApplicationForm();
+    this.dependentRemovalForm = this.createDependentRemovalForm();
+    this.addressChangeForm = this.createAddressChangeForm();
+    this.nameChangeForm = this.createNameChangeForm();
+    this.maternityLeaveForm = this.createMaternityLeaveForm();
+    this.sameAsNewAddress = false;
     // ファイルをリセット
     this.dependentBasicPensionNumberDocFile = null;
     this.dependentMyNumberDocFile = null;
     this.dependentIdentityDocFile = null;
     this.dependentDisabilityCardFile = null;
+    this.nameChangeIdDocumentFile = null;
+    this.maternityLeaveDocumentFile = null;
   }
   
   createDependentApplicationForm(): FormGroup {
@@ -767,6 +812,110 @@ export class EmployeeDashboardComponent {
       addressKana: [''],
       addressChangeDate: ['']
     });
+  }
+  
+  createDependentRemovalForm(): FormGroup {
+    return this.fb.group({
+      removalDate: ['', Validators.required],
+      dependentId: ['', Validators.required]
+    });
+  }
+  
+  createAddressChangeForm(): FormGroup {
+    return this.fb.group({
+      moveDate: ['', Validators.required],
+      // 新しい住所
+      newPostalCode: ['', Validators.required],
+      newAddress: ['', Validators.required],
+      newAddressKana: [''],
+      newHouseholdHead: ['', Validators.required],
+      newHouseholdHeadName: [''],
+      // 新しい住民票住所
+      sameAsNewAddress: [false],
+      residentPostalCode: [''],
+      residentAddress: [''],
+      residentAddressKana: [''],
+      residentHouseholdHead: [''],
+      residentHouseholdHeadName: [''],
+      // 新しい緊急連絡先
+      emergencyLastName: [''],
+      emergencyFirstName: [''],
+      emergencyLastNameKana: [''],
+      emergencyFirstNameKana: [''],
+      emergencyRelationship: [''],
+      emergencyPhone: ['']
+    });
+  }
+  
+  createNameChangeForm(): FormGroup {
+    return this.fb.group({
+      changeDate: ['', Validators.required],
+      newLastName: ['', Validators.required],
+      newFirstName: ['', Validators.required],
+      newLastNameKana: ['', Validators.required],
+      newFirstNameKana: ['', Validators.required]
+    });
+  }
+  
+  createMaternityLeaveForm(): FormGroup {
+    return this.fb.group({
+      expectedDeliveryDate: ['', Validators.required],
+      isMultipleBirth: ['', Validators.required],
+      preMaternityLeaveStartDate: [''],
+      preMaternityLeaveEndDate: [''],
+      postMaternityLeaveStartDate: [''],
+      postMaternityLeaveEndDate: [''],
+      stayAddress: ['']
+    });
+  }
+  
+  onSameAsNewAddressChange(event: any) {
+    this.sameAsNewAddress = event.target.checked;
+    const residentPostalCodeControl = this.addressChangeForm.get('residentPostalCode');
+    const residentAddressControl = this.addressChangeForm.get('residentAddress');
+    const residentAddressKanaControl = this.addressChangeForm.get('residentAddressKana');
+    const residentHouseholdHeadControl = this.addressChangeForm.get('residentHouseholdHead');
+    const residentHouseholdHeadNameControl = this.addressChangeForm.get('residentHouseholdHeadName');
+    
+    if (this.sameAsNewAddress) {
+      const newPostalCode = this.addressChangeForm.get('newPostalCode')?.value || '';
+      const newAddress = this.addressChangeForm.get('newAddress')?.value || '';
+      const newAddressKana = this.addressChangeForm.get('newAddressKana')?.value || '';
+      const newHouseholdHead = this.addressChangeForm.get('newHouseholdHead')?.value || '';
+      const newHouseholdHeadName = this.addressChangeForm.get('newHouseholdHeadName')?.value || '';
+      
+      this.addressChangeForm.patchValue({
+        residentPostalCode: newPostalCode,
+        residentAddress: newAddress,
+        residentAddressKana: newAddressKana,
+        residentHouseholdHead: newHouseholdHead,
+        residentHouseholdHeadName: newHouseholdHeadName
+      });
+      
+      residentPostalCodeControl?.clearValidators();
+      residentAddressControl?.clearValidators();
+      residentAddressKanaControl?.clearValidators();
+      residentHouseholdHeadControl?.clearValidators();
+      residentHouseholdHeadNameControl?.clearValidators();
+      
+      residentPostalCodeControl?.disable();
+      residentAddressControl?.disable();
+      residentAddressKanaControl?.disable();
+      residentHouseholdHeadControl?.disable();
+      residentHouseholdHeadNameControl?.disable();
+    } else {
+      residentPostalCodeControl?.enable();
+      residentAddressControl?.enable();
+      residentAddressKanaControl?.enable();
+      residentHouseholdHeadControl?.enable();
+      residentHouseholdHeadNameControl?.enable();
+    }
+    
+    residentPostalCodeControl?.updateValueAndValidity();
+    residentAddressControl?.updateValueAndValidity();
+    residentAddressKanaControl?.updateValueAndValidity();
+    residentHouseholdHeadControl?.updateValueAndValidity();
+    residentHouseholdHeadNameControl?.updateValueAndValidity();
   }
   
   // フォームの条件付きバリデーションを更新
@@ -980,7 +1129,195 @@ export class EmployeeDashboardComponent {
       alert('必須項目を入力してください');
     }
   }
-
+  
+  async submitDependentRemovalApplication() {
+    if (this.dependentRemovalForm.valid) {
+      try {
+        const formValue = this.dependentRemovalForm.value;
+        
+        // 選択された扶養者情報を取得
+        const selectedDependent = this.dependentsData.find((dep: any, index: number) => {
+          return index.toString() === formValue.dependentId;
+        });
+        
+        if (!selectedDependent) {
+          alert('扶養者情報が見つかりません');
+          return;
+        }
+        
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '扶養削除申請',
+          removalDate: formValue.removalDate,
+          dependent: {
+            name: selectedDependent.name || '',
+            nameKana: selectedDependent.nameKana || '',
+            relationship: selectedDependent.relationship || '',
+            birthDate: selectedDependent.birthDate || '',
+            myNumber: selectedDependent.myNumber || '',
+            address: selectedDependent.address || '',
+            notes: selectedDependent.notes || ''
+          }
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.dependentRemovalForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
+  }
+  
+  async submitAddressChangeApplication() {
+    if (this.addressChangeForm.valid) {
+      try {
+        const formValue = this.addressChangeForm.value;
+        
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '住所変更申請',
+          moveDate: formValue.moveDate,
+          newAddress: {
+            postalCode: formValue.newPostalCode,
+            address: formValue.newAddress,
+            addressKana: formValue.newAddressKana || '',
+            householdHead: formValue.newHouseholdHead,
+            householdHeadName: formValue.newHouseholdHeadName || ''
+          },
+          residentAddress: {
+            sameAsNewAddress: this.sameAsNewAddress,
+            postalCode: this.sameAsNewAddress ? formValue.newPostalCode : formValue.residentPostalCode || '',
+            address: this.sameAsNewAddress ? formValue.newAddress : formValue.residentAddress || '',
+            addressKana: this.sameAsNewAddress ? formValue.newAddressKana : formValue.residentAddressKana || '',
+            householdHead: this.sameAsNewAddress ? formValue.newHouseholdHead : formValue.residentHouseholdHead || '',
+            householdHeadName: this.sameAsNewAddress ? formValue.newHouseholdHeadName : formValue.residentHouseholdHeadName || ''
+          },
+          emergencyContact: {
+            lastName: formValue.emergencyLastName || '',
+            firstName: formValue.emergencyFirstName || '',
+            lastNameKana: formValue.emergencyLastNameKana || '',
+            firstNameKana: formValue.emergencyFirstNameKana || '',
+            relationship: formValue.emergencyRelationship || '',
+            phone: formValue.emergencyPhone || ''
+          }
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.addressChangeForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
+  }
+  
+  async submitNameChangeApplication() {
+    if (this.nameChangeForm.valid) {
+      try {
+        const formValue = this.nameChangeForm.value;
+        
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '氏名変更申請',
+          changeDate: formValue.changeDate,
+          newName: {
+            lastName: formValue.newLastName,
+            firstName: formValue.newFirstName,
+            lastNameKana: formValue.newLastNameKana,
+            firstNameKana: formValue.newFirstNameKana
+          },
+          hasIdDocument: !!this.nameChangeIdDocumentFile
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.nameChangeForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
+  }
+  
+  async submitMaternityLeaveApplication() {
+    if (this.maternityLeaveForm.valid && this.maternityLeaveDocumentFile) {
+      try {
+        const formValue = this.maternityLeaveForm.value;
+        
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '産前産後休業申請',
+          expectedDeliveryDate: formValue.expectedDeliveryDate,
+          isMultipleBirth: formValue.isMultipleBirth,
+          preMaternityLeaveStartDate: formValue.preMaternityLeaveStartDate || '',
+          preMaternityLeaveEndDate: formValue.preMaternityLeaveEndDate || '',
+          postMaternityLeaveStartDate: formValue.postMaternityLeaveStartDate || '',
+          postMaternityLeaveEndDate: formValue.postMaternityLeaveEndDate || '',
+          stayAddress: formValue.stayAddress || '',
+          hasDocument: !!this.maternityLeaveDocumentFile
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.maternityLeaveForm.markAllAsTouched();
+      if (!this.maternityLeaveDocumentFile) {
+        alert('出産予定日を確認できる書類を添付してください');
+      } else {
+        alert('必須項目を入力してください');
+      }
+    }
+  }
+  
   async loadMainPageData() {
     try {
       // 自分の情報を読み込む
