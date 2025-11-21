@@ -873,24 +873,24 @@
                 <table class="application-table">
                   <thead>
                     <tr>
-                      <th>申請日</th>
+                      <th>申請ID</th>
                       <th>申請種類</th>
                       <th>ステータス</th>
-                      <th>備考</th>
+                      <th>申請日</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let application of applications">
-                      <td>{{ application.date | date:'yyyy/MM/dd' }}</td>
-                      <td>{{ application.type }}</td>
+                    <tr *ngFor="let application of applications" class="application-row" (click)="openApplicationDetail(application)">
+                      <td>{{ application.applicationId }}</td>
+                      <td>{{ application.applicationType }}</td>
                       <td>
-                        <span class="status-badge" [class.status-pending]="application.status === '申請中'"
+                        <span class="status-badge" [class.status-pending]="application.status === '承認待ち'"
                               [class.status-approved]="application.status === '承認'"
                               [class.status-rejected]="application.status === '却下'">
                           {{ application.status }}
                         </span>
                       </td>
-                      <td>{{ application.notes || '-' }}</td>
+                      <td>{{ getApplicationDate(application) | date:'yyyy/MM/dd' }}</td>
                     </tr>
                     <tr *ngIf="applications.length === 0">
                       <td colspan="4" class="empty-message">申請履歴がありません</td>
@@ -980,5 +980,536 @@
         </ng-container>
       </div>
     </main>
+  </div>
+</div>
+
+<!-- 申請モーダル -->
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '扶養家族追加'" (click)="closeApplicationModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">扶養家族追加申請</h2>
+      <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
+    </div>
+    
+    <form [formGroup]="dependentApplicationForm" (ngSubmit)="submitDependentApplication()" class="application-form">
+      <!-- 続柄欄 -->
+      <section class="form-section">
+        <h3 class="section-title">続柄 <span class="required">*</span></h3>
+        <div class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="relationshipType" value="配偶者" (change)="onRelationshipTypeChange()">
+            配偶者
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="relationshipType" value="配偶者以外" (change)="onRelationshipTypeChange()">
+            配偶者以外
+          </label>
+        </div>
+        <div *ngIf="dependentApplicationForm.get('relationshipType')?.invalid && dependentApplicationForm.get('relationshipType')?.touched" class="error-message">
+          続柄を選択してください
+        </div>
+        
+        <!-- 配偶者選択時 -->
+        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者'" class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="spouseType" value="妻" (change)="onSpouseTypeChange()">
+            妻
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="spouseType" value="夫" (change)="onSpouseTypeChange()">
+            夫
+          </label>
+        </div>
+        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者' && dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
+          妻または夫を選択してください
+        </div>
+        
+        <!-- 配偶者以外選択時 -->
+        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者以外'" class="form-group">
+          <label for="relationship">続柄 <span class="required">*</span></label>
+          <input type="text" id="relationship" formControlName="relationship" class="form-input" placeholder="例: 長男、長女">
+        </div>
+      </section>
+      
+      <!-- 基礎年金番号 -->
+      <section class="form-section">
+        <h3 class="section-title">基礎年金番号</h3>
+        <div class="form-group">
+          <label>基礎年金番号</label>
+          <div class="basic-pension-number-container">
+            <input 
+              type="text" 
+              id="dependentBasicPensionNumberPart1" 
+              formControlName="basicPensionNumberPart1" 
+              class="form-input basic-pension-part"
+              maxlength="4"
+              (input)="formatDependentBasicPensionNumberInput($event, 1)"
+              placeholder="0000"
+              aria-label="基礎年金番号（前半4桁）"
+            >
+            <span class="basic-pension-separator">-</span>
+            <input 
+              type="text" 
+              id="dependentBasicPensionNumberPart2" 
+              formControlName="basicPensionNumberPart2" 
+              class="form-input basic-pension-part"
+              maxlength="6"
+              (input)="formatDependentBasicPensionNumberInput($event, 2)"
+              placeholder="000000"
+              aria-label="基礎年金番号（後半6桁）"
+            >
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="dependentBasicPensionNumberDoc">基礎年金番号確認書類添付</label>
+          <input 
+            type="file" 
+            id="dependentBasicPensionNumberDoc" 
+            class="form-input"
+            accept=".pdf,.jpg,.jpeg,.png"
+            (change)="onDependentFileSelected($event, 'basicPensionNumberDoc')"
+          >
+          <div *ngIf="dependentBasicPensionNumberDocFile" class="file-name">{{ dependentBasicPensionNumberDocFile.name }}</div>
+        </div>
+      </section>
+      
+      <!-- 基本情報 -->
+      <section class="form-section">
+        <h3 class="section-title">基本情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="dependentLastName">姓 <span class="required">*</span></label>
+            <input type="text" id="dependentLastName" formControlName="lastName" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentFirstName">名 <span class="required">*</span></label>
+            <input type="text" id="dependentFirstName" formControlName="firstName" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentLastNameKana">姓（ヨミガナ）</label>
+            <input type="text" id="dependentLastNameKana" formControlName="lastNameKana" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentFirstNameKana">名（ヨミガナ）</label>
+            <input type="text" id="dependentFirstNameKana" formControlName="firstNameKana" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
+            <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentGender">性別 <span class="required">*</span></label>
+            <select id="dependentGender" formControlName="gender" class="form-input">
+              <option value="">選択してください</option>
+              <option value="男性">男性</option>
+              <option value="女性">女性</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dependentPhoneNumber">電話番号</label>
+            <input type="tel" id="dependentPhoneNumber" formControlName="phoneNumber" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentOccupation">職業</label>
+            <input type="text" id="dependentOccupation" formControlName="occupation" class="form-input">
+          </div>
+        </div>
+      </section>
+      
+      <!-- 収入情報 -->
+      <section class="form-section">
+        <h3 class="section-title">収入情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="dependentAnnualIncome">扶養追加日からの年間収入見込み額</label>
+            <input type="number" id="dependentAnnualIncome" formControlName="annualIncome" class="form-input" placeholder="円">
+          </div>
+          <div class="form-group">
+            <label for="dependentMonthlyIncome">扶養追加日からの月額収入見込み額</label>
+            <input type="number" id="dependentMonthlyIncome" formControlName="monthlyIncome" class="form-input" placeholder="円">
+          </div>
+          <div class="form-group">
+            <label for="dependentStartDate">社会保険の扶養者となった日 <span class="required">*</span></label>
+            <input type="date" id="dependentStartDate" formControlName="dependentStartDate" class="form-input">
+          </div>
+          <div class="form-group full-width">
+            <label for="dependentReason">扶養に追加された理由</label>
+            <textarea id="dependentReason" formControlName="dependentReason" class="form-input" rows="3"></textarea>
+          </div>
+        </div>
+      </section>
+      
+      <!-- マイナンバー -->
+      <section class="form-section">
+        <h3 class="section-title">マイナンバー</h3>
+        <div class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="provideMyNumber" value="提供する" (change)="onProvideMyNumberChange()">
+            提供する
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="provideMyNumber" value="提供しない" (change)="onProvideMyNumberChange()">
+            提供しない
+          </label>
+        </div>
+        
+        <!-- マイナンバー提供する場合 -->
+        <div *ngIf="dependentApplicationForm.get('provideMyNumber')?.value === '提供する'">
+          <div class="form-group">
+            <label>マイナンバー <span class="required">*</span></label>
+            <div class="my-number-container">
+              <div class="my-number-inputs">
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart1" 
+                  formControlName="myNumberPart1" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 1)"
+                  placeholder="0000"
+                  aria-label="マイナンバー（前半4桁）"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart2" 
+                  formControlName="myNumberPart2" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 2)"
+                  placeholder="0000"
+                  aria-label="マイナンバー（中盤4桁）"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart3" 
+                  formControlName="myNumberPart3" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 3)"
+                  placeholder="0000"
+                  aria-label="マイナンバー（後半4桁）"
+                >
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dependentMyNumberDoc">番号確認書類添付 <span class="required">*</span></label>
+            <input 
+              type="file" 
+              id="dependentMyNumberDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'myNumberDoc')"
+            >
+            <div *ngIf="dependentMyNumberDocFile" class="file-name">{{ dependentMyNumberDocFile.name }}</div>
+          </div>
+          <div class="form-group">
+            <label for="dependentIdentityDoc">身元確認書類添付 <span class="required">*</span></label>
+            <input 
+              type="file" 
+              id="dependentIdentityDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'identityDoc')"
+            >
+            <div *ngIf="dependentIdentityDocFile" class="file-name">{{ dependentIdentityDocFile.name }}</div>
+          </div>
+        </div>
+        
+        <!-- マイナンバー提供しない場合 -->
+        <div *ngIf="dependentApplicationForm.get('provideMyNumber')?.value === '提供しない'" class="form-group">
+          <label for="dependentMyNumberNotProvidedReason">未提供理由 <span class="required">*</span></label>
+          <textarea id="dependentMyNumberNotProvidedReason" formControlName="myNumberNotProvidedReason" class="form-input" rows="3"></textarea>
+        </div>
+      </section>
+      
+      <!-- 障がい者情報 -->
+      <section class="form-section">
+        <h3 class="section-title">障がい者情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="dependentDisabilityCategory">障がい者区分</label>
+            <input type="text" id="dependentDisabilityCategory" formControlName="disabilityCategory" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentDisabilityCardType">障がい者手帳の種類</label>
+            <input type="text" id="dependentDisabilityCardType" formControlName="disabilityCardType" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentDisabilityCardIssueDate">障がい者手帳の交付年月日</label>
+            <input type="date" id="dependentDisabilityCardIssueDate" formControlName="disabilityCardIssueDate" class="form-input">
+          </div>
+          <div class="form-group full-width">
+            <label for="dependentDisabilityCard">障がい者手帳の画像添付</label>
+            <input 
+              type="file" 
+              id="dependentDisabilityCard" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'disabilityCard')"
+            >
+            <div *ngIf="dependentDisabilityCardFile" class="file-name">{{ dependentDisabilityCardFile.name }}</div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 住所情報 -->
+      <section class="form-section">
+        <h3 class="section-title">住所情報 <span class="required">*</span></h3>
+        <div class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
+            同居
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="livingTogether" value="別居" (change)="onLivingTogetherChange()">
+            別居
+          </label>
+        </div>
+        <div *ngIf="dependentApplicationForm.get('livingTogether')?.invalid && dependentApplicationForm.get('livingTogether')?.touched" class="error-message">
+          同居/別居を選択してください
+        </div>
+        
+        <!-- 別居の場合 -->
+        <div *ngIf="dependentApplicationForm.get('livingTogether')?.value === '別居'" class="form-grid">
+          <div class="form-group">
+            <label for="dependentPostalCode">郵便番号 <span class="required">*</span></label>
+            <input type="text" id="dependentPostalCode" formControlName="postalCode" class="form-input" placeholder="例: 123-4567">
+          </div>
+          <div class="form-group full-width">
+            <label for="dependentAddress">住所 <span class="required">*</span></label>
+            <textarea id="dependentAddress" formControlName="address" class="form-input" rows="2"></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="dependentAddressKana">住所（ヨミガナ）</label>
+            <textarea id="dependentAddressKana" formControlName="addressKana" class="form-input" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="dependentAddressChangeDate">住所変更年月日</label>
+            <input type="date" id="dependentAddressChangeDate" formControlName="addressChangeDate" class="form-input">
+          </div>
+        </div>
+      </section>
+      
+      <!-- 送信ボタン -->
+      <div class="form-actions">
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="dependentApplicationForm.invalid">申請</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 申請詳細モーダル -->
+<div class="modal-overlay" *ngIf="showApplicationDetailModal" (click)="closeApplicationDetailModal()">
+  <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">申請詳細</h2>
+      <button class="modal-close-button" (click)="closeApplicationDetailModal()">×</button>
+    </div>
+    
+    <div class="application-detail-content" *ngIf="selectedApplication">
+      <!-- 申請基本情報 -->
+      <section class="detail-section">
+        <h3 class="section-title">申請基本情報</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">申請ID:</span>
+            <span class="detail-value">{{ selectedApplication.applicationId }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請種類:</span>
+            <span class="detail-value">{{ selectedApplication.applicationType }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">ステータス:</span>
+            <span class="detail-value">
+              <span class="status-badge" [class.status-pending]="selectedApplication.status === '承認待ち'"
+                    [class.status-approved]="selectedApplication.status === '承認'"
+                    [class.status-rejected]="selectedApplication.status === '却下'">
+                {{ selectedApplication.status }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請日:</span>
+            <span class="detail-value">{{ getApplicationDate(selectedApplication) | date:'yyyy年MM月dd日' }}</span>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 扶養家族追加申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '扶養家族追加'">
+        <!-- 続柄情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">続柄</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">続柄種別:</span>
+              <span class="detail-value">{{ selectedApplication.relationshipType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者'">
+              <span class="detail-label">配偶者種別:</span>
+              <span class="detail-value">{{ selectedApplication.spouseType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外'">
+              <span class="detail-label">続柄:</span>
+              <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 基礎年金番号 -->
+        <section class="detail-section">
+          <h3 class="section-title">基礎年金番号</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">基礎年金番号:</span>
+              <span class="detail-value">{{ formatBasicPensionNumberForDisplay(selectedApplication.basicPensionNumber) }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 基本情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">基本情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">姓:</span>
+              <span class="detail-value">{{ selectedApplication.lastName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名:</span>
+              <span class="detail-value">{{ selectedApplication.firstName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">姓（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.lastNameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.firstNameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">生年月日:</span>
+              <span class="detail-value">{{ selectedApplication.birthDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">性別:</span>
+              <span class="detail-value">{{ selectedApplication.gender || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">電話番号:</span>
+              <span class="detail-value">{{ selectedApplication.phoneNumber || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">職業:</span>
+              <span class="detail-value">{{ selectedApplication.occupation || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 収入情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">収入情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">扶養追加日からの年間収入見込み額:</span>
+              <span class="detail-value">{{ selectedApplication.annualIncome ? (selectedApplication.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">扶養追加日からの月額収入見込み額:</span>
+              <span class="detail-value">{{ selectedApplication.monthlyIncome ? (selectedApplication.monthlyIncome | number:'1.0-0') + '円' : '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">社会保険の扶養者となった日:</span>
+              <span class="detail-value">{{ selectedApplication.dependentStartDate || '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">扶養に追加された理由:</span>
+              <span class="detail-value">{{ selectedApplication.dependentReason || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- マイナンバー情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">マイナンバー</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">マイナンバーの提供:</span>
+              <span class="detail-value">{{ selectedApplication.provideMyNumber || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.provideMyNumber === '提供する'">
+              <span class="detail-label">マイナンバー:</span>
+              <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber) }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.provideMyNumber === '提供しない'">
+              <span class="detail-label">未提供理由:</span>
+              <span class="detail-value">{{ selectedApplication.myNumberNotProvidedReason || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 障がい者情報 -->
+        <section class="detail-section" *ngIf="selectedApplication.disabilityCategory || selectedApplication.disabilityCardType">
+          <h3 class="section-title">障がい者情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">障がい者区分:</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCategory || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">障がい者手帳の種類:</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCardType || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">障がい者手帳の交付年月日:</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCardIssueDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 住所情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">住所情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">同居/別居:</span>
+              <span class="detail-value">{{ selectedApplication.livingTogether || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">郵便番号:</span>
+              <span class="detail-value">{{ selectedApplication.postalCode || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">住所:</span>
+              <span class="detail-value">{{ selectedApplication.address || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">住所（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.addressKana || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">住所変更年月日:</span>
+              <span class="detail-value">{{ selectedApplication.addressChangeDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- その他の申請タイプの詳細（今後実装） -->
+      <ng-container *ngIf="selectedApplication.applicationType !== '扶養家族追加'">
+        <section class="detail-section">
+          <p class="no-detail-message">この申請タイプの詳細表示は今後実装予定です。</p>
+        </section>
+      </ng-container>
+    </div>
+    
+    <div class="modal-footer">
+      <button type="button" class="close-detail-button" (click)="closeApplicationDetailModal()">閉じる</button>
+    </div>
   </div>
 </div>

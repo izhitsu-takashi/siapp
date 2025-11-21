@@ -167,5 +167,89 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 申請データを保存する
+   */
+  async saveApplication(applicationData: any): Promise<string> {
+    try {
+      // 申請IDを取得（全申請の最大ID + 1）
+      const nextApplicationId = await this.getNextApplicationId();
+      
+      const applicationWithId = {
+        ...applicationData,
+        applicationId: nextApplicationId,
+        status: '承認待ち',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const docRef = doc(this.db, 'applications', `app_${nextApplicationId}`);
+      await setDoc(docRef, applicationWithId);
+      
+      return nextApplicationId.toString();
+    } catch (error) {
+      console.error('Error saving application:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 次の申請IDを取得する（全申請の最大ID + 1）
+   */
+  private async getNextApplicationId(): Promise<number> {
+    try {
+      const applicationsCollection = collection(this.db, 'applications');
+      const querySnapshot = await getDocs(applicationsCollection);
+      
+      let maxId = 0;
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        const applicationId = data['applicationId'];
+        if (applicationId && typeof applicationId === 'number' && applicationId > maxId) {
+          maxId = applicationId;
+        }
+      });
+      
+      return maxId + 1;
+    } catch (error) {
+      console.error('Error getting next application ID:', error);
+      // エラー時は1から開始
+      return 1;
+    }
+  }
+
+  /**
+   * 従業員の申請一覧を取得する
+   */
+  async getEmployeeApplications(employeeNumber: string): Promise<any[]> {
+    try {
+      const applicationsCollection = collection(this.db, 'applications');
+      const querySnapshot = await getDocs(applicationsCollection);
+      
+      const applications: any[] = [];
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        if (data['employeeNumber'] === employeeNumber) {
+          applications.push({
+            id: doc.id,
+            ...data
+          });
+        }
+      });
+      
+      // 申請IDでソート（古い順）
+      applications.sort((a, b) => {
+        const idA = a.applicationId || 0;
+        const idB = b.applicationId || 0;
+        return idA - idB;
+      });
+      
+      return applications;
+    } catch (error) {
+      console.error('Error getting employee applications:', error);
+      throw error;
+    }
+  }
 }
 

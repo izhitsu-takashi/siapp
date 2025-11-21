@@ -311,6 +311,51 @@
           </div>
         </ng-container>
 
+        <!-- 申請管理ページ -->
+        <ng-container *ngIf="currentTab === '申請管理'">
+          <div class="page-content">
+            <h2 class="page-title">申請管理</h2>
+            <p class="page-description">従業員からの申請を確認・承認・却下できます。</p>
+            <!-- 今後実装予定 -->
+          </div>
+        </ng-container>
+
+        <!-- 各種手続きページ -->
+        <ng-container *ngIf="currentTab === '各種手続き'">
+          <div class="page-content">
+            <h2 class="page-title">各種手続き</h2>
+            <p class="page-description">社会保険や雇用保険などの各種手続きを行います。</p>
+            <!-- 今後実装予定 -->
+          </div>
+        </ng-container>
+
+        <!-- 文書作成・管理ページ -->
+        <ng-container *ngIf="currentTab === '文書作成・管理'">
+          <div class="page-content">
+            <h2 class="page-title">文書作成・管理</h2>
+            <p class="page-description">各種文書の作成・管理を行います。</p>
+            <!-- 今後実装予定 -->
+          </div>
+        </ng-container>
+
+        <!-- e-Gov電子申請ページ -->
+        <ng-container *ngIf="currentTab === 'e-Gov電子申請ページ'">
+          <div class="page-content">
+            <h2 class="page-title">e-Gov電子申請ページ</h2>
+            <p class="page-description">e-Gov電子申請システムへのリンクと管理を行います。</p>
+            <!-- 今後実装予定 -->
+          </div>
+        </ng-container>
+
+        <!-- 保険証管理ページ -->
+        <ng-container *ngIf="currentTab === '保険証管理'">
+          <div class="page-content">
+            <h2 class="page-title">保険証管理</h2>
+            <p class="page-description">従業員の保険証の発行・再発行・管理を行います。</p>
+            <!-- 今後実装予定 -->
+          </div>
+        </ng-container>
+
         <!-- 社員情報管理ページ -->
         <ng-container *ngIf="currentTab === '社員情報管理'">
           <div class="page-header">

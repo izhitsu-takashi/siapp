@@ -25,6 +25,11 @@ export class HrDashboardComponent {
   tabs = [
     { id: 'main', name: 'メインページ' },
     { id: 'employee-management', name: '社員情報管理' },
+    { id: 'application-management', name: '申請管理' },
+    { id: 'procedures', name: '各種手続き' },
+    { id: 'document-management', name: '文書作成・管理' },
+    { id: 'egov', name: 'e-Gov電子申請ページ' },
+    { id: 'insurance-card', name: '保険証管理' },
     { id: 'social-insurance', name: '社会保険料' },
     { id: 'settings', name: '設定' }
   ];

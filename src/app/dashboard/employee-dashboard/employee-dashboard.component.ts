@@ -31,6 +31,15 @@ export class EmployeeDashboardComponent {
   hrRequests: any[] = [];
   applications: any[] = [];
   
+  // 申請モーダル用
+  showApplicationModal = false;
+  currentApplicationType = '';
+  dependentApplicationForm!: FormGroup;
+  
+  // 申請詳細モーダル用
+  showApplicationDetailModal = false;
+  selectedApplication: any = null;
+  
   // 保険・扶養ページ用データ
   insuranceData: any = {
     healthInsuranceType: '未設定',
@@ -55,6 +64,12 @@ export class EmployeeDashboardComponent {
   resumeFile: File | null = null;
   careerHistoryFile: File | null = null;
   basicPensionNumberDocFile: File | null = null;
+  
+  // 扶養家族追加申請用ファイル
+  dependentBasicPensionNumberDocFile: File | null = null;
+  dependentMyNumberDocFile: File | null = null;
+  dependentIdentityDocFile: File | null = null;
+  dependentDisabilityCardFile: File | null = null;
 
   // 選択肢
   employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
@@ -77,6 +92,8 @@ export class EmployeeDashboardComponent {
   ) {
     // settingsFormを初期化（必須）
     this.settingsForm = this.createForm();
+    // 扶養家族追加申請フォームを初期化
+    this.dependentApplicationForm = this.createDependentApplicationForm();
     
     // ブラウザ環境でのみセッションストレージにアクセス
     if (isPlatformBrowser(this.platformId)) {
@@ -683,8 +700,285 @@ export class EmployeeDashboardComponent {
   }
 
   openApplicationModal(applicationType: string) {
-    // TODO: 申請モーダルを開く処理を実装
-    alert(`${applicationType}の申請フォームを開きます（実装予定）`);
+    this.currentApplicationType = applicationType;
+    if (applicationType === '扶養家族追加') {
+      this.dependentApplicationForm = this.createDependentApplicationForm();
+      this.showApplicationModal = true;
+    } else {
+      // 他の申請タイプは今後実装
+      alert(`${applicationType}の申請フォームを開きます（実装予定）`);
+    }
+  }
+  
+  closeApplicationModal() {
+    this.showApplicationModal = false;
+    this.currentApplicationType = '';
+    this.dependentApplicationForm = this.createDependentApplicationForm();
+    // ファイルをリセット
+    this.dependentBasicPensionNumberDocFile = null;
+    this.dependentMyNumberDocFile = null;
+    this.dependentIdentityDocFile = null;
+    this.dependentDisabilityCardFile = null;
+  }
+  
+  createDependentApplicationForm(): FormGroup {
+    return this.fb.group({
+      // 続柄欄
+      relationshipType: ['', Validators.required], // 配偶者/配偶者以外
+      spouseType: [''], // 妻/夫（配偶者選択時のみ必須）
+      relationship: [''], // 続柄（配偶者以外選択時のみ必須）
+      
+      // 基礎年金番号
+      basicPensionNumberPart1: [''],
+      basicPensionNumberPart2: [''],
+      
+      // 基本情報
+      lastName: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastNameKana: [''],
+      firstNameKana: [''],
+      birthDate: ['', Validators.required],
+      gender: ['', Validators.required],
+      phoneNumber: [''],
+      occupation: [''],
+      
+      // 収入情報
+      annualIncome: [''],
+      monthlyIncome: [''],
+      dependentStartDate: ['', Validators.required],
+      dependentReason: [''],
+      
+      // マイナンバー
+      provideMyNumber: ['', Validators.required],
+      myNumberPart1: [''],
+      myNumberPart2: [''],
+      myNumberPart3: [''],
+      myNumberNotProvidedReason: [''],
+      
+      // 障がい者情報
+      disabilityCategory: [''],
+      disabilityCardType: [''],
+      disabilityCardIssueDate: [''],
+      
+      // 住所情報
+      livingTogether: ['', Validators.required],
+      postalCode: [''],
+      address: [''],
+      addressKana: [''],
+      addressChangeDate: ['']
+    });
+  }
+  
+  // フォームの条件付きバリデーションを更新
+  onRelationshipTypeChange() {
+    const relationshipType = this.dependentApplicationForm.get('relationshipType')?.value;
+    const spouseTypeControl = this.dependentApplicationForm.get('spouseType');
+    const relationshipControl = this.dependentApplicationForm.get('relationship');
+    
+    if (relationshipType === '配偶者') {
+      spouseTypeControl?.setValidators([Validators.required]);
+      relationshipControl?.clearValidators();
+      relationshipControl?.setValue('');
+    } else if (relationshipType === '配偶者以外') {
+      spouseTypeControl?.clearValidators();
+      spouseTypeControl?.setValue('');
+      relationshipControl?.setValidators([Validators.required]);
+    } else {
+      spouseTypeControl?.clearValidators();
+      relationshipControl?.clearValidators();
+    }
+    
+    spouseTypeControl?.updateValueAndValidity();
+    relationshipControl?.updateValueAndValidity();
+  }
+  
+  // 配偶者種別の変更時にバリデーションを更新
+  onSpouseTypeChange() {
+    const spouseTypeControl = this.dependentApplicationForm.get('spouseType');
+    spouseTypeControl?.updateValueAndValidity();
+  }
+  
+  onProvideMyNumberChange() {
+    const provideMyNumber = this.dependentApplicationForm.get('provideMyNumber')?.value;
+    const myNumberPart1Control = this.dependentApplicationForm.get('myNumberPart1');
+    const myNumberPart2Control = this.dependentApplicationForm.get('myNumberPart2');
+    const myNumberPart3Control = this.dependentApplicationForm.get('myNumberPart3');
+    const myNumberNotProvidedReasonControl = this.dependentApplicationForm.get('myNumberNotProvidedReason');
+    
+    if (provideMyNumber === '提供する') {
+      myNumberPart1Control?.setValidators([Validators.required]);
+      myNumberPart2Control?.setValidators([Validators.required]);
+      myNumberPart3Control?.setValidators([Validators.required]);
+      myNumberNotProvidedReasonControl?.clearValidators();
+      myNumberNotProvidedReasonControl?.setValue('');
+    } else if (provideMyNumber === '提供しない') {
+      myNumberPart1Control?.clearValidators();
+      myNumberPart2Control?.clearValidators();
+      myNumberPart3Control?.clearValidators();
+      myNumberPart1Control?.setValue('');
+      myNumberPart2Control?.setValue('');
+      myNumberPart3Control?.setValue('');
+      myNumberNotProvidedReasonControl?.setValidators([Validators.required]);
+    } else {
+      myNumberPart1Control?.clearValidators();
+      myNumberPart2Control?.clearValidators();
+      myNumberPart3Control?.clearValidators();
+      myNumberNotProvidedReasonControl?.clearValidators();
+    }
+    
+    myNumberPart1Control?.updateValueAndValidity();
+    myNumberPart2Control?.updateValueAndValidity();
+    myNumberPart3Control?.updateValueAndValidity();
+    myNumberNotProvidedReasonControl?.updateValueAndValidity();
+  }
+  
+  onLivingTogetherChange() {
+    const livingTogether = this.dependentApplicationForm.get('livingTogether')?.value;
+    const postalCodeControl = this.dependentApplicationForm.get('postalCode');
+    const addressControl = this.dependentApplicationForm.get('address');
+    
+    if (livingTogether === '別居') {
+      postalCodeControl?.setValidators([Validators.required]);
+      addressControl?.setValidators([Validators.required]);
+    } else {
+      postalCodeControl?.clearValidators();
+      addressControl?.clearValidators();
+      postalCodeControl?.setValue('');
+      addressControl?.setValue('');
+      this.dependentApplicationForm.get('addressKana')?.setValue('');
+      this.dependentApplicationForm.get('addressChangeDate')?.setValue('');
+    }
+    
+    postalCodeControl?.updateValueAndValidity();
+    addressControl?.updateValueAndValidity();
+  }
+  
+  onDependentFileSelected(event: any, fileType: string) {
+    const file = event.target.files?.[0];
+    if (file) {
+      switch (fileType) {
+        case 'basicPensionNumberDoc':
+          this.dependentBasicPensionNumberDocFile = file;
+          break;
+        case 'myNumberDoc':
+          this.dependentMyNumberDocFile = file;
+          break;
+        case 'identityDoc':
+          this.dependentIdentityDocFile = file;
+          break;
+        case 'disabilityCard':
+          this.dependentDisabilityCardFile = file;
+          break;
+      }
+    }
+  }
+  
+  formatDependentMyNumberInput(event: any, part: number) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 4) {
+      value = value.substring(0, 4);
+    }
+    event.target.value = value;
+    this.dependentApplicationForm.get(`myNumberPart${part}`)?.setValue(value);
+    
+    // 自動的に次のフィールドにフォーカス
+    if (value.length === 4 && part < 3) {
+      const nextInput = document.getElementById(`dependentMyNumberPart${part + 1}`);
+      if (nextInput) {
+        nextInput.focus();
+      }
+    }
+  }
+  
+  formatDependentBasicPensionNumberInput(event: any, part: number) {
+    let value = event.target.value.replace(/\D/g, '');
+    const maxLength = part === 1 ? 4 : 6;
+    if (value.length > maxLength) {
+      value = value.substring(0, maxLength);
+    }
+    event.target.value = value;
+    this.dependentApplicationForm.get(`basicPensionNumberPart${part}`)?.setValue(value);
+    
+    // 自動的に次のフィールドにフォーカス
+    if (value.length === maxLength && part === 1) {
+      const nextInput = document.getElementById('dependentBasicPensionNumberPart2');
+      if (nextInput) {
+        nextInput.focus();
+      }
+    }
+  }
+  
+  async submitDependentApplication() {
+    if (this.dependentApplicationForm.valid) {
+      try {
+        // 基礎年金番号を結合
+        const basicPensionNumberParts = [
+          this.dependentApplicationForm.get('basicPensionNumberPart1')?.value || '',
+          this.dependentApplicationForm.get('basicPensionNumberPart2')?.value || ''
+        ];
+        const basicPensionNumber = basicPensionNumberParts.join('');
+        
+        // マイナンバーを結合
+        const myNumberParts = [
+          this.dependentApplicationForm.get('myNumberPart1')?.value || '',
+          this.dependentApplicationForm.get('myNumberPart2')?.value || '',
+          this.dependentApplicationForm.get('myNumberPart3')?.value || ''
+        ];
+        const myNumber = myNumberParts.join('');
+        
+        // フォームデータを準備
+        const formValue = this.dependentApplicationForm.value;
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '扶養家族追加',
+          relationshipType: formValue.relationshipType,
+          spouseType: formValue.spouseType || '',
+          relationship: formValue.relationship || '',
+          basicPensionNumber: basicPensionNumber || null,
+          lastName: formValue.lastName,
+          firstName: formValue.firstName,
+          lastNameKana: formValue.lastNameKana || '',
+          firstNameKana: formValue.firstNameKana || '',
+          birthDate: formValue.birthDate,
+          gender: formValue.gender,
+          phoneNumber: formValue.phoneNumber || '',
+          occupation: formValue.occupation || '',
+          annualIncome: formValue.annualIncome || '',
+          monthlyIncome: formValue.monthlyIncome || '',
+          dependentStartDate: formValue.dependentStartDate,
+          dependentReason: formValue.dependentReason || '',
+          provideMyNumber: formValue.provideMyNumber,
+          myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+          myNumberNotProvidedReason: formValue.provideMyNumber === '提供しない' ? formValue.myNumberNotProvidedReason : '',
+          disabilityCategory: formValue.disabilityCategory || '',
+          disabilityCardType: formValue.disabilityCardType || '',
+          disabilityCardIssueDate: formValue.disabilityCardIssueDate || '',
+          livingTogether: formValue.livingTogether,
+          postalCode: formValue.livingTogether === '別居' ? formValue.postalCode : '',
+          address: formValue.livingTogether === '別居' ? formValue.address : '',
+          addressKana: formValue.livingTogether === '別居' ? formValue.addressKana : '',
+          addressChangeDate: formValue.livingTogether === '別居' ? formValue.addressChangeDate : ''
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.dependentApplicationForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
   }
 
   async loadMainPageData() {
@@ -707,13 +1001,58 @@ export class EmployeeDashboardComponent {
 
   async loadApplications() {
     try {
-      // TODO: Firestoreから申請データを読み込む
-      // 現在は空の配列
-      this.applications = [];
+      const applications = await this.firestoreService.getEmployeeApplications(this.employeeNumber);
+      // FirestoreのTimestampをDateに変換
+      this.applications = applications.map((app: any) => {
+        if (app.createdAt && typeof app.createdAt.toDate === 'function') {
+          app.createdAt = app.createdAt.toDate();
+        }
+        return app;
+      });
     } catch (error) {
       console.error('Error loading applications:', error);
       this.applications = [];
     }
+  }
+  
+  getApplicationDate(application: any): Date | null {
+    if (!application.createdAt) {
+      return null;
+    }
+    if (application.createdAt instanceof Date) {
+      return application.createdAt;
+    }
+    if (typeof application.createdAt.toDate === 'function') {
+      return application.createdAt.toDate();
+    }
+    return null;
+  }
+  
+  openApplicationDetail(application: any) {
+    this.selectedApplication = application;
+    this.showApplicationDetailModal = true;
+  }
+  
+  closeApplicationDetailModal() {
+    this.showApplicationDetailModal = false;
+    this.selectedApplication = null;
+  }
+  
+  formatMyNumberForDisplay(myNumber: string | null): string {
+    if (!myNumber || myNumber.length !== 12) {
+      return '-';
+    }
+    return `${myNumber.substring(0, 4)}-${myNumber.substring(4, 8)}-${myNumber.substring(8, 12)}`;
+  }
+  
+  formatBasicPensionNumberForDisplay(basicPensionNumber: string | null): string {
+    if (!basicPensionNumber || basicPensionNumber.length < 4) {
+      return '-';
+    }
+    if (basicPensionNumber.length >= 10) {
+      return `${basicPensionNumber.substring(0, 4)}-${basicPensionNumber.substring(4, 10)}`;
+    }
+    return basicPensionNumber;
   }
 }
 
