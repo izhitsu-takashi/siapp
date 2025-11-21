@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 const firebaseConfig = {
   projectId: 'kensyu10117'
@@ -279,6 +279,76 @@ export class FirestoreService {
       return applications;
     } catch (error) {
       console.error('Error getting all applications:', error);
+      throw error;
+    }
+  }
+  
+  // 申請のステータスを更新
+  async updateApplicationStatus(applicationId: string, status: string, comment: string = ''): Promise<void> {
+    try {
+      const applicationsCollection = collection(this.db, 'applications');
+      const querySnapshot = await getDocs(applicationsCollection);
+      
+      let targetDocId: string | null = null;
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        if (data['applicationId'] === parseInt(applicationId) || data['id'] === applicationId || doc.id === applicationId) {
+          targetDocId = doc.id;
+        }
+      });
+      
+      if (!targetDocId) {
+        throw new Error('Application not found');
+      }
+      
+      const applicationRef = doc(this.db, 'applications', targetDocId);
+      const updateData: any = {
+        status: status,
+        updatedAt: new Date()
+      };
+      
+      // 差し戻しの場合はコメントも保存
+      if (status === '差し戻し' && comment) {
+        updateData.statusComment = comment;
+      } else {
+        // 差し戻し以外の場合はコメントをクリア
+        updateData.statusComment = '';
+      }
+      
+      await updateDoc(applicationRef, updateData);
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      throw error;
+    }
+  }
+  
+  // 申請を再提出
+  async resubmitApplication(applicationId: string, applicationData: any): Promise<void> {
+    try {
+      const applicationsCollection = collection(this.db, 'applications');
+      const querySnapshot = await getDocs(applicationsCollection);
+      
+      let targetDocId: string | null = null;
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        if (data['applicationId'] === parseInt(applicationId) || data['id'] === applicationId || doc.id === applicationId) {
+          targetDocId = doc.id;
+        }
+      });
+      
+      if (!targetDocId) {
+        throw new Error('Application not found');
+      }
+      
+      const applicationRef = doc(this.db, 'applications', targetDocId);
+      await updateDoc(applicationRef, {
+        ...applicationData,
+        status: '再申請',
+        statusComment: '', // 差し戻しコメントをクリア
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error resubmitting application:', error);
       throw error;
     }
   }

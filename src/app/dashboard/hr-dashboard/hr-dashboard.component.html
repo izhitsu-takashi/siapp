@@ -330,7 +330,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let application of allApplications">
+                  <tr *ngFor="let application of allApplications" class="application-row" (click)="openApplicationDetail(application)">
                     <td>{{ application.applicationId }}</td>
                     <td>{{ application.applicationType }}</td>
                     <td>{{ application.employeeName || '-' }}</td>
@@ -338,8 +338,9 @@
                     <td>
                       <span class="status-badge" 
                             [class.status-pending]="application.status === '承認待ち'"
-                            [class.status-approved]="application.status === '承認'"
-                            [class.status-rejected]="application.status === '却下'">
+                            [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
+                            [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
+                            [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
                         {{ application.status }}
                       </span>
                     </td>
@@ -1380,4 +1381,602 @@
   </div>
 </div>
 
+<!-- 申請詳細モーダル（人事側） -->
+<div class="modal-overlay" *ngIf="showApplicationDetailModal" (click)="closeApplicationDetailModal()">
+  <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">申請詳細</h2>
+      <button class="modal-close-button" (click)="closeApplicationDetailModal()">×</button>
+    </div>
+    
+    <div class="application-detail-content" *ngIf="selectedApplication">
+      <!-- ステータス変更欄 -->
+      <section class="status-change-section-top" *ngIf="statusChangeForm">
+        <h3 class="section-title">ステータス変更</h3>
+        <form [formGroup]="statusChangeForm" (ngSubmit)="updateApplicationStatus()">
+          <div class="status-change-form">
+            <div class="form-group">
+              <label for="statusSelect">ステータス <span class="required">*</span></label>
+              <select 
+                id="statusSelect" 
+                formControlName="status" 
+                class="form-input status-select"
+                (change)="onStatusChange()"
+              >
+                <option value="承認待ち">承認待ち</option>
+                <option value="承認済み">承認済み</option>
+                <option value="差し戻し">差し戻し</option>
+                <option value="再申請">再申請</option>
+              </select>
+            </div>
+            <div class="form-group" *ngIf="statusChangeForm.get('status')?.value === '差し戻し'">
+              <label for="statusComment">コメント <span class="required">*</span></label>
+              <textarea 
+                id="statusComment" 
+                formControlName="comment" 
+                class="form-input status-comment"
+                rows="4"
+                placeholder="差し戻し理由を入力してください"
+              ></textarea>
+              <div *ngIf="statusChangeForm.get('comment')?.invalid && statusChangeForm.get('comment')?.touched" class="error-message">
+                コメントを入力してください
+              </div>
+            </div>
+            <div class="status-change-actions">
+              <button type="submit" class="status-update-button">ステータスを更新</button>
+            </div>
+          </div>
+        </form>
+      </section>
+      
+      <!-- 申請基本情報 -->
+      <section class="detail-section">
+        <h3 class="section-title">申請基本情報</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">申請ID:</span>
+            <span class="detail-value">{{ selectedApplication.applicationId }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請種類:</span>
+            <span class="detail-value">{{ selectedApplication.applicationType }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請者:</span>
+            <span class="detail-value">{{ selectedApplication.employeeName || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">社員番号:</span>
+            <span class="detail-value">{{ selectedApplication.employeeNumber || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">ステータス:</span>
+            <span class="detail-value">
+              <span class="status-badge" 
+                    [class.status-pending]="selectedApplication.status === '承認待ち'"
+                    [class.status-approved]="selectedApplication.status === '承認' || selectedApplication.status === '承認済み'"
+                    [class.status-rejected]="selectedApplication.status === '却下' || selectedApplication.status === '差し戻し'"
+                    [class.status-resubmitted]="selectedApplication.status === '再申請' || selectedApplication.status === '再提出'">
+                {{ selectedApplication.status }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-item full-width" *ngIf="selectedApplication.status === '差し戻し' && selectedApplication.statusComment">
+            <span class="detail-label">差し戻しコメント:</span>
+            <span class="detail-value">{{ selectedApplication.statusComment }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請日:</span>
+            <span class="detail-value">{{ getApplicationDate(selectedApplication) | date:'yyyy年MM月dd日' }}</span>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 扶養家族追加申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '扶養家族追加'">
+        <!-- 続柄情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">続柄</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">続柄種別:</span>
+              <span class="detail-value">{{ selectedApplication.relationshipType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者'">
+              <span class="detail-label">配偶者種別:</span>
+              <span class="detail-value">{{ selectedApplication.spouseType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外'">
+              <span class="detail-label">続柄:</span>
+              <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 基礎年金番号 -->
+        <section class="detail-section">
+          <h3 class="section-title">基礎年金番号</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">基礎年金番号:</span>
+              <span class="detail-value">{{ formatBasicPensionNumberForDisplay(selectedApplication.basicPensionNumber) }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 基本情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">基本情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">姓:</span>
+              <span class="detail-value">{{ selectedApplication.lastName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名:</span>
+              <span class="detail-value">{{ selectedApplication.firstName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">姓（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.lastNameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.firstNameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">生年月日:</span>
+              <span class="detail-value">{{ selectedApplication.birthDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">性別:</span>
+              <span class="detail-value">{{ selectedApplication.gender || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">電話番号:</span>
+              <span class="detail-value">{{ selectedApplication.phoneNumber || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">職業:</span>
+              <span class="detail-value">{{ selectedApplication.occupation || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 収入情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">収入情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">扶養追加日からの年間収入見込み額:</span>
+              <span class="detail-value">{{ selectedApplication.annualIncome ? (selectedApplication.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">扶養追加日からの月額収入見込み額:</span>
+              <span class="detail-value">{{ selectedApplication.monthlyIncome ? (selectedApplication.monthlyIncome | number:'1.0-0') + '円' : '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">社会保険の扶養者となった日:</span>
+              <span class="detail-value">{{ selectedApplication.dependentStartDate || '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">扶養に追加された理由:</span>
+              <span class="detail-value">{{ selectedApplication.dependentReason || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- マイナンバー情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">マイナンバー</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">マイナンバーの提供:</span>
+              <span class="detail-value">{{ selectedApplication.provideMyNumber || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.provideMyNumber === '提供する'">
+              <span class="detail-label">マイナンバー:</span>
+              <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber) }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.provideMyNumber === '提供しない'">
+              <span class="detail-label">未提供理由:</span>
+              <span class="detail-value">{{ selectedApplication.myNumberNotProvidedReason || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 障がい者情報 -->
+        <section class="detail-section" *ngIf="selectedApplication.disabilityCategory || selectedApplication.disabilityCardType">
+          <h3 class="section-title">障がい者情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">障がい者区分:</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCategory || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">障がい者手帳の種類:</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCardType || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">障がい者手帳の交付年月日:</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCardIssueDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 住所情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">住所情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">同居/別居:</span>
+              <span class="detail-value">{{ selectedApplication.livingTogether || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">郵便番号:</span>
+              <span class="detail-value">{{ selectedApplication.postalCode || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">住所:</span>
+              <span class="detail-value">{{ selectedApplication.address || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">住所（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.addressKana || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
+              <span class="detail-label">住所変更年月日:</span>
+              <span class="detail-value">{{ selectedApplication.addressChangeDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 扶養削除申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '扶養削除申請'">
+        <!-- 被扶養者移動日 -->
+        <section class="detail-section">
+          <h3 class="section-title">被扶養者移動日</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">被扶養者移動日:</span>
+              <span class="detail-value">{{ selectedApplication.removalDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 被扶養者情報 -->
+        <section class="detail-section" *ngIf="selectedApplication.dependent">
+          <h3 class="section-title">被扶養者情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">氏名:</span>
+              <span class="detail-value">{{ selectedApplication.dependent.name || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">氏名（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.dependent.nameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">続柄:</span>
+              <span class="detail-value">{{ selectedApplication.dependent.relationship || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">生年月日:</span>
+              <span class="detail-value">{{ selectedApplication.dependent.birthDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">マイナンバー:</span>
+              <span class="detail-value">{{ selectedApplication.dependent.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">住所:</span>
+              <span class="detail-value">{{ selectedApplication.dependent.address || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.dependent.notes">
+              <span class="detail-label">備考:</span>
+              <span class="detail-value">{{ selectedApplication.dependent.notes }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 住所変更申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '住所変更申請'">
+        <!-- 引っ越しした日 -->
+        <section class="detail-section">
+          <h3 class="section-title">引っ越しした日</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">引っ越しした日:</span>
+              <span class="detail-value">{{ selectedApplication.moveDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 新しい住所 -->
+        <section class="detail-section" *ngIf="selectedApplication.newAddress">
+          <h3 class="section-title">新しい住所</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">郵便番号:</span>
+              <span class="detail-value">{{ selectedApplication.newAddress.postalCode || '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">住所:</span>
+              <span class="detail-value">{{ selectedApplication.newAddress.address || '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">住所（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.newAddress.addressKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">世帯主の続柄（本人/親族）:</span>
+              <span class="detail-value">{{ selectedApplication.newAddress.householdHead || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">世帯主氏名:</span>
+              <span class="detail-value">{{ selectedApplication.newAddress.householdHeadName || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 新しい住民票住所 -->
+        <section class="detail-section" *ngIf="selectedApplication.residentAddress">
+          <h3 class="section-title">新しい住民票住所</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">現住所と同じ:</span>
+              <span class="detail-value">{{ selectedApplication.residentAddress.sameAsNewAddress ? 'はい' : 'いいえ' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <span class="detail-label">郵便番号:</span>
+              <span class="detail-value">{{ selectedApplication.residentAddress.postalCode || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <span class="detail-label">住所:</span>
+              <span class="detail-value">{{ selectedApplication.residentAddress.address || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <span class="detail-label">住所（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.residentAddress.addressKana || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <span class="detail-label">世帯主の続柄（本人/親族）:</span>
+              <span class="detail-value">{{ selectedApplication.residentAddress.householdHead || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <span class="detail-label">世帯主氏名:</span>
+              <span class="detail-value">{{ selectedApplication.residentAddress.householdHeadName || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 新しい緊急連絡先 -->
+        <section class="detail-section" *ngIf="selectedApplication.emergencyContact">
+          <h3 class="section-title">新しい緊急連絡先</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">姓:</span>
+              <span class="detail-value">{{ selectedApplication.emergencyContact.lastName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名:</span>
+              <span class="detail-value">{{ selectedApplication.emergencyContact.firstName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">姓（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.emergencyContact.lastNameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.emergencyContact.firstNameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">続柄:</span>
+              <span class="detail-value">{{ selectedApplication.emergencyContact.relationship || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">電話番号:</span>
+              <span class="detail-value">{{ selectedApplication.emergencyContact.phone || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 氏名変更申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '氏名変更申請'">
+        <!-- 氏名変更した日 -->
+        <section class="detail-section">
+          <h3 class="section-title">氏名変更した日</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">氏名変更した日:</span>
+              <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 新しい氏名 -->
+        <section class="detail-section" *ngIf="selectedApplication.newName">
+          <h3 class="section-title">新しい氏名</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">姓:</span>
+              <span class="detail-value">{{ selectedApplication.newName.lastName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名:</span>
+              <span class="detail-value">{{ selectedApplication.newName.firstName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">姓（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.newName.lastNameKana || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">名（ヨミガナ）:</span>
+              <span class="detail-value">{{ selectedApplication.newName.firstNameKana || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 本人確認書類 -->
+        <section class="detail-section">
+          <h3 class="section-title">本人確認書類</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">本人確認書類添付:</span>
+              <span class="detail-value">{{ selectedApplication.hasIdDocument ? 'あり' : 'なし' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 産前産後休業申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '産前産後休業申請'">
+        <!-- 出産予定日 -->
+        <section class="detail-section">
+          <h3 class="section-title">出産予定日</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">出産予定日:</span>
+              <span class="detail-value">{{ selectedApplication.expectedDeliveryDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">双子以上か:</span>
+              <span class="detail-value">{{ selectedApplication.isMultipleBirth || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">出産予定日を確認できる書類添付:</span>
+              <span class="detail-value">{{ selectedApplication.hasDocument ? 'あり' : 'なし' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 産前休業期間 -->
+        <section class="detail-section">
+          <h3 class="section-title">産前休業期間</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">産前休業開始日:</span>
+              <span class="detail-value">{{ selectedApplication.preMaternityLeaveStartDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">産前休業終了日:</span>
+              <span class="detail-value">{{ selectedApplication.preMaternityLeaveEndDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 産後休業期間 -->
+        <section class="detail-section">
+          <h3 class="section-title">産後休業期間</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">産後休業開始日:</span>
+              <span class="detail-value">{{ selectedApplication.postMaternityLeaveStartDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">産後休業終了日:</span>
+              <span class="detail-value">{{ selectedApplication.postMaternityLeaveEndDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 休業中の滞在先 -->
+        <section class="detail-section" *ngIf="selectedApplication.stayAddress">
+          <h3 class="section-title">休業中の滞在先</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">休業中の滞在先（現住所と異なる場合）:</span>
+              <span class="detail-value">{{ selectedApplication.stayAddress }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 退職申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '退職申請'">
+        <!-- 退職日・最終出社日 -->
+        <section class="detail-section">
+          <h3 class="section-title">退職情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">退職日:</span>
+              <span class="detail-value">{{ selectedApplication.resignationDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">最終出社日:</span>
+              <span class="detail-value">{{ selectedApplication.lastWorkDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">離職票の発行について:</span>
+              <span class="detail-value">{{ selectedApplication.resignationCertificatePreference || selectedApplication.separationNotice || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 退職後の連絡先 -->
+        <section class="detail-section">
+          <h3 class="section-title">退職後の連絡先</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">退職後の住所:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationAddress || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">退職後の電話番号:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationPhoneNumber || selectedApplication.postResignationPhone || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">退職後のメールアドレス:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationEmail || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 退職後の社会保険加入 -->
+        <section class="detail-section">
+          <h3 class="section-title">退職後の社会保険加入</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">退職後の社会保険加入:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationSocialInsurance || selectedApplication.postResignationInsurance || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 保険証再発行申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '保険証再発行申請'">
+        <!-- 紛失情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">紛失情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">紛失した日付:</span>
+              <span class="detail-value">{{ selectedApplication.lostDate || '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">どこで失くしたか:</span>
+              <span class="detail-value">{{ selectedApplication.lostLocation || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">盗難の可能性:</span>
+              <span class="detail-value">{{ selectedApplication.theftPossibility || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">保険証再発行までに通院する予定があるか:</span>
+              <span class="detail-value">{{ selectedApplication.hasMedicalAppointment || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+    </div>
+    
+    <div class="modal-footer">
+      <button type="button" class="close-detail-button" (click)="closeApplicationDetailModal()">閉じる</button>
+    </div>
+  </div>
+</div>
 

@@ -46,6 +46,12 @@ export class HrDashboardComponent {
   // 申請一覧データ
   allApplications: any[] = [];
   
+  // 申請詳細モーダル用
+  showApplicationDetailModal = false;
+  selectedApplication: any = null;
+  statusChangeForm!: FormGroup;
+  statusComment: string = '';
+  
   // 等級テーブルデータ
   gradeTable: any = null;
   
@@ -635,6 +641,117 @@ export class HrDashboardComponent {
       return application.createdAt.toDate();
     }
     return null;
+  }
+  
+  
+  // 申請詳細モーダルを開く
+  openApplicationDetail(application: any) {
+    this.selectedApplication = application;
+    this.showApplicationDetailModal = true;
+    // ステータス変更フォームを初期化
+    this.statusChangeForm = this.fb.group({
+      status: [application.status || '承認待ち'],
+      comment: [application.statusComment || '']
+    });
+    this.statusComment = application.statusComment || '';
+  }
+  
+  // 申請詳細モーダルを閉じる
+  closeApplicationDetailModal() {
+    this.showApplicationDetailModal = false;
+    this.selectedApplication = null;
+    this.statusComment = '';
+  }
+  
+  // ステータス変更時の処理（コメント表示の制御）
+  onStatusChange() {
+    const selectedStatus = this.statusChangeForm.get('status')?.value;
+    if (selectedStatus === '差し戻し') {
+      this.statusChangeForm.get('comment')?.setValidators([]);
+    } else {
+      this.statusChangeForm.get('comment')?.clearValidators();
+    }
+    this.statusChangeForm.get('comment')?.updateValueAndValidity();
+  }
+  
+  // 申請のステータスを変更
+  async updateApplicationStatus() {
+    if (!this.selectedApplication || !this.selectedApplication.id) {
+      alert('申請情報が見つかりません');
+      return;
+    }
+    
+    if (this.statusChangeForm.invalid) {
+      this.statusChangeForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+      return;
+    }
+    
+    const status = this.statusChangeForm.get('status')?.value;
+    const comment = this.statusChangeForm.get('comment')?.value || '';
+    
+    // 差し戻しの場合はコメント必須
+    if (status === '差し戻し' && !comment.trim()) {
+      alert('差し戻しの場合はコメントを入力してください');
+      return;
+    }
+    
+    try {
+      await this.firestoreService.updateApplicationStatus(
+        this.selectedApplication.id, 
+        status,
+        status === '差し戻し' ? comment : ''
+      );
+      
+      // ローカルのステータスを更新
+      this.selectedApplication.status = status;
+      if (status === '差し戻し') {
+        this.selectedApplication.statusComment = comment;
+      } else {
+        this.selectedApplication.statusComment = '';
+      }
+      
+      // 申請一覧を再読み込み
+      await this.loadAllApplications();
+      
+      // 選択中の申請を更新（再読み込み後のデータで更新）
+      const updatedApplication = this.allApplications.find((app: any) => 
+        app.id === this.selectedApplication.id || 
+        app.applicationId === this.selectedApplication.applicationId
+      );
+      if (updatedApplication) {
+        this.selectedApplication = updatedApplication;
+        this.statusChangeForm.patchValue({
+          status: updatedApplication.status || '承認待ち',
+          comment: updatedApplication.statusComment || ''
+        });
+        this.statusComment = updatedApplication.statusComment || '';
+      }
+      
+      alert(`ステータスを「${status}」に変更しました`);
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      alert('ステータスの変更に失敗しました');
+    }
+  }
+  
+  // マイナンバーをマスク表示用にフォーマット
+  formatMyNumberForDisplay(myNumber: string | null): string {
+    if (!myNumber || myNumber.length !== 12) {
+      return '-';
+    }
+    return `${myNumber.substring(0, 4)}-${myNumber.substring(4, 8)}-${myNumber.substring(8, 12)}`;
+  }
+  
+  // 基礎年金番号をフォーマット表示
+  formatBasicPensionNumberForDisplay(basicPensionNumber: string | null): string {
+    if (!basicPensionNumber || basicPensionNumber.length < 4) {
+      return '-';
+    }
+    if (basicPensionNumber.length >= 10) {
+      return `${basicPensionNumber.substring(0, 4)}-${basicPensionNumber.substring(4, 10)}`;
+    }
+    return basicPensionNumber;
   }
   
   // 保険料を小数第2位まで表示（一番下の桁が0の場合は表示しない）

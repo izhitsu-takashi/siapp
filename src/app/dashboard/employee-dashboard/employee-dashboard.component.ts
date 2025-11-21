@@ -52,6 +52,7 @@ export class EmployeeDashboardComponent {
   // 申請詳細モーダル用
   showApplicationDetailModal = false;
   selectedApplication: any = null;
+  isEditModeForReapplication = false;
   
   // 保険・扶養ページ用データ
   insuranceData: any = {
@@ -1476,11 +1477,562 @@ export class EmployeeDashboardComponent {
   openApplicationDetail(application: any) {
     this.selectedApplication = application;
     this.showApplicationDetailModal = true;
+    // 最初は表示モード（編集ボタンをクリックしてから編集モードになる）
+    this.isEditModeForReapplication = false;
   }
   
   closeApplicationDetailModal() {
     this.showApplicationDetailModal = false;
     this.selectedApplication = null;
+    this.isEditModeForReapplication = false;
+  }
+  
+  // 編集モードを有効にする
+  enableEditMode() {
+    console.log('=== enableEditMode 開始 ===');
+    console.log('selectedApplication:', this.selectedApplication);
+    console.log('selectedApplication.status:', this.selectedApplication?.status);
+    console.log('selectedApplication.applicationType:', this.selectedApplication?.applicationType);
+    
+    if (this.selectedApplication && this.selectedApplication.status === '差し戻し') {
+      console.log('条件を満たしています。フォームを初期化します。');
+      
+      // フォームを初期化してからデータをロード
+      if (this.selectedApplication.applicationType === '扶養家族追加') {
+        console.log('扶養家族追加申請のフォームを初期化します。');
+        this.dependentApplicationForm = this.createDependentApplicationForm();
+        console.log('dependentApplicationForm 作成完了:', this.dependentApplicationForm);
+        console.log('dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
+        console.log('dependentApplicationForm.value:', this.dependentApplicationForm.value);
+        
+        // データをフォームにロード
+        console.log('データをフォームにロードします。');
+        this.loadApplicationDataToForm(this.selectedApplication);
+        console.log('データロード後の dependentApplicationForm.value:', this.dependentApplicationForm.value);
+        console.log('データロード後の dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
+      } else if (this.selectedApplication.applicationType === '扶養削除申請') {
+        console.log('扶養削除申請のフォームを初期化します。');
+        this.dependentRemovalForm = this.createDependentRemovalForm();
+        this.loadApplicationDataToForm(this.selectedApplication);
+      } else if (this.selectedApplication.applicationType === '住所変更申請') {
+        console.log('住所変更申請のフォームを初期化します。');
+        this.addressChangeForm = this.createAddressChangeForm();
+        this.loadApplicationDataToForm(this.selectedApplication);
+      } else if (this.selectedApplication.applicationType === '氏名変更申請') {
+        console.log('氏名変更申請のフォームを初期化します。');
+        this.nameChangeForm = this.createNameChangeForm();
+        this.loadApplicationDataToForm(this.selectedApplication);
+      } else if (this.selectedApplication.applicationType === '産前産後休業申請') {
+        console.log('産前産後休業申請のフォームを初期化します。');
+        this.maternityLeaveForm = this.createMaternityLeaveForm();
+        this.loadApplicationDataToForm(this.selectedApplication);
+      } else if (this.selectedApplication.applicationType === '退職申請') {
+        console.log('退職申請のフォームを初期化します。');
+        this.resignationForm = this.createResignationForm();
+        this.loadApplicationDataToForm(this.selectedApplication);
+      } else if (this.selectedApplication.applicationType === '保険証再発行申請') {
+        console.log('保険証再発行申請のフォームを初期化します。');
+        this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
+        console.log('insuranceCardReissueForm 作成完了:', this.insuranceCardReissueForm);
+        console.log('insuranceCardReissueForm.valid:', this.insuranceCardReissueForm.valid);
+        console.log('insuranceCardReissueForm.value:', this.insuranceCardReissueForm.value);
+        
+        // データをフォームにロード
+        console.log('データをフォームにロードします。');
+        this.loadApplicationDataToForm(this.selectedApplication);
+        console.log('データロード後の insuranceCardReissueForm.value:', this.insuranceCardReissueForm.value);
+        console.log('データロード後の insuranceCardReissueForm.valid:', this.insuranceCardReissueForm.valid);
+      } else {
+        console.log('未対応の申請タイプ:', this.selectedApplication.applicationType);
+      }
+      
+      // 編集モードを有効化（フォーム初期化後に設定）
+      console.log('isEditModeForReapplication を true に設定します。');
+      this.isEditModeForReapplication = true;
+      console.log('isEditModeForReapplication:', this.isEditModeForReapplication);
+      console.log('=== enableEditMode 終了 ===');
+    } else {
+      console.log('条件を満たしていません。');
+      console.log('selectedApplication:', this.selectedApplication);
+      console.log('status === 差し戻し:', this.selectedApplication?.status === '差し戻し');
+    }
+  }
+  
+  // 申請データをフォームに読み込む
+  loadApplicationDataToForm(application: any) {
+    console.log('=== loadApplicationDataToForm 開始 ===');
+    console.log('application:', application);
+    console.log('application.applicationType:', application.applicationType);
+    
+    if (application.applicationType === '扶養家族追加') {
+      // フォームは既に初期化されている前提（enableEditModeで初期化済み）
+      if (!this.dependentApplicationForm) {
+        console.log('dependentApplicationForm が存在しないため、作成します。');
+        this.dependentApplicationForm = this.createDependentApplicationForm();
+      } else {
+        console.log('dependentApplicationForm は既に存在します。');
+      }
+      
+      console.log('application のデータ:', {
+        relationshipType: application.relationshipType,
+        lastName: application.lastName,
+        firstName: application.firstName,
+        birthDate: application.birthDate,
+        gender: application.gender,
+        dependentStartDate: application.dependentStartDate,
+        provideMyNumber: application.provideMyNumber,
+        livingTogether: application.livingTogether
+      });
+      
+      // データをフォームに設定
+      console.log('patchValue を実行します。');
+      this.dependentApplicationForm.patchValue({
+        relationshipType: application.relationshipType || '',
+        spouseType: application.spouseType || '',
+        relationship: application.relationship || '',
+        lastName: application.lastName || '',
+        firstName: application.firstName || '',
+        lastNameKana: application.lastNameKana || '',
+        firstNameKana: application.firstNameKana || '',
+        birthDate: application.birthDate || '',
+        gender: application.gender || '',
+        phoneNumber: application.phoneNumber || '',
+        occupation: application.occupation || '',
+        annualIncome: application.annualIncome || '',
+        monthlyIncome: application.monthlyIncome || '',
+        dependentStartDate: application.dependentStartDate || '',
+        dependentReason: application.dependentReason || '',
+        provideMyNumber: application.provideMyNumber || '',
+        myNumberNotProvidedReason: application.myNumberNotProvidedReason || '',
+        disabilityCategory: application.disabilityCategory || '',
+        disabilityCardType: application.disabilityCardType || '',
+        disabilityCardIssueDate: application.disabilityCardIssueDate || '',
+        livingTogether: application.livingTogether || '',
+        postalCode: application.postalCode || '',
+        address: application.address || '',
+        addressKana: application.addressKana || '',
+        addressChangeDate: application.addressChangeDate || ''
+      });
+      
+      // 基礎年金番号を分割
+      if (application.basicPensionNumber) {
+        const basicPensionNumber = application.basicPensionNumber.toString();
+        if (basicPensionNumber.length >= 4) {
+          this.dependentApplicationForm.patchValue({
+            basicPensionNumberPart1: basicPensionNumber.substring(0, 4),
+            basicPensionNumberPart2: basicPensionNumber.substring(4, 10) || ''
+          });
+        }
+      }
+      
+      // マイナンバーを分割
+      if (application.myNumber && application.myNumber.length === 12) {
+        this.dependentApplicationForm.patchValue({
+          myNumberPart1: application.myNumber.substring(0, 4),
+          myNumberPart2: application.myNumber.substring(4, 8),
+          myNumberPart3: application.myNumber.substring(8, 12)
+        });
+      }
+      
+      // バリデーションを再設定
+      console.log('バリデーションを再設定します。');
+      this.onRelationshipTypeChange();
+      this.onProvideMyNumberChange();
+      this.onLivingTogetherChange();
+      
+      console.log('patchValue 後の dependentApplicationForm.value:', this.dependentApplicationForm.value);
+      console.log('patchValue 後の dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
+      console.log('patchValue 後の dependentApplicationForm.errors:', this.dependentApplicationForm.errors);
+      
+      // 各フィールドのエラーを確認
+      Object.keys(this.dependentApplicationForm.controls).forEach(key => {
+        const control = this.dependentApplicationForm.get(key);
+        if (control && control.invalid) {
+          console.log(`フィールド ${key} が無効:`, {
+            value: control.value,
+            errors: control.errors,
+            touched: control.touched
+          });
+        }
+      });
+      
+      console.log('=== loadApplicationDataToForm 終了 ===');
+    } else if (application.applicationType === '保険証再発行申請') {
+      console.log('保険証再発行申請のデータをロードします。');
+      // フォームは既に初期化されている前提（enableEditModeで初期化済み）
+      if (!this.insuranceCardReissueForm) {
+        console.log('insuranceCardReissueForm が存在しないため、作成します。');
+        this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
+      } else {
+        console.log('insuranceCardReissueForm は既に存在します。');
+      }
+      
+      console.log('application のデータ:', {
+        lostDate: application.lostDate,
+        lostLocation: application.lostLocation,
+        theftPossibility: application.theftPossibility,
+        hasMedicalAppointment: application.hasMedicalAppointment
+      });
+      
+      // データをフォームに設定
+      console.log('patchValue を実行します。');
+      // hasMedicalAppointmentの値を文字列に変換（'有'/'無'またはtrue/falseの両方に対応）
+      let hasMedicalAppointmentValue = '';
+      if (application.hasMedicalAppointment === true || application.hasMedicalAppointment === '有' || application.hasMedicalAppointment === 'true') {
+        hasMedicalAppointmentValue = '有';
+      } else if (application.hasMedicalAppointment === false || application.hasMedicalAppointment === '無' || application.hasMedicalAppointment === 'false') {
+        hasMedicalAppointmentValue = '無';
+      }
+      
+      this.insuranceCardReissueForm.patchValue({
+        lostDate: application.lostDate || '',
+        lostLocation: application.lostLocation || '',
+        theftPossibility: application.theftPossibility || '',
+        hasMedicalAppointment: hasMedicalAppointmentValue || ''
+      });
+      
+      console.log('patchValue 後の insuranceCardReissueForm.value:', this.insuranceCardReissueForm.value);
+      console.log('patchValue 後の insuranceCardReissueForm.valid:', this.insuranceCardReissueForm.valid);
+      console.log('patchValue 後の insuranceCardReissueForm.errors:', this.insuranceCardReissueForm.errors);
+      
+      // 各フィールドのエラーを確認
+      Object.keys(this.insuranceCardReissueForm.controls).forEach(key => {
+        const control = this.insuranceCardReissueForm.get(key);
+        if (control && control.invalid) {
+          console.log(`フィールド ${key} が無効:`, {
+            value: control.value,
+            errors: control.errors,
+            touched: control.touched
+          });
+        }
+      });
+      
+      console.log('=== loadApplicationDataToForm 終了（保険証再発行申請） ===');
+    } else if (application.applicationType === '扶養削除申請') {
+      this.dependentRemovalForm = this.createDependentRemovalForm();
+      this.dependentRemovalForm.patchValue({
+        removalDate: application.removalDate || '',
+        dependentId: application.dependent?.name || ''
+      });
+    } else if (application.applicationType === '住所変更申請') {
+      this.addressChangeForm = this.createAddressChangeForm();
+      this.sameAsNewAddress = application.residentAddress?.sameAsNewAddress || false;
+      this.addressChangeForm.patchValue({
+        moveDate: application.moveDate || '',
+        newPostalCode: application.newAddress?.postalCode || '',
+        newAddress: application.newAddress?.address || '',
+        newAddressKana: application.newAddress?.addressKana || '',
+        newHouseholdHead: application.newAddress?.householdHead || '',
+        newHouseholdHeadName: application.newAddress?.householdHeadName || '',
+        residentPostalCode: application.residentAddress?.postalCode || '',
+        residentAddress: application.residentAddress?.address || '',
+        residentAddressKana: application.residentAddress?.addressKana || '',
+        residentHouseholdHead: application.residentAddress?.householdHead || '',
+        residentHouseholdHeadName: application.residentAddress?.householdHeadName || '',
+        emergencyLastName: application.emergencyContact?.lastName || '',
+        emergencyFirstName: application.emergencyContact?.firstName || '',
+        emergencyLastNameKana: application.emergencyContact?.lastNameKana || '',
+        emergencyFirstNameKana: application.emergencyContact?.firstNameKana || '',
+        emergencyRelationship: application.emergencyContact?.relationship || '',
+        emergencyPhone: application.emergencyContact?.phone || ''
+      });
+      this.onSameAsNewAddressChange({ target: { checked: this.sameAsNewAddress } } as any);
+    } else if (application.applicationType === '氏名変更申請') {
+      this.nameChangeForm = this.createNameChangeForm();
+      this.nameChangeForm.patchValue({
+        changeDate: application.changeDate || '',
+        newLastName: application.newName?.lastName || '',
+        newFirstName: application.newName?.firstName || '',
+        newLastNameKana: application.newName?.lastNameKana || '',
+        newFirstNameKana: application.newName?.firstNameKana || ''
+      });
+    } else if (application.applicationType === '産前産後休業申請') {
+      this.maternityLeaveForm = this.createMaternityLeaveForm();
+      this.maternityLeaveForm.patchValue({
+        expectedDeliveryDate: application.expectedDeliveryDate || '',
+        isMultipleBirth: application.isMultipleBirth || '',
+        preMaternityLeaveStartDate: application.preMaternityLeaveStartDate || '',
+        preMaternityLeaveEndDate: application.preMaternityLeaveEndDate || '',
+        postMaternityLeaveStartDate: application.postMaternityLeaveStartDate || '',
+        postMaternityLeaveEndDate: application.postMaternityLeaveEndDate || '',
+        stayAddress: application.stayAddress || ''
+      });
+    } else if (application.applicationType === '退職申請') {
+      this.resignationForm = this.createResignationForm();
+      this.resignationForm.patchValue({
+        resignationDate: application.resignationDate || '',
+        lastWorkDate: application.lastWorkDate || '',
+        resignationCertificatePreference: application.resignationCertificatePreference || application.separationNotice || '',
+        postResignationAddress: application.postResignationAddress || '',
+        postResignationPhoneNumber: application.postResignationPhoneNumber || application.postResignationPhone || '',
+        postResignationEmail: application.postResignationEmail || '',
+        postResignationSocialInsurance: application.postResignationSocialInsurance || application.postResignationInsurance || ''
+      });
+    }
+  }
+  
+  // 再申請を送信
+  async submitReapplication() {
+    console.log('=== submitReapplication 開始 ===');
+    console.log('selectedApplication:', this.selectedApplication);
+    
+    if (!this.selectedApplication) {
+      console.log('selectedApplication が存在しません。');
+      return;
+    }
+    
+    try {
+      let formValid = false;
+      let applicationData: any = {};
+      
+      if (this.selectedApplication.applicationType === '扶養家族追加') {
+        console.log('扶養家族追加申請の再申請を処理します。');
+        console.log('dependentApplicationForm:', this.dependentApplicationForm);
+        console.log('dependentApplicationForm.valid:', this.dependentApplicationForm?.valid);
+        console.log('dependentApplicationForm.value:', this.dependentApplicationForm?.value);
+        
+        if (this.dependentApplicationForm) {
+          // 各フィールドのエラーを確認
+          Object.keys(this.dependentApplicationForm.controls).forEach(key => {
+            const control = this.dependentApplicationForm.get(key);
+            if (control && control.invalid) {
+              console.log(`フィールド ${key} が無効:`, {
+                value: control.value,
+                errors: control.errors,
+                touched: control.touched
+              });
+            }
+          });
+        } else {
+          console.log('dependentApplicationForm が存在しません！');
+        }
+        
+        formValid = this.dependentApplicationForm?.valid || false;
+        console.log('formValid:', formValid);
+        
+        if (formValid) {
+          console.log('フォームが有効です。データを取得します。');
+          const basicPensionNumberParts = [
+            this.dependentApplicationForm.get('basicPensionNumberPart1')?.value || '',
+            this.dependentApplicationForm.get('basicPensionNumberPart2')?.value || ''
+          ];
+          const basicPensionNumber = basicPensionNumberParts.join('');
+          
+          const myNumberParts = [
+            this.dependentApplicationForm.get('myNumberPart1')?.value || '',
+            this.dependentApplicationForm.get('myNumberPart2')?.value || '',
+            this.dependentApplicationForm.get('myNumberPart3')?.value || ''
+          ];
+          const myNumber = myNumberParts.join('');
+          
+          const formValue = this.dependentApplicationForm.value;
+          console.log('formValue:', formValue);
+          
+          applicationData = {
+            ...formValue,
+            basicPensionNumber: basicPensionNumber || null,
+            myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+            employeeNumber: this.employeeNumber,
+            applicationType: '扶養家族追加'
+          };
+          console.log('applicationData:', applicationData);
+        } else {
+          console.log('フォームが無効です。');
+        }
+      } else if (this.selectedApplication.applicationType === '扶養削除申請') {
+        formValid = this.dependentRemovalForm.valid;
+        if (formValid) {
+          const formValue = this.dependentRemovalForm.value;
+          const selectedDependent = this.dependentsData.find((dep: any, index: number) => {
+            return index.toString() === formValue.dependentId;
+          });
+          
+          applicationData = {
+            ...formValue,
+            dependent: selectedDependent ? {
+              name: selectedDependent.name || '',
+              nameKana: selectedDependent.nameKana || '',
+              relationship: selectedDependent.relationship || '',
+              birthDate: selectedDependent.birthDate || '',
+              myNumber: selectedDependent.myNumber || '',
+              address: selectedDependent.address || '',
+              notes: selectedDependent.notes || ''
+            } : null,
+            employeeNumber: this.employeeNumber,
+            applicationType: '扶養削除申請'
+          };
+        }
+      } else if (this.selectedApplication.applicationType === '住所変更申請') {
+        formValid = this.addressChangeForm.valid;
+        if (formValid) {
+          const formValue = this.addressChangeForm.value;
+          applicationData = {
+            moveDate: formValue.moveDate,
+            newAddress: {
+              postalCode: formValue.newPostalCode,
+              address: formValue.newAddress,
+              addressKana: formValue.newAddressKana || '',
+              householdHead: formValue.newHouseholdHead,
+              householdHeadName: formValue.newHouseholdHeadName || ''
+            },
+            residentAddress: {
+              sameAsNewAddress: this.sameAsNewAddress,
+              postalCode: this.sameAsNewAddress ? formValue.newPostalCode : formValue.residentPostalCode || '',
+              address: this.sameAsNewAddress ? formValue.newAddress : formValue.residentAddress || '',
+              addressKana: this.sameAsNewAddress ? formValue.newAddressKana : formValue.residentAddressKana || '',
+              householdHead: this.sameAsNewAddress ? formValue.newHouseholdHead : formValue.residentHouseholdHead || '',
+              householdHeadName: this.sameAsNewAddress ? formValue.newHouseholdHeadName : formValue.residentHouseholdHeadName || ''
+            },
+            emergencyContact: {
+              lastName: formValue.emergencyLastName || '',
+              firstName: formValue.emergencyFirstName || '',
+              lastNameKana: formValue.emergencyLastNameKana || '',
+              firstNameKana: formValue.emergencyFirstNameKana || '',
+              relationship: formValue.emergencyRelationship || '',
+              phone: formValue.emergencyPhone || ''
+            },
+            employeeNumber: this.employeeNumber,
+            applicationType: '住所変更申請'
+          };
+        }
+      } else if (this.selectedApplication.applicationType === '氏名変更申請') {
+        formValid = this.nameChangeForm.valid;
+        if (formValid) {
+          const formValue = this.nameChangeForm.value;
+          applicationData = {
+            changeDate: formValue.changeDate,
+            newName: {
+              lastName: formValue.newLastName,
+              firstName: formValue.newFirstName,
+              lastNameKana: formValue.newLastNameKana,
+              firstNameKana: formValue.newFirstNameKana
+            },
+            hasIdDocument: !!this.nameChangeIdDocumentFile,
+            employeeNumber: this.employeeNumber,
+            applicationType: '氏名変更申請'
+          };
+        }
+      } else if (this.selectedApplication.applicationType === '産前産後休業申請') {
+        formValid = this.maternityLeaveForm.valid && !!this.maternityLeaveDocumentFile;
+        if (formValid) {
+          const formValue = this.maternityLeaveForm.value;
+          applicationData = {
+            expectedDeliveryDate: formValue.expectedDeliveryDate,
+            isMultipleBirth: formValue.isMultipleBirth,
+            hasDocument: !!this.maternityLeaveDocumentFile,
+            preMaternityLeaveStartDate: formValue.preMaternityLeaveStartDate || '',
+            preMaternityLeaveEndDate: formValue.preMaternityLeaveEndDate || '',
+            postMaternityLeaveStartDate: formValue.postMaternityLeaveStartDate || '',
+            postMaternityLeaveEndDate: formValue.postMaternityLeaveEndDate || '',
+            stayAddress: formValue.stayAddress || '',
+            employeeNumber: this.employeeNumber,
+            applicationType: '産前産後休業申請'
+          };
+        }
+      } else if (this.selectedApplication.applicationType === '退職申請') {
+        console.log('退職申請の再申請を処理します。');
+        formValid = this.resignationForm?.valid || false;
+        if (formValid) {
+          const formValue = this.resignationForm.value;
+          applicationData = {
+            resignationDate: formValue.resignationDate,
+            lastWorkDate: formValue.lastWorkDate,
+            separationNotice: formValue.resignationCertificatePreference,
+            postResignationAddress: formValue.postResignationAddress,
+            postResignationPhone: formValue.postResignationPhoneNumber,
+            postResignationEmail: formValue.postResignationEmail,
+            postResignationInsurance: formValue.postResignationSocialInsurance,
+            employeeNumber: this.employeeNumber,
+            applicationType: '退職申請'
+          };
+        }
+      } else if (this.selectedApplication.applicationType === '保険証再発行申請') {
+        console.log('保険証再発行申請の再申請を処理します。');
+        console.log('insuranceCardReissueForm:', this.insuranceCardReissueForm);
+        console.log('insuranceCardReissueForm.valid:', this.insuranceCardReissueForm?.valid);
+        console.log('insuranceCardReissueForm.value:', this.insuranceCardReissueForm?.value);
+        
+        if (this.insuranceCardReissueForm) {
+          // 各フィールドのエラーを確認
+          Object.keys(this.insuranceCardReissueForm.controls).forEach(key => {
+            const control = this.insuranceCardReissueForm.get(key);
+            if (control && control.invalid) {
+              console.log(`フィールド ${key} が無効:`, {
+                value: control.value,
+                errors: control.errors,
+                touched: control.touched
+              });
+            }
+          });
+        } else {
+          console.log('insuranceCardReissueForm が存在しません！');
+        }
+        
+        formValid = this.insuranceCardReissueForm?.valid || false;
+        console.log('formValid:', formValid);
+        
+        if (formValid) {
+          console.log('フォームが有効です。データを取得します。');
+          const formValue = this.insuranceCardReissueForm.value;
+          console.log('formValue:', formValue);
+          
+          // hasMedicalAppointmentの値を適切な形式に変換
+          const hasMedicalAppointment = formValue.hasMedicalAppointment === '有' || formValue.hasMedicalAppointment === true || formValue.hasMedicalAppointment === 'true';
+          
+          applicationData = {
+            lostDate: formValue.lostDate,
+            lostLocation: formValue.lostLocation,
+            theftPossibility: formValue.theftPossibility,
+            hasMedicalAppointment: hasMedicalAppointment,
+            employeeNumber: this.employeeNumber,
+            applicationType: '保険証再発行申請'
+          };
+          console.log('applicationData:', applicationData);
+        } else {
+          console.log('フォームが無効です。');
+        }
+      }
+      
+      console.log('formValid:', formValid);
+      
+      if (!formValid) {
+        console.log('フォームが無効です。必須項目を入力してください。');
+        if (this.selectedApplication.applicationType === '扶養家族追加' && this.dependentApplicationForm) {
+          this.dependentApplicationForm.markAllAsTouched();
+          console.log('すべてのフィールドを touched に設定しました。');
+        } else if (this.selectedApplication.applicationType === '保険証再発行申請' && this.insuranceCardReissueForm) {
+          this.insuranceCardReissueForm.markAllAsTouched();
+          console.log('すべてのフィールドを touched に設定しました。');
+        }
+        alert('必須項目を入力してください');
+        return;
+      }
+      
+      console.log('フォームは有効です。再申請を実行します。');
+      
+      // 再申請として保存（ステータスを「再提出」に設定）
+      await this.firestoreService.resubmitApplication(this.selectedApplication.id, applicationData);
+      
+      // 申請一覧を再読み込み
+      await this.loadApplications();
+      
+      // 選択中の申請を更新（再読み込み後のデータで更新）
+      const updatedApplication = this.applications.find((app: any) =>
+        app.id === this.selectedApplication.id ||
+        app.applicationId === this.selectedApplication.applicationId
+      );
+      if (updatedApplication) {
+        this.selectedApplication = updatedApplication;
+      }
+      
+      // 編集モードを無効化
+      this.isEditModeForReapplication = false;
+      
+      alert('再申請しました');
+    } catch (error) {
+      console.error('Error resubmitting application:', error);
+      alert('再申請中にエラーが発生しました');
+    }
   }
   
   formatMyNumberForDisplay(myNumber: string | null): string {
