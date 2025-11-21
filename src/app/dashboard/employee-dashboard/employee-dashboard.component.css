@@ -1379,6 +1379,37 @@ select.form-input {
   color: white;
 }
 
+/* 申請詳細モーダル内の編集入力フィールド */
+.application-detail-form {
+  width: 100%;
+}
+
+.detail-edit-input {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.detail-edit-input .form-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.detail-edit-input .radio-label {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.detail-edit-input .error-message {
+  color: #dc3545;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
 /* 申請詳細モーダル */
 .application-detail-modal {
   max-width: 1000px;
