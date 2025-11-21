@@ -39,6 +39,8 @@ export class EmployeeDashboardComponent {
   addressChangeForm!: FormGroup;
   nameChangeForm!: FormGroup;
   maternityLeaveForm!: FormGroup;
+  resignationForm!: FormGroup;
+  insuranceCardReissueForm!: FormGroup;
   sameAsNewAddress = false;
   
   // 氏名変更申請用ファイル
@@ -113,6 +115,10 @@ export class EmployeeDashboardComponent {
     this.nameChangeForm = this.createNameChangeForm();
     // 産前産後休業申請フォームを初期化
     this.maternityLeaveForm = this.createMaternityLeaveForm();
+    // 退職申請フォームを初期化
+    this.resignationForm = this.createResignationForm();
+    // 保険証再発行申請フォームを初期化
+    this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
     
     // ブラウザ環境でのみセッションストレージにアクセス
     if (isPlatformBrowser(this.platformId)) {
@@ -742,6 +748,12 @@ export class EmployeeDashboardComponent {
     } else if (applicationType === '産前産後休業申請') {
       this.maternityLeaveForm = this.createMaternityLeaveForm();
       this.showApplicationModal = true;
+    } else if (applicationType === '退職申請') {
+      this.resignationForm = this.createResignationForm();
+      this.showApplicationModal = true;
+    } else if (applicationType === '保険証再発行申請') {
+      this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
+      this.showApplicationModal = true;
     } else {
       // 他の申請タイプは今後実装
       alert(`${applicationType}の申請フォームを開きます（実装予定）`);
@@ -756,6 +768,8 @@ export class EmployeeDashboardComponent {
     this.addressChangeForm = this.createAddressChangeForm();
     this.nameChangeForm = this.createNameChangeForm();
     this.maternityLeaveForm = this.createMaternityLeaveForm();
+    this.resignationForm = this.createResignationForm();
+    this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
     this.sameAsNewAddress = false;
     // ファイルをリセット
     this.dependentBasicPensionNumberDocFile = null;
@@ -866,6 +880,27 @@ export class EmployeeDashboardComponent {
       postMaternityLeaveStartDate: [''],
       postMaternityLeaveEndDate: [''],
       stayAddress: ['']
+    });
+  }
+  
+  createResignationForm(): FormGroup {
+    return this.fb.group({
+      resignationDate: ['', Validators.required],
+      lastWorkDate: ['', Validators.required],
+      separationNotice: ['', Validators.required],
+      postResignationAddress: ['', Validators.required],
+      postResignationPhone: ['', Validators.required],
+      postResignationEmail: ['', [Validators.required, Validators.email]],
+      postResignationInsurance: ['', Validators.required]
+    });
+  }
+  
+  createInsuranceCardReissueForm(): FormGroup {
+    return this.fb.group({
+      lostDate: ['', Validators.required],
+      lostLocation: ['', Validators.required],
+      theftPossibility: ['', Validators.required],
+      hasMedicalAppointment: ['', Validators.required]
     });
   }
   
@@ -1315,6 +1350,79 @@ export class EmployeeDashboardComponent {
       } else {
         alert('必須項目を入力してください');
       }
+    }
+  }
+  
+  async submitResignationApplication() {
+    if (this.resignationForm.valid) {
+      try {
+        const formValue = this.resignationForm.value;
+        
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '退職申請',
+          resignationDate: formValue.resignationDate,
+          lastWorkDate: formValue.lastWorkDate,
+          separationNotice: formValue.separationNotice,
+          postResignationAddress: formValue.postResignationAddress,
+          postResignationPhone: formValue.postResignationPhone,
+          postResignationEmail: formValue.postResignationEmail,
+          postResignationInsurance: formValue.postResignationInsurance
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.resignationForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
+  }
+  
+  async submitInsuranceCardReissueApplication() {
+    if (this.insuranceCardReissueForm.valid) {
+      try {
+        const formValue = this.insuranceCardReissueForm.value;
+        
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '保険証再発行申請',
+          lostDate: formValue.lostDate,
+          lostLocation: formValue.lostLocation,
+          theftPossibility: formValue.theftPossibility,
+          hasMedicalAppointment: formValue.hasMedicalAppointment
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.insuranceCardReissueForm.markAllAsTouched();
+      alert('必須項目を入力してください');
     }
   }
   

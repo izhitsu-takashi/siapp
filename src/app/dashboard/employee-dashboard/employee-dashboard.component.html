@@ -775,24 +775,9 @@
               <span class="application-label">産前産後休業申請</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('育児休業申請')">
-              <span class="application-icon">👶</span>
-              <span class="application-label">育児休業申請</span>
-            </button>
-            
-            <button class="application-button" (click)="openApplicationModal('勤務形態変更申請')">
-              <span class="application-icon">🔄</span>
-              <span class="application-label">勤務形態変更申請</span>
-            </button>
-            
             <button class="application-button" (click)="openApplicationModal('退職申請')">
               <span class="application-icon">🚪</span>
               <span class="application-label">退職申請</span>
-            </button>
-            
-            <button class="application-button" (click)="openApplicationModal('任意保険継続申請')">
-              <span class="application-icon">🏥</span>
-              <span class="application-label">任意保険継続申請</span>
             </button>
             
             <button class="application-button" (click)="openApplicationModal('保険証再発行申請')">
@@ -1835,6 +1820,243 @@
   </div>
 </div>
 
+<!-- 退職申請モーダル -->
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '退職申請'" (click)="closeApplicationModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">退職申請</h2>
+      <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
+    </div>
+    
+    <form [formGroup]="resignationForm" (ngSubmit)="submitResignationApplication()" class="application-form">
+      <!-- 退職日 -->
+      <section class="form-section">
+        <h3 class="section-title">退職日</h3>
+        <div class="form-group">
+          <label for="resignationDate">退職日 <span class="required">*</span></label>
+          <input 
+            type="date" 
+            id="resignationDate" 
+            formControlName="resignationDate" 
+            class="form-input"
+          >
+          <div *ngIf="resignationForm.get('resignationDate')?.invalid && resignationForm.get('resignationDate')?.touched" class="error-message">
+            退職日を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 最終出社日 -->
+      <section class="form-section">
+        <h3 class="section-title">最終出社日</h3>
+        <div class="form-group">
+          <label for="lastWorkDate">最終出社日 <span class="required">*</span></label>
+          <input 
+            type="date" 
+            id="lastWorkDate" 
+            formControlName="lastWorkDate" 
+            class="form-input"
+          >
+          <div *ngIf="resignationForm.get('lastWorkDate')?.invalid && resignationForm.get('lastWorkDate')?.touched" class="error-message">
+            最終出社日を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 離職票の発行について -->
+      <section class="form-section">
+        <h3 class="section-title">離職票の発行について</h3>
+        <div class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="separationNotice" value="発行を希望する">
+            発行を希望する
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="separationNotice" value="発行を希望しない">
+            発行を希望しない
+          </label>
+          <div *ngIf="resignationForm.get('separationNotice')?.invalid && resignationForm.get('separationNotice')?.touched" class="error-message">
+            選択してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 退職後の住所 -->
+      <section class="form-section">
+        <h3 class="section-title">退職後の住所</h3>
+        <div class="form-group">
+          <label for="postResignationAddress">退職後の住所 <span class="required">*</span></label>
+          <textarea 
+            id="postResignationAddress" 
+            formControlName="postResignationAddress" 
+            class="form-input"
+            rows="3"
+          ></textarea>
+          <div *ngIf="resignationForm.get('postResignationAddress')?.invalid && resignationForm.get('postResignationAddress')?.touched" class="error-message">
+            退職後の住所を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 退職後の電話番号 -->
+      <section class="form-section">
+        <h3 class="section-title">退職後の電話番号</h3>
+        <div class="form-group">
+          <label for="postResignationPhone">退職後の電話番号 <span class="required">*</span></label>
+          <input 
+            type="tel" 
+            id="postResignationPhone" 
+            formControlName="postResignationPhone" 
+            class="form-input"
+          >
+          <div *ngIf="resignationForm.get('postResignationPhone')?.invalid && resignationForm.get('postResignationPhone')?.touched" class="error-message">
+            退職後の電話番号を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 退職後のメールアドレス -->
+      <section class="form-section">
+        <h3 class="section-title">退職後のメールアドレス</h3>
+        <div class="form-group">
+          <label for="postResignationEmail">退職後のメールアドレス <span class="required">*</span></label>
+          <input 
+            type="email" 
+            id="postResignationEmail" 
+            formControlName="postResignationEmail" 
+            class="form-input"
+          >
+          <div *ngIf="resignationForm.get('postResignationEmail')?.invalid && resignationForm.get('postResignationEmail')?.touched" class="error-message">
+            <span *ngIf="resignationForm.get('postResignationEmail')?.errors?.['required']">退職後のメールアドレスを入力してください</span>
+            <span *ngIf="resignationForm.get('postResignationEmail')?.errors?.['email']">有効なメールアドレスを入力してください</span>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 退職後の社会保険加入 -->
+      <section class="form-section">
+        <h3 class="section-title">退職後の社会保険加入</h3>
+        <div class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="postResignationInsurance" value="社会保険を任意継続する">
+            社会保険を任意継続する
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="postResignationInsurance" value="国民健康保険に加入する">
+            国民健康保険に加入する
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="postResignationInsurance" value="他社で社会保険に加入する">
+            他社で社会保険に加入する
+          </label>
+          <div *ngIf="resignationForm.get('postResignationInsurance')?.invalid && resignationForm.get('postResignationInsurance')?.touched" class="error-message">
+            選択してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 送信ボタン -->
+      <div class="form-actions">
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="resignationForm.invalid">
+          申請
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 保険証再発行申請モーダル -->
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '保険証再発行申請'" (click)="closeApplicationModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">保険証再発行申請</h2>
+      <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
+    </div>
+    
+    <form [formGroup]="insuranceCardReissueForm" (ngSubmit)="submitInsuranceCardReissueApplication()" class="application-form">
+      <!-- 紛失した日付 -->
+      <section class="form-section">
+        <h3 class="section-title">紛失した日付</h3>
+        <div class="form-group">
+          <label for="lostDate">紛失した日付 <span class="required">*</span></label>
+          <input 
+            type="date" 
+            id="lostDate" 
+            formControlName="lostDate" 
+            class="form-input"
+          >
+          <div *ngIf="insuranceCardReissueForm.get('lostDate')?.invalid && insuranceCardReissueForm.get('lostDate')?.touched" class="error-message">
+            紛失した日付を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- どこで失くしたか -->
+      <section class="form-section">
+        <h3 class="section-title">どこで失くしたか</h3>
+        <div class="form-group">
+          <label for="lostLocation">どこで失くしたか <span class="required">*</span></label>
+          <textarea 
+            id="lostLocation" 
+            formControlName="lostLocation" 
+            class="form-input"
+            rows="3"
+            placeholder="例: 電車内、自宅、外出先など"
+          ></textarea>
+          <div *ngIf="insuranceCardReissueForm.get('lostLocation')?.invalid && insuranceCardReissueForm.get('lostLocation')?.touched" class="error-message">
+            どこで失くしたかを入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 盗難の可能性 -->
+      <section class="form-section">
+        <h3 class="section-title">盗難の可能性</h3>
+        <div class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="theftPossibility" value="有">
+            有
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="theftPossibility" value="無">
+            無
+          </label>
+          <div *ngIf="insuranceCardReissueForm.get('theftPossibility')?.invalid && insuranceCardReissueForm.get('theftPossibility')?.touched" class="error-message">
+            選択してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 保険証再発行までに通院する予定があるか -->
+      <section class="form-section">
+        <h3 class="section-title">保険証再発行までに通院する予定があるか</h3>
+        <div class="form-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="hasMedicalAppointment" value="有">
+            有
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="hasMedicalAppointment" value="無">
+            無
+          </label>
+          <div *ngIf="insuranceCardReissueForm.get('hasMedicalAppointment')?.invalid && insuranceCardReissueForm.get('hasMedicalAppointment')?.touched" class="error-message">
+            選択してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 送信ボタン -->
+      <div class="form-actions">
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="insuranceCardReissueForm.invalid">
+          申請
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- 申請詳細モーダル -->
 <div class="modal-overlay" *ngIf="showApplicationDetailModal" (click)="closeApplicationDetailModal()">
   <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
@@ -2296,8 +2518,86 @@
         </section>
       </ng-container>
       
+      <!-- 退職申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '退職申請'">
+        <!-- 退職日・最終出社日 -->
+        <section class="detail-section">
+          <h3 class="section-title">退職情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">退職日:</span>
+              <span class="detail-value">{{ selectedApplication.resignationDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">最終出社日:</span>
+              <span class="detail-value">{{ selectedApplication.lastWorkDate || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">離職票の発行について:</span>
+              <span class="detail-value">{{ selectedApplication.separationNotice || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 退職後の連絡先 -->
+        <section class="detail-section">
+          <h3 class="section-title">退職後の連絡先</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">退職後の住所:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationAddress || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">退職後の電話番号:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationPhone || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">退職後のメールアドレス:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationEmail || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 退職後の社会保険加入 -->
+        <section class="detail-section">
+          <h3 class="section-title">退職後の社会保険加入</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">退職後の社会保険加入:</span>
+              <span class="detail-value">{{ selectedApplication.postResignationInsurance || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 保険証再発行申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '保険証再発行申請'">
+        <!-- 紛失情報 -->
+        <section class="detail-section">
+          <h3 class="section-title">紛失情報</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">紛失した日付:</span>
+              <span class="detail-value">{{ selectedApplication.lostDate || '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="detail-label">どこで失くしたか:</span>
+              <span class="detail-value">{{ selectedApplication.lostLocation || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">盗難の可能性:</span>
+              <span class="detail-value">{{ selectedApplication.theftPossibility || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">保険証再発行までに通院する予定があるか:</span>
+              <span class="detail-value">{{ selectedApplication.hasMedicalAppointment || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
       <!-- その他の申請タイプの詳細（今後実装） -->
-      <ng-container *ngIf="selectedApplication.applicationType !== '扶養家族追加' && selectedApplication.applicationType !== '扶養削除申請' && selectedApplication.applicationType !== '住所変更申請' && selectedApplication.applicationType !== '氏名変更申請' && selectedApplication.applicationType !== '産前産後休業申請'">
+      <ng-container *ngIf="selectedApplication.applicationType !== '扶養家族追加' && selectedApplication.applicationType !== '扶養削除申請' && selectedApplication.applicationType !== '住所変更申請' && selectedApplication.applicationType !== '氏名変更申請' && selectedApplication.applicationType !== '産前産後休業申請' && selectedApplication.applicationType !== '退職申請' && selectedApplication.applicationType !== '保険証再発行申請'">
         <section class="detail-section">
           <p class="no-detail-message">この申請タイプの詳細表示は今後実装予定です。</p>
         </section>
