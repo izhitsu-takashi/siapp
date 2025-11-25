@@ -366,10 +366,121 @@
 
         <!-- 文書作成・管理ページ -->
         <ng-container *ngIf="currentTab === '文書作成・管理'">
-          <div class="page-content">
+          <div class="document-management-page">
             <h2 class="page-title">文書作成・管理</h2>
-            <p class="page-description">各種文書の作成・管理を行います。</p>
-            <!-- 今後実装予定 -->
+            
+            <!-- 文書選択セクション -->
+            <section class="document-selection-section">
+              <h3 class="section-title">文書を選択</h3>
+              <div class="form-group">
+                <label for="documentType">文書種類 <span class="required">*</span></label>
+                <select 
+                  id="documentType" 
+                  class="form-input"
+                  [(ngModel)]="selectedDocumentType"
+                  (change)="onDocumentTypeChange()"
+                >
+                  <option value="">選択してください</option>
+                  <option *ngFor="let docType of documentTypes" [value]="docType">
+                    {{ docType }}
+                  </option>
+                </select>
+              </div>
+            </section>
+
+            <!-- 従業員選択セクション -->
+            <section class="employee-selection-section">
+              <h3 class="section-title">従業員を選択</h3>
+              
+              <!-- 従業員検索 -->
+              <div class="form-group">
+                <label for="employeeSearch">従業員検索</label>
+                <div class="employee-search-container">
+                  <input 
+                    type="text" 
+                    id="employeeSearch" 
+                    class="form-input"
+                    [(ngModel)]="employeeSearchQuery"
+                    (input)="onEmployeeSearch()"
+                    placeholder="社員番号、氏名、メールアドレスで検索"
+                    [disabled]="!!selectedEmployee"
+                  >
+                  <button 
+                    *ngIf="selectedEmployee" 
+                    type="button" 
+                    class="clear-button"
+                    (click)="clearEmployeeSelection()"
+                  >
+                    クリア
+                  </button>
+                </div>
+              </div>
+
+              <!-- 選択された従業員表示 -->
+              <div *ngIf="selectedEmployee" class="selected-employee-card">
+                <div class="selected-employee-info">
+                  <div class="employee-info-item">
+                    <span class="info-label">社員番号:</span>
+                    <span class="info-value">{{ selectedEmployee.employeeNumber }}</span>
+                  </div>
+                  <div class="employee-info-item">
+                    <span class="info-label">氏名:</span>
+                    <span class="info-value">{{ selectedEmployee.name }}</span>
+                  </div>
+                  <div class="employee-info-item">
+                    <span class="info-label">メールアドレス:</span>
+                    <span class="info-value">{{ selectedEmployee.email }}</span>
+                  </div>
+                  <div class="employee-info-item">
+                    <span class="info-label">雇用形態:</span>
+                    <span class="info-value">{{ selectedEmployee.employmentType }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 従業員検索結果リスト -->
+              <div *ngIf="!selectedEmployee && employeeSearchQuery && filteredEmployees.length > 0" class="employee-search-results">
+                <div class="search-results-header">
+                  <span class="results-count">検索結果: {{ filteredEmployees.length }}件</span>
+                </div>
+                <div class="employee-list">
+                  <div 
+                    *ngFor="let employee of filteredEmployees" 
+                    class="employee-item"
+                    (click)="selectEmployee(employee)"
+                  >
+                    <div class="employee-item-content">
+                      <div class="employee-item-main">
+                        <span class="employee-number">{{ employee.employeeNumber }}</span>
+                        <span class="employee-name">{{ employee.name }}</span>
+                      </div>
+                      <div class="employee-item-sub">
+                        <span class="employee-email">{{ employee.email }}</span>
+                        <span class="employee-type">{{ employee.employmentType }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 検索結果なし -->
+              <div *ngIf="!selectedEmployee && employeeSearchQuery && filteredEmployees.length === 0" class="no-results">
+                <p>該当する従業員が見つかりませんでした。</p>
+              </div>
+
+              <!-- 検索前のメッセージ -->
+              <div *ngIf="!selectedEmployee && !employeeSearchQuery" class="search-prompt">
+                <p>上記の検索欄で従業員を検索してください。</p>
+              </div>
+            </section>
+
+            <!-- 文書作成ボタン（今後実装） -->
+            <section class="document-action-section" *ngIf="selectedDocumentType && selectedEmployee">
+              <button class="create-document-button" disabled>
+                文書を作成
+              </button>
+              <p class="action-note">※ 文書作成機能は今後実装予定です</p>
+            </section>
           </div>
         </ng-container>
 

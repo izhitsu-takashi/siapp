@@ -117,6 +117,27 @@ export class HrDashboardComponent {
   // 扶養者一覧
   dependents: any[] = [];
 
+  // 文書作成・管理ページ用
+  documentTypes = [
+    '健康保険・厚生年金保険被保険者資格取得届',
+    '健康保険・厚生年金保険被保険者資格喪失届',
+    '健康保険 任意継続被保険者資格取得申請書',
+    '健康保険被扶養者（異動）届',
+    '健康保険資格確認書交付申請書',
+    '健康保険資格確認書再交付申請書',
+    '被保険者住所変更届',
+    '被保険者氏名変更届',
+    '産前産後休業取得者申出書／変更（終了）届',
+    '算定基礎届',
+    '被保険者報酬月額変更届',
+    '健康保険・厚生年金保険被保険者賞与支払届'
+  ];
+  selectedDocumentType: string = '';
+  employeeSearchQuery: string = '';
+  filteredEmployees: Employee[] = [];
+  selectedEmployee: Employee | null = null;
+  allEmployeesForDocument: any[] = [];
+
   constructor(
     private router: Router,
     private fb: FormBuilder,
@@ -477,6 +498,10 @@ export class HrDashboardComponent {
 
   switchTab(tabName: string) {
     this.currentTab = tabName;
+    // 文書作成・管理ページに切り替えた時、従業員データを再読み込み
+    if (tabName === '文書作成・管理') {
+      this.loadEmployees();
+    }
     // 社会保険料タブが選択された場合、データを読み込む
     if (tabName === '社会保険料') {
       this.loadInsuranceList().catch(err => {
@@ -800,9 +825,15 @@ export class HrDashboardComponent {
           email: emp.email,
           employmentType: emp.employmentType
         }));
+      
+      // 文書作成用の全従業員データも読み込む
+      this.allEmployeesForDocument = allEmployees;
+      this.filteredEmployees = this.employees;
     } catch (error) {
       console.error('Error loading employees:', error);
       this.employees = [];
+      this.allEmployeesForDocument = [];
+      this.filteredEmployees = [];
     }
   }
 
@@ -1348,6 +1379,38 @@ export class HrDashboardComponent {
     const totalLength = part1.length + part2.length + part3.length;
     if (totalLength === 0) return '';
     return '●'.repeat(Math.min(totalLength, 12));
+  }
+
+  // 文書作成・管理ページ用のメソッド
+  onDocumentTypeChange() {
+    // 文書タイプが変更された時の処理（今後実装）
+    console.log('Selected document type:', this.selectedDocumentType);
+  }
+
+  onEmployeeSearch() {
+    if (!this.employeeSearchQuery || this.employeeSearchQuery.trim() === '') {
+      this.filteredEmployees = this.employees;
+      return;
+    }
+
+    const query = this.employeeSearchQuery.toLowerCase().trim();
+    this.filteredEmployees = this.employees.filter(emp => 
+      emp.employeeNumber.toLowerCase().includes(query) ||
+      emp.name.toLowerCase().includes(query) ||
+      emp.email.toLowerCase().includes(query)
+    );
+  }
+
+  selectEmployee(employee: Employee) {
+    this.selectedEmployee = employee;
+    this.employeeSearchQuery = `${employee.employeeNumber} - ${employee.name}`;
+    this.filteredEmployees = [];
+  }
+
+  clearEmployeeSelection() {
+    this.selectedEmployee = null;
+    this.employeeSearchQuery = '';
+    this.filteredEmployees = this.employees;
   }
 
   // 扶養者を追加
