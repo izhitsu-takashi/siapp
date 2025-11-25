@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { FirestoreService } from '../../services/firestore.service';
+import { PdfEditService } from '../../services/pdf-edit.service';
 
 interface Employee {
   employeeNumber: string;
@@ -137,12 +138,14 @@ export class HrDashboardComponent {
   filteredEmployees: Employee[] = [];
   selectedEmployee: Employee | null = null;
   allEmployeesForDocument: any[] = [];
+  isCreatingDocument: boolean = false;
 
   constructor(
     private router: Router,
     private fb: FormBuilder,
     private firestoreService: FirestoreService,
-    private http: HttpClient
+    private http: HttpClient,
+    private pdfEditService: PdfEditService
   ) {
     this.addEmployeeForm = this.fb.group({
       employees: this.fb.array([this.createEmployeeFormGroup()])
@@ -1411,6 +1414,47 @@ export class HrDashboardComponent {
     this.selectedEmployee = null;
     this.employeeSearchQuery = '';
     this.filteredEmployees = this.employees;
+  }
+
+  /**
+   * 文書を作成する
+   */
+  async createDocument() {
+    if (!this.selectedDocumentType || !this.selectedEmployee) {
+      alert('文書種類と従業員を選択してください');
+      return;
+    }
+
+    this.isCreatingDocument = true;
+
+    try {
+      // 従業員の詳細データを取得
+      const employeeData = await this.firestoreService.getEmployeeData(
+        this.selectedEmployee.employeeNumber
+      );
+
+      if (!employeeData) {
+        alert('従業員データの取得に失敗しました');
+        return;
+      }
+
+      // PDFに従業員データを記入
+      const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
+        this.selectedDocumentType,
+        employeeData
+      );
+
+      // PDFをダウンロード
+      const fileName = `${this.selectedDocumentType}_${this.selectedEmployee.employeeNumber}_${new Date().getTime()}.pdf`;
+      this.pdfEditService.downloadPdf(pdfBytes, fileName);
+
+      alert('文書を作成しました');
+    } catch (error) {
+      console.error('Error creating document:', error);
+      alert('文書の作成に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
+    } finally {
+      this.isCreatingDocument = false;
+    }
   }
 
   // 扶養者を追加

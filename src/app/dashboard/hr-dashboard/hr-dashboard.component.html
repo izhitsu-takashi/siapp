@@ -474,12 +474,22 @@
               </div>
             </section>
 
-            <!-- 文書作成ボタン（今後実装） -->
+            <!-- 文書作成ボタン -->
             <section class="document-action-section" *ngIf="selectedDocumentType && selectedEmployee">
-              <button class="create-document-button" disabled>
-                文書を作成
+              <button 
+                class="create-document-button" 
+                (click)="createDocument()"
+                [disabled]="isCreatingDocument"
+              >
+                <span *ngIf="!isCreatingDocument">文書を作成</span>
+                <span *ngIf="isCreatingDocument">作成中...</span>
               </button>
-              <p class="action-note">※ 文書作成機能は今後実装予定です</p>
+              <p class="action-note" *ngIf="!isCreatingDocument">
+                選択した従業員の情報をPDFに記入してダウンロードします
+              </p>
+              <p class="action-note loading-note" *ngIf="isCreatingDocument">
+                PDFを作成しています。しばらくお待ちください...
+              </p>
             </section>
           </div>
         </ng-container>
