@@ -160,21 +160,31 @@ export class HrDashboardComponent {
     });
     this.employeeEditForm = this.createEmployeeEditForm();
     this.settingsForm = this.createSettingsForm();
-    this.loadEmployees();
-    this.loadGradeTable();
-    this.loadKenpoRates();
-    this.loadSettings();
+    
+    // ブラウザ環境でのみデータを読み込む（プリレンダリング時はスキップ）
+    if (typeof window !== 'undefined') {
+      this.loadEmployees();
+      this.loadGradeTable();
+      this.loadKenpoRates();
+      this.loadSettings();
+    }
   }
   
   // 健康保険料率データを読み込む
   async loadKenpoRates() {
+    // プリレンダリング時はスキップ
+    if (typeof window === 'undefined') {
+      this.kenpoRates = [];
+      return;
+    }
+
     try {
       const data = await this.http.get<any[]>('/assets/kenpo-rates.json').toPromise();
       if (data) {
         this.kenpoRates = data;
       }
     } catch (error) {
-      console.error('Error loading kenpo rates:', error);
+      // エラーをログに出力しない（プリレンダリング時のエラーは無視）
       this.kenpoRates = [];
     }
   }
@@ -439,11 +449,18 @@ export class HrDashboardComponent {
   
   // 等級テーブルを読み込む
   async loadGradeTable() {
+    // プリレンダリング時はスキップ
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     try {
       const data = await this.http.get<any>('/assets/grade-table.json').toPromise();
-      this.gradeTable = data;
+      if (data) {
+        this.gradeTable = data;
+      }
     } catch (error) {
-      console.error('Error loading grade table:', error);
+      // エラーをログに出力しない（プリレンダリング時のエラーは無視）
       // フォールバック: 直接インポートを試みる
       this.loadGradeTableFallback();
     }
@@ -451,6 +468,11 @@ export class HrDashboardComponent {
   
   // フォールバック: JSONファイルを直接読み込む
   async loadGradeTableFallback() {
+    // プリレンダリング時はスキップ
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     try {
       const response = await fetch('/assets/grade-table.json');
       if (response.ok) {
@@ -458,7 +480,7 @@ export class HrDashboardComponent {
         this.gradeTable = data;
       }
     } catch (error) {
-      console.error('Error loading grade table fallback:', error);
+      // エラーをログに出力しない（プリレンダリング時のエラーは無視）
     }
   }
   
@@ -1626,6 +1648,26 @@ export class HrDashboardComponent {
       alert('文書の作成に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
     } finally {
       this.isCreatingDocument = false;
+    }
+  }
+
+  /**
+   * PDFの座標を確認するためのデバッグPDFを生成
+   */
+  async debugPdfCoordinates() {
+    if (!this.selectedDocumentType) {
+      alert('文書種類を選択してください');
+      return;
+    }
+
+    try {
+      const pdfBytes = await this.pdfEditService.debugPdfCoordinates(this.selectedDocumentType);
+      const fileName = `debug_coordinates_${this.selectedDocumentType}_${new Date().getTime()}.pdf`;
+      this.pdfEditService.downloadPdf(pdfBytes, fileName);
+      alert('座標確認用PDFをダウンロードしました。PDF上に座標グリッドが表示されます。');
+    } catch (error) {
+      console.error('Error generating debug PDF:', error);
+      alert('座標確認用PDFの生成に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
     }
   }
 
