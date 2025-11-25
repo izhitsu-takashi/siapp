@@ -53,6 +53,10 @@ export class HrDashboardComponent {
   statusChangeForm!: FormGroup;
   statusComment: string = '';
   
+  // 文書自動作成用
+  documentCheckboxes: { [key: string]: boolean } = {};
+  availableDocuments: string[] = [];
+  
   // 等級テーブルデータ
   gradeTable: any = null;
   
@@ -682,6 +686,15 @@ export class HrDashboardComponent {
       comment: [application.statusComment || '']
     });
     this.statusComment = application.statusComment || '';
+    
+    // 文書自動作成欄を初期化
+    this.availableDocuments = [];
+    this.documentCheckboxes = {};
+    
+    // 現在のステータスが承認済みの場合、対応する文書を取得
+    if (application.status === '承認済み') {
+      this.updateAvailableDocuments();
+    }
   }
   
   // 申請詳細モーダルを閉じる
@@ -691,7 +704,7 @@ export class HrDashboardComponent {
     this.statusComment = '';
   }
   
-  // ステータス変更時の処理（コメント表示の制御）
+  // ステータス変更時の処理（コメント表示の制御、文書自動作成欄の表示）
   onStatusChange() {
     const selectedStatus = this.statusChangeForm.get('status')?.value;
     if (selectedStatus === '差し戻し') {
@@ -700,6 +713,62 @@ export class HrDashboardComponent {
       this.statusChangeForm.get('comment')?.clearValidators();
     }
     this.statusChangeForm.get('comment')?.updateValueAndValidity();
+    
+    // 承認済みの場合、対応する文書を取得
+    if (selectedStatus === '承認済み') {
+      this.updateAvailableDocuments();
+    } else {
+      this.availableDocuments = [];
+      this.documentCheckboxes = {};
+    }
+  }
+
+  // 申請種類に対応した文書を取得
+  updateAvailableDocuments() {
+    if (!this.selectedApplication) {
+      this.availableDocuments = [];
+      return;
+    }
+
+    const applicationType = this.selectedApplication.applicationType;
+    const documents: string[] = [];
+
+    // 申請種類に対応した文書をマッピング
+    switch (applicationType) {
+      case '扶養家族追加':
+        documents.push('健康保険被扶養者（異動）届');
+        break;
+      case '扶養削除申請':
+        documents.push('健康保険被扶養者（異動）届');
+        break;
+      case '住所変更申請':
+        documents.push('健康保険・厚生年金保険 被保険者住所変更届');
+        break;
+      case '氏名変更申請':
+        documents.push('被保険者氏名変更届');
+        break;
+      case '産前産後休業申請':
+        documents.push('健康保険・厚生年金保険 産前産後休業取得者申出書／変更（終了）届');
+        break;
+      case '退職申請':
+        documents.push('健康保険・厚生年金保険被保険者資格喪失届');
+        // 任意継続保険に加入する場合のみ追加
+        if (this.selectedApplication.postResignationSocialInsurance === '任意継続保険に加入する' || 
+            this.selectedApplication.postResignationInsurance === '任意継続保険に加入する') {
+          documents.push('健康保険 任意継続被保険者資格取得申請書');
+        }
+        break;
+      case '保険証再発行申請':
+        documents.push('健康保険被保険者証再交付申請書');
+        break;
+    }
+
+    this.availableDocuments = documents;
+    // チェックボックスを初期化（すべてチェック済み）
+    this.documentCheckboxes = {};
+    documents.forEach(doc => {
+      this.documentCheckboxes[doc] = true;
+    });
   }
   
   // 申請のステータスを変更
@@ -731,6 +800,11 @@ export class HrDashboardComponent {
         status === '差し戻し' ? comment : ''
       );
       
+      // 承認済みの場合、チェックが入った文書をダウンロード
+      if (status === '承認済み' && this.availableDocuments.length > 0) {
+        await this.downloadSelectedDocuments();
+      }
+      
       // ローカルのステータスを更新
       this.selectedApplication.status = status;
       if (status === '差し戻し') {
@@ -760,6 +834,35 @@ export class HrDashboardComponent {
     } catch (error) {
       console.error('Error updating application status:', error);
       alert('ステータスの変更に失敗しました');
+    }
+  }
+
+  // 選択された文書をダウンロード
+  async downloadSelectedDocuments() {
+    if (!this.selectedApplication) {
+      return;
+    }
+
+    const employeeNumber = this.selectedApplication.employeeNumber || '';
+    const employeeName = this.selectedApplication.employeeName || '';
+
+    // チェックが入った文書をダウンロード
+    for (const documentName of this.availableDocuments) {
+      if (this.documentCheckboxes[documentName]) {
+        try {
+          // PDFテンプレートを読み込む
+          const pdfBytes = await this.pdfEditService.loadPdfTemplate(documentName);
+          
+          // ファイル名を生成（文書名_社員番号_氏名.pdf）
+          const fileName = `${documentName}_${employeeNumber}_${employeeName}.pdf`;
+          
+          // PDFをダウンロード
+          this.pdfEditService.downloadPdf(pdfBytes, fileName);
+        } catch (error) {
+          console.error(`Error downloading document ${documentName}:`, error);
+          alert(`文書「${documentName}」のダウンロードに失敗しました`);
+        }
+      }
     }
   }
   

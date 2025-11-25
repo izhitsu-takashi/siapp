@@ -1543,6 +1543,26 @@
                 コメントを入力してください
               </div>
             </div>
+            
+            <!-- 文書自動作成欄（承認済みの場合のみ表示） -->
+            <div class="document-auto-generation-section" *ngIf="statusChangeForm.get('status')?.value === '承認済み' && availableDocuments.length > 0">
+              <h4 class="document-section-title">対応する文書を自動作成</h4>
+              <div class="document-checkboxes">
+                <label *ngFor="let doc of availableDocuments" class="document-checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    [(ngModel)]="documentCheckboxes[doc]"
+                    [ngModelOptions]="{standalone: true}"
+                    class="document-checkbox"
+                  >
+                  <span class="document-name">{{ doc }}</span>
+                </label>
+              </div>
+              <p class="document-note">
+                チェックが入った文書は、ステータスを更新すると自動でダウンロードされます。
+              </p>
+            </div>
+            
             <div class="status-change-actions">
               <button type="submit" class="status-update-button">ステータスを更新</button>
             </div>
