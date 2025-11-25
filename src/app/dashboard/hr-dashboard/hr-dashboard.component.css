@@ -885,12 +885,6 @@
   background: #5a6268;
 }
 
-.masked-value {
-  font-size: 1.2rem;
-  color: #666;
-  letter-spacing: 0.1em;
-}
-
 .basic-pension-number-container {
   display: flex;
   align-items: center;
@@ -905,6 +899,12 @@
 .basic-pension-separator {
   color: #666;
   font-weight: 500;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
 }
 
 .checkbox-label {

@@ -763,9 +763,6 @@
                     placeholder="0000"
                   >
                 </div>
-                <span *ngIf="!showMyNumber && getMaskedMyNumber()" class="masked-value">
-                  {{ getMaskedMyNumber() }}
-                </span>
                 <button 
                   type="button" 
                   class="toggle-button" 
@@ -1484,6 +1481,45 @@
             
             <div *ngIf="dependents.length === 0" class="no-data">
               扶養者が登録されていません。「+ 扶養者を追加」ボタンから追加してください。
+            </div>
+          </div>
+        </section>
+
+        <!-- 保険証情報（人事専用）欄 -->
+        <section class="form-section hr-only-section">
+          <h3 class="section-title">保険証情報（人事専用）</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hr-insuranceSymbol">被保険者記号 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="hr-insuranceSymbol" 
+                formControlName="insuranceSymbol" 
+                class="form-input"
+                maxlength="8"
+                pattern="[0-9]*"
+                (input)="formatInsuranceSymbolInput($event)"
+                placeholder="00000000"
+              >
+              <div *ngIf="employeeEditForm.get('insuranceSymbol')?.invalid && employeeEditForm.get('insuranceSymbol')?.touched" class="error-message">
+                被保険者記号を入力してください（8桁の数字）
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="hr-insuranceNumber">被保険者番号 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="hr-insuranceNumber" 
+                formControlName="insuranceNumber" 
+                class="form-input"
+                maxlength="3"
+                pattern="[0-9]*"
+                (input)="formatInsuranceNumberInput($event)"
+                placeholder="000"
+              >
+              <div *ngIf="employeeEditForm.get('insuranceNumber')?.invalid && employeeEditForm.get('insuranceNumber')?.touched" class="error-message">
+                被保険者番号を入力してください（3桁の数字）
+              </div>
             </div>
           </div>
         </section>

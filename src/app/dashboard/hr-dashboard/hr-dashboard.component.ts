@@ -1090,7 +1090,11 @@ export class HrDashboardComponent {
       spouseAnnualIncome: [''],
       
       // 人事専用情報（給与）
-      fixedSalary: [''], // 固定的賃金
+      fixedSalary: [''],
+      
+      // 保険証情報（人事専用）
+      insuranceSymbol: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
+      insuranceNumber: ['', [Validators.required, Validators.pattern(/^\d{3}$/)]], // 固定的賃金
       bonusAmount: [''], // 賞与額
       bonusYear: [''], // 賞与年月（年）
       bonusMonth: [''], // 賞与年月（月）
@@ -1134,6 +1138,18 @@ export class HrDashboardComponent {
           basicPensionNumberPart2: basicPensionNumber.substring(4, 10) || ''
         });
       }
+    }
+
+    // 保険証情報を設定
+    if (data.insuranceSymbol) {
+      this.employeeEditForm.patchValue({
+        insuranceSymbol: data.insuranceSymbol.toString()
+      });
+    }
+    if (data.insuranceNumber) {
+      this.employeeEditForm.patchValue({
+        insuranceNumber: data.insuranceNumber.toString()
+      });
     }
 
     // 厚生年金加入履歴の状態を設定
@@ -1327,6 +1343,26 @@ export class HrDashboardComponent {
 
   toggleMyNumber() {
     this.showMyNumber = !this.showMyNumber;
+  }
+
+  // 被保険者記号の入力フォーマット（数字8桁のみ）
+  formatInsuranceSymbolInput(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 8) {
+      value = value.substring(0, 8);
+    }
+    event.target.value = value;
+    this.employeeEditForm.get('insuranceSymbol')?.setValue(value, { emitEvent: false });
+  }
+
+  // 被保険者番号の入力フォーマット（数字3桁のみ）
+  formatInsuranceNumberInput(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 3) {
+      value = value.substring(0, 3);
+    }
+    event.target.value = value;
+    this.employeeEditForm.get('insuranceNumber')?.setValue(value, { emitEvent: false });
   }
 
   formatMyNumberInput(event: any, part: number) {
