@@ -110,6 +110,22 @@ export class FirestoreService {
     }
   }
 
+  /**
+   * 保険証ステータスのみを更新する（他のデータに影響を与えない）
+   */
+  async updateInsuranceCardStatus(employeeNumber: string, status: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'employees', employeeNumber);
+      await setDoc(docRef, {
+        insuranceCardStatus: status,
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error updating insurance card status:', error);
+      throw error;
+    }
+  }
+
   async getEmployeeByEmail(email: string): Promise<any | null> {
     try {
       const employeesCollection = collection(this.db, 'employees');

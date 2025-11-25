@@ -505,10 +505,45 @@
 
         <!-- 保険証管理ページ -->
         <ng-container *ngIf="currentTab === '保険証管理'">
-          <div class="page-content">
+          <div class="insurance-card-management-page">
             <h2 class="page-title">保険証管理</h2>
-            <p class="page-description">従業員の保険証の発行・再発行・管理を行います。</p>
-            <!-- 今後実装予定 -->
+            
+            <div class="table-container">
+              <table class="insurance-card-table">
+                <thead>
+                  <tr>
+                    <th>社員ID</th>
+                    <th>氏名</th>
+                    <th>被保険者記号</th>
+                    <th>被保険者番号</th>
+                    <th>発行日</th>
+                    <th>回収日</th>
+                    <th>ステータス</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let card of insuranceCards">
+                    <td>{{ card.employeeNumber }}</td>
+                    <td>{{ card.name }}</td>
+                    <td>{{ card.insuranceSymbol || '-' }}</td>
+                    <td>{{ card.insuranceNumber || '-' }}</td>
+                    <td>{{ formatDate(card.issueDate) }}</td>
+                    <td>{{ formatDate(card.returnDate) }}</td>
+                    <td>
+                      <span class="status-badge" 
+                            [class.status-distributed]="card.status === '配布済み'"
+                            [class.status-reissuing]="card.status === '再発行中'"
+                            [class.status-returned]="card.status === '回収済み'">
+                        {{ card.status || '-' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="insuranceCards.length === 0">
+                    <td colspan="7" class="empty-message">保険証データがありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </ng-container>
 
@@ -1520,6 +1555,37 @@
               <div *ngIf="employeeEditForm.get('insuranceNumber')?.invalid && employeeEditForm.get('insuranceNumber')?.touched" class="error-message">
                 被保険者番号を入力してください（3桁の数字）
               </div>
+            </div>
+            <div class="form-group">
+              <label for="hr-insuranceCardIssueDate">発行日</label>
+              <input 
+                type="date" 
+                id="hr-insuranceCardIssueDate" 
+                formControlName="insuranceCardIssueDate" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-insuranceCardReturnDate">回収日</label>
+              <input 
+                type="date" 
+                id="hr-insuranceCardReturnDate" 
+                formControlName="insuranceCardReturnDate" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-insuranceCardStatus">配布状況</label>
+              <select 
+                id="hr-insuranceCardStatus" 
+                formControlName="insuranceCardStatus" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let status of insuranceCardStatuses" [value]="status">
+                  {{ status }}
+                </option>
+              </select>
             </div>
           </div>
         </section>

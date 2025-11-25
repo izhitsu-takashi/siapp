@@ -736,6 +736,97 @@
   font-size: 1rem;
 }
 
+/* 保険証管理ページ */
+.insurance-card-management-page {
+  padding: 2rem;
+}
+
+.insurance-card-management-page .page-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.insurance-card-management-page .page-description {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.insurance-card-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.insurance-card-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.insurance-card-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.insurance-card-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.insurance-card-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.insurance-card-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.insurance-card-table td {
+  padding: 1rem;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.insurance-card-table .status-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.insurance-card-table .status-badge.status-distributed {
+  background: #4caf50;
+  color: white;
+}
+
+.insurance-card-table .status-badge.status-reissuing {
+  background: #ff9800;
+  color: white;
+}
+
+.insurance-card-table .status-badge.status-returned {
+  background: #2196f3;
+  color: white;
+}
+
+.insurance-card-table .empty-message {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-style: italic;
+}
+
 /* モーダル */
 .modal-overlay {
   position: fixed;

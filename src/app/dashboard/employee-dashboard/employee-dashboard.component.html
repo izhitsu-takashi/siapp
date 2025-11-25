@@ -135,15 +135,14 @@
               <h3 class="section-title">マイナンバー</h3>
               <div class="form-grid">
                 <div class="form-group full-width">
-                  <label for="myNumberPart1">マイナンバー</label>
+                  <!-- <label for="myNumberPart1">マイナンバー</label> -->
                   <div class="my-number-container">
                     <div class="my-number-inputs">
                       <input 
                         type="text" 
                         id="myNumberPart1" 
-                        formControlName="myNumberPart1" 
+                        [value]="getMyNumberDisplayValue(1)"
                         class="form-input my-number-part"
-                        [type]="showMyNumber ? 'text' : 'password'"
                         [readonly]="!showMyNumber || !isEditMode"
                         maxlength="4"
                         (input)="formatMyNumberInput($event, 1)"
@@ -153,9 +152,8 @@
                       <input 
                         type="text" 
                         id="myNumberPart2" 
-                        formControlName="myNumberPart2" 
+                        [value]="getMyNumberDisplayValue(2)"
                         class="form-input my-number-part"
-                        [type]="showMyNumber ? 'text' : 'password'"
                         [readonly]="!showMyNumber || !isEditMode"
                         maxlength="4"
                         (input)="formatMyNumberInput($event, 2)"
@@ -165,20 +163,15 @@
                       <input 
                         type="text" 
                         id="myNumberPart3" 
-                        formControlName="myNumberPart3" 
+                        [value]="getMyNumberDisplayValue(3)"
                         class="form-input my-number-part"
-                        [type]="showMyNumber ? 'text' : 'password'"
                         [readonly]="!showMyNumber || !isEditMode"
                         maxlength="4"
                         (input)="formatMyNumberInput($event, 3)"
                         placeholder="0000"
                       >
                     </div>
-                    <span *ngIf="!showMyNumber && getMaskedMyNumber()" class="masked-value">
-                      {{ getMaskedMyNumber() }}
-                    </span>
                     <button 
-                      *ngIf="isEditMode"
                       type="button" 
                       class="toggle-button" 
                       (click)="toggleMyNumber()"

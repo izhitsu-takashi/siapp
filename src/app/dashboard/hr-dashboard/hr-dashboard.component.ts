@@ -47,6 +47,10 @@ export class HrDashboardComponent {
   // 申請一覧データ
   allApplications: any[] = [];
   
+  // 保険証管理用データ
+  insuranceCards: any[] = [];
+  insuranceCardStatuses = ['配布済み', '再発行中', '回収済み'];
+  
   // 申請詳細モーダル用
   showApplicationDetailModal = false;
   selectedApplication: any = null;
@@ -519,6 +523,12 @@ export class HrDashboardComponent {
     if (tabName === '申請管理') {
       this.loadAllApplications().catch(err => {
         console.error('Error in loadAllApplications:', err);
+      });
+    }
+    // 保険証管理タブが選択された場合、保険証一覧を読み込む
+    if (tabName === '保険証管理') {
+      this.loadInsuranceCards().catch(err => {
+        console.error('Error in loadInsuranceCards:', err);
       });
     }
     // 設定タブが選択された場合、設定を読み込む
@@ -1094,7 +1104,10 @@ export class HrDashboardComponent {
       
       // 保険証情報（人事専用）
       insuranceSymbol: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
-      insuranceNumber: ['', [Validators.required, Validators.pattern(/^\d{3}$/)]], // 固定的賃金
+      insuranceNumber: ['', [Validators.required, Validators.pattern(/^\d{3}$/)]],
+      insuranceCardIssueDate: [''],
+      insuranceCardReturnDate: [''],
+      insuranceCardStatus: [''], // 固定的賃金
       bonusAmount: [''], // 賞与額
       bonusYear: [''], // 賞与年月（年）
       bonusMonth: [''], // 賞与年月（月）
@@ -1149,6 +1162,21 @@ export class HrDashboardComponent {
     if (data.insuranceNumber) {
       this.employeeEditForm.patchValue({
         insuranceNumber: data.insuranceNumber.toString()
+      });
+    }
+    if (data.insuranceCardIssueDate) {
+      this.employeeEditForm.patchValue({
+        insuranceCardIssueDate: data.insuranceCardIssueDate
+      });
+    }
+    if (data.insuranceCardReturnDate) {
+      this.employeeEditForm.patchValue({
+        insuranceCardReturnDate: data.insuranceCardReturnDate
+      });
+    }
+    if (data.insuranceCardStatus) {
+      this.employeeEditForm.patchValue({
+        insuranceCardStatus: data.insuranceCardStatus
       });
     }
 
@@ -1499,6 +1527,11 @@ export class HrDashboardComponent {
         // 社員一覧を再読み込み
         await this.loadEmployees();
         
+        // 保険証管理テーブルを更新（保険証情報が変更された場合に備えて）
+        if (this.currentTab === '保険証管理') {
+          await this.loadInsuranceCards();
+        }
+        
         // 保存したデータを再読み込みしてフォームを更新（モーダルは開いたまま）
         await this.loadEmployeeData(this.selectedEmployeeNumber);
         
@@ -1626,6 +1659,52 @@ export class HrDashboardComponent {
 
   getMonths(): number[] {
     return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  }
+
+  // 保険証一覧を読み込む
+  async loadInsuranceCards() {
+    try {
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      
+      this.insuranceCards = allEmployees
+        .filter(emp => emp.employeeNumber && emp.name && (emp.insuranceSymbol || emp.insuranceNumber))
+        .map(emp => {
+          // insuranceCardStatusが存在する場合はそれを使用、存在しない場合はデフォルト値
+          // nullや空文字列の場合はデフォルト値を使用
+          let status = '配布済み';
+          if (emp.insuranceCardStatus && emp.insuranceCardStatus !== null && emp.insuranceCardStatus !== '') {
+            status = emp.insuranceCardStatus;
+          }
+          
+          return {
+            employeeNumber: emp.employeeNumber,
+            name: emp.name || '',
+            insuranceSymbol: emp.insuranceSymbol || '',
+            insuranceNumber: emp.insuranceNumber || '',
+            issueDate: emp.insuranceCardIssueDate || emp.insuranceIssueDate || '',
+            returnDate: emp.insuranceCardReturnDate || '',
+            status: status
+          };
+        });
+    } catch (error) {
+      console.error('Error loading insurance cards:', error);
+      this.insuranceCards = [];
+    }
+  }
+
+
+  // 日付をフォーマット（YYYY-MM-DD → YYYY/MM/DD）
+  formatDate(dateString: string | null | undefined): string {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    } catch (error) {
+      return dateString;
+    }
   }
 }
 

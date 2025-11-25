@@ -577,6 +577,13 @@ export class EmployeeDashboardComponent {
     this.showMyNumber = !this.showMyNumber;
   }
 
+  getMyNumberDisplayValue(part: number): string {
+    const controlName = `myNumberPart${part}` as 'myNumberPart1' | 'myNumberPart2' | 'myNumberPart3';
+    const value = this.settingsForm.get(controlName)?.value || '';
+    if (!value) return '';
+    return this.showMyNumber ? value : '****';
+  }
+
   onPensionHistoryChange(event: any) {
     this.hasPensionHistory = event.target.value === '有';
     if (!this.hasPensionHistory) {
@@ -589,8 +596,19 @@ export class EmployeeDashboardComponent {
     if (value.length > 4) {
       value = value.substring(0, 4);
     }
-    event.target.value = value;
-    this.settingsForm.get(`myNumberPart${part}`)?.setValue(value);
+    const controlName = `myNumberPart${part}` as 'myNumberPart1' | 'myNumberPart2' | 'myNumberPart3';
+    this.settingsForm.get(controlName)?.setValue(value, { emitEvent: false });
+    
+    // 非表示モードの場合は、入力後にマスク表示を維持
+    if (!this.showMyNumber && value) {
+      // 値を保存した後、表示をマスクに変更
+      setTimeout(() => {
+        const input = event.target;
+        if (input && input.value !== '****') {
+          input.value = '****';
+        }
+      }, 0);
+    }
     
     // 自動的に次のフィールドにフォーカス
     if (value.length === 4 && part < 3) {
