@@ -67,10 +67,13 @@ export class HrDashboardComponent {
   // 設定ページ用データ
   settingsForm!: FormGroup;
   companyInfo: any = {
-    companyName: '',
-    address: '',
-    corporateNumber: '',
-    officeCode: ''
+    officeName: '', // 事業所名称（旧: companyName）
+    officeAddress: '', // 事業所住所（旧: address）
+    officeNumber: '', // 事業所番号（新規追加）
+    employerName: '', // 事業主氏名（新規追加）
+    officePhoneNumber: '', // 事業所電話番号（新規追加）
+    corporateNumber: '', // 法人番号（保持）
+    officeCode: '' // 事業所整理記号（保持）
   };
   healthInsuranceType: string = '協会けんぽ';
   selectedPrefecture: string = '';
@@ -147,6 +150,8 @@ export class HrDashboardComponent {
   selectedEmployee: Employee | null = null;
   allEmployeesForDocument: any[] = [];
   isCreatingDocument: boolean = false;
+  documentRequiredInfo: any = {}; // 各文書に必要な情報を格納
+  showDocumentInfoModal = false; // 文書情報表示モーダル
 
   constructor(
     private router: Router,
@@ -220,8 +225,11 @@ export class HrDashboardComponent {
   createSettingsForm(): FormGroup {
     return this.fb.group({
       // 企業情報
-      companyName: [''],
-      address: [''],
+      officeName: [''], // 事業所名称（旧: companyName）
+      officeAddress: [''], // 事業所住所（旧: address）
+      officeNumber: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]], // 事業所番号（新規追加、5桁固定）
+      employerName: [''], // 事業主氏名（新規追加）
+      officePhoneNumber: [''], // 事業所電話番号（新規追加）
       corporateNumber: [''],
       officeCode: [''],
       // 健康保険設定
@@ -244,8 +252,11 @@ export class HrDashboardComponent {
         // 企業情報を読み込む
         if (settings.companyInfo) {
           this.companyInfo = {
-            companyName: settings.companyInfo.companyName || '',
-            address: settings.companyInfo.address || '',
+            officeName: settings.companyInfo.officeName || settings.companyInfo.companyName || '', // 旧フィールド名にも対応
+            officeAddress: settings.companyInfo.officeAddress || settings.companyInfo.address || '', // 旧フィールド名にも対応
+            officeNumber: settings.companyInfo.officeNumber || '',
+            employerName: settings.companyInfo.employerName || '',
+            officePhoneNumber: settings.companyInfo.officePhoneNumber || '',
             corporateNumber: settings.companyInfo.corporateNumber || '',
             officeCode: settings.companyInfo.officeCode || ''
           };
@@ -269,12 +280,15 @@ export class HrDashboardComponent {
         }
       }
       
-      // フォームに値を設定
-      this.settingsForm.patchValue({
-        companyName: this.companyInfo.companyName,
-        address: this.companyInfo.address,
-        corporateNumber: this.companyInfo.corporateNumber,
-        officeCode: this.companyInfo.officeCode,
+        // フォームに値を設定
+        this.settingsForm.patchValue({
+          officeName: this.companyInfo.officeName,
+          officeAddress: this.companyInfo.officeAddress,
+          officeNumber: this.companyInfo.officeNumber,
+          employerName: this.companyInfo.employerName,
+          officePhoneNumber: this.companyInfo.officePhoneNumber,
+          corporateNumber: this.companyInfo.corporateNumber,
+          officeCode: this.companyInfo.officeCode,
         healthInsuranceType: this.healthInsuranceType,
         prefecture: this.selectedPrefecture,
         healthInsuranceRate: this.insuranceRates.healthInsurance,
@@ -314,8 +328,11 @@ export class HrDashboardComponent {
       
       // 企業情報を更新
       this.companyInfo = {
-        companyName: formValue.companyName || '',
-        address: formValue.address || '',
+        officeName: formValue.officeName || '',
+        officeAddress: formValue.officeAddress || '',
+        officeNumber: formValue.officeNumber || '',
+        employerName: formValue.employerName || '',
+        officePhoneNumber: formValue.officePhoneNumber || '',
         corporateNumber: formValue.corporateNumber || '',
         officeCode: formValue.officeCode || ''
       };
@@ -1611,17 +1628,338 @@ export class HrDashboardComponent {
   }
 
   /**
-   * 文書を作成する
+   * 文書に必要な情報を収集する
    */
-  async createDocument() {
+  async collectDocumentInfo(documentType: string, employeeData: any): Promise<any> {
+    const info: any = {};
+    const getValue = (key: string, defaultValue: string = '情報なし') => {
+      const value = employeeData[key];
+      // null, undefined, 空文字列の場合はデフォルト値を返す
+      if (value === null || value === undefined || value === '') {
+        return defaultValue;
+      }
+      return String(value);
+    };
+
+    // 企業情報を取得
+    const settings = await this.firestoreService.getSettings();
+    const companyInfo = settings?.companyInfo || this.companyInfo;
+
+    // マイナンバーを組み立て（my-number-inputsクラスから取得）
+    // FirestoreにはmyNumberとして12桁の文字列で保存されているが、
+    // フォームではmyNumberPart1, myNumberPart2, myNumberPart3として分割されている
+    // 両方の形式に対応
+    let myNumber = '';
+    if (employeeData?.myNumber && employeeData.myNumber.length === 12) {
+      // myNumberが12桁の文字列として保存されている場合
+      myNumber = `${employeeData.myNumber.substring(0, 4)}-${employeeData.myNumber.substring(4, 8)}-${employeeData.myNumber.substring(8, 12)}`;
+    } else if (employeeData?.myNumberPart1 && employeeData?.myNumberPart2 && employeeData?.myNumberPart3) {
+      // myNumberPart1, myNumberPart2, myNumberPart3として保存されている場合
+      myNumber = `${employeeData.myNumberPart1}-${employeeData.myNumberPart2}-${employeeData.myNumberPart3}`;
+    }
+
+    // 基礎年金番号を組み立て（basic-pension-number-containerクラスから取得）
+    // FirestoreにはbasicPensionNumberとして保存されているが、
+    // フォームではbasicPensionNumberPart1, basicPensionNumberPart2として分割されている
+    // 両方の形式に対応
+    let basicPensionNumber = '';
+    if (employeeData?.basicPensionNumber) {
+      // basicPensionNumberが文字列として保存されている場合
+      const basicPensionStr = employeeData.basicPensionNumber.toString();
+      if (basicPensionStr.length >= 4) {
+        basicPensionNumber = `${basicPensionStr.substring(0, 4)}${basicPensionStr.substring(4, 10) || ''}`;
+      }
+    } else if (employeeData?.basicPensionNumberPart1 && employeeData?.basicPensionNumberPart2) {
+      // basicPensionNumberPart1, basicPensionNumberPart2として保存されている場合
+      basicPensionNumber = `${employeeData.basicPensionNumberPart1}${employeeData.basicPensionNumberPart2}`;
+    }
+
+    // 社会保険料一覧から標準報酬月額を取得
+    const employeeNumber = employeeData.employeeNumber || '';
+    const insuranceItem = this.insuranceList.find((item: any) => item.employeeNumber === employeeNumber);
+    const standardMonthlySalary = insuranceItem?.standardMonthlySalary || 0;
+
+    switch (documentType) {
+      case '健康保険・厚生年金保険被保険者資格取得届':
+        info['事業所整理記号'] = companyInfo.officeCode || '情報なし';
+        info['事業所番号'] = companyInfo.officeNumber || '情報なし';
+        info['事業所住所'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['事業所電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['被保険者氏名'] = getValue('name');
+        info['生年月日'] = getValue('birthDate');
+        info['性別'] = getValue('gender');
+        info['マイナンバー'] = myNumber || '情報なし';
+        info['基礎年金番号'] = basicPensionNumber || '情報なし';
+        info['資格取得年月日'] = getValue('socialInsuranceAcquisitionDate');
+        info['被扶養者（有/無）'] = getValue('hasDependents') === 'true' ? '有' : '無';
+        info['報酬月額'] = standardMonthlySalary > 0 ? `${standardMonthlySalary.toLocaleString()}円` : '情報なし';
+        const age1 = parseInt(getValue('age', '0')) || 0;
+        const isPartTime1 = getValue('isPartTime') === 'true';
+        info['備考欄（70歳以上か、短時間労働者かなど）'] = 
+          (age1 >= 70 ? '70歳以上' : '') + 
+          (isPartTime1 ? '短時間労働者' : '') || '情報なし';
+        info['被保険者住所'] = getValue('currentAddress');
+        break;
+
+      case '健康保険・厚生年金保険被保険者資格喪失届':
+        info['事業所整理記号'] = companyInfo.officeCode || '情報なし';
+        info['事業所番号'] = companyInfo.officeNumber || '情報なし';
+        info['事業所住所'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['事業所電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        info['氏名'] = getValue('name');
+        info['生年月日'] = getValue('birthDate');
+        info['マイナンバー'] = myNumber || '情報なし';
+        info['基礎年金番号'] = basicPensionNumber || '情報なし';
+        info['資格喪失年月日'] = getValue('socialInsuranceLossDate');
+        info['喪失原因'] = getValue('resignationReason');
+        const age2 = parseInt(getValue('age', '0')) || 0;
+        info['70歳以上か'] = age2 >= 70 ? 'はい' : 'いいえ';
+        if (info['70歳以上か'] === 'はい') {
+          info['喪失年月日'] = getValue('socialInsuranceLossDate');
+        }
+        break;
+
+      case '健康保険 任意継続被保険者資格取得申請書':
+        info['勤務先の都道府県支部'] = settings?.prefecture || '情報なし';
+        info['提出日'] = new Date().toLocaleDateString('ja-JP');
+        info['被保険者証記号/番号'] = getValue('healthInsuranceNumber');
+        info['生年月日'] = getValue('birthDate');
+        info['氏名（カタカナ）'] = getValue('nameKana');
+        info['氏名（漢字）'] = getValue('name');
+        info['性別'] = getValue('gender');
+        const postalCode = getValue('currentAddress').match(/\d{3}-?\d{4}/)?.[0] || '情報なし';
+        info['郵便番号（ハイフンなし）'] = postalCode.replace(/-/g, '');
+        info['電話番号（ハイフンなし）'] = getValue('phoneNumber').replace(/-/g, '');
+        info['住所'] = getValue('currentAddress');
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['資格喪失年月日（退職日の翌日）'] = getValue('socialInsuranceLossDate');
+        info['保険料の納付方法'] = '情報なし';
+        // 被扶養者の情報（簡易版）
+        info['被扶養者氏名'] = '情報なし';
+        info['被扶養者氏名（カタカナ）'] = '情報なし';
+        info['被扶養者生年月日'] = '情報なし';
+        info['被扶養者性別'] = '情報なし';
+        info['被扶養者族柄'] = '情報なし';
+        info['被扶養者職業'] = '情報なし';
+        info['被扶養者収入（年間）'] = '情報なし';
+        info['被扶養者マイナンバー'] = '情報なし';
+        info['被扶養者同居/別居'] = '情報なし';
+        break;
+
+      case '健康保険被扶養者（異動）届':
+        info['事業所整理番号'] = companyInfo.officeCode || '情報なし';
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        info['被保険者氏名'] = getValue('name');
+        info['被保険者生年月日'] = getValue('birthDate');
+        info['被保険者性別'] = getValue('gender');
+        info['マイナンバー'] = myNumber !== '--' ? myNumber : '情報なし';
+        info['資格取得年月日'] = getValue('socialInsuranceAcquisitionDate');
+        info['年収'] = getValue('annualSalary');
+        // 扶養者情報（簡易版）
+        info['扶養者氏名'] = '情報なし';
+        info['扶養者生年月日'] = '情報なし';
+        info['扶養者性別'] = '情報なし';
+        info['扶養者マイナンバー'] = '情報なし';
+        info['扶養者住所'] = '情報なし';
+        info['扶養者電話番号'] = '情報なし';
+        info['扶養者になった日/はずれる日'] = '情報なし';
+        info['扶養された理由/扶養から外れる理由'] = '情報なし';
+        info['扶養者職業'] = '情報なし';
+        info['扶養者収入'] = '情報なし';
+        break;
+
+      case '健康保険資格確認書交付申請書':
+      case '健康保険資格確認書再交付申請書':
+        info['被保険者記号'] = getValue('insuranceSymbol');
+        info['被保険者番号'] = getValue('healthInsuranceNumber');
+        info['マイナンバー'] = myNumber !== '--' ? myNumber : '情報なし';
+        info['被保険者氏名'] = getValue('name');
+        info['被保険者氏名（カタカナ）'] = getValue('nameKana');
+        const postalCode2 = getValue('currentAddress').match(/\d{3}-?\d{4}/)?.[0] || '情報なし';
+        info['郵便番号'] = postalCode2;
+        info['電話番号'] = getValue('phoneNumber');
+        info['住所'] = getValue('currentAddress');
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['事業所電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        break;
+
+      case '被保険者住所変更届':
+        info['事業所整理番号'] = companyInfo.officeCode || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        const postalCode3 = getValue('currentAddress').match(/\d{3}-?\d{4}/)?.[0] || '情報なし';
+        info['事業所郵便番号'] = postalCode3;
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['マイナンバー'] = myNumber || '情報なし';
+        info['基本年金番号'] = basicPensionNumber || '情報なし';
+        info['氏名'] = getValue('name');
+        info['氏名（カタカナ）'] = getValue('nameKana');
+        info['生年月日'] = getValue('birthDate');
+        const newPostalCode = getValue('currentAddress').match(/\d{3}-?\d{4}/)?.[0] || '情報なし';
+        info['変更後の郵便番号'] = newPostalCode;
+        info['変更後の住所'] = getValue('currentAddress');
+        info['変更前の住所'] = getValue('residentAddress');
+        info['被保険者と配偶者は同居しているか'] = getValue('sameAsCurrentAddress') === 'true' ? 'はい' : 'いいえ';
+        info['配偶者のマイナンバー'] = '情報なし';
+        info['配偶者の生年月日'] = '情報なし';
+        info['配偶者の氏名'] = '情報なし';
+        if (info['被保険者と配偶者は同居しているか'] === 'いいえ') {
+          info['配偶者の郵便番号'] = '情報なし';
+          info['配偶者の住所'] = '情報なし';
+        }
+        break;
+
+      case '被保険者氏名変更届':
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['事業所電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['事業所整理番号'] = companyInfo.officeCode || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        info['マイナンバー'] = myNumber || '情報なし';
+        info['基礎年金番号'] = basicPensionNumber || '情報なし';
+        info['生年月日'] = getValue('birthDate');
+        info['変更前の被保険者氏名'] = '情報なし';
+        info['変更前の氏名（フリガナ）'] = '情報なし';
+        info['変更後の被保険者氏名'] = getValue('name');
+        info['変更後の氏名（フリガナ）'] = getValue('nameKana');
+        break;
+
+      case '産前産後休業取得者申出書／変更（終了）届':
+        info['事業所整理記号'] = companyInfo.officeCode || '情報なし';
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        info['マイナンバー'] = myNumber || '情報なし';
+        info['基礎年金番号'] = basicPensionNumber || '情報なし';
+        info['被保険者氏名'] = getValue('name');
+        info['被保険者生年月日'] = getValue('birthDate');
+        info['出産予定年月日'] = '情報なし';
+        info['産前産後休業開始年月日'] = '情報なし';
+        info['産前産後休業終了年月日'] = '情報なし';
+        info['出産年月日'] = '情報なし';
+        info['社会保険労務士'] = '情報なし';
+        break;
+
+      case '算定基礎届':
+        info['事業所整理記号'] = companyInfo.officeCode || '情報なし';
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['事業所電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        info['被保険者氏名'] = getValue('name');
+        info['被保険者生年月日'] = getValue('birthDate');
+        info['標準報酬月額'] = standardMonthlySalary > 0 ? `${standardMonthlySalary.toLocaleString()}円` : '情報なし';
+        info['給与計算の基礎日数'] = '情報なし';
+        info['通貨による給与'] = '情報なし';
+        info['現物による給与'] = '情報なし';
+        info['月の合計'] = '情報なし';
+        info['支払い基礎日数が4分の3以上の月の総計'] = '情報なし';
+        info['総計の平均額'] = '情報なし';
+        info['マイナンバー'] = myNumber || '情報なし';
+        info['基礎年金番号'] = basicPensionNumber || '情報なし';
+        const age3 = parseInt(getValue('age', '0')) || 0;
+        info['70歳以上か'] = age3 >= 70 ? 'はい' : 'いいえ';
+        info['短時間労働者か'] = getValue('isPartTime') === 'true' ? 'はい' : 'いいえ';
+        break;
+
+      case '被保険者報酬月額変更届':
+        info['事業所整理記号'] = companyInfo.officeCode || '情報なし';
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['事業所電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        info['被保険者氏名'] = getValue('name');
+        info['被保険者生年月日'] = getValue('birthDate');
+        info['被保険者改定年月'] = '情報なし';
+        info['標準報酬月額'] = standardMonthlySalary > 0 ? `${standardMonthlySalary.toLocaleString()}円` : '情報なし';
+        info['給与改定月'] = '情報なし';
+        info['昇給（降給）額'] = '情報なし';
+        info['直近3か月支給額'] = '情報なし';
+        info['給与支給月（直近3か月分）'] = '情報なし';
+        info['通貨による給与（直近3か月分）'] = '情報なし';
+        info['現物による給与（直近3か月分）'] = '情報なし';
+        info['通貨と現物の合計（直近3か月分）'] = '情報なし';
+        info['３か月の総計'] = '情報なし';
+        info['総計の平均額'] = '情報なし';
+        const age4 = parseInt(getValue('age', '0')) || 0;
+        if (age4 >= 70) {
+          info['マイナンバー（70歳以上被保険者の場合のみ）'] = myNumber || '情報なし';
+          info['基礎年金番号（70歳以上被保険者の場合のみ）'] = basicPensionNumber || '情報なし';
+        } else {
+          info['マイナンバー（70歳以上被保険者の場合のみ）'] = '情報なし';
+          info['基礎年金番号（70歳以上被保険者の場合のみ）'] = '情報なし';
+        }
+        info['70歳以上か'] = age4 >= 70 ? 'はい' : 'いいえ';
+        info['短時間労働者か'] = getValue('isPartTime') === 'true' ? 'はい' : 'いいえ';
+        info['給与変動の理由'] = '情報なし';
+        break;
+
+      case '健康保険・厚生年金保険被保険者賞与支払届':
+        info['事業所整理記号'] = companyInfo.officeCode || '情報なし';
+        info['事業所所在地'] = companyInfo.officeAddress || '情報なし';
+        info['事業所名称'] = companyInfo.officeName || '情報なし';
+        info['事業主氏名'] = companyInfo.employerName || '情報なし';
+        info['事業所電話番号'] = companyInfo.officePhoneNumber || '情報なし';
+        info['被保険者整理番号'] = getValue('healthInsuranceNumber');
+        info['被保険者氏名'] = getValue('name');
+        info['被保険者生年月日'] = getValue('birthDate');
+        const age5 = parseInt(getValue('age', '0')) || 0;
+        if (age5 >= 70) {
+          info['マイナンバー（70歳以上被保険者のみ）'] = myNumber || '情報なし';
+          info['基礎年金番号（70歳以上被保険者のみ）'] = basicPensionNumber || '情報なし';
+        } else {
+          info['マイナンバー（70歳以上被保険者のみ）'] = '情報なし';
+          info['基礎年金番号（70歳以上被保険者のみ）'] = '情報なし';
+        }
+        info['賞与支払い年月日'] = '情報なし';
+        info['賞与支払額（通貨）'] = '情報なし';
+        info['賞与支給額（現物）'] = '情報なし';
+        info['標準賞与額'] = '情報なし';
+        const age6 = parseInt(getValue('age', '0')) || 0;
+        info['70歳以上か'] = age6 >= 70 ? 'はい' : 'いいえ';
+        info['同一月内の賞与か'] = '情報なし';
+        break;
+
+      default:
+        info['情報'] = 'この文書タイプの情報収集は未実装です';
+    }
+
+    return info;
+  }
+
+  /**
+   * 文書に必要な情報を表示する（ファイルダウンロード）
+   */
+  async showDocumentInfo() {
     if (!this.selectedDocumentType || !this.selectedEmployee) {
       alert('文書種類と従業員を選択してください');
       return;
     }
 
-    this.isCreatingDocument = true;
-
     try {
+      // 社会保険料一覧が読み込まれていない場合は読み込む（標準報酬月額を取得するため）
+      if (this.insuranceList.length === 0) {
+        await this.loadInsuranceList();
+      }
+
       // 従業員の詳細データを取得
       const employeeData = await this.firestoreService.getEmployeeData(
         this.selectedEmployee.employeeNumber
@@ -1632,17 +1970,127 @@ export class HrDashboardComponent {
         return;
       }
 
-      // PDFに従業員データを記入
-      const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
-        this.selectedDocumentType,
-        employeeData
+      // 文書に必要な情報を収集
+      const documentInfo = await this.collectDocumentInfo(this.selectedDocumentType, employeeData);
+      
+      // 「情報なし」が含まれているかチェック
+      const hasMissingInfo = Object.values(documentInfo).some(value => value === '情報なし' || (typeof value === 'string' && value.includes('情報なし')));
+      
+      // ファイル内容を生成
+      let fileContent = `${this.selectedDocumentType} 作成に必要な情報\n`;
+      fileContent += `========================================\n\n`;
+      fileContent += `社員番号: ${this.selectedEmployee.employeeNumber}\n`;
+      fileContent += `従業員氏名: ${this.selectedEmployee.name}\n\n`;
+      fileContent += `必要な情報一覧:\n`;
+      fileContent += `----------------------------------------\n\n`;
+      
+      for (const [key, value] of Object.entries(documentInfo)) {
+        fileContent += `${key}: ${value}\n`;
+      }
+      
+      if (hasMissingInfo) {
+        fileContent += `\n\n========================================\n`;
+        fileContent += `注意: 情報が不足しているため、「情報なし」と記載しています。\n`;
+        fileContent += `不足している情報を確認し、必要に応じて設定ページや社員情報を更新してください。\n`;
+      }
+      
+      // ファイルをダウンロード
+      const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = `${this.selectedDocumentType}作成に必要な情報_${this.selectedEmployee.employeeNumber}_${this.selectedEmployee.name}.txt`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      // メッセージを表示
+      if (hasMissingInfo) {
+        alert('情報が不足しているため、「情報なし」と記載しています。\nダウンロードしたファイルを確認し、不足している情報を設定ページや社員情報から更新してください。');
+      } else {
+        alert('必要な情報をファイルとしてダウンロードしました。');
+      }
+    } catch (error) {
+      console.error('Error collecting document info:', error);
+      alert('情報の収集に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
+    }
+  }
+
+  /**
+   * 文書を作成する（テンプレートPDFと情報テキストファイルをダウンロード）
+   */
+  async createDocument() {
+    if (!this.selectedDocumentType || !this.selectedEmployee) {
+      alert('文書種類と従業員を選択してください');
+      return;
+    }
+
+    this.isCreatingDocument = true;
+
+    try {
+      // 社会保険料一覧が読み込まれていない場合は読み込む（標準報酬月額を取得するため）
+      if (this.insuranceList.length === 0) {
+        await this.loadInsuranceList();
+      }
+
+      // 従業員の詳細データを取得
+      const employeeData = await this.firestoreService.getEmployeeData(
+        this.selectedEmployee.employeeNumber
       );
 
-      // PDFをダウンロード
-      const fileName = `${this.selectedDocumentType}_${this.selectedEmployee.employeeNumber}_${new Date().getTime()}.pdf`;
-      this.pdfEditService.downloadPdf(pdfBytes, fileName);
+      if (!employeeData) {
+        alert('従業員データの取得に失敗しました');
+        return;
+      }
 
-      alert('文書を作成しました');
+      // 文書に必要な情報を収集
+      const documentInfo = await this.collectDocumentInfo(this.selectedDocumentType, employeeData);
+
+      // 1. テンプレートPDFをそのままダウンロード（情報を記入しない）
+      const pdfBytes = await this.pdfEditService.loadPdfTemplate(this.selectedDocumentType);
+      const pdfFileName = `${this.selectedDocumentType}_${this.selectedEmployee.employeeNumber}_${this.selectedEmployee.name}.pdf`;
+      this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+
+      // 2. 必要な情報をテキストファイルとしてダウンロード
+      const hasMissingInfo = Object.values(documentInfo).some(value => value === '情報なし' || (typeof value === 'string' && value.includes('情報なし')));
+      
+      let fileContent = `${this.selectedDocumentType} 作成に必要な情報\n`;
+      fileContent += `========================================\n\n`;
+      fileContent += `社員番号: ${this.selectedEmployee.employeeNumber}\n`;
+      fileContent += `従業員氏名: ${this.selectedEmployee.name}\n\n`;
+      fileContent += `必要な情報一覧:\n`;
+      fileContent += `----------------------------------------\n\n`;
+      
+      for (const [key, value] of Object.entries(documentInfo)) {
+        fileContent += `${key}: ${value}\n`;
+      }
+      
+      if (hasMissingInfo) {
+        fileContent += `\n\n========================================\n`;
+        fileContent += `注意: 情報が不足しているため、「情報なし」と記載しています。\n`;
+        fileContent += `不足している情報を確認し、必要に応じて設定ページや社員情報を更新してください。\n`;
+      }
+      
+      // テキストファイルをダウンロード
+      const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const textFileName = `${this.selectedDocumentType}作成に必要な情報_${this.selectedEmployee.employeeNumber}_${this.selectedEmployee.name}.txt`;
+      link.download = textFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // メッセージを表示
+      if (hasMissingInfo) {
+        alert('文書テンプレートと必要な情報ファイルをダウンロードしました。\n\n注意: 情報が不足しているため、「情報なし」と記載しています。\n不足している情報を確認し、必要に応じて設定ページや社員情報を更新してください。');
+      } else {
+        alert('文書テンプレートと必要な情報ファイルをダウンロードしました。');
+      }
     } catch (error) {
       console.error('Error creating document:', error);
       alert('文書の作成に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));

@@ -94,24 +94,58 @@
                 <h3 class="section-title">企業情報設定</h3>
                 <div class="form-grid">
                   <div class="form-group full-width">
-                    <label for="companyName">企業名 <span class="required">*</span></label>
+                    <label for="officeName">事業所名称 <span class="required">*</span></label>
                     <input 
                       type="text" 
-                      id="companyName" 
-                      formControlName="companyName" 
+                      id="officeName" 
+                      formControlName="officeName" 
                       class="form-input"
                       placeholder="例: 株式会社サンプル"
                     >
                   </div>
                   <div class="form-group full-width">
-                    <label for="address">住所</label>
+                    <label for="officeAddress">事業所住所</label>
                     <textarea 
-                      id="address" 
-                      formControlName="address" 
+                      id="officeAddress" 
+                      formControlName="officeAddress" 
                       class="form-input" 
                       rows="3"
                       placeholder="住所を入力"
                     ></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="officeNumber">事業所番号 <span class="required">*</span></label>
+                    <input 
+                      type="text" 
+                      id="officeNumber" 
+                      formControlName="officeNumber" 
+                      class="form-input"
+                      placeholder="例: 12345"
+                      maxlength="5"
+                      pattern="[0-9]{5}"
+                      title="5桁の数字を入力してください"
+                    >
+                    <small class="form-hint">5桁の数字で入力してください</small>
+                  </div>
+                  <div class="form-group">
+                    <label for="employerName">事業主氏名</label>
+                    <input 
+                      type="text" 
+                      id="employerName" 
+                      formControlName="employerName" 
+                      class="form-input"
+                      placeholder="例: 山田 太郎"
+                    >
+                  </div>
+                  <div class="form-group">
+                    <label for="officePhoneNumber">事業所電話番号</label>
+                    <input 
+                      type="text" 
+                      id="officePhoneNumber" 
+                      formControlName="officePhoneNumber" 
+                      class="form-input"
+                      placeholder="例: 03-1234-5678"
+                    >
                   </div>
                   <div class="form-group">
                     <label for="corporateNumber">法人番号</label>
@@ -483,6 +517,13 @@
               >
                 <span *ngIf="!isCreatingDocument">文書を作成</span>
                 <span *ngIf="isCreatingDocument">作成中...</span>
+              </button>
+              <button 
+                class="show-info-button" 
+                (click)="showDocumentInfo()"
+                style="background: #2196F3; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; margin-left: 0.5rem;"
+              >
+                必要な情報を表示
               </button>
               <p class="action-note" *ngIf="!isCreatingDocument">
                 選択した従業員の情報をPDFに記入してダウンロードします
@@ -2236,4 +2277,5 @@
     </div>
   </div>
 </div>
+
 
