@@ -398,6 +398,41 @@
                 社員を追加
               </button>
             </div>
+
+            <!-- 新入社員一覧表 -->
+            <div class="table-container">
+              <table class="employee-table">
+                <thead>
+                  <tr>
+                    <th>社員番号</th>
+                    <th>氏名</th>
+                    <th>メールアドレス</th>
+                    <th>雇用形態</th>
+                    <th>ステータス</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    *ngFor="let employee of onboardingEmployees" 
+                    class="employee-row"
+                    (click)="openOnboardingEmployeeModal(employee)"
+                  >
+                    <td>{{ employee.employeeNumber }}</td>
+                    <td>{{ employee.name }}</td>
+                    <td>{{ employee.email }}</td>
+                    <td>{{ employee.employmentType }}</td>
+                    <td>
+                      <span class="status-badge" [ngClass]="'status-' + employee.status">
+                        {{ employee.status }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="onboardingEmployees.length === 0">
+                    <td colspan="5" class="empty-message">新入社員がありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </ng-container>
 
@@ -2292,6 +2327,102 @@
     
     <div class="modal-footer">
       <button type="button" class="close-detail-button" (click)="closeApplicationDetailModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新入社員詳細モーダル -->
+<div *ngIf="showOnboardingEmployeeModal" class="modal-overlay" (click)="closeOnboardingEmployeeModal()">
+  <div class="modal-content employee-edit-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">新入社員詳細情報</h3>
+      <button class="modal-close" (click)="closeOnboardingEmployeeModal()">×</button>
+    </div>
+    
+    <div class="onboarding-employee-detail">
+      <!-- 基本情報 -->
+      <section class="detail-section">
+        <h3 class="section-title">基本情報</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">社員番号:</span>
+            <span class="detail-value">{{ selectedOnboardingEmployee?.employeeNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">氏名:</span>
+            <span class="detail-value">{{ selectedOnboardingEmployee?.name }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">メールアドレス:</span>
+            <span class="detail-value">{{ selectedOnboardingEmployee?.email }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">雇用形態:</span>
+            <span class="detail-value">{{ selectedOnboardingEmployee?.employmentType }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">ステータス:</span>
+            <span class="detail-value">
+              <span class="status-badge" [ngClass]="'status-' + selectedOnboardingEmployee?.status">
+                {{ selectedOnboardingEmployee?.status }}
+              </span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 入社時申請データ（申請済みの場合） -->
+      <section *ngIf="selectedOnboardingEmployee?.applicationData" class="detail-section">
+        <h3 class="section-title">入社時申請内容</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">申請日:</span>
+            <span class="detail-value">{{ selectedOnboardingEmployee.applicationData.createdAt | date:'yyyy/MM/dd' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請ステータス:</span>
+            <span class="detail-value">{{ selectedOnboardingEmployee.applicationData.status }}</span>
+          </div>
+        </div>
+        <!-- 申請内容の詳細は必要に応じて追加 -->
+      </section>
+
+      <!-- ステータス変更 -->
+      <section class="detail-section">
+        <h3 class="section-title">ステータス変更</h3>
+        <div class="form-group">
+          <label for="statusComment">コメント（差し戻しの場合）</label>
+          <textarea 
+            id="statusComment"
+            class="form-input"
+            [(ngModel)]="onboardingStatusComment"
+            placeholder="差し戻し理由などを入力してください"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="status-actions">
+          <button 
+            *ngIf="selectedOnboardingEmployee?.status !== '差し戻し'"
+            type="button" 
+            class="status-button status-reject"
+            (click)="updateOnboardingEmployeeStatus('差し戻し')"
+          >
+            差し戻し
+          </button>
+          <button 
+            *ngIf="selectedOnboardingEmployee?.status !== '準備完了'"
+            type="button" 
+            class="status-button status-approve"
+            (click)="updateOnboardingEmployeeStatus('準備完了')"
+          >
+            準備完了
+          </button>
+        </div>
+      </section>
+    </div>
+    
+    <div class="modal-footer">
+      <button type="button" class="close-detail-button" (click)="closeOnboardingEmployeeModal()">閉じる</button>
     </div>
   </div>
 </div>

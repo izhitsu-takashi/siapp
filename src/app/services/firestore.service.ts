@@ -76,14 +76,23 @@ export class FirestoreService {
 
   async getEmployeeData(employeeNumber: string): Promise<any | null> {
     try {
+      // まず通常の社員コレクションを検索
       const docRef = doc(this.db, 'employees', employeeNumber);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
         return docSnap.data();
-      } else {
-        return null;
       }
+      
+      // 通常の社員コレクションで見つからない場合、新入社員コレクションを検索
+      const onboardingDocRef = doc(this.db, 'onboardingEmployees', employeeNumber);
+      const onboardingDocSnap = await getDoc(onboardingDocRef);
+      
+      if (onboardingDocSnap.exists()) {
+        return onboardingDocSnap.data();
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error getting employee data:', error);
       throw error;
@@ -128,11 +137,12 @@ export class FirestoreService {
 
   async getEmployeeByEmail(email: string): Promise<any | null> {
     try {
+      // まず通常の社員コレクションを検索
       const employeesCollection = collection(this.db, 'employees');
-      const querySnapshot = await getDocs(employeesCollection);
+      const employeesSnapshot = await getDocs(employeesCollection);
       
       let employee = null;
-      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+      employeesSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data();
         if (data['email'] === email) {
           employee = {
@@ -141,6 +151,22 @@ export class FirestoreService {
           };
         }
       });
+      
+      // 通常の社員コレクションで見つからなかった場合、新入社員コレクションを検索
+      if (!employee) {
+        const onboardingCollection = collection(this.db, 'onboardingEmployees');
+        const onboardingSnapshot = await getDocs(onboardingCollection);
+        
+        onboardingSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+          const data = doc.data();
+          if (data['email'] === email) {
+            employee = {
+              id: doc.id,
+              ...data
+            };
+          }
+        });
+      }
       
       return employee;
     } catch (error) {
@@ -264,6 +290,32 @@ export class FirestoreService {
       return applications;
     } catch (error) {
       console.error('Error getting employee applications:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 申請種類で申請一覧を取得する
+   */
+  async getEmployeeApplicationsByType(applicationType: string): Promise<any[]> {
+    try {
+      const applicationsCollection = collection(this.db, 'applications');
+      const querySnapshot = await getDocs(applicationsCollection);
+      
+      const applications: any[] = [];
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        if (data['applicationType'] === applicationType) {
+          applications.push({
+            id: doc.id,
+            ...data
+          });
+        }
+      });
+      
+      return applications;
+    } catch (error) {
+      console.error('Error getting applications by type:', error);
       throw error;
     }
   }
@@ -403,6 +455,99 @@ export class FirestoreService {
       });
     } catch (error) {
       console.error('Error resubmitting application:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 新入社員データを保存する
+   */
+  async saveOnboardingEmployee(employeeNumber: string, data: any): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'onboardingEmployees', employeeNumber);
+      await setDoc(docRef, {
+        ...data,
+        employeeNumber: employeeNumber,
+        status: '申請待ち',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error saving onboarding employee:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 新入社員データを取得する
+   */
+  async getOnboardingEmployee(employeeNumber: string): Promise<any | null> {
+    try {
+      const docRef = doc(this.db, 'onboardingEmployees', employeeNumber);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return docSnap.data();
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting onboarding employee:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 全新入社員データを取得する
+   */
+  async getAllOnboardingEmployees(): Promise<any[]> {
+    try {
+      const onboardingCollection = collection(this.db, 'onboardingEmployees');
+      const querySnapshot = await getDocs(onboardingCollection);
+      
+      const employees: any[] = [];
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        employees.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      return employees;
+    } catch (error) {
+      console.error('Error getting all onboarding employees:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 新入社員のステータスを更新する
+   */
+  async updateOnboardingEmployeeStatus(employeeNumber: string, status: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'onboardingEmployees', employeeNumber);
+      await updateDoc(docRef, {
+        status: status,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating onboarding employee status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 新入社員データを更新する
+   */
+  async updateOnboardingEmployee(employeeNumber: string, data: any): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'onboardingEmployees', employeeNumber);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating onboarding employee:', error);
       throw error;
     }
   }

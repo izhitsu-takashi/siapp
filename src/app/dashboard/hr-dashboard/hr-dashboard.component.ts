@@ -5,6 +5,7 @@ import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule, For
 import { HttpClient } from '@angular/common/http';
 import { FirestoreService } from '../../services/firestore.service';
 import { PdfEditService } from '../../services/pdf-edit.service';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface Employee {
   employeeNumber: string;
@@ -40,6 +41,9 @@ export class HrDashboardComponent {
 
   // 社員一覧
   employees: Employee[] = [];
+  
+  // 新入社員一覧
+  onboardingEmployees: any[] = [];
   
   // 社会保険料一覧データ
   insuranceList: any[] = [];
@@ -98,6 +102,11 @@ export class HrDashboardComponent {
   showMyNumber = false;
   hasPensionHistory = false;
   isSaving = false;
+
+  // 新入社員詳細モーダル
+  showOnboardingEmployeeModal = false;
+  selectedOnboardingEmployee: any = null;
+  onboardingStatusComment: string = '';
   sameAsCurrentAddress = false;
   sameAsCurrentAddressForEmergency = false;
   hasSpouse = false;
@@ -565,6 +574,12 @@ export class HrDashboardComponent {
         console.error('Error in loadAllApplications:', err);
       });
     }
+    // 入社手続きタブが選択された場合、新入社員一覧を読み込む
+    if (tabName === '入社手続き') {
+      this.loadOnboardingEmployees().catch(err => {
+        console.error('Error in loadOnboardingEmployees:', err);
+      });
+    }
     // 保険証管理タブが選択された場合、保険証一覧を読み込む
     if (tabName === '保険証管理') {
       this.loadInsuranceCards().catch(err => {
@@ -676,12 +691,46 @@ export class HrDashboardComponent {
     return item.employeeNumber || index.toString();
   }
   
+  // 新入社員一覧を読み込む
+  async loadOnboardingEmployees() {
+    try {
+      const employees = await this.firestoreService.getAllOnboardingEmployees();
+      // FirestoreのTimestampをDateに変換
+      this.onboardingEmployees = employees.map((emp: any) => {
+        if (emp.createdAt && typeof emp.createdAt.toDate === 'function') {
+          emp.createdAt = emp.createdAt.toDate();
+        }
+        if (emp.updatedAt && typeof emp.updatedAt.toDate === 'function') {
+          emp.updatedAt = emp.updatedAt.toDate();
+        }
+        return emp;
+      });
+
+      // 入社時申請が届いているかチェックしてステータスを更新
+      try {
+        const onboardingApplications = await this.firestoreService.getEmployeeApplicationsByType('入社時申請');
+        for (const app of onboardingApplications) {
+          const employee = this.onboardingEmployees.find((emp: any) => emp.employeeNumber === app.employeeNumber);
+          if (employee && employee.status === '申請待ち') {
+            await this.firestoreService.updateOnboardingEmployeeStatus(employee.employeeNumber, '申請済み');
+            employee.status = '申請済み';
+          }
+        }
+      } catch (error) {
+        console.error('Error checking onboarding applications:', error);
+      }
+    } catch (error) {
+      console.error('Error loading onboarding employees:', error);
+      this.onboardingEmployees = [];
+    }
+  }
+
   // 申請一覧を読み込む
   async loadAllApplications() {
     try {
       const applications = await this.firestoreService.getAllApplications();
       // FirestoreのTimestampをDateに変換
-      this.allApplications = applications.map((app: any) => {
+      let allApps = applications.map((app: any) => {
         if (app.createdAt && typeof app.createdAt.toDate === 'function') {
           app.createdAt = app.createdAt.toDate();
         }
@@ -690,6 +739,9 @@ export class HrDashboardComponent {
         }
         return app;
       });
+      
+      // 入社時申請を除外
+      this.allApplications = allApps.filter((app: any) => app.applicationType !== '入社時申請');
       
       // 申請者情報を取得
       for (const app of this.allApplications) {
@@ -1040,11 +1092,11 @@ export class HrDashboardComponent {
     if (this.addEmployeeForm.valid) {
       const newEmployees = this.employeesFormArray.value;
       
-      // 各社員をFirestoreに保存
+      // 各社員を新入社員一覧に保存
       for (const employee of newEmployees) {
         try {
-          // パスワードを含めて社員データを保存
-          await this.firestoreService.saveEmployeeData(employee.employeeNumber, {
+          // 新入社員データを保存（ステータス: 申請待ち）
+          await this.firestoreService.saveOnboardingEmployee(employee.employeeNumber, {
             employeeNumber: employee.employeeNumber,
             name: employee.name,
             email: employee.email,
@@ -1065,14 +1117,6 @@ export class HrDashboardComponent {
             // メール送信エラーは警告のみ（社員追加は成功）
             alert(`${employee.name}さんのメール送信に失敗しましたが、社員データは保存されました。`);
           }
-          
-          // 社員一覧に追加
-          this.employees.push({
-            employeeNumber: employee.employeeNumber,
-            name: employee.name,
-            email: employee.email,
-            employmentType: employee.employmentType
-          });
         } catch (error) {
           console.error('Error adding employee:', error);
           alert(`${employee.name}さんの追加に失敗しました`);
@@ -1082,8 +1126,8 @@ export class HrDashboardComponent {
       // モーダルを閉じる
       this.closeAddModal();
       
-      // 社員一覧を再読み込み
-      await this.loadEmployees();
+      // 新入社員一覧を再読み込み
+      await this.loadOnboardingEmployees();
       
       alert(`${newEmployees.length}名の社員を追加しました`);
     } else {
@@ -2245,6 +2289,73 @@ export class HrDashboardComponent {
     }
   }
 
+
+  // 新入社員詳細モーダルを開く
+  async openOnboardingEmployeeModal(employee: any) {
+    this.selectedOnboardingEmployee = employee;
+    this.onboardingStatusComment = employee.statusComment || '';
+    this.showOnboardingEmployeeModal = true;
+    
+    // 入社時申請データを取得
+    const applications = await this.firestoreService.getEmployeeApplicationsByType('入社時申請');
+    const onboardingApp = applications.find((app: any) => app.employeeNumber === employee.employeeNumber);
+    if (onboardingApp) {
+      this.selectedOnboardingEmployee.applicationData = onboardingApp;
+    }
+  }
+
+  // 新入社員詳細モーダルを閉じる
+  closeOnboardingEmployeeModal() {
+    this.showOnboardingEmployeeModal = false;
+    this.selectedOnboardingEmployee = null;
+    this.onboardingStatusComment = '';
+  }
+
+  // 新入社員のステータスを変更
+  async updateOnboardingEmployeeStatus(newStatus: string) {
+    if (!this.selectedOnboardingEmployee) return;
+
+    try {
+      await this.firestoreService.updateOnboardingEmployeeStatus(
+        this.selectedOnboardingEmployee.employeeNumber,
+        newStatus
+      );
+
+      // ステータスコメントを更新
+      if (this.onboardingStatusComment) {
+        await this.firestoreService.updateOnboardingEmployee(
+          this.selectedOnboardingEmployee.employeeNumber,
+          { statusComment: this.onboardingStatusComment }
+        );
+      }
+
+      // 準備完了の場合、通常の社員データに移行
+      if (newStatus === '準備完了') {
+        const employeeData = await this.firestoreService.getOnboardingEmployee(
+          this.selectedOnboardingEmployee.employeeNumber
+        );
+        if (employeeData) {
+          // ステータスとコメントを除いて通常の社員データとして保存
+          const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = employeeData;
+          await this.firestoreService.saveEmployeeData(
+            this.selectedOnboardingEmployee.employeeNumber,
+            employeeDataWithoutStatus
+          );
+        }
+      }
+
+      // 新入社員一覧を再読み込み
+      await this.loadOnboardingEmployees();
+      
+      // モーダルを閉じる
+      this.closeOnboardingEmployeeModal();
+      
+      alert(`ステータスを「${newStatus}」に変更しました`);
+    } catch (error) {
+      console.error('Error updating onboarding employee status:', error);
+      alert('ステータスの変更に失敗しました');
+    }
+  }
 
   // 日付をフォーマット（YYYY-MM-DD → YYYY/MM/DD）
   formatDate(dateString: string | null | undefined): string {

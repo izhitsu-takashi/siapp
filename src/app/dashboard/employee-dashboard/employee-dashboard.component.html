@@ -45,7 +45,7 @@
               <h3 class="section-title">基本情報</h3>
               <div class="form-grid">
                 <div class="form-group">
-                  <label for="name">氏名 <span class="required">*</span></label>
+                  <label for="name">氏名</label>
                   <input 
                     type="text" 
                     id="name" 
@@ -65,7 +65,7 @@
                   >
                 </div>
                 <div class="form-group">
-                  <label for="birthDate">生年月日 <span class="required">*</span></label>
+                  <label for="birthDate">生年月日</label>
                   <div class="birth-date-container">
                     <input 
                       type="date" 
@@ -79,7 +79,7 @@
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="gender">戸籍上の性別 <span class="required">*</span></label>
+                  <label for="gender">戸籍上の性別</label>
                   <select 
                     id="gender" 
                     formControlName="gender" 
@@ -90,7 +90,7 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="email">メールアドレス <span class="required">*</span></label>
+                  <label for="email">メールアドレス</label>
                   <input 
                     type="email" 
                     id="email" 
@@ -220,7 +220,7 @@
               <h3 class="section-title">業務情報</h3>
               <div class="form-grid">
                 <div class="form-group">
-                  <label for="employeeNumber">社員番号 <span class="required">*</span></label>
+                  <label for="employeeNumber">社員番号</label>
                   <input 
                     type="text" 
                     id="employeeNumber" 
@@ -362,7 +362,7 @@
                     <input 
                       type="checkbox" 
                       [checked]="sameAsCurrentAddress" 
-                      (change)="onSameAddressChange($event)"
+                      [disabled]="true"
                     >
                     住所（現住所と同じ）
                   </label>
@@ -732,37 +732,72 @@
               <span class="application-label">入社時申請</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('扶養家族追加')">
+            <button 
+              class="application-button" 
+              (click)="openApplicationModal('扶養家族追加')"
+              [disabled]="!hasOnboardingApplication"
+              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+            >
               <span class="application-icon">👨‍👩‍👧</span>
               <span class="application-label">扶養家族追加</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('扶養削除申請')">
+            <button 
+              class="application-button" 
+              (click)="openApplicationModal('扶養削除申請')"
+              [disabled]="!hasOnboardingApplication"
+              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+            >
               <span class="application-icon">❌</span>
               <span class="application-label">扶養削除申請</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('住所変更申請')">
+            <button 
+              class="application-button" 
+              (click)="openApplicationModal('住所変更申請')"
+              [disabled]="!hasOnboardingApplication"
+              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+            >
               <span class="application-icon">🏠</span>
               <span class="application-label">住所変更申請</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('氏名変更申請')">
+            <button 
+              class="application-button" 
+              (click)="openApplicationModal('氏名変更申請')"
+              [disabled]="!hasOnboardingApplication"
+              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+            >
               <span class="application-icon">✏️</span>
               <span class="application-label">氏名変更申請</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('産前産後休業申請')">
+            <button 
+              class="application-button" 
+              (click)="openApplicationModal('産前産後休業申請')"
+              [disabled]="!hasOnboardingApplication"
+              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+            >
               <span class="application-icon">🤰</span>
               <span class="application-label">産前産後休業申請</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('退職申請')">
+            <button 
+              class="application-button" 
+              (click)="openApplicationModal('退職申請')"
+              [disabled]="!hasOnboardingApplication"
+              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+            >
               <span class="application-icon">🚪</span>
               <span class="application-label">退職申請</span>
             </button>
             
-            <button class="application-button" (click)="openApplicationModal('保険証再発行申請')">
+            <button 
+              class="application-button" 
+              (click)="openApplicationModal('保険証再発行申請')"
+              [disabled]="!hasOnboardingApplication"
+              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+            >
               <span class="application-icon">🆔</span>
               <span class="application-label">保険証再発行申請</span>
             </button>

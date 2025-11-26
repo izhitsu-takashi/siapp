@@ -31,6 +31,7 @@ export class EmployeeDashboardComponent {
   employeeData: any = null;
   hrRequests: any[] = [];
   applications: any[] = [];
+  hasOnboardingApplication: boolean = false; // 入社時申請が提出されているか
   
   // 申請モーダル用
   showApplicationModal = false;
@@ -710,6 +711,18 @@ export class EmployeeDashboardComponent {
 
   switchTab(tabName: string) {
     this.currentTab = tabName;
+    
+    // 各種申請ページに切り替えた場合、申請一覧を読み込む
+    if (tabName === '各種申請') {
+      this.loadApplications().then(() => {
+        // 申請一覧を読み込んだ後、入社時申請の状態を更新
+        this.hasOnboardingApplication = this.applications.some(
+          (app: any) => app.applicationType === '入社時申請'
+        );
+      }).catch(err => {
+        console.error('Error loading applications:', err);
+      });
+    }
   }
 
   logout() {
@@ -1737,6 +1750,11 @@ export class EmployeeDashboardComponent {
         // 申請一覧を再読み込み
         await this.loadApplications();
         
+        // 入社時申請の状態を更新
+        this.hasOnboardingApplication = this.applications.some(
+          (app: any) => app.applicationType === '入社時申請'
+        );
+        
         // 人事からの依頼を再読み込み（入社時申請メッセージを更新）
         await this.loadHrRequests();
         
@@ -1809,12 +1827,12 @@ export class EmployeeDashboardComponent {
       this.hrRequests = [];
 
       // 入社時申請が出されているかチェック
-      const hasOnboardingApplication = this.applications.some(
+      this.hasOnboardingApplication = this.applications.some(
         (app: any) => app.applicationType === '入社時申請'
       );
 
       // 入社時申請が出されていない場合、メッセージを追加
-      if (!hasOnboardingApplication) {
+      if (!this.hasOnboardingApplication) {
         this.hrRequests.push({
           title: '入社時申請',
           date: new Date(),

@@ -908,11 +908,27 @@ select.form-input {
   min-height: 150px;
 }
 
-.application-button:hover {
+.application-button:hover:not(:disabled) {
   border-color: #f093fb;
   background: linear-gradient(135deg, rgba(240, 147, 251, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(240, 147, 251, 0.2);
+}
+
+.application-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+  border-color: #d0d0d0;
+}
+
+.application-button:disabled .application-icon {
+  opacity: 0.5;
+}
+
+.application-button:disabled .application-label {
+  color: #999;
+  opacity: 0.7;
 }
 
 .application-icon {
