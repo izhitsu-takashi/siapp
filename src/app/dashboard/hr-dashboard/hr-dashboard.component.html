@@ -422,7 +422,11 @@
                     <td>{{ employee.email }}</td>
                     <td>{{ employee.employmentType }}</td>
                     <td>
-                      <span class="status-badge" [ngClass]="'status-' + employee.status">
+                      <span class="status-badge" 
+                            [class.status-pending]="employee.status === '申請待ち'"
+                            [class.status-resubmitted]="employee.status === '申請済み'"
+                            [class.status-rejected]="employee.status === '差し戻し'"
+                            [class.status-approved]="employee.status === '準備完了'">
                         {{ employee.status }}
                       </span>
                     </td>
@@ -584,15 +588,6 @@
                 PDFを作成しています。しばらくお待ちください...
               </p>
             </section>
-          </div>
-        </ng-container>
-
-        <!-- e-Gov電子申請ページ -->
-        <ng-container *ngIf="currentTab === 'e-Gov電子申請ページ'">
-          <div class="page-content">
-            <h2 class="page-title">e-Gov電子申請ページ</h2>
-            <p class="page-description">e-Gov電子申請システムへのリンクと管理を行います。</p>
-            <!-- 今後実装予定 -->
           </div>
         </ng-container>
 
@@ -2353,6 +2348,7 @@
               [ngModelOptions]="{standalone: true}"
             >
               <option value="申請待ち">申請待ち</option>
+              <option value="申請済み">申請済み</option>
               <option value="差し戻し">差し戻し</option>
               <option value="準備完了">準備完了</option>
             </select>
@@ -2454,7 +2450,7 @@
         <h3 class="section-title">マイナンバー</h3>
         <div class="form-grid">
           <div class="form-group full-width">
-            <label for="onboarding-myNumberPart1">マイナンバー</label>
+            <label for="onboarding-myNumberPart1">マイナンバー <span class="required">*</span></label>
             <div class="my-number-container">
               <div class="my-number-inputs">
                 <input 
@@ -2510,7 +2506,7 @@
         <h3 class="section-title">入退社情報</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label for="onboarding-employmentStatus">在籍状況</label>
+            <label for="onboarding-employmentStatus">在籍状況 <span class="required">*</span></label>
             <select 
               id="onboarding-employmentStatus" 
               formControlName="employmentStatus" 
@@ -2521,7 +2517,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="onboarding-joinDate">入社年月日</label>
+            <label for="onboarding-joinDate">入社年月日 <span class="required">*</span></label>
             <input 
               type="date" 
               id="onboarding-joinDate" 
@@ -2965,7 +2961,7 @@
             ></textarea>
           </div>
           <div class="form-group">
-            <label for="onboarding-socialInsuranceAcquisitionDate">社会保険の資格取得年月日</label>
+            <label for="onboarding-socialInsuranceAcquisitionDate">社会保険の資格取得年月日 <span class="required">*</span></label>
             <input 
               type="date" 
               id="onboarding-socialInsuranceAcquisitionDate" 
@@ -3001,7 +2997,7 @@
         <h3 class="section-title">配偶者情報</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label for="onboarding-spouseStatus">配偶者の有無</label>
+            <label for="onboarding-spouseStatus">配偶者の有無 <span class="required">*</span></label>
             <select 
               id="onboarding-spouseStatus" 
               formControlName="spouseStatus" 
@@ -3012,14 +3008,209 @@
               <option *ngFor="let option of spouseOptions" [value]="option">{{ option }}</option>
             </select>
           </div>
+          <!-- 配偶者が「有」の場合、扶養するかどうかを選択 -->
           <div class="form-group" *ngIf="onboardingHasSpouse">
-            <label for="onboarding-spouseAnnualIncome">配偶者の年収</label>
-            <input 
-              type="number" 
-              id="onboarding-spouseAnnualIncome" 
-              formControlName="spouseAnnualIncome" 
+            <label for="onboarding-spouseSupport">扶養となるか</label>
+            <select 
+              id="onboarding-spouseSupport" 
+              formControlName="spouseSupport" 
               class="form-input"
+              (change)="onOnboardingSpouseSupportChange($event)"
             >
+              <option value="">選択してください</option>
+              <option value="扶養する">扶養する</option>
+              <option value="扶養しない">扶養しない</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 扶養する場合の詳細情報 -->
+        <div *ngIf="onboardingHasSpouse && onboardingWillSupportSpouse">
+          <div class="form-grid">
+            <!-- 配偶者基礎年金番号 -->
+            <div class="form-group">
+              <label for="onboarding-spouseBasicPensionNumberPart1">配偶者基礎年金番号</label>
+              <div class="basic-pension-number-container">
+                <input 
+                  type="text" 
+                  id="onboarding-spouseBasicPensionNumberPart1" 
+                  formControlName="spouseBasicPensionNumberPart1" 
+                  class="form-input basic-pension-part"
+                  maxlength="4"
+                  placeholder="0000"
+                >
+                <span class="basic-pension-separator">-</span>
+                <input 
+                  type="text" 
+                  id="onboarding-spouseBasicPensionNumberPart2" 
+                  formControlName="spouseBasicPensionNumberPart2" 
+                  class="form-input basic-pension-part"
+                  maxlength="6"
+                  placeholder="000000"
+                >
+              </div>
+            </div>
+
+            <!-- 配偶者の姓 -->
+            <div class="form-group">
+              <label for="onboarding-spouseLastName">配偶者の姓</label>
+              <input 
+                type="text" 
+                id="onboarding-spouseLastName" 
+                formControlName="spouseLastName" 
+                class="form-input"
+              >
+            </div>
+
+            <!-- 配偶者の名 -->
+            <div class="form-group">
+              <label for="onboarding-spouseFirstName">配偶者の名</label>
+              <input 
+                type="text" 
+                id="onboarding-spouseFirstName" 
+                formControlName="spouseFirstName" 
+                class="form-input"
+              >
+            </div>
+
+            <!-- 姓（ヨミガナ） -->
+            <div class="form-group">
+              <label for="onboarding-spouseLastNameKana">姓（ヨミガナ）</label>
+              <input 
+                type="text" 
+                id="onboarding-spouseLastNameKana" 
+                formControlName="spouseLastNameKana" 
+                class="form-input"
+              >
+            </div>
+
+            <!-- 名（ヨミガナ） -->
+            <div class="form-group">
+              <label for="onboarding-spouseFirstNameKana">名（ヨミガナ）</label>
+              <input 
+                type="text" 
+                id="onboarding-spouseFirstNameKana" 
+                formControlName="spouseFirstNameKana" 
+                class="form-input"
+              >
+            </div>
+
+            <!-- 配偶者の生年月日 -->
+            <div class="form-group">
+              <label for="onboarding-spouseBirthDate">配偶者の生年月日</label>
+              <input 
+                type="date" 
+                id="onboarding-spouseBirthDate" 
+                formControlName="spouseBirthDate" 
+                class="form-input"
+              >
+            </div>
+
+            <!-- 配偶者の性別 -->
+            <div class="form-group">
+              <label for="onboarding-spouseGender">配偶者の性別</label>
+              <select 
+                id="onboarding-spouseGender" 
+                formControlName="spouseGender" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
+              </select>
+            </div>
+
+            <!-- 配偶者の電話番号（必須ではない） -->
+            <div class="form-group">
+              <label for="onboarding-spousePhoneNumber">配偶者の電話番号</label>
+              <input 
+                type="tel" 
+                id="onboarding-spousePhoneNumber" 
+                formControlName="spousePhoneNumber" 
+                class="form-input"
+              >
+            </div>
+
+            <!-- 配偶者の見込み年収 -->
+            <div class="form-group">
+              <label for="onboarding-spouseAnnualIncome">配偶者の見込み年収</label>
+              <input 
+                type="text" 
+                id="onboarding-spouseAnnualIncome" 
+                formControlName="spouseAnnualIncome" 
+                class="form-input"
+                placeholder="例: 3000000"
+              >
+            </div>
+
+            <!-- 配偶者のマイナンバー -->
+            <div class="form-group full-width">
+              <label>配偶者のマイナンバー</label>
+              <div class="my-number-container">
+                <div class="my-number-inputs">
+                  <input 
+                    type="text" 
+                    id="onboarding-spouseMyNumberPart1" 
+                    formControlName="spouseMyNumberPart1" 
+                    class="form-input my-number-part"
+                    maxlength="4"
+                    placeholder="0000"
+                  >
+                  <span class="my-number-separator">-</span>
+                  <input 
+                    type="text" 
+                    id="onboarding-spouseMyNumberPart2" 
+                    formControlName="spouseMyNumberPart2" 
+                    class="form-input my-number-part"
+                    maxlength="4"
+                    placeholder="0000"
+                  >
+                  <span class="my-number-separator">-</span>
+                  <input 
+                    type="text" 
+                    id="onboarding-spouseMyNumberPart3" 
+                    formControlName="spouseMyNumberPart3" 
+                    class="form-input my-number-part"
+                    maxlength="4"
+                    placeholder="0000"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- 同居/別居 -->
+            <div class="form-group">
+              <label for="onboarding-spouseLivingTogether">同居/別居</label>
+              <select 
+                id="onboarding-spouseLivingTogether" 
+                formControlName="spouseLivingTogether" 
+                class="form-input"
+                (change)="onOnboardingSpouseLivingTogetherChange($event)"
+              >
+                <option value="">選択してください</option>
+                <option value="同居">同居</option>
+                <option value="別居">別居</option>
+              </select>
+            </div>
+
+            <!-- 別居の場合の住所 -->
+            <div class="form-group full-width" *ngIf="onboardingSpouseLivingTogether === '別居'">
+              <label for="onboarding-spouseAddress">配偶者の住所</label>
+              <textarea 
+                id="onboarding-spouseAddress" 
+                formControlName="spouseAddress" 
+                class="form-input" 
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-group full-width" *ngIf="onboardingSpouseLivingTogether === '別居'">
+              <label for="onboarding-spouseAddressKana">配偶者の住所（ヨミガナ）</label>
+              <textarea 
+                id="onboarding-spouseAddressKana" 
+                formControlName="spouseAddressKana" 
+                class="form-input" 
+                rows="2"
+              ></textarea>
+            </div>
           </div>
         </div>
       </section>

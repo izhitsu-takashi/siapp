@@ -30,7 +30,6 @@ export class HrDashboardComponent {
     { id: 'application-management', name: '申請管理' },
     { id: 'procedures', name: '入社手続き' },
     { id: 'document-management', name: '文書作成・管理' },
-    { id: 'egov', name: 'e-Gov電子申請ページ' },
     { id: 'insurance-card', name: '保険証管理' },
     { id: 'social-insurance', name: '社会保険料' },
     { id: 'settings', name: '設定' }
@@ -115,6 +114,8 @@ export class HrDashboardComponent {
   onboardingSameAsCurrentAddress = false;
   onboardingSameAsCurrentAddressForEmergency = false;
   onboardingHasSpouse = false;
+  onboardingWillSupportSpouse = false; // 新入社員の配偶者を扶養するか
+  onboardingSpouseLivingTogether = ''; // 新入社員の配偶者との同居/別居
   onboardingAge: number | null = null;
   onboardingShowMyNumber = false;
   onboardingHasPensionHistory = false;
@@ -181,7 +182,7 @@ export class HrDashboardComponent {
       employees: this.fb.array([this.createEmployeeFormGroup()])
     });
     this.employeeEditForm = this.createEmployeeEditForm();
-    this.onboardingEmployeeEditForm = this.createEmployeeEditForm();
+    this.onboardingEmployeeEditForm = this.createOnboardingEmployeeEditForm();
     this.settingsForm = this.createSettingsForm();
     
     // ブラウザ環境でのみデータを読み込む（プリレンダリング時はスキップ）
@@ -1175,6 +1176,119 @@ export class HrDashboardComponent {
     this.dependents = [];
   }
 
+  // 新入社員情報編集フォームを作成（必須項目あり）
+  createOnboardingEmployeeEditForm(): FormGroup {
+    return this.fb.group({
+      // 基本情報
+      name: ['', Validators.required],
+      nameKana: [''],
+      birthDate: ['', Validators.required],
+      gender: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      
+      // マイナンバー（必須）
+      myNumberPart1: ['', Validators.required],
+      myNumberPart2: ['', Validators.required],
+      myNumberPart3: ['', Validators.required],
+      
+      // 入退社情報
+      employmentStatus: ['', Validators.required], // 必須
+      joinDate: ['', Validators.required], // 必須
+      resignationDate: [''],
+      resignationReason: [''],
+      
+      // 業務情報
+      employeeNumber: ['', Validators.required],
+      office: [''],
+      workContent: [''],
+      employmentType: [''],
+      paymentType: [''],
+      
+      // 部署・役職情報
+      department: [''],
+      position: [''],
+      
+      // 現住所と連絡先
+      currentAddress: [''],
+      currentAddressKana: [''],
+      phoneNumber: [''],
+      currentHouseholdHead: [''],
+      
+      // 住民票住所
+      sameAsCurrentAddress: [false],
+      residentAddress: [''],
+      residentAddressKana: [''],
+      residentHouseholdHead: [''],
+      
+      // 緊急連絡先
+      emergencyContact: this.fb.group({
+        name: [''],
+        nameKana: [''],
+        relationship: [''],
+        phone: [''],
+        address: [''],
+        addressKana: ['']
+      }),
+      
+      // 口座情報
+      bankAccount: this.fb.group({
+        bankName: [''],
+        accountType: [''],
+        accountHolder: [''],
+        branchName: [''],
+        accountNumber: ['']
+      }),
+      
+      // 社会保険
+      healthInsuranceNumber: [''],
+      pensionInsuranceNumber: [''],
+      basicPensionNumberPart1: [''],
+      basicPensionNumberPart2: [''],
+      pensionHistoryStatus: [''],
+      pensionHistory: [''],
+      socialInsuranceAcquisitionDate: ['', Validators.required], // 必須
+      socialInsuranceLossDate: [''],
+      
+      // 配偶者情報
+      spouseStatus: ['', Validators.required], // 必須
+      spouseSupport: [''], // 扶養する/扶養しない
+      spouseAnnualIncome: [''],
+      spouseBasicPensionNumberPart1: [''],
+      spouseBasicPensionNumberPart2: [''],
+      spouseLastName: [''],
+      spouseFirstName: [''],
+      spouseLastNameKana: [''],
+      spouseFirstNameKana: [''],
+      spouseBirthDate: [''],
+      spouseGender: [''],
+      spousePhoneNumber: [''],
+      spouseMyNumberPart1: [''],
+      spouseMyNumberPart2: [''],
+      spouseMyNumberPart3: [''],
+      spouseLivingTogether: [''],
+      spouseAddress: [''],
+      spouseAddressKana: [''],
+      
+      // 人事専用情報（給与）
+      fixedSalary: [''],
+      
+      // 保険証情報（人事専用）
+      insuranceSymbol: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
+      insuranceNumber: ['', [Validators.required, Validators.pattern(/^\d{3}$/)]],
+      insuranceCardIssueDate: [''],
+      insuranceCardReturnDate: [''],
+      insuranceCardDistributionStatus: [''], // 固定的賃金
+      bonusAmount: [''], // 賞与額
+      bonusYear: [''], // 賞与年月（年）
+      bonusMonth: [''], // 賞与年月（月）
+      
+      // 人事専用情報（保険者種別）
+      healthInsuranceType: [''], // 健康保険者種別
+      nursingInsuranceType: [''], // 介護保険者種別
+      pensionInsuranceType: [''] // 厚生年金保険者種別
+    });
+  }
+
   // 社員情報編集フォームを作成
   createEmployeeEditForm(): FormGroup {
     return this.fb.group({
@@ -1251,6 +1365,21 @@ export class HrDashboardComponent {
       // 配偶者情報
       spouseStatus: [''],
       spouseAnnualIncome: [''],
+      spouseBasicPensionNumberPart1: [''],
+      spouseBasicPensionNumberPart2: [''],
+      spouseLastName: [''],
+      spouseFirstName: [''],
+      spouseLastNameKana: [''],
+      spouseFirstNameKana: [''],
+      spouseBirthDate: [''],
+      spouseGender: [''],
+      spousePhoneNumber: [''],
+      spouseMyNumberPart1: [''],
+      spouseMyNumberPart2: [''],
+      spouseMyNumberPart3: [''],
+      spouseLivingTogether: [''],
+      spouseAddress: [''],
+      spouseAddressKana: [''],
       
       // 人事専用情報（給与）
       fixedSalary: [''],
@@ -2349,6 +2478,25 @@ export class HrDashboardComponent {
     try {
       const data = await this.firestoreService.getOnboardingEmployee(employeeNumber);
       if (data) {
+        // 申請データが存在する場合は、申請データから配偶者情報を優先的に取得
+        if (this.selectedOnboardingEmployee?.applicationData) {
+          const appData = this.selectedOnboardingEmployee.applicationData;
+          // 申請データから配偶者情報をマージ
+          if (appData.spouseStatus) data.spouseStatus = appData.spouseStatus;
+          if (appData.spouseBasicPensionNumber) data.spouseBasicPensionNumber = appData.spouseBasicPensionNumber;
+          if (appData.spouseLastName) data.spouseLastName = appData.spouseLastName;
+          if (appData.spouseFirstName) data.spouseFirstName = appData.spouseFirstName;
+          if (appData.spouseLastNameKana) data.spouseLastNameKana = appData.spouseLastNameKana;
+          if (appData.spouseFirstNameKana) data.spouseFirstNameKana = appData.spouseFirstNameKana;
+          if (appData.spouseBirthDate) data.spouseBirthDate = appData.spouseBirthDate;
+          if (appData.spouseGender) data.spouseGender = appData.spouseGender;
+          if (appData.spousePhoneNumber) data.spousePhoneNumber = appData.spousePhoneNumber;
+          if (appData.spouseAnnualIncome) data.spouseAnnualIncome = appData.spouseAnnualIncome;
+          if (appData.spouseMyNumber) data.spouseMyNumber = appData.spouseMyNumber;
+          if (appData.spouseLivingTogether) data.spouseLivingTogether = appData.spouseLivingTogether;
+          if (appData.spouseAddress) data.spouseAddress = appData.spouseAddress;
+          if (appData.spouseAddressKana) data.spouseAddressKana = appData.spouseAddressKana;
+        }
         this.populateOnboardingEmployeeEditForm(data);
       }
     } catch (error) {
@@ -2410,6 +2558,48 @@ export class HrDashboardComponent {
     
     // 配偶者の有無を設定
     this.onboardingHasSpouse = data.spouseStatus === '有';
+    this.onboardingWillSupportSpouse = data.spouseSupport === '扶養する';
+    this.onboardingSpouseLivingTogether = data.spouseLivingTogether || '';
+    
+    // 配偶者情報を設定
+    if (data.spouseBasicPensionNumber) {
+      const spouseBasicPensionNumber = data.spouseBasicPensionNumber.replace(/-/g, '');
+      if (spouseBasicPensionNumber.length >= 4) {
+        this.onboardingEmployeeEditForm.patchValue({
+          spouseBasicPensionNumberPart1: spouseBasicPensionNumber.substring(0, 4),
+          spouseBasicPensionNumberPart2: spouseBasicPensionNumber.substring(4, 10) || ''
+        });
+      }
+    }
+    if (data.spouseMyNumber && data.spouseMyNumber.length === 12) {
+      this.onboardingEmployeeEditForm.patchValue({
+        spouseMyNumberPart1: data.spouseMyNumber.substring(0, 4),
+        spouseMyNumberPart2: data.spouseMyNumber.substring(4, 8),
+        spouseMyNumberPart3: data.spouseMyNumber.substring(8, 12)
+      });
+    }
+    if (data.spouseSupport) {
+      this.onboardingEmployeeEditForm.patchValue({
+        spouseSupport: data.spouseSupport
+      });
+    }
+    if (data.spouseLastName || data.spouseFirstName || data.spouseLastNameKana || data.spouseFirstNameKana || 
+        data.spouseBirthDate || data.spouseGender || data.spousePhoneNumber || data.spouseAnnualIncome ||
+        data.spouseLivingTogether || data.spouseAddress || data.spouseAddressKana) {
+      this.onboardingEmployeeEditForm.patchValue({
+        spouseLastName: data.spouseLastName || '',
+        spouseFirstName: data.spouseFirstName || '',
+        spouseLastNameKana: data.spouseLastNameKana || '',
+        spouseFirstNameKana: data.spouseFirstNameKana || '',
+        spouseBirthDate: data.spouseBirthDate || '',
+        spouseGender: data.spouseGender || '',
+        spousePhoneNumber: data.spousePhoneNumber || '',
+        spouseAnnualIncome: data.spouseAnnualIncome || '',
+        spouseLivingTogether: data.spouseLivingTogether || '',
+        spouseAddress: data.spouseAddress || '',
+        spouseAddressKana: data.spouseAddressKana || ''
+      });
+    }
     
     // 住民票住所が現住所と同じかチェック
     this.onboardingSameAsCurrentAddress = data.sameAsCurrentAddress || false;
@@ -2529,8 +2719,59 @@ export class HrDashboardComponent {
   onOnboardingSpouseStatusChange(event: any) {
     this.onboardingHasSpouse = event.target.value === '有';
     if (!this.onboardingHasSpouse) {
+      this.onboardingEmployeeEditForm.get('spouseSupport')?.setValue('');
       this.onboardingEmployeeEditForm.get('spouseAnnualIncome')?.setValue('');
+      this.onboardingWillSupportSpouse = false;
+      this.clearOnboardingSpouseFields();
     }
+  }
+
+  // 新入社員の配偶者扶養変更
+  onOnboardingSpouseSupportChange(event: any) {
+    this.onboardingWillSupportSpouse = event.target.value === '扶養する';
+    if (!this.onboardingWillSupportSpouse) {
+      this.clearOnboardingSpouseFields();
+    }
+  }
+
+  // 新入社員の配偶者同居/別居変更
+  onOnboardingSpouseLivingTogetherChange(event: any) {
+    this.onboardingSpouseLivingTogether = event.target.value;
+    if (this.onboardingSpouseLivingTogether === '同居') {
+      // 同居の場合は住所フィールドをクリア
+      this.onboardingEmployeeEditForm.get('spouseAddress')?.setValue('');
+      this.onboardingEmployeeEditForm.get('spouseAddressKana')?.setValue('');
+      this.onboardingEmployeeEditForm.get('spouseAddress')?.clearValidators();
+      this.onboardingEmployeeEditForm.get('spouseAddressKana')?.clearValidators();
+      this.onboardingEmployeeEditForm.get('spouseAddress')?.updateValueAndValidity();
+      this.onboardingEmployeeEditForm.get('spouseAddressKana')?.updateValueAndValidity();
+    } else if (this.onboardingSpouseLivingTogether === '別居') {
+      // 別居の場合は住所を必須にする
+      this.onboardingEmployeeEditForm.get('spouseAddress')?.setValidators([Validators.required]);
+      this.onboardingEmployeeEditForm.get('spouseAddressKana')?.setValidators([Validators.required]);
+      this.onboardingEmployeeEditForm.get('spouseAddress')?.updateValueAndValidity();
+      this.onboardingEmployeeEditForm.get('spouseAddressKana')?.updateValueAndValidity();
+    }
+  }
+
+  // 新入社員の配偶者フィールドをクリア
+  clearOnboardingSpouseFields() {
+    this.onboardingEmployeeEditForm.get('spouseBasicPensionNumberPart1')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseBasicPensionNumberPart2')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseLastName')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseFirstName')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseLastNameKana')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseFirstNameKana')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseBirthDate')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseGender')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spousePhoneNumber')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseAnnualIncome')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseMyNumberPart1')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseMyNumberPart2')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseMyNumberPart3')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseLivingTogether')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseAddress')?.setValue('');
+    this.onboardingEmployeeEditForm.get('spouseAddressKana')?.setValue('');
   }
   
   // 新入社員の厚生年金加入履歴変更
@@ -2566,15 +2807,39 @@ export class HrDashboardComponent {
         ];
         const basicPensionNumber = basicPensionNumberParts.join('');
 
+        // 配偶者基礎年金番号を結合
+        const spouseBasicPensionNumberParts = [
+          this.onboardingEmployeeEditForm.get('spouseBasicPensionNumberPart1')?.value || '',
+          this.onboardingEmployeeEditForm.get('spouseBasicPensionNumberPart2')?.value || ''
+        ];
+        const spouseBasicPensionNumber = spouseBasicPensionNumberParts.join('') || null;
+
+        // 配偶者マイナンバーを結合
+        const spouseMyNumberParts = [
+          this.onboardingEmployeeEditForm.get('spouseMyNumberPart1')?.value || '',
+          this.onboardingEmployeeEditForm.get('spouseMyNumberPart2')?.value || '',
+          this.onboardingEmployeeEditForm.get('spouseMyNumberPart3')?.value || ''
+        ];
+        const spouseMyNumber = spouseMyNumberParts.join('') || null;
+
         // フォームデータを準備
         const formValue = this.onboardingEmployeeEditForm.value;
         const formData: any = {
           ...formValue,
           myNumber: myNumber || null,
           basicPensionNumber: basicPensionNumber || null,
+          spouseBasicPensionNumber: spouseBasicPensionNumber,
+          spouseMyNumber: spouseMyNumber,
           sameAsCurrentAddress: this.onboardingSameAsCurrentAddress,
           sameAsCurrentAddressForEmergency: this.onboardingSameAsCurrentAddressForEmergency
         };
+        
+        // 配偶者情報の分割フィールドを削除
+        delete formData.spouseBasicPensionNumberPart1;
+        delete formData.spouseBasicPensionNumberPart2;
+        delete formData.spouseMyNumberPart1;
+        delete formData.spouseMyNumberPart2;
+        delete formData.spouseMyNumberPart3;
 
         // sameAsCurrentAddressがtrueの場合、住民票住所を現住所で上書き
         if (this.onboardingSameAsCurrentAddress) {
@@ -2621,10 +2886,12 @@ export class HrDashboardComponent {
     this.showOnboardingEmployeeModal = false;
     this.selectedOnboardingEmployee = null;
     this.onboardingStatusComment = '';
-    this.onboardingEmployeeEditForm = this.createEmployeeEditForm();
+    this.onboardingEmployeeEditForm = this.createOnboardingEmployeeEditForm();
     this.onboardingSameAsCurrentAddress = false;
     this.onboardingSameAsCurrentAddressForEmergency = false;
     this.onboardingHasSpouse = false;
+    this.onboardingWillSupportSpouse = false;
+    this.onboardingSpouseLivingTogether = '';
     this.onboardingAge = null;
     this.onboardingShowMyNumber = false;
     this.onboardingHasPensionHistory = false;
