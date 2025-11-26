@@ -34,6 +34,10 @@ export class EmployeeDashboardComponent {
   // 申請モーダル用
   showApplicationModal = false;
   currentApplicationType = '';
+  onboardingApplicationForm!: FormGroup; // 入社時申請用フォーム
+  hasSpouseOnboarding = false; // 入社時申請の配偶者の有無
+  willSupportSpouse = false; // 入社時申請の配偶者を扶養するか
+  spouseLivingTogether = ''; // 入社時申請の配偶者との同居/別居
   dependentApplicationForm!: FormGroup;
   dependentRemovalForm!: FormGroup;
   addressChangeForm!: FormGroup;
@@ -379,6 +383,123 @@ export class EmployeeDashboardComponent {
     }
   }
 
+  // 入社時申請の住民票住所チェックボックス変更
+  onOnboardingSameAddressChange(event: any) {
+    const isSame = event.target.checked;
+    if (isSame) {
+      // 現住所の値を住民票住所にコピー
+      const currentAddress = this.onboardingApplicationForm.get('currentAddress')?.value || '';
+      const currentAddressKana = this.onboardingApplicationForm.get('currentAddressKana')?.value || '';
+      this.onboardingApplicationForm.patchValue({
+        residentAddress: currentAddress,
+        residentAddressKana: currentAddressKana
+      });
+    }
+  }
+
+  // 入社時申請の配偶者ステータス変更
+  onOnboardingSpouseStatusChange(event: any) {
+    this.hasSpouseOnboarding = event.target.value === '有';
+    if (!this.hasSpouseOnboarding) {
+      this.willSupportSpouse = false;
+      this.onboardingApplicationForm.get('spouseSupport')?.setValue('');
+      this.clearSpouseFields();
+      this.clearSpouseValidators();
+    }
+  }
+
+  // 入社時申請の配偶者扶養選択変更
+  onOnboardingSpouseSupportChange(event: any) {
+    this.willSupportSpouse = event.target.value === '扶養する';
+    if (!this.willSupportSpouse) {
+      this.clearSpouseFields();
+      // バリデーションをクリア
+      this.clearSpouseValidators();
+    } else {
+      // 扶養する場合、必須フィールドを設定
+      this.setSpouseRequiredFields();
+    }
+  }
+
+  // 入社時申請の配偶者同居/別居変更
+  onOnboardingSpouseLivingTogetherChange(event: any) {
+    this.spouseLivingTogether = event.target.value;
+    if (this.spouseLivingTogether === '同居') {
+      // 同居の場合は住所フィールドをクリア
+      this.onboardingApplicationForm.get('spouseAddress')?.setValue('');
+      this.onboardingApplicationForm.get('spouseAddressKana')?.setValue('');
+      // バリデーションをクリア
+      this.onboardingApplicationForm.get('spouseAddress')?.clearValidators();
+      this.onboardingApplicationForm.get('spouseAddressKana')?.clearValidators();
+      this.onboardingApplicationForm.get('spouseAddress')?.updateValueAndValidity();
+      this.onboardingApplicationForm.get('spouseAddressKana')?.updateValueAndValidity();
+    } else if (this.spouseLivingTogether === '別居') {
+      // 別居の場合は住所を必須にする
+      this.onboardingApplicationForm.get('spouseAddress')?.setValidators([Validators.required]);
+      this.onboardingApplicationForm.get('spouseAddressKana')?.setValidators([Validators.required]);
+      this.onboardingApplicationForm.get('spouseAddress')?.updateValueAndValidity();
+      this.onboardingApplicationForm.get('spouseAddressKana')?.updateValueAndValidity();
+    }
+  }
+
+  // 配偶者フィールドをクリア
+  clearSpouseFields() {
+    this.onboardingApplicationForm.get('spouseBasicPensionNumberPart1')?.setValue('');
+    this.onboardingApplicationForm.get('spouseBasicPensionNumberPart2')?.setValue('');
+    this.onboardingApplicationForm.get('spouseLastName')?.setValue('');
+    this.onboardingApplicationForm.get('spouseFirstName')?.setValue('');
+    this.onboardingApplicationForm.get('spouseLastNameKana')?.setValue('');
+    this.onboardingApplicationForm.get('spouseFirstNameKana')?.setValue('');
+    this.onboardingApplicationForm.get('spouseBirthDate')?.setValue('');
+    this.onboardingApplicationForm.get('spouseGender')?.setValue('');
+    this.onboardingApplicationForm.get('spousePhoneNumber')?.setValue('');
+    this.onboardingApplicationForm.get('spouseAnnualIncome')?.setValue('');
+    this.onboardingApplicationForm.get('spouseMyNumberPart1')?.setValue('');
+    this.onboardingApplicationForm.get('spouseMyNumberPart2')?.setValue('');
+    this.onboardingApplicationForm.get('spouseMyNumberPart3')?.setValue('');
+    this.onboardingApplicationForm.get('spouseLivingTogether')?.setValue('');
+    this.onboardingApplicationForm.get('spouseAddress')?.setValue('');
+    this.onboardingApplicationForm.get('spouseAddressKana')?.setValue('');
+  }
+
+  // 配偶者必須フィールドを設定
+  setSpouseRequiredFields() {
+    const spouseFields = [
+      'spouseBasicPensionNumberPart1', 'spouseBasicPensionNumberPart2',
+      'spouseLastName', 'spouseFirstName', 'spouseLastNameKana', 'spouseFirstNameKana',
+      'spouseBirthDate', 'spouseGender', 'spouseAnnualIncome',
+      'spouseMyNumberPart1', 'spouseMyNumberPart2', 'spouseMyNumberPart3',
+      'spouseLivingTogether'
+    ];
+    
+    spouseFields.forEach(field => {
+      const control = this.onboardingApplicationForm.get(field);
+      if (control) {
+        control.setValidators([Validators.required]);
+        control.updateValueAndValidity();
+      }
+    });
+  }
+
+  // 配偶者バリデーションをクリア
+  clearSpouseValidators() {
+    const spouseFields = [
+      'spouseBasicPensionNumberPart1', 'spouseBasicPensionNumberPart2',
+      'spouseLastName', 'spouseFirstName', 'spouseLastNameKana', 'spouseFirstNameKana',
+      'spouseBirthDate', 'spouseGender', 'spouseAnnualIncome',
+      'spouseMyNumberPart1', 'spouseMyNumberPart2', 'spouseMyNumberPart3',
+      'spouseLivingTogether', 'spouseAddress', 'spouseAddressKana'
+    ];
+    
+    spouseFields.forEach(field => {
+      const control = this.onboardingApplicationForm.get(field);
+      if (control) {
+        control.clearValidators();
+        control.updateValueAndValidity();
+      }
+    });
+  }
+
   onFileSelected(event: any, fileType: string) {
     const file = event.target.files?.[0];
     if (file) {
@@ -400,6 +521,12 @@ export class EmployeeDashboardComponent {
           break;
         case 'maternityLeaveDocument':
           this.maternityLeaveDocumentFile = file;
+          break;
+        case 'onboardingResume':
+          this.resumeFile = file;
+          break;
+        case 'onboardingCareerHistory':
+          this.careerHistoryFile = file;
           break;
       }
     }
@@ -751,7 +878,13 @@ export class EmployeeDashboardComponent {
 
   openApplicationModal(applicationType: string) {
     this.currentApplicationType = applicationType;
-    if (applicationType === '扶養家族追加') {
+    if (applicationType === '入社時申請') {
+      this.onboardingApplicationForm = this.createOnboardingApplicationForm();
+      this.hasSpouseOnboarding = false;
+      this.willSupportSpouse = false;
+      this.spouseLivingTogether = '';
+      this.showApplicationModal = true;
+    } else if (applicationType === '扶養家族追加') {
       this.dependentApplicationForm = this.createDependentApplicationForm();
       this.showApplicationModal = true;
     } else if (applicationType === '扶養削除申請') {
@@ -799,6 +932,83 @@ export class EmployeeDashboardComponent {
     this.maternityLeaveDocumentFile = null;
   }
   
+  // 入社時申請フォームを作成
+  createOnboardingApplicationForm(): FormGroup {
+    return this.fb.group({
+      // 基本情報
+      name: ['', Validators.required],
+      nameKana: ['', Validators.required],
+      birthDate: ['', Validators.required],
+      gender: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      
+      // マイナンバー
+      myNumberPart1: ['', Validators.required],
+      myNumberPart2: ['', Validators.required],
+      myNumberPart3: ['', Validators.required],
+      
+      // 現住所と連絡先
+      currentAddress: ['', Validators.required],
+      currentAddressKana: ['', Validators.required],
+      phoneNumber: ['', Validators.required],
+      currentHouseholdHead: ['', Validators.required],
+      
+      // 住民票住所
+      sameAsCurrentAddress: [false],
+      residentAddress: ['', Validators.required],
+      residentAddressKana: ['', Validators.required],
+      residentHouseholdHead: ['', Validators.required],
+      
+      // 履歴書・職務経歴書（ファイル入力はフォームから分離）
+      
+      // 緊急連絡先
+      emergencyContact: this.fb.group({
+        name: ['', Validators.required],
+        nameKana: ['', Validators.required],
+        relationship: ['', Validators.required],
+        phone: ['', Validators.required],
+        address: ['', Validators.required],
+        addressKana: ['', Validators.required]
+      }),
+      
+      // 口座情報
+      bankAccount: this.fb.group({
+        bankName: ['', Validators.required],
+        accountType: ['', Validators.required],
+        accountHolder: ['', Validators.required],
+        branchName: ['', Validators.required],
+        accountNumber: ['', Validators.required]
+      }),
+      
+      // 社会保険（基礎年金番号、厚生年金加入履歴のみ）
+      basicPensionNumberPart1: ['', Validators.required],
+      basicPensionNumberPart2: ['', Validators.required],
+      pensionHistoryStatus: ['', Validators.required],
+      pensionHistory: [''],
+      
+      // 配偶者情報
+      spouseStatus: ['', Validators.required],
+      spouseSupport: [''], // 扶養する/扶養しない
+      // 配偶者詳細情報（扶養する場合のみ必須）
+      spouseBasicPensionNumberPart1: [''],
+      spouseBasicPensionNumberPart2: [''],
+      spouseLastName: [''],
+      spouseFirstName: [''],
+      spouseLastNameKana: [''],
+      spouseFirstNameKana: [''],
+      spouseBirthDate: [''],
+      spouseGender: [''],
+      spousePhoneNumber: [''], // 必須ではない
+      spouseAnnualIncome: [''],
+      spouseMyNumberPart1: [''],
+      spouseMyNumberPart2: [''],
+      spouseMyNumberPart3: [''],
+      spouseLivingTogether: [''],
+      spouseAddress: [''],
+      spouseAddressKana: ['']
+    });
+  }
+
   createDependentApplicationForm(): FormGroup {
     return this.fb.group({
       // 続柄欄
@@ -1410,6 +1620,116 @@ export class EmployeeDashboardComponent {
     }
   }
   
+  // 入社時申請を送信
+  async submitOnboardingApplication() {
+    if (this.onboardingApplicationForm.valid) {
+      try {
+        // マイナンバーを結合
+        const myNumberParts = [
+          this.onboardingApplicationForm.get('myNumberPart1')?.value || '',
+          this.onboardingApplicationForm.get('myNumberPart2')?.value || '',
+          this.onboardingApplicationForm.get('myNumberPart3')?.value || ''
+        ];
+        const myNumber = myNumberParts.join('');
+
+        // 基礎年金番号を結合
+        const basicPensionNumberParts = [
+          this.onboardingApplicationForm.get('basicPensionNumberPart1')?.value || '',
+          this.onboardingApplicationForm.get('basicPensionNumberPart2')?.value || ''
+        ];
+        const basicPensionNumber = basicPensionNumberParts.join('');
+
+        // フォームデータを準備
+        const formValue = this.onboardingApplicationForm.value;
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: '入社時申請',
+          // 基本情報
+          name: formValue.name,
+          nameKana: formValue.nameKana || '',
+          birthDate: formValue.birthDate,
+          gender: formValue.gender,
+          email: formValue.email,
+          // マイナンバー
+          myNumber: myNumber || null,
+          // 現住所と連絡先
+          currentAddress: formValue.currentAddress || '',
+          currentAddressKana: formValue.currentAddressKana || '',
+          phoneNumber: formValue.phoneNumber || '',
+          currentHouseholdHead: formValue.currentHouseholdHead || '',
+          // 住民票住所
+          sameAsCurrentAddress: formValue.sameAsCurrentAddress || false,
+          residentAddress: formValue.sameAsCurrentAddress 
+            ? (formValue.currentAddress || '') 
+            : (formValue.residentAddress || ''),
+          residentAddressKana: formValue.sameAsCurrentAddress 
+            ? (formValue.currentAddressKana || '') 
+            : (formValue.residentAddressKana || ''),
+          residentHouseholdHead: formValue.residentHouseholdHead || '',
+          // 緊急連絡先
+          emergencyContact: formValue.emergencyContact || {},
+          // 口座情報
+          bankAccount: formValue.bankAccount || {},
+          // 社会保険
+          basicPensionNumber: basicPensionNumber || null,
+          pensionHistoryStatus: formValue.pensionHistoryStatus || '',
+          pensionHistory: formValue.pensionHistory || '',
+          // 配偶者情報
+          spouseStatus: formValue.spouseStatus || '',
+          spouseSupport: formValue.spouseSupport || '',
+          // 配偶者詳細情報（扶養する場合のみ）
+          spouseBasicPensionNumber: (formValue.spouseBasicPensionNumberPart1 && formValue.spouseBasicPensionNumberPart2) 
+            ? `${formValue.spouseBasicPensionNumberPart1}${formValue.spouseBasicPensionNumberPart2}` 
+            : null,
+          spouseLastName: formValue.spouseLastName || '',
+          spouseFirstName: formValue.spouseFirstName || '',
+          spouseLastNameKana: formValue.spouseLastNameKana || '',
+          spouseFirstNameKana: formValue.spouseFirstNameKana || '',
+          spouseBirthDate: formValue.spouseBirthDate || '',
+          spouseGender: formValue.spouseGender || '',
+          spousePhoneNumber: formValue.spousePhoneNumber || '',
+          spouseAnnualIncome: formValue.spouseAnnualIncome || '',
+          spouseMyNumber: (formValue.spouseMyNumberPart1 && formValue.spouseMyNumberPart2 && formValue.spouseMyNumberPart3)
+            ? `${formValue.spouseMyNumberPart1}${formValue.spouseMyNumberPart2}${formValue.spouseMyNumberPart3}`
+            : null,
+          spouseLivingTogether: formValue.spouseLivingTogether || '',
+          spouseAddress: formValue.spouseAddress || '',
+          spouseAddressKana: formValue.spouseAddressKana || ''
+        };
+
+        // ファイルをアップロード（履歴書、職務経歴書）
+        if (this.resumeFile) {
+          // ファイルアップロード処理（必要に応じて実装）
+          applicationData.resumeFile = this.resumeFile.name;
+        }
+        if (this.careerHistoryFile) {
+          // ファイルアップロード処理（必要に応じて実装）
+          applicationData.careerHistoryFile = this.careerHistoryFile.name;
+        }
+
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み（入社時申請メッセージを更新）
+        await this.loadHrRequests();
+        
+        alert('入社時申請を送信しました');
+      } catch (error) {
+        console.error('Error submitting onboarding application:', error);
+        alert('申請の送信に失敗しました');
+      }
+    } else {
+      this.onboardingApplicationForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
+  }
+
   async submitInsuranceCardReissueApplication() {
     if (this.insuranceCardReissueForm.valid) {
       try {
@@ -1453,13 +1773,38 @@ export class EmployeeDashboardComponent {
         this.employeeData = data;
       }
 
-      // 人事からの依頼を読み込む（TODO: 実装予定）
-      this.hrRequests = [];
-
       // 申請一覧を読み込む
       await this.loadApplications();
+
+      // 人事からの依頼を読み込む
+      await this.loadHrRequests();
     } catch (error) {
       console.error('Error loading main page data:', error);
+    }
+  }
+
+  async loadHrRequests() {
+    try {
+      this.hrRequests = [];
+
+      // 入社時申請が出されているかチェック
+      const hasOnboardingApplication = this.applications.some(
+        (app: any) => app.applicationType === '入社時申請'
+      );
+
+      // 入社時申請が出されていない場合、メッセージを追加
+      if (!hasOnboardingApplication) {
+        this.hrRequests.push({
+          title: '入社時申請',
+          date: new Date(),
+          message: '各種申請ページから入社時申請を行ってください'
+        });
+      }
+
+      // その他の人事からの依頼を読み込む（今後実装予定）
+      // TODO: Firestoreから人事からの依頼を読み込む
+    } catch (error) {
+      console.error('Error loading HR requests:', error);
     }
   }
 

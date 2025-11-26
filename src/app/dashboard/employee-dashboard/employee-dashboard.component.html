@@ -36,25 +36,9 @@
         <ng-container *ngIf="currentTab === '情報設定'">
           <div class="page-header">
             <h2 class="page-title">社員情報</h2>
-            <div class="page-actions">
-              <button 
-                *ngIf="!isEditMode" 
-                class="edit-button" 
-                (click)="startEdit()"
-              >
-                編集
-              </button>
-              <button 
-                *ngIf="isEditMode" 
-                class="cancel-button" 
-                (click)="cancelEdit()"
-              >
-                キャンセル
-              </button>
-            </div>
           </div>
 
-          <form [formGroup]="settingsForm" (ngSubmit)="onSubmit()" class="settings-form">
+          <form [formGroup]="settingsForm" class="settings-form">
             
             <!-- 基本情報欄 -->
             <section class="form-section">
@@ -67,7 +51,7 @@
                     id="name" 
                     formControlName="name" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -77,7 +61,7 @@
                     id="nameKana" 
                     formControlName="nameKana" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -88,7 +72,7 @@
                       id="birthDate" 
                       formControlName="birthDate" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                       (change)="onBirthDateChange()"
                     >
                     <span *ngIf="age !== null" class="age-display">（{{ age }}歳）</span>
@@ -112,7 +96,7 @@
                     id="email" 
                     formControlName="email" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group full-width">
@@ -123,7 +107,7 @@
                     class="form-input"
                     accept=".pdf,.jpg,.jpeg,.png"
                     (change)="onFileSelected($event, 'idDocument')"
-                    [disabled]="!isEditMode"
+                    [disabled]="true"
                   >
                   <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
                 </div>
@@ -143,7 +127,7 @@
                         id="myNumberPart1" 
                         [value]="getMyNumberDisplayValue(1)"
                         class="form-input my-number-part"
-                        [readonly]="!showMyNumber || !isEditMode"
+                        [readonly]="true"
                         maxlength="4"
                         (input)="formatMyNumberInput($event, 1)"
                         placeholder="0000"
@@ -154,7 +138,7 @@
                         id="myNumberPart2" 
                         [value]="getMyNumberDisplayValue(2)"
                         class="form-input my-number-part"
-                        [readonly]="!showMyNumber || !isEditMode"
+                        [readonly]="true"
                         maxlength="4"
                         (input)="formatMyNumberInput($event, 2)"
                         placeholder="0000"
@@ -165,7 +149,7 @@
                         id="myNumberPart3" 
                         [value]="getMyNumberDisplayValue(3)"
                         class="form-input my-number-part"
-                        [readonly]="!showMyNumber || !isEditMode"
+                        [readonly]="true"
                         maxlength="4"
                         (input)="formatMyNumberInput($event, 3)"
                         placeholder="0000"
@@ -205,7 +189,7 @@
                     id="joinDate" 
                     formControlName="joinDate" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -215,7 +199,7 @@
                     id="resignationDate" 
                     formControlName="resignationDate" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group full-width">
@@ -225,7 +209,7 @@
                     formControlName="resignationReason" 
                     class="form-input" 
                     rows="3"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   ></textarea>
                 </div>
               </div>
@@ -242,7 +226,7 @@
                     id="employeeNumber" 
                     formControlName="employeeNumber" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -332,7 +316,7 @@
                     formControlName="currentAddress" 
                     class="form-input" 
                     rows="2"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   ></textarea>
                 </div>
                 <div class="form-group full-width">
@@ -342,7 +326,7 @@
                     formControlName="currentAddressKana" 
                     class="form-input" 
                     rows="2"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   ></textarea>
                 </div>
                 <div class="form-group">
@@ -352,7 +336,7 @@
                     id="phoneNumber" 
                     formControlName="phoneNumber" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -429,7 +413,7 @@
                     class="form-input"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     (change)="onFileSelected($event, 'resume')"
-                    [disabled]="!isEditMode"
+                    [disabled]="true"
                   >
                   <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
                 </div>
@@ -441,7 +425,7 @@
                     class="form-input"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     (change)="onFileSelected($event, 'careerHistory')"
-                    [disabled]="!isEditMode"
+                    [disabled]="true"
                   >
                   <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
                 </div>
@@ -460,7 +444,7 @@
                       id="emergencyName" 
                       formControlName="name" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                   <div class="form-group">
@@ -470,7 +454,7 @@
                       id="emergencyNameKana" 
                       formControlName="nameKana" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                   <div class="form-group">
@@ -480,7 +464,7 @@
                       id="emergencyRelationship" 
                       formControlName="relationship" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                   <div class="form-group">
@@ -490,7 +474,7 @@
                       id="emergencyPhone" 
                       formControlName="phone" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                   <div class="form-group full-width">
@@ -499,7 +483,7 @@
                         type="checkbox" 
                         [checked]="sameAsCurrentAddressForEmergency"
                         (change)="onSameAddressForEmergencyChange($event)"
-                        [disabled]="!isEditMode"
+                        [disabled]="true"
                         class="checkbox-input"
                       >
                       現住所と同じ
@@ -541,7 +525,7 @@
                       id="bankName" 
                       formControlName="bankName" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                   <div class="form-group">
@@ -564,7 +548,7 @@
                       id="accountHolder" 
                       formControlName="accountHolder" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                   <div class="form-group">
@@ -574,7 +558,7 @@
                       id="branchName" 
                       formControlName="branchName" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                   <div class="form-group">
@@ -584,7 +568,7 @@
                       id="accountNumber" 
                       formControlName="accountNumber" 
                       class="form-input"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                 </div>
@@ -602,7 +586,7 @@
                     id="healthInsuranceNumber" 
                     formControlName="healthInsuranceNumber" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -612,7 +596,7 @@
                     id="pensionInsuranceNumber" 
                     formControlName="pensionInsuranceNumber" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -626,7 +610,7 @@
                       maxlength="4"
                       (input)="formatBasicPensionNumberInput($event, 1)"
                       placeholder="0000"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                     <span class="basic-pension-separator">-</span>
                     <input 
@@ -637,7 +621,7 @@
                       maxlength="6"
                       (input)="formatBasicPensionNumberInput($event, 2)"
                       placeholder="000000"
-                      [readonly]="!isEditMode"
+                      [readonly]="true"
                     >
                   </div>
                 </div>
@@ -660,7 +644,7 @@
                     formControlName="pensionHistory" 
                     class="form-input" 
                     rows="4"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   ></textarea>
                 </div>
                 <div class="form-group">
@@ -670,7 +654,7 @@
                     id="socialInsuranceAcquisitionDate" 
                     formControlName="socialInsuranceAcquisitionDate" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group">
@@ -680,7 +664,7 @@
                     id="socialInsuranceLossDate" 
                     formControlName="socialInsuranceLossDate" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
                 <div class="form-group full-width">
@@ -691,7 +675,7 @@
                     class="form-input"
                     accept=".pdf,.jpg,.jpeg,.png"
                     (change)="onFileSelected($event, 'basicPensionNumberDoc')"
-                    [disabled]="!isEditMode"
+                    [disabled]="true"
                   >
                   <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
                 </div>
@@ -721,7 +705,7 @@
                     id="spouseAnnualIncome" 
                     formControlName="spouseAnnualIncome" 
                     class="form-input"
-                    [readonly]="!isEditMode"
+                    [readonly]="true"
                   >
                 </div>
               </div>
@@ -743,6 +727,11 @@
           </div>
           
           <div class="application-grid">
+            <button class="application-button" (click)="openApplicationModal('入社時申請')">
+              <span class="application-icon">📝</span>
+              <span class="application-label">入社時申請</span>
+            </button>
+            
             <button class="application-button" (click)="openApplicationModal('扶養家族追加')">
               <span class="application-icon">👨‍👩‍👧</span>
               <span class="application-label">扶養家族追加</span>
@@ -829,7 +818,7 @@
                   <div *ngFor="let request of hrRequests" class="request-item">
                     <div class="request-header">
                       <span class="request-title">{{ request.title }}</span>
-                      <span class="request-date">{{ request.date | date:'yyyy/MM/dd' }}</span>
+                      <span class="request-date" *ngIf="request.date">{{ request.date | date:'yyyy/MM/dd' }}</span>
                     </div>
                     <p class="request-message">{{ request.message }}</p>
                   </div>
@@ -961,6 +950,692 @@
         </ng-container>
       </div>
     </main>
+  </div>
+</div>
+
+<!-- 入社時申請モーダル -->
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '入社時申請'" (click)="closeApplicationModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">入社時申請</h2>
+      <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
+    </div>
+    
+    <form [formGroup]="onboardingApplicationForm" (ngSubmit)="submitOnboardingApplication()" class="application-form">
+      <!-- 基本情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">基本情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-name">氏名 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="onboarding-name" 
+              formControlName="name" 
+              class="form-input"
+            >
+            <div *ngIf="onboardingApplicationForm.get('name')?.invalid && onboardingApplicationForm.get('name')?.touched" class="error-message">
+              氏名を入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-nameKana">氏名（ヨミガナ）</label>
+            <input 
+              type="text" 
+              id="onboarding-nameKana" 
+              formControlName="nameKana" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-birthDate">生年月日 <span class="required">*</span></label>
+            <input 
+              type="date" 
+              id="onboarding-birthDate" 
+              formControlName="birthDate" 
+              class="form-input"
+            >
+            <div *ngIf="onboardingApplicationForm.get('birthDate')?.invalid && onboardingApplicationForm.get('birthDate')?.touched" class="error-message">
+              生年月日を入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-gender">戸籍上の性別 <span class="required">*</span></label>
+            <select 
+              id="onboarding-gender" 
+              formControlName="gender" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
+            </select>
+            <div *ngIf="onboardingApplicationForm.get('gender')?.invalid && onboardingApplicationForm.get('gender')?.touched" class="error-message">
+              性別を選択してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-email">メールアドレス <span class="required">*</span></label>
+            <input 
+              type="email" 
+              id="onboarding-email" 
+              formControlName="email" 
+              class="form-input"
+            >
+            <div *ngIf="onboardingApplicationForm.get('email')?.invalid && onboardingApplicationForm.get('email')?.touched" class="error-message">
+              有効なメールアドレスを入力してください
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- マイナンバー欄 -->
+      <section class="form-section">
+        <h3 class="section-title">マイナンバー</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <div class="my-number-container">
+              <div class="my-number-inputs">
+                <input 
+                  type="text" 
+                  id="onboarding-myNumberPart1" 
+                  formControlName="myNumberPart1" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="onboarding-myNumberPart2" 
+                  formControlName="myNumberPart2" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="onboarding-myNumberPart3" 
+                  formControlName="myNumberPart3" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  placeholder="0000"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 現住所と連絡先欄 -->
+      <section class="form-section">
+        <h3 class="section-title">現住所と連絡先</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="onboarding-currentAddress">現住所</label>
+            <textarea 
+              id="onboarding-currentAddress" 
+              formControlName="currentAddress" 
+              class="form-input" 
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-currentAddressKana">現住所（ヨミガナ）</label>
+            <textarea 
+              id="onboarding-currentAddressKana" 
+              formControlName="currentAddressKana" 
+              class="form-input" 
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-phoneNumber">電話番号</label>
+            <input 
+              type="tel" 
+              id="onboarding-phoneNumber" 
+              formControlName="phoneNumber" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-currentHouseholdHead">世帯主（本人/親族）</label>
+            <select 
+              id="onboarding-currentHouseholdHead" 
+              formControlName="currentHouseholdHead" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 住民票住所欄 -->
+      <section class="form-section">
+        <h3 class="section-title">住民票住所</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                formControlName="sameAsCurrentAddress"
+                (change)="onOnboardingSameAddressChange($event)"
+              >
+              住所（現住所と同じ）
+            </label>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-residentAddress">住所 <span class="required">*</span></label>
+            <textarea 
+              id="onboarding-residentAddress" 
+              formControlName="residentAddress" 
+              class="form-input" 
+              rows="2"
+              [readonly]="onboardingApplicationForm.get('sameAsCurrentAddress')?.value"
+            ></textarea>
+            <div *ngIf="onboardingApplicationForm.get('residentAddress')?.invalid && onboardingApplicationForm.get('residentAddress')?.touched" class="error-message">
+              住所を入力してください
+            </div>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-residentAddressKana">住所（ヨミガナ） <span class="required">*</span></label>
+            <textarea 
+              id="onboarding-residentAddressKana" 
+              formControlName="residentAddressKana" 
+              class="form-input" 
+              rows="2"
+              [readonly]="onboardingApplicationForm.get('sameAsCurrentAddress')?.value"
+            ></textarea>
+            <div *ngIf="onboardingApplicationForm.get('residentAddressKana')?.invalid && onboardingApplicationForm.get('residentAddressKana')?.touched" class="error-message">
+              住所（ヨミガナ）を入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-residentHouseholdHead">世帯主（本人/親族）</label>
+            <select 
+              id="onboarding-residentHouseholdHead" 
+              formControlName="residentHouseholdHead" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 履歴書・職務経歴書欄 -->
+      <section class="form-section">
+        <h3 class="section-title">履歴書・職務経歴書</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="onboarding-resume">履歴書添付</label>
+            <input 
+              type="file" 
+              id="onboarding-resume" 
+              class="form-input"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'onboardingResume')"
+            >
+            <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-careerHistory">職務経歴書添付</label>
+            <input 
+              type="file" 
+              id="onboarding-careerHistory" 
+              class="form-input"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'onboardingCareerHistory')"
+            >
+            <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 緊急連絡先欄 -->
+      <section class="form-section">
+        <h3 class="section-title">緊急連絡先</h3>
+        <div formGroupName="emergencyContact" class="nested-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="onboarding-emergencyName">氏名</label>
+              <input 
+                type="text" 
+                id="onboarding-emergencyName" 
+                formControlName="name" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-emergencyNameKana">氏名（ヨミガナ）</label>
+              <input 
+                type="text" 
+                id="onboarding-emergencyNameKana" 
+                formControlName="nameKana" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-emergencyRelationship">続柄</label>
+              <input 
+                type="text" 
+                id="onboarding-emergencyRelationship" 
+                formControlName="relationship" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-emergencyPhone">緊急連絡先電話番号</label>
+              <input 
+                type="tel" 
+                id="onboarding-emergencyPhone" 
+                formControlName="phone" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="onboarding-emergencyAddress">住所</label>
+              <textarea 
+                id="onboarding-emergencyAddress" 
+                formControlName="address" 
+                class="form-input" 
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label for="onboarding-emergencyAddressKana">住所（ヨミガナ）</label>
+              <textarea 
+                id="onboarding-emergencyAddressKana" 
+                formControlName="addressKana" 
+                class="form-input" 
+                rows="2"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 口座情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">口座情報</h3>
+        <div formGroupName="bankAccount" class="nested-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="onboarding-bankName">銀行名</label>
+              <input 
+                type="text" 
+                id="onboarding-bankName" 
+                formControlName="bankName" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-accountType">預金種別</label>
+              <select 
+                id="onboarding-accountType" 
+                formControlName="accountType" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option value="普通">普通</option>
+                <option value="当座">当座</option>
+                <option value="貯蓄">貯蓄</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="onboarding-accountHolder">名義（カタカナ）</label>
+              <input 
+                type="text" 
+                id="onboarding-accountHolder" 
+                formControlName="accountHolder" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-branchName">支店名</label>
+              <input 
+                type="text" 
+                id="onboarding-branchName" 
+                formControlName="branchName" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-accountNumber">口座番号</label>
+              <input 
+                type="text" 
+                id="onboarding-accountNumber" 
+                formControlName="accountNumber" 
+                class="form-input"
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 社会保険欄（基礎年金番号、厚生年金加入履歴のみ） -->
+      <section class="form-section">
+        <h3 class="section-title">社会保険</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-basicPensionNumberPart1">基礎年金番号</label>
+            <div class="basic-pension-number-container">
+              <input 
+                type="text" 
+                id="onboarding-basicPensionNumberPart1" 
+                formControlName="basicPensionNumberPart1" 
+                class="form-input basic-pension-part"
+                maxlength="4"
+                placeholder="0000"
+              >
+              <span class="basic-pension-separator">-</span>
+              <input 
+                type="text" 
+                id="onboarding-basicPensionNumberPart2" 
+                formControlName="basicPensionNumberPart2" 
+                class="form-input basic-pension-part"
+                maxlength="6"
+                placeholder="000000"
+              >
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-pensionHistoryStatus">厚生年金加入履歴</label>
+            <select 
+              id="onboarding-pensionHistoryStatus" 
+              formControlName="pensionHistoryStatus" 
+              class="form-input" 
+              (change)="onPensionHistoryChange($event)"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let option of pensionHistoryOptions" [value]="option">{{ option }}</option>
+            </select>
+          </div>
+          <div class="form-group full-width" *ngIf="hasPensionHistory">
+            <label for="onboarding-pensionHistory">厚生年金加入履歴（詳細）</label>
+            <textarea 
+              id="onboarding-pensionHistory" 
+              formControlName="pensionHistory" 
+              class="form-input" 
+              rows="4"
+            ></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- 配偶者情報欄 -->
+      <section class="form-section" *ngIf="onboardingApplicationForm.get('spouseStatus')?.value !== '無'">
+        <h3 class="section-title">配偶者情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-spouseStatus">配偶者の有無 <span class="required">*</span></label>
+            <select 
+              id="onboarding-spouseStatus" 
+              formControlName="spouseStatus" 
+              class="form-input"
+              (change)="onOnboardingSpouseStatusChange($event)"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let option of spouseOptions" [value]="option">{{ option }}</option>
+            </select>
+            <div *ngIf="onboardingApplicationForm.get('spouseStatus')?.invalid && onboardingApplicationForm.get('spouseStatus')?.touched" class="error-message">
+              配偶者の有無を選択してください
+            </div>
+          </div>
+          
+          <!-- 配偶者が「有」の場合、扶養するかどうかを選択 -->
+          <div class="form-group" *ngIf="onboardingApplicationForm.get('spouseStatus')?.value === '有'">
+            <label for="onboarding-spouseSupport">扶養となるか <span class="required">*</span></label>
+            <select 
+              id="onboarding-spouseSupport" 
+              formControlName="spouseSupport" 
+              class="form-input"
+              (change)="onOnboardingSpouseSupportChange($event)"
+            >
+              <option value="">選択してください</option>
+              <option value="扶養する">扶養する</option>
+              <option value="扶養しない">扶養しない</option>
+            </select>
+            <div *ngIf="onboardingApplicationForm.get('spouseSupport')?.invalid && onboardingApplicationForm.get('spouseSupport')?.touched" class="error-message">
+              扶養するかどうかを選択してください
+            </div>
+          </div>
+        </div>
+
+        <!-- 扶養する場合の詳細情報 -->
+        <div *ngIf="onboardingApplicationForm.get('spouseStatus')?.value === '有' && onboardingApplicationForm.get('spouseSupport')?.value === '扶養する'">
+          <div class="form-grid">
+            <!-- 配偶者基礎年金番号 -->
+            <div class="form-group">
+              <label for="onboarding-spouseBasicPensionNumberPart1">配偶者基礎年金番号 <span class="required">*</span></label>
+              <div class="basic-pension-number-container">
+                <input 
+                  type="text" 
+                  id="onboarding-spouseBasicPensionNumberPart1" 
+                  formControlName="spouseBasicPensionNumberPart1" 
+                  class="form-input basic-pension-part"
+                  maxlength="4"
+                  placeholder="0000"
+                >
+                <span class="basic-pension-separator">-</span>
+                <input 
+                  type="text" 
+                  id="onboarding-spouseBasicPensionNumberPart2" 
+                  formControlName="spouseBasicPensionNumberPart2" 
+                  class="form-input basic-pension-part"
+                  maxlength="6"
+                  placeholder="000000"
+                >
+              </div>
+            </div>
+
+            <!-- 配偶者の姓 -->
+            <div class="form-group">
+              <label for="onboarding-spouseLastName">配偶者の姓 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="onboarding-spouseLastName" 
+                formControlName="spouseLastName" 
+                class="form-input"
+              >
+              <div *ngIf="onboardingApplicationForm.get('spouseLastName')?.invalid && onboardingApplicationForm.get('spouseLastName')?.touched" class="error-message">
+                配偶者の姓を入力してください
+              </div>
+            </div>
+
+            <!-- 配偶者の名 -->
+            <div class="form-group">
+              <label for="onboarding-spouseFirstName">配偶者の名 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="onboarding-spouseFirstName" 
+                formControlName="spouseFirstName" 
+                class="form-input"
+              >
+              <div *ngIf="onboardingApplicationForm.get('spouseFirstName')?.invalid && onboardingApplicationForm.get('spouseFirstName')?.touched" class="error-message">
+                配偶者の名を入力してください
+              </div>
+            </div>
+
+            <!-- 姓（ヨミガナ） -->
+            <div class="form-group">
+              <label for="onboarding-spouseLastNameKana">姓（ヨミガナ） <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="onboarding-spouseLastNameKana" 
+                formControlName="spouseLastNameKana" 
+                class="form-input"
+              >
+              <div *ngIf="onboardingApplicationForm.get('spouseLastNameKana')?.invalid && onboardingApplicationForm.get('spouseLastNameKana')?.touched" class="error-message">
+                姓（ヨミガナ）を入力してください
+              </div>
+            </div>
+
+            <!-- 名（ヨミガナ） -->
+            <div class="form-group">
+              <label for="onboarding-spouseFirstNameKana">名（ヨミガナ） <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="onboarding-spouseFirstNameKana" 
+                formControlName="spouseFirstNameKana" 
+                class="form-input"
+              >
+              <div *ngIf="onboardingApplicationForm.get('spouseFirstNameKana')?.invalid && onboardingApplicationForm.get('spouseFirstNameKana')?.touched" class="error-message">
+                名（ヨミガナ）を入力してください
+              </div>
+            </div>
+
+            <!-- 配偶者の生年月日 -->
+            <div class="form-group">
+              <label for="onboarding-spouseBirthDate">配偶者の生年月日 <span class="required">*</span></label>
+              <input 
+                type="date" 
+                id="onboarding-spouseBirthDate" 
+                formControlName="spouseBirthDate" 
+                class="form-input"
+              >
+              <div *ngIf="onboardingApplicationForm.get('spouseBirthDate')?.invalid && onboardingApplicationForm.get('spouseBirthDate')?.touched" class="error-message">
+                配偶者の生年月日を入力してください
+              </div>
+            </div>
+
+            <!-- 配偶者の性別 -->
+            <div class="form-group">
+              <label for="onboarding-spouseGender">配偶者の性別 <span class="required">*</span></label>
+              <select 
+                id="onboarding-spouseGender" 
+                formControlName="spouseGender" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
+              </select>
+              <div *ngIf="onboardingApplicationForm.get('spouseGender')?.invalid && onboardingApplicationForm.get('spouseGender')?.touched" class="error-message">
+                配偶者の性別を選択してください
+              </div>
+            </div>
+
+            <!-- 配偶者の電話番号（必須ではない） -->
+            <div class="form-group">
+              <label for="onboarding-spousePhoneNumber">配偶者の電話番号</label>
+              <input 
+                type="tel" 
+                id="onboarding-spousePhoneNumber" 
+                formControlName="spousePhoneNumber" 
+                class="form-input"
+              >
+            </div>
+
+            <!-- 配偶者の見込み年収 -->
+            <div class="form-group">
+              <label for="onboarding-spouseAnnualIncome">配偶者の見込み年収 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="onboarding-spouseAnnualIncome" 
+                formControlName="spouseAnnualIncome" 
+                class="form-input"
+                placeholder="例: 3000000"
+              >
+              <div *ngIf="onboardingApplicationForm.get('spouseAnnualIncome')?.invalid && onboardingApplicationForm.get('spouseAnnualIncome')?.touched" class="error-message">
+                配偶者の見込み年収を入力してください
+              </div>
+            </div>
+
+            <!-- 配偶者のマイナンバー -->
+            <div class="form-group full-width">
+              <label>配偶者のマイナンバー <span class="required">*</span></label>
+              <div class="my-number-container">
+                <div class="my-number-inputs">
+                  <input 
+                    type="text" 
+                    id="onboarding-spouseMyNumberPart1" 
+                    formControlName="spouseMyNumberPart1" 
+                    class="form-input my-number-part"
+                    maxlength="4"
+                    placeholder="0000"
+                  >
+                  <span class="my-number-separator">-</span>
+                  <input 
+                    type="text" 
+                    id="onboarding-spouseMyNumberPart2" 
+                    formControlName="spouseMyNumberPart2" 
+                    class="form-input my-number-part"
+                    maxlength="4"
+                    placeholder="0000"
+                  >
+                  <span class="my-number-separator">-</span>
+                  <input 
+                    type="text" 
+                    id="onboarding-spouseMyNumberPart3" 
+                    formControlName="spouseMyNumberPart3" 
+                    class="form-input my-number-part"
+                    maxlength="4"
+                    placeholder="0000"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- 同居/別居 -->
+            <div class="form-group">
+              <label for="onboarding-spouseLivingTogether">同居/別居 <span class="required">*</span></label>
+              <select 
+                id="onboarding-spouseLivingTogether" 
+                formControlName="spouseLivingTogether" 
+                class="form-input"
+                (change)="onOnboardingSpouseLivingTogetherChange($event)"
+              >
+                <option value="">選択してください</option>
+                <option value="同居">同居</option>
+                <option value="別居">別居</option>
+              </select>
+              <div *ngIf="onboardingApplicationForm.get('spouseLivingTogether')?.invalid && onboardingApplicationForm.get('spouseLivingTogether')?.touched" class="error-message">
+                同居/別居を選択してください
+              </div>
+            </div>
+
+            <!-- 別居の場合の住所 -->
+            <div *ngIf="onboardingApplicationForm.get('spouseLivingTogether')?.value === '別居'">
+              <div class="form-group full-width">
+                <label for="onboarding-spouseAddress">配偶者の住所 <span class="required">*</span></label>
+                <textarea 
+                  id="onboarding-spouseAddress" 
+                  formControlName="spouseAddress" 
+                  class="form-input" 
+                  rows="2"
+                ></textarea>
+                <div *ngIf="onboardingApplicationForm.get('spouseAddress')?.invalid && onboardingApplicationForm.get('spouseAddress')?.touched" class="error-message">
+                  配偶者の住所を入力してください
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <label for="onboarding-spouseAddressKana">配偶者の住所（ヨミガナ） <span class="required">*</span></label>
+                <textarea 
+                  id="onboarding-spouseAddressKana" 
+                  formControlName="spouseAddressKana" 
+                  class="form-input" 
+                  rows="2"
+                ></textarea>
+                <div *ngIf="onboardingApplicationForm.get('spouseAddressKana')?.invalid && onboardingApplicationForm.get('spouseAddressKana')?.touched" class="error-message">
+                  配偶者の住所（ヨミガナ）を入力してください
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 送信ボタン -->
+      <div class="form-actions">
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="onboardingApplicationForm.invalid">
+          申請
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
