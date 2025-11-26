@@ -886,30 +886,73 @@ export class HrDashboardComponent {
     }
   }
 
-  // 選択された文書をダウンロード
+  // 選択された文書をダウンロード（文書作成ページと同じ処理）
   async downloadSelectedDocuments() {
     if (!this.selectedApplication) {
       return;
     }
 
     const employeeNumber = this.selectedApplication.employeeNumber || '';
-    const employeeName = this.selectedApplication.employeeName || '';
+    const employeeName = this.selectedApplication.employeeName || this.selectedApplication.name || '';
+
+    // 社会保険料一覧が読み込まれていない場合は読み込む（標準報酬月額を取得するため）
+    if (this.insuranceList.length === 0) {
+      await this.loadInsuranceList();
+    }
+
+    // 従業員の詳細データを取得
+    const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+    if (!employeeData) {
+      console.error('従業員データの取得に失敗しました:', employeeNumber);
+      return;
+    }
 
     // チェックが入った文書をダウンロード
     for (const documentName of this.availableDocuments) {
       if (this.documentCheckboxes[documentName]) {
         try {
-          // PDFテンプレートを読み込む
+          // 文書に必要な情報を収集
+          const documentInfo = await this.collectDocumentInfo(documentName, employeeData);
+
+          // 1. テンプレートPDFをそのままダウンロード（情報を記入しない）
           const pdfBytes = await this.pdfEditService.loadPdfTemplate(documentName);
+          const pdfFileName = `${documentName}_${employeeNumber}_${employeeName}.pdf`;
+          this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+
+          // 2. 必要な情報をテキストファイルとしてダウンロード
+          const hasMissingInfo = Object.values(documentInfo).some(value => value === '情報なし' || (typeof value === 'string' && value.includes('情報なし')));
           
-          // ファイル名を生成（文書名_社員番号_氏名.pdf）
-          const fileName = `${documentName}_${employeeNumber}_${employeeName}.pdf`;
+          let fileContent = `${documentName} 作成に必要な情報\n`;
+          fileContent += `========================================\n\n`;
+          fileContent += `社員番号: ${employeeNumber}\n`;
+          fileContent += `従業員氏名: ${employeeName}\n\n`;
+          fileContent += `必要な情報一覧:\n`;
+          fileContent += `----------------------------------------\n\n`;
           
-          // PDFをダウンロード
-          this.pdfEditService.downloadPdf(pdfBytes, fileName);
+          for (const [key, value] of Object.entries(documentInfo)) {
+            fileContent += `${key}: ${value}\n`;
+          }
+          
+          if (hasMissingInfo) {
+            fileContent += `\n\n========================================\n`;
+            fileContent += `注意: 情報が不足しているため、「情報なし」と記載しています。\n`;
+            fileContent += `不足している情報を確認し、必要に応じて設定ページや社員情報を更新してください。\n`;
+          }
+          
+          // テキストファイルをダウンロード
+          const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          const textFileName = `${documentName}作成に必要な情報_${employeeNumber}_${employeeName}.txt`;
+          link.download = textFileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
         } catch (error) {
           console.error(`Error downloading document ${documentName}:`, error);
-          alert(`文書「${documentName}」のダウンロードに失敗しました`);
+          alert(`文書「${documentName}」のダウンロードに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
         }
       }
     }
@@ -1780,9 +1823,10 @@ export class HrDashboardComponent {
 
       case '健康保険資格確認書交付申請書':
       case '健康保険資格確認書再交付申請書':
+      case '健康保険被保険者証再交付申請書': // 保険証再発行申請に対応
         info['被保険者記号'] = getValue('insuranceSymbol');
         info['被保険者番号'] = getValue('healthInsuranceNumber');
-        info['マイナンバー'] = myNumber !== '--' ? myNumber : '情報なし';
+        info['マイナンバー'] = myNumber || '情報なし';
         info['被保険者氏名'] = getValue('name');
         info['被保険者氏名（カタカナ）'] = getValue('nameKana');
         const postalCode2 = getValue('currentAddress').match(/\d{3}-?\d{4}/)?.[0] || '情報なし';
@@ -1796,6 +1840,7 @@ export class HrDashboardComponent {
         break;
 
       case '被保険者住所変更届':
+      case '健康保険・厚生年金保険 被保険者住所変更届': // 住所変更申請に対応
         info['事業所整理番号'] = companyInfo.officeCode || '情報なし';
         info['被保険者整理番号'] = getValue('healthInsuranceNumber');
         const postalCode3 = getValue('currentAddress').match(/\d{3}-?\d{4}/)?.[0] || '情報なし';
