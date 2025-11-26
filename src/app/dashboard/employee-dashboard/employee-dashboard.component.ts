@@ -1822,6 +1822,15 @@ export class EmployeeDashboardComponent {
         });
       }
 
+      // パスワードが初期パスワードのままの場合、メッセージを追加
+      if (this.employeeData && this.employeeData.isInitialPassword === true) {
+        this.hrRequests.push({
+          title: 'パスワード変更',
+          date: new Date(),
+          message: 'パスワードを変更してください'
+        });
+      }
+
       // その他の人事からの依頼を読み込む（今後実装予定）
       // TODO: Firestoreから人事からの依頼を読み込む
     } catch (error) {
@@ -1874,6 +1883,9 @@ export class EmployeeDashboardComponent {
 
         // フォームをリセット
         this.passwordChangeForm.reset();
+        
+        // メインページのデータを再読み込み（パスワード変更メッセージを更新）
+        await this.loadMainPageData();
         
         alert('パスワードを変更しました');
       } catch (error) {
