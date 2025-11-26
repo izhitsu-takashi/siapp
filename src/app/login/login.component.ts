@@ -25,7 +25,7 @@ export class LoginComponent {
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['']
+      password: [''] // パスワードは任意
     });
   }
 
@@ -45,11 +45,24 @@ export class LoginComponent {
 
       try {
         if (this.loginType === 'employee') {
-          // 従業員ログイン: メールアドレスが社員情報管理テーブルに存在するかチェック
+          // 従業員ログイン: メールアドレスで認証（パスワードは任意）
           const email = this.loginForm.value.email;
+          const password = this.loginForm.value.password || '';
+          
           const employee = await this.firestoreService.getEmployeeByEmail(email);
           
           if (employee) {
+            // パスワードが入力されている場合のみチェック
+            if (password) {
+              // パスワードが設定されている場合、パスワードをチェック
+              if (employee.password && employee.password !== password) {
+                this.errorMessage = 'メールアドレスまたはパスワードが正しくありません。';
+                this.isLoading = false;
+                this.loginForm.enable();
+                return;
+              }
+            }
+            
             // ログイン成功: 社員番号をセッションストレージに保存（ブラウザ環境でのみ）
             if (employee.employeeNumber && isPlatformBrowser(this.platformId)) {
               sessionStorage.setItem('employeeNumber', employee.employeeNumber);

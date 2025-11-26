@@ -872,6 +872,69 @@
           </div>
         </ng-container>
 
+        <!-- パスワード変更ページ -->
+        <ng-container *ngIf="currentTab === 'パスワード変更'">
+          <div class="page-header">
+            <h2 class="page-title">パスワード変更</h2>
+          </div>
+          
+          <form [formGroup]="passwordChangeForm" (ngSubmit)="changePassword()" class="settings-form">
+            <section class="form-section">
+              <h3 class="section-title">パスワード変更</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="currentPassword">現在のパスワード <span class="required">*</span></label>
+                  <input 
+                    type="password" 
+                    id="currentPassword" 
+                    formControlName="currentPassword" 
+                    class="form-input"
+                    placeholder="現在のパスワードを入力"
+                  >
+                  <div *ngIf="passwordChangeForm.get('currentPassword')?.invalid && passwordChangeForm.get('currentPassword')?.touched" class="error-message">
+                    現在のパスワードを入力してください
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="newPassword">新しいパスワード <span class="required">*</span></label>
+                  <input 
+                    type="password" 
+                    id="newPassword" 
+                    formControlName="newPassword" 
+                    class="form-input"
+                    placeholder="新しいパスワードを入力（6文字以上）"
+                  >
+                  <div *ngIf="passwordChangeForm.get('newPassword')?.invalid && passwordChangeForm.get('newPassword')?.touched" class="error-message">
+                    新しいパスワードを6文字以上で入力してください
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="confirmPassword">新しいパスワード（確認） <span class="required">*</span></label>
+                  <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    formControlName="confirmPassword" 
+                    class="form-input"
+                    placeholder="新しいパスワードを再入力"
+                  >
+                  <div *ngIf="passwordChangeForm.get('confirmPassword')?.invalid && passwordChangeForm.get('confirmPassword')?.touched" class="error-message">
+                    新しいパスワードを再入力してください
+                  </div>
+                  <div *ngIf="passwordChangeForm.get('confirmPassword')?.hasError('passwordMismatch') && passwordChangeForm.get('confirmPassword')?.touched" class="error-message">
+                    新しいパスワードが一致しません
+                  </div>
+                </div>
+              </div>
+            </section>
+            
+            <div class="form-actions">
+              <button type="submit" class="submit-button" [disabled]="passwordChangeForm.invalid">
+                パスワードを変更
+              </button>
+            </div>
+          </form>
+        </ng-container>
+
         <!-- その他のタブ -->
         <!-- 保険・扶養ページ -->
         <ng-container *ngIf="currentTab === '保険・扶養'">
@@ -945,7 +1008,7 @@
         </ng-container>
 
         <!-- ナレッジページ（その他のページ） -->
-        <ng-container *ngIf="currentTab !== '情報設定' && currentTab !== '各種申請' && currentTab !== 'メインページ' && currentTab !== '保険・扶養'">
+        <ng-container *ngIf="currentTab !== '情報設定' && currentTab !== '各種申請' && currentTab !== 'メインページ' && currentTab !== '保険・扶養' && currentTab !== 'パスワード変更'">
           <h2 class="page-title">{{ currentTab }}のページです</h2>
         </ng-container>
       </div>

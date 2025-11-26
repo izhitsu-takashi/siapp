@@ -27,7 +27,7 @@ export class HrDashboardComponent {
     { id: 'main', name: 'メインページ' },
     { id: 'employee-management', name: '社員情報管理' },
     { id: 'application-management', name: '申請管理' },
-    { id: 'procedures', name: '各種手続き' },
+    { id: 'procedures', name: '入社手続き' },
     { id: 'document-management', name: '文書作成・管理' },
     { id: 'egov', name: 'e-Gov電子申請ページ' },
     { id: 'insurance-card', name: '保険証管理' },
@@ -528,7 +528,8 @@ export class HrDashboardComponent {
       employeeNumber: ['', Validators.required],
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      employmentType: ['', Validators.required]
+      employmentType: ['', Validators.required],
+      initialPassword: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
@@ -1042,12 +1043,28 @@ export class HrDashboardComponent {
       // 各社員をFirestoreに保存
       for (const employee of newEmployees) {
         try {
+          // パスワードを含めて社員データを保存
           await this.firestoreService.saveEmployeeData(employee.employeeNumber, {
             employeeNumber: employee.employeeNumber,
             name: employee.name,
             email: employee.email,
-            employmentType: employee.employmentType
+            employmentType: employee.employmentType,
+            password: employee.initialPassword, // パスワードを保存（後でハッシュ化推奨）
+            isInitialPassword: true // 初期パスワードフラグ
           });
+          
+          // メール送信
+          try {
+            await this.firestoreService.sendOnboardingEmail(
+              employee.email,
+              employee.name,
+              employee.initialPassword
+            );
+          } catch (emailError) {
+            console.error('Error sending email:', emailError);
+            // メール送信エラーは警告のみ（社員追加は成功）
+            alert(`${employee.name}さんのメール送信に失敗しましたが、社員データは保存されました。`);
+          }
           
           // 社員一覧に追加
           this.employees.push({
@@ -1058,6 +1075,7 @@ export class HrDashboardComponent {
           });
         } catch (error) {
           console.error('Error adding employee:', error);
+          alert(`${employee.name}さんの追加に失敗しました`);
         }
       }
       

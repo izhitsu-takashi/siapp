@@ -339,6 +339,44 @@ export class FirestoreService {
   }
   
   // 申請を再提出
+  /**
+   * 入社時メールを送信する
+   * Firebase Functionsのエンドポイントを呼び出す（SMTPまたはTrigger Email拡張機能を使用）
+   */
+  async sendOnboardingEmail(email: string, name: string, initialPassword: string): Promise<void> {
+    try {
+      // 本番環境のURLを使用
+      const appUrl = 'https://siapp-kadai3.web.app';
+      
+      // Firebase Functionsのエンドポイントを呼び出す
+      const functionsUrl = 'https://us-central1-kensyu10117.cloudfunctions.net/sendOnboardingEmail';
+      
+      const response = await fetch(functionsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          name: name,
+          initialPassword: initialPassword,
+          appUrl: appUrl
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'メール送信に失敗しました');
+      }
+
+      const result = await response.json();
+      console.log('Email send result:', result);
+    } catch (error) {
+      console.error('Error sending onboarding email:', error);
+      throw error;
+    }
+  }
+
   async resubmitApplication(applicationId: string, applicationData: any): Promise<void> {
     try {
       const applicationsCollection = collection(this.db, 'applications');

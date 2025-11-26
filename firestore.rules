@@ -76,5 +76,11 @@ service cloud.firestore {
     match /progressReportComments/{commentId} {
       allow read, write: if true;
     }
+    
+    // メール送信用コレクション（Trigger Email拡張機能用）
+    match /mail/{mailId} {
+      allow read: if false; // 読み取りは禁止（拡張機能のみが使用）
+      allow write: if true; // 書き込みは許可（アプリからメール送信をトリガー）
+    }
   }
 }

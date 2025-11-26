@@ -19,6 +19,7 @@ export class EmployeeDashboardComponent {
     { id: 'settings', name: '情報設定' },
     { id: 'insurance', name: '保険・扶養' },
     { id: 'application', name: '各種申請' },
+    { id: 'password-change', name: 'パスワード変更' },
     { id: 'knowledge', name: 'ナレッジ' }
   ];
 
@@ -68,6 +69,7 @@ export class EmployeeDashboardComponent {
 
   // フォーム
   settingsForm: FormGroup;
+  passwordChangeForm!: FormGroup;
   showMyNumber = false;
   hasPensionHistory = false;
   isSaving = false;
@@ -110,6 +112,7 @@ export class EmployeeDashboardComponent {
   ) {
     // settingsFormを初期化（必須）
     this.settingsForm = this.createForm();
+    this.passwordChangeForm = this.createPasswordChangeForm();
     // 扶養家族追加申請フォームを初期化
     this.dependentApplicationForm = this.createDependentApplicationForm();
     // 扶養削除申請フォームを初期化
@@ -604,6 +607,24 @@ export class EmployeeDashboardComponent {
         bankAccount.get(key)?.disable();
       });
     }
+  }
+
+  createPasswordChangeForm(): FormGroup {
+    return this.fb.group({
+      currentPassword: ['', Validators.required],
+      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', Validators.required]
+    }, { validators: this.passwordMatchValidator });
+  }
+
+  passwordMatchValidator(form: FormGroup) {
+    const newPassword = form.get('newPassword')?.value;
+    const confirmPassword = form.get('confirmPassword')?.value;
+    if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+      form.get('confirmPassword')?.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+    return null;
   }
 
   createForm(): FormGroup {
@@ -1824,6 +1845,47 @@ export class EmployeeDashboardComponent {
     }
   }
   
+  // パスワード変更
+  async changePassword() {
+    if (this.passwordChangeForm.valid) {
+      try {
+        const formValue = this.passwordChangeForm.value;
+        const currentPassword = formValue.currentPassword;
+        const newPassword = formValue.newPassword;
+
+        // 現在のパスワードを確認
+        const employeeData = await this.firestoreService.getEmployeeData(this.employeeNumber);
+        if (!employeeData) {
+          alert('社員情報の取得に失敗しました');
+          return;
+        }
+
+        if (employeeData.password !== currentPassword) {
+          alert('現在のパスワードが正しくありません');
+          return;
+        }
+
+        // パスワードを更新
+        await this.firestoreService.saveEmployeeData(this.employeeNumber, {
+          ...employeeData,
+          password: newPassword,
+          isInitialPassword: false // 初期パスワードフラグを解除
+        });
+
+        // フォームをリセット
+        this.passwordChangeForm.reset();
+        
+        alert('パスワードを変更しました');
+      } catch (error) {
+        console.error('Error changing password:', error);
+        alert('パスワードの変更に失敗しました');
+      }
+    } else {
+      this.passwordChangeForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
+  }
+
   getApplicationDate(application: any): Date | null {
     if (!application.createdAt) {
       return null;
