@@ -1331,6 +1331,50 @@
   cursor: not-allowed;
 }
 
+/* ステータス変更ボタン */
+.status-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-button.status-reject {
+  background: #f44336;
+  color: white;
+}
+
+.status-button.status-reject:hover {
+  background: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.status-button.status-approve {
+  background: #4caf50;
+  color: white;
+}
+
+.status-button.status-approve:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.status-button.status-update {
+  background: #2196f3;
+  color: white;
+}
+
+.status-button.status-update:hover {
+  background: #1976d2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
 @media (max-width: 768px) {
   .dashboard-header {
     padding: 1rem;

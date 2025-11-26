@@ -102,15 +102,23 @@ export class HrDashboardComponent {
   showMyNumber = false;
   hasPensionHistory = false;
   isSaving = false;
+  sameAsCurrentAddress = false;
+  sameAsCurrentAddressForEmergency = false;
+  hasSpouse = false;
+  age: number | null = null;
 
   // 新入社員詳細モーダル
   showOnboardingEmployeeModal = false;
   selectedOnboardingEmployee: any = null;
   onboardingStatusComment: string = '';
-  sameAsCurrentAddress = false;
-  sameAsCurrentAddressForEmergency = false;
-  hasSpouse = false;
-  age: number | null = null;
+  onboardingEmployeeEditForm: FormGroup;
+  onboardingSameAsCurrentAddress = false;
+  onboardingSameAsCurrentAddressForEmergency = false;
+  onboardingHasSpouse = false;
+  onboardingAge: number | null = null;
+  onboardingShowMyNumber = false;
+  onboardingHasPensionHistory = false;
+  onboardingIsSaving = false;
   
   // ファイル入力（フォームコントロールから分離）
   idDocumentFile: File | null = null;
@@ -173,6 +181,7 @@ export class HrDashboardComponent {
       employees: this.fb.array([this.createEmployeeFormGroup()])
     });
     this.employeeEditForm = this.createEmployeeEditForm();
+    this.onboardingEmployeeEditForm = this.createEmployeeEditForm();
     this.settingsForm = this.createSettingsForm();
     
     // ブラウザ環境でのみデータを読み込む（プリレンダリング時はスキップ）
@@ -1517,38 +1526,28 @@ export class HrDashboardComponent {
     this.showMyNumber = !this.showMyNumber;
   }
 
-  // 被保険者記号の入力フォーマット（数字8桁のみ）
-  formatInsuranceSymbolInput(event: any) {
-    let value = event.target.value.replace(/\D/g, '');
-    if (value.length > 8) {
-      value = value.substring(0, 8);
-    }
-    event.target.value = value;
-    this.employeeEditForm.get('insuranceSymbol')?.setValue(value, { emitEvent: false });
-  }
-
-  // 被保険者番号の入力フォーマット（数字3桁のみ）
-  formatInsuranceNumberInput(event: any) {
-    let value = event.target.value.replace(/\D/g, '');
-    if (value.length > 3) {
-      value = value.substring(0, 3);
-    }
-    event.target.value = value;
-    this.employeeEditForm.get('insuranceNumber')?.setValue(value, { emitEvent: false });
-  }
-
   formatMyNumberInput(event: any, part: number) {
     let value = event.target.value.replace(/\D/g, '');
     if (value.length > 4) {
       value = value.substring(0, 4);
     }
     event.target.value = value;
-    this.employeeEditForm.get(`myNumberPart${part}`)?.setValue(value);
-    
-    if (value.length === 4 && part < 3) {
-      const nextInput = document.getElementById(`hr-myNumberPart${part + 1}`);
-      if (nextInput) {
-        nextInput.focus();
+    // 新入社員モーダルが開いている場合は新入社員フォームを使用
+    if (this.showOnboardingEmployeeModal && this.onboardingEmployeeEditForm) {
+      this.onboardingEmployeeEditForm.get(`myNumberPart${part}`)?.setValue(value);
+      if (value.length === 4 && part < 3) {
+        const nextInput = document.getElementById(`onboarding-myNumberPart${part + 1}`);
+        if (nextInput) {
+          nextInput.focus();
+        }
+      }
+    } else {
+      this.employeeEditForm.get(`myNumberPart${part}`)?.setValue(value);
+      if (value.length === 4 && part < 3) {
+        const nextInput = document.getElementById(`hr-myNumberPart${part + 1}`);
+        if (nextInput) {
+          nextInput.focus();
+        }
       }
     }
   }
@@ -1560,13 +1559,51 @@ export class HrDashboardComponent {
       value = value.substring(0, maxLength);
     }
     event.target.value = value;
-    this.employeeEditForm.get(`basicPensionNumberPart${part}`)?.setValue(value);
-    
-    if (value.length === maxLength && part === 1) {
-      const nextInput = document.getElementById('hr-basicPensionNumberPart2');
-      if (nextInput) {
-        nextInput.focus();
+    // 新入社員モーダルが開いている場合は新入社員フォームを使用
+    if (this.showOnboardingEmployeeModal && this.onboardingEmployeeEditForm) {
+      this.onboardingEmployeeEditForm.get(`basicPensionNumberPart${part}`)?.setValue(value);
+      if (value.length === maxLength && part === 1) {
+        const nextInput = document.getElementById('onboarding-basicPensionNumberPart2');
+        if (nextInput) {
+          nextInput.focus();
+        }
       }
+    } else {
+      this.employeeEditForm.get(`basicPensionNumberPart${part}`)?.setValue(value);
+      if (value.length === maxLength && part === 1) {
+        const nextInput = document.getElementById('hr-basicPensionNumberPart2');
+        if (nextInput) {
+          nextInput.focus();
+        }
+      }
+    }
+  }
+  
+  formatInsuranceSymbolInput(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 8) {
+      value = value.substring(0, 8);
+    }
+    event.target.value = value;
+    // 新入社員モーダルが開いている場合は新入社員フォームを使用
+    if (this.showOnboardingEmployeeModal && this.onboardingEmployeeEditForm) {
+      this.onboardingEmployeeEditForm.get('insuranceSymbol')?.setValue(value, { emitEvent: false });
+    } else {
+      this.employeeEditForm.get('insuranceSymbol')?.setValue(value, { emitEvent: false });
+    }
+  }
+  
+  formatInsuranceNumberInput(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 3) {
+      value = value.substring(0, 3);
+    }
+    event.target.value = value;
+    // 新入社員モーダルが開いている場合は新入社員フォームを使用
+    if (this.showOnboardingEmployeeModal && this.onboardingEmployeeEditForm) {
+      this.onboardingEmployeeEditForm.get('insuranceNumber')?.setValue(value, { emitEvent: false });
+    } else {
+      this.employeeEditForm.get('insuranceNumber')?.setValue(value, { emitEvent: false });
     }
   }
 
@@ -2302,6 +2339,281 @@ export class HrDashboardComponent {
     if (onboardingApp) {
       this.selectedOnboardingEmployee.applicationData = onboardingApp;
     }
+    
+    // 新入社員データを読み込む
+    await this.loadOnboardingEmployeeData(employee.employeeNumber);
+  }
+  
+  // 新入社員データを読み込む
+  async loadOnboardingEmployeeData(employeeNumber: string) {
+    try {
+      const data = await this.firestoreService.getOnboardingEmployee(employeeNumber);
+      if (data) {
+        this.populateOnboardingEmployeeEditForm(data);
+      }
+    } catch (error) {
+      console.error('Error loading onboarding employee data:', error);
+    }
+  }
+  
+  // 新入社員編集フォームにデータを設定
+  populateOnboardingEmployeeEditForm(data: any) {
+    // マイナンバーを分割
+    if (data.myNumber && data.myNumber.length === 12) {
+      this.onboardingEmployeeEditForm.patchValue({
+        myNumberPart1: data.myNumber.substring(0, 4),
+        myNumberPart2: data.myNumber.substring(4, 8),
+        myNumberPart3: data.myNumber.substring(8, 12)
+      });
+    }
+    
+    // 基礎年金番号を分割
+    if (data.basicPensionNumber) {
+      const basicPensionNumber = data.basicPensionNumber.replace(/-/g, '');
+      if (basicPensionNumber.length >= 4) {
+        this.onboardingEmployeeEditForm.patchValue({
+          basicPensionNumberPart1: basicPensionNumber.substring(0, 4),
+          basicPensionNumberPart2: basicPensionNumber.substring(4, 10) || ''
+        });
+      }
+    }
+    
+    // 保険証情報
+    if (data.insuranceSymbol) {
+      this.onboardingEmployeeEditForm.patchValue({
+        insuranceSymbol: data.insuranceSymbol.toString()
+      });
+    }
+    if (data.insuranceNumber) {
+      this.onboardingEmployeeEditForm.patchValue({
+        insuranceNumber: data.insuranceNumber.toString()
+      });
+    }
+    if (data.insuranceCardIssueDate) {
+      this.onboardingEmployeeEditForm.patchValue({
+        insuranceCardIssueDate: data.insuranceCardIssueDate
+      });
+    }
+    if (data.insuranceCardReturnDate) {
+      this.onboardingEmployeeEditForm.patchValue({
+        insuranceCardReturnDate: data.insuranceCardReturnDate
+      });
+    }
+    if (data.insuranceCardDistributionStatus) {
+      this.onboardingEmployeeEditForm.patchValue({
+        insuranceCardDistributionStatus: data.insuranceCardDistributionStatus
+      });
+    }
+    
+    // 厚生年金加入履歴の状態を設定
+    this.onboardingHasPensionHistory = data.pensionHistoryStatus === '有';
+    
+    // 配偶者の有無を設定
+    this.onboardingHasSpouse = data.spouseStatus === '有';
+    
+    // 住民票住所が現住所と同じかチェック
+    this.onboardingSameAsCurrentAddress = data.sameAsCurrentAddress || false;
+    if (this.onboardingSameAsCurrentAddress) {
+      const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+      const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+      const currentHouseholdHead = this.onboardingEmployeeEditForm.get('currentHouseholdHead')?.value || '';
+      this.onboardingEmployeeEditForm.patchValue({
+        residentAddress: currentAddress,
+        residentAddressKana: currentAddressKana,
+        residentHouseholdHead: currentHouseholdHead
+      });
+      this.onboardingEmployeeEditForm.get('residentAddress')?.disable();
+      this.onboardingEmployeeEditForm.get('residentAddressKana')?.disable();
+      this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.disable();
+    }
+    
+    // 緊急連絡先住所が現住所と同じかチェック
+    this.onboardingSameAsCurrentAddressForEmergency = data.sameAsCurrentAddressForEmergency || false;
+    if (this.onboardingSameAsCurrentAddressForEmergency) {
+      const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+      const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+      this.onboardingEmployeeEditForm.get('emergencyContact')?.patchValue({
+        address: currentAddress,
+        addressKana: currentAddressKana
+      });
+      this.onboardingEmployeeEditForm.get('emergencyContact.address')?.disable();
+      this.onboardingEmployeeEditForm.get('emergencyContact.addressKana')?.disable();
+    }
+    
+    // ネストされたフォームグループを設定
+    if (data.emergencyContact) {
+      this.onboardingEmployeeEditForm.get('emergencyContact')?.patchValue(data.emergencyContact);
+      delete data.emergencyContact;
+    }
+    
+    if (data.bankAccount) {
+      this.onboardingEmployeeEditForm.get('bankAccount')?.patchValue(data.bankAccount);
+      delete data.bankAccount;
+    }
+    
+    // 残りのフィールドを設定
+    this.onboardingEmployeeEditForm.patchValue(data);
+    
+    // 年齢を計算
+    const birthDate = this.onboardingEmployeeEditForm.get('birthDate')?.value;
+    if (birthDate) {
+      this.onboardingCalculateAge(birthDate);
+    }
+  }
+  
+  // 新入社員の年齢を計算
+  onboardingCalculateAge(birthDate: string) {
+    if (!birthDate) {
+      this.onboardingAge = null;
+      return;
+    }
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    this.onboardingAge = age;
+  }
+  
+  // 新入社員の生年月日変更時の処理
+  onOnboardingBirthDateChange() {
+    const birthDate = this.onboardingEmployeeEditForm.get('birthDate')?.value;
+    if (birthDate) {
+      this.onboardingCalculateAge(birthDate);
+    }
+  }
+  
+  // 新入社員の住民票住所が現住所と同じかチェック
+  onOnboardingSameAddressChange(event: any) {
+    this.onboardingSameAsCurrentAddress = event.target.checked;
+    if (this.onboardingSameAsCurrentAddress) {
+      const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+      const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+      const currentHouseholdHead = this.onboardingEmployeeEditForm.get('currentHouseholdHead')?.value || '';
+      this.onboardingEmployeeEditForm.patchValue({
+        residentAddress: currentAddress,
+        residentAddressKana: currentAddressKana,
+        residentHouseholdHead: currentHouseholdHead
+      });
+      this.onboardingEmployeeEditForm.get('residentAddress')?.disable();
+      this.onboardingEmployeeEditForm.get('residentAddressKana')?.disable();
+      this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.disable();
+    } else {
+      this.onboardingEmployeeEditForm.get('residentAddress')?.enable();
+      this.onboardingEmployeeEditForm.get('residentAddressKana')?.enable();
+      this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.enable();
+    }
+  }
+  
+  // 新入社員の緊急連絡先住所が現住所と同じかチェック
+  onOnboardingSameAddressForEmergencyChange(event: any) {
+    this.onboardingSameAsCurrentAddressForEmergency = event.target.checked;
+    if (this.onboardingSameAsCurrentAddressForEmergency) {
+      const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+      const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+      this.onboardingEmployeeEditForm.get('emergencyContact')?.patchValue({
+        address: currentAddress,
+        addressKana: currentAddressKana
+      });
+      this.onboardingEmployeeEditForm.get('emergencyContact.address')?.disable();
+      this.onboardingEmployeeEditForm.get('emergencyContact.addressKana')?.disable();
+    } else {
+      this.onboardingEmployeeEditForm.get('emergencyContact.address')?.enable();
+      this.onboardingEmployeeEditForm.get('emergencyContact.addressKana')?.enable();
+    }
+  }
+  
+  // 新入社員の配偶者ステータス変更
+  onOnboardingSpouseStatusChange(event: any) {
+    this.onboardingHasSpouse = event.target.value === '有';
+    if (!this.onboardingHasSpouse) {
+      this.onboardingEmployeeEditForm.get('spouseAnnualIncome')?.setValue('');
+    }
+  }
+  
+  // 新入社員の厚生年金加入履歴変更
+  onOnboardingPensionHistoryChange(event: any) {
+    this.onboardingHasPensionHistory = event.target.value === '有';
+    if (!this.onboardingHasPensionHistory) {
+      this.onboardingEmployeeEditForm.get('pensionHistory')?.setValue('');
+    }
+  }
+  
+  // 新入社員のマイナンバー表示/非表示切り替え
+  toggleOnboardingMyNumber() {
+    this.onboardingShowMyNumber = !this.onboardingShowMyNumber;
+  }
+  
+  // 新入社員データを保存
+  async saveOnboardingEmployeeData() {
+    if (this.onboardingEmployeeEditForm.valid) {
+      this.onboardingIsSaving = true;
+      try {
+        // マイナンバーを結合
+        const myNumberParts = [
+          this.onboardingEmployeeEditForm.get('myNumberPart1')?.value || '',
+          this.onboardingEmployeeEditForm.get('myNumberPart2')?.value || '',
+          this.onboardingEmployeeEditForm.get('myNumberPart3')?.value || ''
+        ];
+        const myNumber = myNumberParts.join('');
+
+        // 基礎年金番号を結合
+        const basicPensionNumberParts = [
+          this.onboardingEmployeeEditForm.get('basicPensionNumberPart1')?.value || '',
+          this.onboardingEmployeeEditForm.get('basicPensionNumberPart2')?.value || ''
+        ];
+        const basicPensionNumber = basicPensionNumberParts.join('');
+
+        // フォームデータを準備
+        const formValue = this.onboardingEmployeeEditForm.value;
+        const formData: any = {
+          ...formValue,
+          myNumber: myNumber || null,
+          basicPensionNumber: basicPensionNumber || null,
+          sameAsCurrentAddress: this.onboardingSameAsCurrentAddress,
+          sameAsCurrentAddressForEmergency: this.onboardingSameAsCurrentAddressForEmergency
+        };
+
+        // sameAsCurrentAddressがtrueの場合、住民票住所を現住所で上書き
+        if (this.onboardingSameAsCurrentAddress) {
+          const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+          const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+          const currentHouseholdHead = this.onboardingEmployeeEditForm.get('currentHouseholdHead')?.value || '';
+          formData.residentAddress = currentAddress;
+          formData.residentAddressKana = currentAddressKana;
+          formData.residentHouseholdHead = currentHouseholdHead;
+        }
+
+        // sameAsCurrentAddressForEmergencyがtrueの場合、緊急連絡先住所を現住所で上書き
+        if (this.onboardingSameAsCurrentAddressForEmergency) {
+          const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+          const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+          formData.emergencyContact = {
+            ...formData.emergencyContact,
+            address: currentAddress,
+            addressKana: currentAddressKana
+          };
+        }
+
+        // 新入社員データを保存
+        await this.firestoreService.updateOnboardingEmployee(
+          this.selectedOnboardingEmployee.employeeNumber,
+          formData
+        );
+
+        // 新入社員一覧を再読み込み
+        await this.loadOnboardingEmployees();
+        
+        alert('新入社員情報を保存しました');
+      } catch (error) {
+        console.error('Error saving onboarding employee data:', error);
+        alert('新入社員情報の保存に失敗しました');
+      } finally {
+        this.onboardingIsSaving = false;
+      }
+    }
   }
 
   // 新入社員詳細モーダルを閉じる
@@ -2309,6 +2621,13 @@ export class HrDashboardComponent {
     this.showOnboardingEmployeeModal = false;
     this.selectedOnboardingEmployee = null;
     this.onboardingStatusComment = '';
+    this.onboardingEmployeeEditForm = this.createEmployeeEditForm();
+    this.onboardingSameAsCurrentAddress = false;
+    this.onboardingSameAsCurrentAddressForEmergency = false;
+    this.onboardingHasSpouse = false;
+    this.onboardingAge = null;
+    this.onboardingShowMyNumber = false;
+    this.onboardingHasPensionHistory = false;
   }
 
   // 新入社員のステータスを変更
@@ -2347,8 +2666,8 @@ export class HrDashboardComponent {
       // 新入社員一覧を再読み込み
       await this.loadOnboardingEmployees();
       
-      // モーダルを閉じる
-      this.closeOnboardingEmployeeModal();
+      // モーダル内のステータスを更新
+      this.selectedOnboardingEmployee.status = newStatus;
       
       alert(`ステータスを「${newStatus}」に変更しました`);
     } catch (error) {

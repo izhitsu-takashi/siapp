@@ -2339,91 +2339,765 @@
       <button class="modal-close" (click)="closeOnboardingEmployeeModal()">×</button>
     </div>
     
-    <div class="onboarding-employee-detail">
-      <!-- 基本情報 -->
-      <section class="detail-section">
-        <h3 class="section-title">基本情報</h3>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <span class="detail-label">社員番号:</span>
-            <span class="detail-value">{{ selectedOnboardingEmployee?.employeeNumber }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">氏名:</span>
-            <span class="detail-value">{{ selectedOnboardingEmployee?.name }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">メールアドレス:</span>
-            <span class="detail-value">{{ selectedOnboardingEmployee?.email }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">雇用形態:</span>
-            <span class="detail-value">{{ selectedOnboardingEmployee?.employmentType }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">ステータス:</span>
-            <span class="detail-value">
-              <span class="status-badge" [ngClass]="'status-' + selectedOnboardingEmployee?.status">
-                {{ selectedOnboardingEmployee?.status }}
-              </span>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <!-- 入社時申請データ（申請済みの場合） -->
-      <section *ngIf="selectedOnboardingEmployee?.applicationData" class="detail-section">
-        <h3 class="section-title">入社時申請内容</h3>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <span class="detail-label">申請日:</span>
-            <span class="detail-value">{{ selectedOnboardingEmployee.applicationData.createdAt | date:'yyyy/MM/dd' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">申請ステータス:</span>
-            <span class="detail-value">{{ selectedOnboardingEmployee.applicationData.status }}</span>
-          </div>
-        </div>
-        <!-- 申請内容の詳細は必要に応じて追加 -->
-      </section>
-
-      <!-- ステータス変更 -->
-      <section class="detail-section">
+    <form [formGroup]="onboardingEmployeeEditForm" (ngSubmit)="saveOnboardingEmployeeData()" class="employee-edit-form">
+      <!-- ステータス変更欄（一番上） -->
+      <section class="form-section">
         <h3 class="section-title">ステータス変更</h3>
-        <div class="form-group">
-          <label for="statusComment">コメント（差し戻しの場合）</label>
-          <textarea 
-            id="statusComment"
-            class="form-input"
-            [(ngModel)]="onboardingStatusComment"
-            placeholder="差し戻し理由などを入力してください"
-            rows="3"
-          ></textarea>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-status">ステータス</label>
+            <select 
+              id="onboarding-status"
+              class="form-input"
+              [(ngModel)]="selectedOnboardingEmployee.status"
+              [ngModelOptions]="{standalone: true}"
+            >
+              <option value="申請待ち">申請待ち</option>
+              <option value="差し戻し">差し戻し</option>
+              <option value="準備完了">準備完了</option>
+            </select>
+          </div>
+          <div class="form-group full-width" *ngIf="selectedOnboardingEmployee?.status === '差し戻し'">
+            <label for="onboarding-statusComment">コメント（差し戻しの場合）</label>
+            <textarea 
+              id="onboarding-statusComment"
+              class="form-input"
+              [(ngModel)]="onboardingStatusComment"
+              [ngModelOptions]="{standalone: true}"
+              placeholder="差し戻し理由などを入力してください"
+              rows="3"
+            ></textarea>
+          </div>
         </div>
-        <div class="status-actions">
+        <div class="form-actions">
           <button 
-            *ngIf="selectedOnboardingEmployee?.status !== '差し戻し'"
             type="button" 
-            class="status-button status-reject"
-            (click)="updateOnboardingEmployeeStatus('差し戻し')"
+            class="status-button status-update"
+            (click)="updateOnboardingEmployeeStatus(selectedOnboardingEmployee.status)"
           >
-            差し戻し
-          </button>
-          <button 
-            *ngIf="selectedOnboardingEmployee?.status !== '準備完了'"
-            type="button" 
-            class="status-button status-approve"
-            (click)="updateOnboardingEmployeeStatus('準備完了')"
-          >
-            準備完了
+            ステータスを更新
           </button>
         </div>
       </section>
-    </div>
-    
-    <div class="modal-footer">
-      <button type="button" class="close-detail-button" (click)="closeOnboardingEmployeeModal()">閉じる</button>
-    </div>
+
+      <!-- 基本情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">基本情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-name">氏名 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="onboarding-name" 
+              formControlName="name" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-nameKana">氏名（ヨミガナ）</label>
+            <input 
+              type="text" 
+              id="onboarding-nameKana" 
+              formControlName="nameKana" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-birthDate">生年月日 <span class="required">*</span></label>
+            <div class="birth-date-container">
+              <input 
+                type="date" 
+                id="onboarding-birthDate" 
+                formControlName="birthDate" 
+                class="form-input"
+                (change)="onOnboardingBirthDateChange()"
+              >
+              <span *ngIf="onboardingAge !== null" class="age-display">（{{ onboardingAge }}歳）</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-gender">戸籍上の性別 <span class="required">*</span></label>
+            <select 
+              id="onboarding-gender" 
+              formControlName="gender" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-email">メールアドレス <span class="required">*</span></label>
+            <input 
+              type="email" 
+              id="onboarding-email" 
+              formControlName="email" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-idDocument">本人確認書類添付</label>
+            <input 
+              type="file" 
+              id="onboarding-idDocument" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'idDocument')"
+            >
+            <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- マイナンバー欄 -->
+      <section class="form-section">
+        <h3 class="section-title">マイナンバー</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="onboarding-myNumberPart1">マイナンバー</label>
+            <div class="my-number-container">
+              <div class="my-number-inputs">
+                <input 
+                  type="text" 
+                  id="onboarding-myNumberPart1" 
+                  formControlName="myNumberPart1" 
+                  class="form-input my-number-part"
+                  [type]="onboardingShowMyNumber ? 'text' : 'password'"
+                  [readonly]="!onboardingShowMyNumber"
+                  maxlength="4"
+                  (input)="formatMyNumberInput($event, 1)"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="onboarding-myNumberPart2" 
+                  formControlName="myNumberPart2" 
+                  class="form-input my-number-part"
+                  [type]="onboardingShowMyNumber ? 'text' : 'password'"
+                  [readonly]="!onboardingShowMyNumber"
+                  maxlength="4"
+                  (input)="formatMyNumberInput($event, 2)"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="onboarding-myNumberPart3" 
+                  formControlName="myNumberPart3" 
+                  class="form-input my-number-part"
+                  [type]="onboardingShowMyNumber ? 'text' : 'password'"
+                  [readonly]="!onboardingShowMyNumber"
+                  maxlength="4"
+                  (input)="formatMyNumberInput($event, 3)"
+                  placeholder="0000"
+                >
+              </div>
+              <button 
+                type="button" 
+                class="toggle-button" 
+                (click)="toggleOnboardingMyNumber()"
+              >
+                {{ onboardingShowMyNumber ? '非表示' : '表示' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 入退社情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">入退社情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-employmentStatus">在籍状況</label>
+            <select 
+              id="onboarding-employmentStatus" 
+              formControlName="employmentStatus" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let status of employmentStatuses" [value]="status">{{ status }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-joinDate">入社年月日</label>
+            <input 
+              type="date" 
+              id="onboarding-joinDate" 
+              formControlName="joinDate" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-resignationDate">退職年月日</label>
+            <input 
+              type="date" 
+              id="onboarding-resignationDate" 
+              formControlName="resignationDate" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-resignationReason">退職事由</label>
+            <textarea 
+              id="onboarding-resignationReason" 
+              formControlName="resignationReason" 
+              class="form-input" 
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- 業務情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">業務情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-employeeNumber">社員番号 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="onboarding-employeeNumber" 
+              formControlName="employeeNumber" 
+              class="form-input"
+              [readonly]="true"
+              style="background: #f5f5f5;"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-office">事業所</label>
+            <select 
+              id="onboarding-office" 
+              formControlName="office" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let office of offices" [value]="office">{{ office }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-workContent">業務内容</label>
+            <select 
+              id="onboarding-workContent" 
+              formControlName="workContent" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let content of workContents" [value]="content">{{ content }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-employmentType">雇用形態</label>
+            <select 
+              id="onboarding-employmentType" 
+              formControlName="employmentType" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-paymentType">給与支給形態</label>
+            <select 
+              id="onboarding-paymentType" 
+              formControlName="paymentType" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 部署・役職情報 -->
+      <section class="form-section">
+        <h3 class="section-title">部署・役職情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-department">部署</label>
+            <select 
+              id="onboarding-department" 
+              formControlName="department" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-position">役職</label>
+            <select 
+              id="onboarding-position" 
+              formControlName="position" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let pos of positions" [value]="pos">{{ pos }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 現住所と連絡先欄 -->
+      <section class="form-section">
+        <h3 class="section-title">現住所と連絡先</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="onboarding-currentAddress">現住所</label>
+            <textarea 
+              id="onboarding-currentAddress" 
+              formControlName="currentAddress" 
+              class="form-input" 
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-currentAddressKana">現住所（ヨミガナ）</label>
+            <textarea 
+              id="onboarding-currentAddressKana" 
+              formControlName="currentAddressKana" 
+              class="form-input" 
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-phoneNumber">電話番号</label>
+            <input 
+              type="tel" 
+              id="onboarding-phoneNumber" 
+              formControlName="phoneNumber" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-currentHouseholdHead">世帯主（本人/親族）</label>
+            <select 
+              id="onboarding-currentHouseholdHead" 
+              formControlName="currentHouseholdHead" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 住民票住所欄 -->
+      <section class="form-section">
+        <h3 class="section-title">住民票住所</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [checked]="onboardingSameAsCurrentAddress" 
+                (change)="onOnboardingSameAddressChange($event)"
+              >
+              住所（現住所と同じ）
+            </label>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-residentAddress">住所</label>
+            <textarea 
+              id="onboarding-residentAddress" 
+              formControlName="residentAddress" 
+              class="form-input" 
+              rows="2"
+              [readonly]="onboardingSameAsCurrentAddress"
+            ></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-residentAddressKana">住所（ヨミガナ）</label>
+            <textarea 
+              id="onboarding-residentAddressKana" 
+              formControlName="residentAddressKana" 
+              class="form-input" 
+              rows="2"
+              [readonly]="onboardingSameAsCurrentAddress"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-residentHouseholdHead">世帯主（本人/親族）</label>
+            <select 
+              id="onboarding-residentHouseholdHead" 
+              formControlName="residentHouseholdHead" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 履歴書・職務経歴書欄 -->
+      <section class="form-section">
+        <h3 class="section-title">履歴書・職務経歴書</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="onboarding-resume">履歴書添付</label>
+            <input 
+              type="file" 
+              id="onboarding-resume" 
+              class="form-input"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'resume')"
+            >
+            <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-careerHistory">職務経歴書添付</label>
+            <input 
+              type="file" 
+              id="onboarding-careerHistory" 
+              class="form-input"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'careerHistory')"
+            >
+            <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 緊急連絡先欄 -->
+      <section class="form-section">
+        <h3 class="section-title">緊急連絡先</h3>
+        <div formGroupName="emergencyContact" class="nested-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="onboarding-emergencyName">氏名</label>
+              <input 
+                type="text" 
+                id="onboarding-emergencyName" 
+                formControlName="name" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-emergencyNameKana">氏名（ヨミガナ）</label>
+              <input 
+                type="text" 
+                id="onboarding-emergencyNameKana" 
+                formControlName="nameKana" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-emergencyRelationship">続柄</label>
+              <input 
+                type="text" 
+                id="onboarding-emergencyRelationship" 
+                formControlName="relationship" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-emergencyPhone">緊急連絡先電話番号</label>
+              <input 
+                type="tel" 
+                id="onboarding-emergencyPhone" 
+                formControlName="phone" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label>
+                <input 
+                  type="checkbox" 
+                  [checked]="onboardingSameAsCurrentAddressForEmergency"
+                  (change)="onOnboardingSameAddressForEmergencyChange($event)"
+                  class="checkbox-input"
+                >
+                現住所と同じ
+              </label>
+            </div>
+            <div class="form-group full-width">
+              <label for="onboarding-emergencyAddress">住所</label>
+              <textarea 
+                id="onboarding-emergencyAddress" 
+                formControlName="address" 
+                class="form-input" 
+                rows="2"
+                [readonly]="onboardingSameAsCurrentAddressForEmergency"
+              ></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label for="onboarding-emergencyAddressKana">住所（ヨミガナ）</label>
+              <textarea 
+                id="onboarding-emergencyAddressKana" 
+                formControlName="addressKana" 
+                class="form-input" 
+                rows="2"
+                [readonly]="onboardingSameAsCurrentAddressForEmergency"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 口座情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">口座情報</h3>
+        <div formGroupName="bankAccount" class="nested-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="onboarding-bankName">銀行名</label>
+              <input 
+                type="text" 
+                id="onboarding-bankName" 
+                formControlName="bankName" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-accountType">預金種別</label>
+              <select 
+                id="onboarding-accountType" 
+                formControlName="accountType" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option value="普通">普通</option>
+                <option value="当座">当座</option>
+                <option value="貯蓄">貯蓄</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="onboarding-accountHolder">名義（カタカナ）</label>
+              <input 
+                type="text" 
+                id="onboarding-accountHolder" 
+                formControlName="accountHolder" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-branchName">支店名</label>
+              <input 
+                type="text" 
+                id="onboarding-branchName" 
+                formControlName="branchName" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="onboarding-accountNumber">口座番号</label>
+              <input 
+                type="text" 
+                id="onboarding-accountNumber" 
+                formControlName="accountNumber" 
+                class="form-input"
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 社会保険欄 -->
+      <section class="form-section">
+        <h3 class="section-title">社会保険</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-healthInsuranceNumber">健康保険の被保険者整理番号</label>
+            <input 
+              type="text" 
+              id="onboarding-healthInsuranceNumber" 
+              formControlName="healthInsuranceNumber" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-pensionInsuranceNumber">厚生年金保険の被保険者整理番号</label>
+            <input 
+              type="text" 
+              id="onboarding-pensionInsuranceNumber" 
+              formControlName="pensionInsuranceNumber" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-basicPensionNumberPart1">基礎年金番号</label>
+            <div class="basic-pension-number-container">
+              <input 
+                type="text" 
+                id="onboarding-basicPensionNumberPart1" 
+                formControlName="basicPensionNumberPart1" 
+                class="form-input basic-pension-part"
+                maxlength="4"
+                (input)="formatBasicPensionNumberInput($event, 1)"
+                placeholder="0000"
+              >
+              <span class="basic-pension-separator">-</span>
+              <input 
+                type="text" 
+                id="onboarding-basicPensionNumberPart2" 
+                formControlName="basicPensionNumberPart2" 
+                class="form-input basic-pension-part"
+                maxlength="6"
+                (input)="formatBasicPensionNumberInput($event, 2)"
+                placeholder="000000"
+              >
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-pensionHistoryStatus">厚生年金加入履歴</label>
+            <select 
+              id="onboarding-pensionHistoryStatus" 
+              formControlName="pensionHistoryStatus" 
+              class="form-input" 
+              (change)="onOnboardingPensionHistoryChange($event)"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let option of pensionHistoryOptions" [value]="option">{{ option }}</option>
+            </select>
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingHasPensionHistory">
+            <label for="onboarding-pensionHistory">厚生年金加入履歴（詳細）</label>
+            <textarea 
+              id="onboarding-pensionHistory" 
+              formControlName="pensionHistory" 
+              class="form-input" 
+              rows="4"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="onboarding-socialInsuranceAcquisitionDate">社会保険の資格取得年月日</label>
+            <input 
+              type="date" 
+              id="onboarding-socialInsuranceAcquisitionDate" 
+              formControlName="socialInsuranceAcquisitionDate" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-socialInsuranceLossDate">社会保険の資格喪失年月日</label>
+            <input 
+              type="date" 
+              id="onboarding-socialInsuranceLossDate" 
+              formControlName="socialInsuranceLossDate" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-basicPensionNumberDoc">基礎年金番号確認書類添付</label>
+            <input 
+              type="file" 
+              id="onboarding-basicPensionNumberDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'basicPensionNumberDoc')"
+            >
+            <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 配偶者情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">配偶者情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-spouseStatus">配偶者の有無</label>
+            <select 
+              id="onboarding-spouseStatus" 
+              formControlName="spouseStatus" 
+              class="form-input"
+              (change)="onOnboardingSpouseStatusChange($event)"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let option of spouseOptions" [value]="option">{{ option }}</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="onboardingHasSpouse">
+            <label for="onboarding-spouseAnnualIncome">配偶者の年収</label>
+            <input 
+              type="number" 
+              id="onboarding-spouseAnnualIncome" 
+              formControlName="spouseAnnualIncome" 
+              class="form-input"
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- 保険証情報（人事専用）欄 -->
+      <section class="form-section hr-only-section">
+        <h3 class="section-title">保険証情報（人事専用）</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-insuranceSymbol">被保険者記号</label>
+            <input 
+              type="text" 
+              id="onboarding-insuranceSymbol" 
+              formControlName="insuranceSymbol" 
+              class="form-input"
+              maxlength="8"
+              pattern="[0-9]*"
+              (input)="formatInsuranceSymbolInput($event)"
+              placeholder="00000000"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-insuranceNumber">被保険者番号</label>
+            <input 
+              type="text" 
+              id="onboarding-insuranceNumber" 
+              formControlName="insuranceNumber" 
+              class="form-input"
+              maxlength="3"
+              pattern="[0-9]*"
+              (input)="formatInsuranceNumberInput($event)"
+              placeholder="000"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-insuranceCardIssueDate">発行日</label>
+            <input 
+              type="date" 
+              id="onboarding-insuranceCardIssueDate" 
+              formControlName="insuranceCardIssueDate" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-insuranceCardReturnDate">回収日</label>
+            <input 
+              type="date" 
+              id="onboarding-insuranceCardReturnDate" 
+              formControlName="insuranceCardReturnDate" 
+              class="form-input"
+            >
+          </div>
+          <div class="form-group">
+            <label for="onboarding-insuranceCardDistributionStatus">配布状況</label>
+            <select 
+              id="onboarding-insuranceCardDistributionStatus" 
+              formControlName="insuranceCardDistributionStatus" 
+              class="form-input"
+            >
+              <option value="">選択してください</option>
+              <option *ngFor="let status of insuranceCardStatuses" [value]="status">
+                {{ status }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 送信ボタン -->
+      <div class="modal-actions">
+        <button type="button" class="cancel-button" (click)="closeOnboardingEmployeeModal()">
+          キャンセル
+        </button>
+        <button type="submit" class="submit-button" [disabled]="onboardingEmployeeEditForm.invalid || onboardingIsSaving">
+          {{ onboardingIsSaving ? '保存中...' : '保存' }}
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 

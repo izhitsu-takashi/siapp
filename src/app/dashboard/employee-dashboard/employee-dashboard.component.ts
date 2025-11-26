@@ -1,7 +1,7 @@
 import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { FirestoreService } from '../../services/firestore.service';
 
 @Component({
@@ -917,6 +917,8 @@ export class EmployeeDashboardComponent {
       this.hasSpouseOnboarding = false;
       this.willSupportSpouse = false;
       this.spouseLivingTogether = '';
+      // 既存の新入社員データから氏名とメールアドレスを取得して設定
+      this.loadOnboardingEmployeeDataForApplication();
       this.showApplicationModal = true;
     } else if (applicationType === '扶養家族追加') {
       this.dependentApplicationForm = this.createDependentApplicationForm();
@@ -949,6 +951,11 @@ export class EmployeeDashboardComponent {
   closeApplicationModal() {
     this.showApplicationModal = false;
     this.currentApplicationType = '';
+    // 入社時申請フォームのdisabled状態を解除
+    if (this.onboardingApplicationForm) {
+      this.onboardingApplicationForm.get('name')?.enable();
+      this.onboardingApplicationForm.get('email')?.enable();
+    }
     this.dependentApplicationForm = this.createDependentApplicationForm();
     this.dependentRemovalForm = this.createDependentRemovalForm();
     this.addressChangeForm = this.createAddressChangeForm();
@@ -971,7 +978,7 @@ export class EmployeeDashboardComponent {
     return this.fb.group({
       // 基本情報
       name: ['', Validators.required],
-      nameKana: ['', Validators.required],
+      nameKana: ['', [Validators.required, this.katakanaValidator]],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -982,15 +989,16 @@ export class EmployeeDashboardComponent {
       myNumberPart3: ['', Validators.required],
       
       // 現住所と連絡先
+      postalCode: ['', [Validators.required, Validators.pattern(/^\d{7}$/)]],
       currentAddress: ['', Validators.required],
-      currentAddressKana: ['', Validators.required],
-      phoneNumber: ['', Validators.required],
+      currentAddressKana: ['', [Validators.required, this.katakanaValidator]],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
       currentHouseholdHead: ['', Validators.required],
       
       // 住民票住所
       sameAsCurrentAddress: [false],
       residentAddress: ['', Validators.required],
-      residentAddressKana: ['', Validators.required],
+      residentAddressKana: ['', [Validators.required, this.katakanaValidator]],
       residentHouseholdHead: ['', Validators.required],
       
       // 履歴書・職務経歴書（ファイル入力はフォームから分離）
@@ -998,25 +1006,25 @@ export class EmployeeDashboardComponent {
       // 緊急連絡先
       emergencyContact: this.fb.group({
         name: ['', Validators.required],
-        nameKana: ['', Validators.required],
+        nameKana: ['', [Validators.required, this.katakanaValidator]],
         relationship: ['', Validators.required],
-        phone: ['', Validators.required],
+        phone: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
         address: ['', Validators.required],
-        addressKana: ['', Validators.required]
+        addressKana: ['', [Validators.required, this.katakanaValidator]]
       }),
       
       // 口座情報
       bankAccount: this.fb.group({
         bankName: ['', Validators.required],
         accountType: ['', Validators.required],
-        accountHolder: ['', Validators.required],
+        accountHolder: ['', [Validators.required, this.katakanaValidator]],
         branchName: ['', Validators.required],
         accountNumber: ['', Validators.required]
       }),
       
       // 社会保険（基礎年金番号、厚生年金加入履歴のみ）
-      basicPensionNumberPart1: ['', Validators.required],
-      basicPensionNumberPart2: ['', Validators.required],
+      basicPensionNumberPart1: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      basicPensionNumberPart2: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
       pensionHistoryStatus: ['', Validators.required],
       pensionHistory: [''],
       
@@ -1028,18 +1036,18 @@ export class EmployeeDashboardComponent {
       spouseBasicPensionNumberPart2: [''],
       spouseLastName: [''],
       spouseFirstName: [''],
-      spouseLastNameKana: [''],
-      spouseFirstNameKana: [''],
+      spouseLastNameKana: ['', this.katakanaValidator],
+      spouseFirstNameKana: ['', this.katakanaValidator],
       spouseBirthDate: [''],
       spouseGender: [''],
-      spousePhoneNumber: [''], // 必須ではない
+      spousePhoneNumber: ['', Validators.pattern(/^\d*$/)], // 必須ではない、数字のみ
       spouseAnnualIncome: [''],
       spouseMyNumberPart1: [''],
       spouseMyNumberPart2: [''],
       spouseMyNumberPart3: [''],
       spouseLivingTogether: [''],
       spouseAddress: [''],
-      spouseAddressKana: ['']
+      spouseAddressKana: ['', this.katakanaValidator]
     });
   }
 
@@ -1673,8 +1681,8 @@ export class EmployeeDashboardComponent {
         ];
         const basicPensionNumber = basicPensionNumberParts.join('');
 
-        // フォームデータを準備
-        const formValue = this.onboardingApplicationForm.value;
+        // フォームデータを準備（disabled状態のフィールドも含めるため、getRawValue()を使用）
+        const formValue = this.onboardingApplicationForm.getRawValue();
         const applicationData: any = {
           employeeNumber: this.employeeNumber,
           applicationType: '入社時申請',
@@ -1687,6 +1695,7 @@ export class EmployeeDashboardComponent {
           // マイナンバー
           myNumber: myNumber || null,
           // 現住所と連絡先
+          postalCode: formValue.postalCode || '',
           currentAddress: formValue.currentAddress || '',
           currentAddressKana: formValue.currentAddressKana || '',
           phoneNumber: formValue.phoneNumber || '',
@@ -1744,6 +1753,9 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
+        // 入社時申請の情報を新入社員詳細情報に反映
+        await this.updateOnboardingEmployeeDataFromApplication(applicationData);
+        
         // モーダルを閉じる
         this.closeApplicationModal();
         
@@ -1766,6 +1778,83 @@ export class EmployeeDashboardComponent {
     } else {
       this.onboardingApplicationForm.markAllAsTouched();
       alert('必須項目を入力してください');
+    }
+  }
+
+  // 入社時申請用に既存の新入社員データを読み込む
+  async loadOnboardingEmployeeDataForApplication() {
+    try {
+      const onboardingData = await this.firestoreService.getOnboardingEmployee(this.employeeNumber);
+      if (onboardingData) {
+        // 氏名とメールアドレスをフォームに設定（編集不可にするため、値のみ設定）
+        this.onboardingApplicationForm.patchValue({
+          name: onboardingData.name || '',
+          email: onboardingData.email || ''
+        });
+        // 氏名とメールアドレスを編集不可にする
+        this.onboardingApplicationForm.get('name')?.disable();
+        this.onboardingApplicationForm.get('email')?.disable();
+      }
+    } catch (error) {
+      console.error('Error loading onboarding employee data for application:', error);
+    }
+  }
+
+  // 入社時申請の情報を新入社員詳細情報に反映
+  async updateOnboardingEmployeeDataFromApplication(applicationData: any) {
+    try {
+      // 申請データから新入社員データに反映する情報を準備
+      const updateData: any = {
+        // 基本情報
+        name: applicationData.name,
+        nameKana: applicationData.nameKana || '',
+        birthDate: applicationData.birthDate,
+        gender: applicationData.gender,
+        email: applicationData.email,
+        // マイナンバー
+        myNumber: applicationData.myNumber || null,
+        // 現住所と連絡先
+        currentAddress: applicationData.currentAddress || '',
+        currentAddressKana: applicationData.currentAddressKana || '',
+        phoneNumber: applicationData.phoneNumber || '',
+        currentHouseholdHead: applicationData.currentHouseholdHead || '',
+        // 住民票住所
+        sameAsCurrentAddress: applicationData.sameAsCurrentAddress || false,
+        residentAddress: applicationData.residentAddress || '',
+        residentAddressKana: applicationData.residentAddressKana || '',
+        residentHouseholdHead: applicationData.residentHouseholdHead || '',
+        // 緊急連絡先
+        emergencyContact: applicationData.emergencyContact || {},
+        // 口座情報
+        bankAccount: applicationData.bankAccount || {},
+        // 社会保険
+        basicPensionNumber: applicationData.basicPensionNumber || null,
+        pensionHistoryStatus: applicationData.pensionHistoryStatus || '',
+        pensionHistory: applicationData.pensionHistory || '',
+        // 配偶者情報
+        spouseStatus: applicationData.spouseStatus || '',
+        spouseAnnualIncome: applicationData.spouseAnnualIncome || '',
+        // 配偶者詳細情報（扶養する場合のみ）
+        spouseBasicPensionNumber: applicationData.spouseBasicPensionNumber || null,
+        spouseLastName: applicationData.spouseLastName || '',
+        spouseFirstName: applicationData.spouseFirstName || '',
+        spouseLastNameKana: applicationData.spouseLastNameKana || '',
+        spouseFirstNameKana: applicationData.spouseFirstNameKana || '',
+        spouseBirthDate: applicationData.spouseBirthDate || '',
+        spouseGender: applicationData.spouseGender || '',
+        spousePhoneNumber: applicationData.spousePhoneNumber || '',
+        spouseMyNumber: applicationData.spouseMyNumber || null,
+        spouseLivingTogether: applicationData.spouseLivingTogether || '',
+        spouseAddress: applicationData.spouseAddress || '',
+        spouseAddressKana: applicationData.spouseAddressKana || ''
+      };
+
+      // 新入社員データを更新
+      await this.firestoreService.updateOnboardingEmployee(this.employeeNumber, updateData);
+    } catch (error) {
+      console.error('Error updating onboarding employee data from application:', error);
+      // エラーが発生しても申請は成功しているので、警告のみ
+      console.warn('入社時申請は送信されましたが、新入社員データの更新に失敗しました');
     }
   }
 
@@ -2505,6 +2594,82 @@ export class EmployeeDashboardComponent {
       return `${basicPensionNumber.substring(0, 4)}-${basicPensionNumber.substring(4, 10)}`;
     }
     return basicPensionNumber;
+  }
+
+  // カタカナバリデーター
+  katakanaValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // 空の場合は他のバリデーターで処理
+    }
+    const katakanaPattern = /^[ァ-ヶー\s]+$/;
+    if (!katakanaPattern.test(control.value)) {
+      return { katakana: true };
+    }
+    return null;
+  }
+
+  // 郵便番号フォーマット（7桁の数字のみ）
+  formatPostalCode(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 7) {
+      value = value.substring(0, 7);
+    }
+    event.target.value = value;
+    const control = this.onboardingApplicationForm.get('postalCode');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // 電話番号フォーマット（数字のみ）
+  formatPhoneNumber(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    event.target.value = value;
+    const control = this.onboardingApplicationForm.get('phoneNumber');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // 入社時申請用基礎年金番号フォーマット（半角数字のみ）
+  formatOnboardingBasicPensionNumberInput(event: any, part: number) {
+    let value = event.target.value.replace(/[^\d]/g, ''); // 半角数字のみ
+    const maxLength = part === 1 ? 4 : 6;
+    if (value.length > maxLength) {
+      value = value.substring(0, maxLength);
+    }
+    event.target.value = value;
+    const control = this.onboardingApplicationForm.get(`basicPensionNumberPart${part}`);
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+    
+    if (value.length === maxLength && part === 1) {
+      const nextInput = document.getElementById(`onboarding-basicPensionNumberPart2`);
+      if (nextInput) {
+        nextInput.focus();
+      }
+    }
+  }
+
+  // 緊急連絡先電話番号フォーマット（数字のみ）
+  formatEmergencyPhoneNumber(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    event.target.value = value;
+    const control = this.onboardingApplicationForm.get('emergencyContact.phone');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // 配偶者電話番号フォーマット（数字のみ）
+  formatSpousePhoneNumber(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    event.target.value = value;
+    const control = this.onboardingApplicationForm.get('spousePhoneNumber');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
   }
 }
 

@@ -1052,8 +1052,8 @@
 </div>
 
 <!-- 入社時申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '入社時申請'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '入社時申請'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">入社時申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
@@ -1071,19 +1071,29 @@
               id="onboarding-name" 
               formControlName="name" 
               class="form-input"
+              [readonly]="true"
+              style="background: #f5f5f5;"
             >
             <div *ngIf="onboardingApplicationForm.get('name')?.invalid && onboardingApplicationForm.get('name')?.touched" class="error-message">
               氏名を入力してください
             </div>
           </div>
           <div class="form-group">
-            <label for="onboarding-nameKana">氏名（ヨミガナ）</label>
+            <label for="onboarding-nameKana">氏名（ヨミガナ） <span class="required">*</span></label>
             <input 
               type="text" 
               id="onboarding-nameKana" 
               formControlName="nameKana" 
               class="form-input"
             >
+            <div *ngIf="onboardingApplicationForm.get('nameKana')?.invalid && onboardingApplicationForm.get('nameKana')?.touched" class="error-message">
+              <span *ngIf="onboardingApplicationForm.get('nameKana')?.errors?.['required']">
+                氏名（ヨミガナ）を入力してください
+              </span>
+              <span *ngIf="onboardingApplicationForm.get('nameKana')?.errors?.['katakana']">
+                カタカナで入力してください
+              </span>
+            </div>
           </div>
           <div class="form-group">
             <label for="onboarding-birthDate">生年月日 <span class="required">*</span></label>
@@ -1118,6 +1128,8 @@
               id="onboarding-email" 
               formControlName="email" 
               class="form-input"
+              [readonly]="true"
+              style="background: #f5f5f5;"
             >
             <div *ngIf="onboardingApplicationForm.get('email')?.invalid && onboardingApplicationForm.get('email')?.touched" class="error-message">
               有効なメールアドレスを入力してください
@@ -1169,32 +1181,72 @@
       <section class="form-section">
         <h3 class="section-title">現住所と連絡先</h3>
         <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-postalCode">郵便番号 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="onboarding-postalCode" 
+              formControlName="postalCode" 
+              class="form-input"
+              maxlength="7"
+              (input)="formatPostalCode($event)"
+              placeholder="1234567"
+            >
+            <div *ngIf="onboardingApplicationForm.get('postalCode')?.invalid && onboardingApplicationForm.get('postalCode')?.touched" class="error-message">
+              <span *ngIf="onboardingApplicationForm.get('postalCode')?.errors?.['required']">
+                郵便番号を入力してください
+              </span>
+              <span *ngIf="onboardingApplicationForm.get('postalCode')?.errors?.['pattern']">
+                7桁の数字を入力してください
+              </span>
+            </div>
+          </div>
           <div class="form-group full-width">
-            <label for="onboarding-currentAddress">現住所</label>
+            <label for="onboarding-currentAddress">現住所 <span class="required">*</span></label>
             <textarea 
               id="onboarding-currentAddress" 
               formControlName="currentAddress" 
               class="form-input" 
               rows="2"
             ></textarea>
+            <div *ngIf="onboardingApplicationForm.get('currentAddress')?.invalid && onboardingApplicationForm.get('currentAddress')?.touched" class="error-message">
+              現住所を入力してください
+            </div>
           </div>
           <div class="form-group full-width">
-            <label for="onboarding-currentAddressKana">現住所（ヨミガナ）</label>
+            <label for="onboarding-currentAddressKana">現住所（ヨミガナ） <span class="required">*</span></label>
             <textarea 
               id="onboarding-currentAddressKana" 
               formControlName="currentAddressKana" 
               class="form-input" 
               rows="2"
             ></textarea>
+            <div *ngIf="onboardingApplicationForm.get('currentAddressKana')?.invalid && onboardingApplicationForm.get('currentAddressKana')?.touched" class="error-message">
+              <span *ngIf="onboardingApplicationForm.get('currentAddressKana')?.errors?.['required']">
+                現住所（ヨミガナ）を入力してください
+              </span>
+              <span *ngIf="onboardingApplicationForm.get('currentAddressKana')?.errors?.['katakana']">
+                カタカナで入力してください
+              </span>
+            </div>
           </div>
           <div class="form-group">
-            <label for="onboarding-phoneNumber">電話番号</label>
+            <label for="onboarding-phoneNumber">電話番号 <span class="required">*</span></label>
             <input 
               type="tel" 
               id="onboarding-phoneNumber" 
               formControlName="phoneNumber" 
               class="form-input"
+              (input)="formatPhoneNumber($event)"
             >
+            <div *ngIf="onboardingApplicationForm.get('phoneNumber')?.invalid && onboardingApplicationForm.get('phoneNumber')?.touched" class="error-message">
+              <span *ngIf="onboardingApplicationForm.get('phoneNumber')?.errors?.['required']">
+                電話番号を入力してください
+              </span>
+              <span *ngIf="onboardingApplicationForm.get('phoneNumber')?.errors?.['pattern']">
+                数字のみで入力してください
+              </span>
+            </div>
           </div>
           <div class="form-group">
             <label for="onboarding-currentHouseholdHead">世帯主（本人/親族）</label>
@@ -1247,7 +1299,12 @@
               [readonly]="onboardingApplicationForm.get('sameAsCurrentAddress')?.value"
             ></textarea>
             <div *ngIf="onboardingApplicationForm.get('residentAddressKana')?.invalid && onboardingApplicationForm.get('residentAddressKana')?.touched" class="error-message">
-              住所（ヨミガナ）を入力してください
+              <span *ngIf="onboardingApplicationForm.get('residentAddressKana')?.errors?.['required']">
+                住所（ヨミガナ）を入力してください
+              </span>
+              <span *ngIf="onboardingApplicationForm.get('residentAddressKana')?.errors?.['katakana']">
+                カタカナで入力してください
+              </span>
             </div>
           </div>
           <div class="form-group">
@@ -1308,13 +1365,21 @@
               >
             </div>
             <div class="form-group">
-              <label for="onboarding-emergencyNameKana">氏名（ヨミガナ）</label>
+              <label for="onboarding-emergencyNameKana">氏名（ヨミガナ） <span class="required">*</span></label>
               <input 
                 type="text" 
                 id="onboarding-emergencyNameKana" 
                 formControlName="nameKana" 
                 class="form-input"
               >
+              <div *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.invalid && onboardingApplicationForm.get('emergencyContact.nameKana')?.touched" class="error-message">
+                <span *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.errors?.['required']">
+                  氏名（ヨミガナ）を入力してください
+                </span>
+                <span *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.errors?.['katakana']">
+                  カタカナで入力してください
+                </span>
+              </div>
             </div>
             <div class="form-group">
               <label for="onboarding-emergencyRelationship">続柄</label>
@@ -1326,13 +1391,22 @@
               >
             </div>
             <div class="form-group">
-              <label for="onboarding-emergencyPhone">緊急連絡先電話番号</label>
+              <label for="onboarding-emergencyPhone">緊急連絡先電話番号 <span class="required">*</span></label>
               <input 
                 type="tel" 
                 id="onboarding-emergencyPhone" 
                 formControlName="phone" 
                 class="form-input"
+                (input)="formatEmergencyPhoneNumber($event)"
               >
+              <div *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.invalid && onboardingApplicationForm.get('emergencyContact.phone')?.touched" class="error-message">
+                <span *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.errors?.['required']">
+                  緊急連絡先電話番号を入力してください
+                </span>
+                <span *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.errors?.['pattern']">
+                  数字のみで入力してください
+                </span>
+              </div>
             </div>
             <div class="form-group full-width">
               <label for="onboarding-emergencyAddress">住所</label>
@@ -1344,13 +1418,21 @@
               ></textarea>
             </div>
             <div class="form-group full-width">
-              <label for="onboarding-emergencyAddressKana">住所（ヨミガナ）</label>
+              <label for="onboarding-emergencyAddressKana">住所（ヨミガナ） <span class="required">*</span></label>
               <textarea 
                 id="onboarding-emergencyAddressKana" 
                 formControlName="addressKana" 
                 class="form-input" 
                 rows="2"
               ></textarea>
+              <div *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.invalid && onboardingApplicationForm.get('emergencyContact.addressKana')?.touched" class="error-message">
+                <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['required']">
+                  住所（ヨミガナ）を入力してください
+                </span>
+                <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['katakana']">
+                  カタカナで入力してください
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -1384,13 +1466,21 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="onboarding-accountHolder">名義（カタカナ）</label>
+              <label for="onboarding-accountHolder">名義（カタカナ） <span class="required">*</span></label>
               <input 
                 type="text" 
                 id="onboarding-accountHolder" 
                 formControlName="accountHolder" 
                 class="form-input"
               >
+              <div *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.invalid && onboardingApplicationForm.get('bankAccount.accountHolder')?.touched" class="error-message">
+                <span *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.errors?.['required']">
+                  名義（カタカナ）を入力してください
+                </span>
+                <span *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.errors?.['katakana']">
+                  カタカナで入力してください
+                </span>
+              </div>
             </div>
             <div class="form-group">
               <label for="onboarding-branchName">支店名</label>
@@ -1419,7 +1509,7 @@
         <h3 class="section-title">社会保険</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label for="onboarding-basicPensionNumberPart1">基礎年金番号</label>
+            <label for="onboarding-basicPensionNumberPart1">基礎年金番号 <span class="required">*</span></label>
             <div class="basic-pension-number-container">
               <input 
                 type="text" 
@@ -1428,6 +1518,7 @@
                 class="form-input basic-pension-part"
                 maxlength="4"
                 placeholder="0000"
+                (input)="formatOnboardingBasicPensionNumberInput($event, 1)"
               >
               <span class="basic-pension-separator">-</span>
               <input 
@@ -1437,7 +1528,16 @@
                 class="form-input basic-pension-part"
                 maxlength="6"
                 placeholder="000000"
+                (input)="formatOnboardingBasicPensionNumberInput($event, 2)"
               >
+            </div>
+            <div *ngIf="(onboardingApplicationForm.get('basicPensionNumberPart1')?.invalid || onboardingApplicationForm.get('basicPensionNumberPart2')?.invalid) && (onboardingApplicationForm.get('basicPensionNumberPart1')?.touched || onboardingApplicationForm.get('basicPensionNumberPart2')?.touched)" class="error-message">
+              <span *ngIf="onboardingApplicationForm.get('basicPensionNumberPart1')?.errors?.['required'] || onboardingApplicationForm.get('basicPensionNumberPart2')?.errors?.['required']">
+                基礎年金番号を入力してください
+              </span>
+              <span *ngIf="onboardingApplicationForm.get('basicPensionNumberPart1')?.errors?.['pattern'] || onboardingApplicationForm.get('basicPensionNumberPart2')?.errors?.['pattern']">
+                半角数字のみで入力してください
+              </span>
             </div>
           </div>
           <div class="form-group">
@@ -1568,7 +1668,12 @@
                 class="form-input"
               >
               <div *ngIf="onboardingApplicationForm.get('spouseLastNameKana')?.invalid && onboardingApplicationForm.get('spouseLastNameKana')?.touched" class="error-message">
-                姓（ヨミガナ）を入力してください
+                <span *ngIf="onboardingApplicationForm.get('spouseLastNameKana')?.errors?.['required']">
+                  姓（ヨミガナ）を入力してください
+                </span>
+                <span *ngIf="onboardingApplicationForm.get('spouseLastNameKana')?.errors?.['katakana']">
+                  カタカナで入力してください
+                </span>
               </div>
             </div>
 
@@ -1582,7 +1687,12 @@
                 class="form-input"
               >
               <div *ngIf="onboardingApplicationForm.get('spouseFirstNameKana')?.invalid && onboardingApplicationForm.get('spouseFirstNameKana')?.touched" class="error-message">
-                名（ヨミガナ）を入力してください
+                <span *ngIf="onboardingApplicationForm.get('spouseFirstNameKana')?.errors?.['required']">
+                  名（ヨミガナ）を入力してください
+                </span>
+                <span *ngIf="onboardingApplicationForm.get('spouseFirstNameKana')?.errors?.['katakana']">
+                  カタカナで入力してください
+                </span>
               </div>
             </div>
 
@@ -1624,7 +1734,11 @@
                 id="onboarding-spousePhoneNumber" 
                 formControlName="spousePhoneNumber" 
                 class="form-input"
+                (input)="formatSpousePhoneNumber($event)"
               >
+              <div *ngIf="onboardingApplicationForm.get('spousePhoneNumber')?.invalid && onboardingApplicationForm.get('spousePhoneNumber')?.touched" class="error-message">
+                数字のみで入力してください
+              </div>
             </div>
 
             <!-- 配偶者の見込み年収 -->
@@ -1718,7 +1832,12 @@
                   rows="2"
                 ></textarea>
                 <div *ngIf="onboardingApplicationForm.get('spouseAddressKana')?.invalid && onboardingApplicationForm.get('spouseAddressKana')?.touched" class="error-message">
-                  配偶者の住所（ヨミガナ）を入力してください
+                  <span *ngIf="onboardingApplicationForm.get('spouseAddressKana')?.errors?.['required']">
+                    配偶者の住所（ヨミガナ）を入力してください
+                  </span>
+                  <span *ngIf="onboardingApplicationForm.get('spouseAddressKana')?.errors?.['katakana']">
+                    カタカナで入力してください
+                  </span>
                 </div>
               </div>
             </div>
@@ -1738,8 +1857,8 @@
 </div>
 
 <!-- 扶養家族追加申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '扶養家族追加'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '扶養家族追加'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">扶養家族追加申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
@@ -2057,8 +2176,8 @@
 </div>
 
 <!-- 扶養削除申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '扶養削除申請'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '扶養削除申請'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">扶養削除申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
@@ -2119,8 +2238,8 @@
 </div>
 
 <!-- 住所変更申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '住所変更申請'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '住所変更申請'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">住所変更申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
@@ -2348,8 +2467,8 @@
 </div>
 
 <!-- 氏名変更申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '氏名変更申請'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '氏名変更申請'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">氏名変更申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
@@ -2456,8 +2575,8 @@
 </div>
 
 <!-- 産前産後休業申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '産前産後休業申請'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '産前産後休業申請'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">産前産後休業申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
@@ -2595,8 +2714,8 @@
 </div>
 
 <!-- 退職申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '退職申請'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '退職申請'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">退職申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
@@ -2741,8 +2860,8 @@
 </div>
 
 <!-- 保険証再発行申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '保険証再発行申請'" (click)="closeApplicationModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '保険証再発行申請'">
+  <div class="modal-content">
     <div class="modal-header">
       <h2 class="modal-title">保険証再発行申請</h2>
       <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
