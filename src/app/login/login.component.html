@@ -58,17 +58,6 @@
           </div>
         </div>
 
-        <div class="form-group" *ngIf="loginType === 'employee'">
-          <label for="password">パスワード（任意）</label>
-          <input
-            type="password"
-            id="password"
-            formControlName="password"
-            class="form-input"
-            placeholder="パスワードを入力（任意）"
-          />
-        </div>
-
         <div class="form-group" *ngIf="loginType === 'roumu' || loginType === 'kyuyo'">
           <label for="username">ユーザーネーム</label>
           <input

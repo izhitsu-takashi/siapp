@@ -808,9 +808,12 @@ export class EmployeeDashboardComponent {
   openApplicationModal(applicationType: string) {
     this.currentApplicationType = applicationType;
     if (applicationType === '入社時申請') {
-      this.onboardingApplicationForm = this.createOnboardingApplicationForm();
-      // 既存の新入社員データから氏名とメールアドレスを取得して設定
-      this.loadOnboardingEmployeeDataForApplication();
+      // 申請詳細モーダルから開いた場合は、フォームを初期化しない
+      if (!this.onboardingApplicationForm) {
+        this.onboardingApplicationForm = this.createOnboardingApplicationForm();
+        // 既存の新入社員データから氏名とメールアドレスを取得して設定
+        this.loadOnboardingEmployeeDataForApplication();
+      }
       this.showApplicationModal = true;
     } else if (applicationType === '扶養家族追加') {
       this.dependentApplicationForm = this.createDependentApplicationForm();
@@ -1895,6 +1898,10 @@ export class EmployeeDashboardComponent {
         this.loadApplicationDataToForm(this.selectedApplication);
         console.log('データロード後の dependentApplicationForm.value:', this.dependentApplicationForm.value);
         console.log('データロード後の dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
+      } else if (this.selectedApplication.applicationType === '入社時申請') {
+        console.log('入社時申請のフォームを初期化します。');
+        this.onboardingApplicationForm = this.createOnboardingApplicationForm();
+        this.loadApplicationDataToForm(this.selectedApplication);
       } else if (this.selectedApplication.applicationType === '扶養削除申請') {
         console.log('扶養削除申請のフォームを初期化します。');
         this.dependentRemovalForm = this.createDependentRemovalForm();
@@ -2093,6 +2100,91 @@ export class EmployeeDashboardComponent {
       });
       
       console.log('=== loadApplicationDataToForm 終了（保険証再発行申請） ===');
+    } else if (application.applicationType === '入社時申請') {
+      // 入社時申請フォームを初期化
+      if (!this.onboardingApplicationForm) {
+        this.onboardingApplicationForm = this.createOnboardingApplicationForm();
+      }
+      
+      // マイナンバーを分割
+      let myNumberPart1 = '';
+      let myNumberPart2 = '';
+      let myNumberPart3 = '';
+      if (application.myNumber && application.myNumber.length === 12) {
+        myNumberPart1 = application.myNumber.substring(0, 4);
+        myNumberPart2 = application.myNumber.substring(4, 8);
+        myNumberPart3 = application.myNumber.substring(8, 12);
+      }
+      
+      // 基礎年金番号を分割
+      let basicPensionNumberPart1 = '';
+      let basicPensionNumberPart2 = '';
+      if (application.basicPensionNumber) {
+        const basicPensionNumber = application.basicPensionNumber.toString();
+        if (basicPensionNumber.length >= 4) {
+          basicPensionNumberPart1 = basicPensionNumber.substring(0, 4);
+          basicPensionNumberPart2 = basicPensionNumber.substring(4, 10) || '';
+        }
+      }
+      
+      // データをフォームに設定（ネストされたフォームグループを除く）
+      this.onboardingApplicationForm.patchValue({
+        name: application.name || '',
+        nameKana: application.nameKana || '',
+        birthDate: application.birthDate || '',
+        gender: application.gender || '',
+        email: application.email || '',
+        myNumberPart1: myNumberPart1,
+        myNumberPart2: myNumberPart2,
+        myNumberPart3: myNumberPart3,
+        postalCode: application.postalCode || '',
+        currentAddress: application.currentAddress || '',
+        currentAddressKana: application.currentAddressKana || '',
+        phoneNumber: application.phoneNumber || '',
+        currentHouseholdHead: application.currentHouseholdHead || '',
+        sameAsCurrentAddress: application.sameAsCurrentAddress || false,
+        residentAddress: application.residentAddress || '',
+        residentAddressKana: application.residentAddressKana || '',
+        residentHouseholdHead: application.residentHouseholdHead || '',
+        basicPensionNumberPart1: basicPensionNumberPart1,
+        basicPensionNumberPart2: basicPensionNumberPart2,
+        pensionHistoryStatus: application.pensionHistoryStatus || '',
+        pensionHistory: application.pensionHistory || '',
+        dependentStatus: application.dependentStatus || ''
+      });
+      
+      // ネストされたフォームグループを個別に設定
+      const emergencyContactGroup = this.onboardingApplicationForm.get('emergencyContact') as FormGroup;
+      if (emergencyContactGroup && application.emergencyContact) {
+        emergencyContactGroup.patchValue({
+          name: application.emergencyContact.name || '',
+          nameKana: application.emergencyContact.nameKana || '',
+          relationship: application.emergencyContact.relationship || '',
+          phone: application.emergencyContact.phone || '',
+          address: application.emergencyContact.address || '',
+          addressKana: application.emergencyContact.addressKana || ''
+        });
+      }
+      
+      const bankAccountGroup = this.onboardingApplicationForm.get('bankAccount') as FormGroup;
+      if (bankAccountGroup && application.bankAccount) {
+        bankAccountGroup.patchValue({
+          bankName: application.bankAccount.bankName || '',
+          accountType: application.bankAccount.accountType || '',
+          accountHolder: application.bankAccount.accountHolder || '',
+          branchName: application.bankAccount.branchName || '',
+          accountNumber: application.bankAccount.accountNumber || ''
+        });
+      }
+      
+      // 厚生年金加入履歴の状態を設定
+      this.hasPensionHistory = application.pensionHistoryStatus === '有';
+      
+      // 氏名とメールアドレスを編集不可にする
+      this.onboardingApplicationForm.get('name')?.disable();
+      this.onboardingApplicationForm.get('email')?.disable();
+      
+      console.log('=== loadApplicationDataToForm 終了（入社時申請） ===');
     } else if (application.applicationType === '扶養削除申請') {
       this.dependentRemovalForm = this.createDependentRemovalForm();
       this.dependentRemovalForm.patchValue({
@@ -2297,6 +2389,52 @@ export class EmployeeDashboardComponent {
             applicationType: '氏名変更申請'
           };
         }
+      } else if (this.selectedApplication.applicationType === '入社時申請') {
+        formValid = this.onboardingApplicationForm?.valid || false;
+        if (formValid) {
+          const formValue = this.onboardingApplicationForm.getRawValue(); // disabledフィールドも取得
+          
+          // マイナンバーを結合
+          const myNumberParts = [
+            formValue.myNumberPart1 || '',
+            formValue.myNumberPart2 || '',
+            formValue.myNumberPart3 || ''
+          ];
+          const myNumber = myNumberParts.join('');
+          
+          // 基礎年金番号を結合
+          const basicPensionNumberParts = [
+            formValue.basicPensionNumberPart1 || '',
+            formValue.basicPensionNumberPart2 || ''
+          ];
+          const basicPensionNumber = basicPensionNumberParts.join('');
+          
+          applicationData = {
+            name: formValue.name,
+            nameKana: formValue.nameKana || '',
+            birthDate: formValue.birthDate,
+            gender: formValue.gender,
+            email: formValue.email,
+            myNumber: myNumber || null,
+            postalCode: formValue.postalCode || '',
+            currentAddress: formValue.currentAddress || '',
+            currentAddressKana: formValue.currentAddressKana || '',
+            phoneNumber: formValue.phoneNumber || '',
+            currentHouseholdHead: formValue.currentHouseholdHead || '',
+            sameAsCurrentAddress: formValue.sameAsCurrentAddress || false,
+            residentAddress: formValue.residentAddress || '',
+            residentAddressKana: formValue.residentAddressKana || '',
+            residentHouseholdHead: formValue.residentHouseholdHead || '',
+            emergencyContact: formValue.emergencyContact || {},
+            bankAccount: formValue.bankAccount || {},
+            basicPensionNumber: basicPensionNumber || null,
+            pensionHistoryStatus: formValue.pensionHistoryStatus || '',
+            pensionHistory: formValue.pensionHistory || '',
+            dependentStatus: formValue.dependentStatus || '',
+            employeeNumber: this.employeeNumber,
+            applicationType: '入社時申請'
+          };
+        }
       } else if (this.selectedApplication.applicationType === '産前産後休業申請') {
         formValid = this.maternityLeaveForm.valid && !!this.maternityLeaveDocumentFile;
         if (formValid) {
@@ -2385,6 +2523,9 @@ export class EmployeeDashboardComponent {
         if (this.selectedApplication.applicationType === '扶養家族追加' && this.dependentApplicationForm) {
           this.dependentApplicationForm.markAllAsTouched();
           console.log('すべてのフィールドを touched に設定しました。');
+        } else if (this.selectedApplication.applicationType === '入社時申請' && this.onboardingApplicationForm) {
+          this.onboardingApplicationForm.markAllAsTouched();
+          console.log('すべてのフィールドを touched に設定しました。');
         } else if (this.selectedApplication.applicationType === '保険証再発行申請' && this.insuranceCardReissueForm) {
           this.insuranceCardReissueForm.markAllAsTouched();
           console.log('すべてのフィールドを touched に設定しました。');
@@ -2427,6 +2568,14 @@ export class EmployeeDashboardComponent {
     return `${myNumber.substring(0, 4)}-${myNumber.substring(4, 8)}-${myNumber.substring(8, 12)}`;
   }
   
+  isInViewMode(): boolean {
+    return !this.isEditModeForReapplication || this.selectedApplication?.status !== '差し戻し';
+  }
+
+  isInEditMode(): boolean {
+    return this.isEditModeForReapplication && this.selectedApplication?.status === '差し戻し';
+  }
+
   formatBasicPensionNumberForDisplay(basicPensionNumber: string | null): string {
     if (!basicPensionNumber || basicPensionNumber.length < 4) {
       return '-';

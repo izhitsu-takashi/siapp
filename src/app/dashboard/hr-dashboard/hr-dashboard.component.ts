@@ -2915,6 +2915,13 @@ export class HrDashboardComponent {
         );
       }
 
+      // 対応する入社時申請のステータスも更新
+      await this.updateOnboardingApplicationStatus(
+        this.selectedOnboardingEmployee.employeeNumber,
+        newStatus,
+        this.onboardingStatusComment || ''
+      );
+
       // 準備完了の場合、通常の社員データに移行
       if (newStatus === '準備完了') {
         const employeeData = await this.firestoreService.getOnboardingEmployee(
@@ -2940,6 +2947,37 @@ export class HrDashboardComponent {
     } catch (error) {
       console.error('Error updating onboarding employee status:', error);
       alert('ステータスの変更に失敗しました');
+    }
+  }
+
+  // 入社時申請のステータスを更新
+  async updateOnboardingApplicationStatus(employeeNumber: string, newStatus: string, comment: string) {
+    try {
+      // 該当する社員番号の入社時申請を検索
+      const applications = await this.firestoreService.getEmployeeApplications(employeeNumber);
+      const onboardingApplication = applications.find((app: any) => app.applicationType === '入社時申請');
+      
+      if (onboardingApplication) {
+        // 新入社員のステータスを申請ステータスにマッピング
+        let applicationStatus = '承認待ち';
+        if (newStatus === '申請済み') {
+          applicationStatus = '承認済み';
+        } else if (newStatus === '差し戻し') {
+          applicationStatus = '差し戻し';
+        } else if (newStatus === '準備完了') {
+          applicationStatus = '承認済み';
+        }
+        
+        // 申請ステータスを更新
+        await this.firestoreService.updateApplicationStatus(
+          onboardingApplication.id || onboardingApplication.applicationId?.toString() || '',
+          applicationStatus,
+          newStatus === '差し戻し' ? comment : ''
+        );
+      }
+    } catch (error) {
+      console.error('Error updating onboarding application status:', error);
+      // 申請の更新に失敗しても新入社員のステータス更新は成功しているので、エラーはログのみ
     }
   }
 
