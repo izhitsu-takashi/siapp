@@ -222,6 +222,11 @@
   color: white;
 }
 
+.application-management-table .status-badge.status-reviewing {
+  background: #2196f3;
+  color: white;
+}
+
 .application-management-table .status-badge.status-approved {
   background: #4caf50;
   color: white;
@@ -233,6 +238,40 @@
 }
 
 .application-management-table .status-badge.status-resubmitted {
+  background: #2196f3;
+  color: white;
+}
+
+/* 申請詳細モーダル内のステータスバッジ */
+.application-detail-modal .status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.application-detail-modal .status-badge.status-pending {
+  background: #ff9800;
+  color: white;
+}
+
+.application-detail-modal .status-badge.status-reviewing {
+  background: #2196f3;
+  color: white;
+}
+
+.application-detail-modal .status-badge.status-approved {
+  background: #4caf50;
+  color: white;
+}
+
+.application-detail-modal .status-badge.status-rejected {
+  background: #f44336;
+  color: white;
+}
+
+.application-detail-modal .status-badge.status-resubmitted {
   background: #2196f3;
   color: white;
 }
@@ -1132,6 +1171,7 @@
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid #f0f0f0;
+  user-select: none;
 }
 
 .dependent-header h5 {
@@ -1139,6 +1179,15 @@
   font-size: 1rem;
   font-weight: 600;
   color: #555;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expand-icon {
+  font-size: 0.8rem;
+  color: #999;
+  transition: transform 0.2s;
 }
 
 .remove-dependent-button {

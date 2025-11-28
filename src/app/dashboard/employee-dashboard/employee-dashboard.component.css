@@ -1108,6 +1108,7 @@ select.form-input {
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 2px solid #f0f0f0;
+  user-select: none;
 }
 
 .dependent-title {
@@ -1115,6 +1116,15 @@ select.form-input {
   font-weight: 600;
   color: #667eea;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expand-icon {
+  font-size: 0.8rem;
+  color: #999;
+  transition: transform 0.2s;
 }
 
 .dependent-info-grid {
@@ -1381,6 +1391,33 @@ select.form-input {
 /* 申請詳細モーダル内の編集入力フィールド */
 .application-detail-form {
   width: 100%;
+}
+
+/* フォーム送信中はすべての入力フィールドを無効化 */
+.application-detail-form.form-disabled input,
+.application-detail-form.form-disabled select,
+.application-detail-form.form-disabled textarea,
+.application-detail-form.form-disabled button[type="submit"],
+.application-detail-form.form-disabled button[type="button"] {
+  pointer-events: none;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.application-detail-form.form-disabled input[disabled],
+.application-detail-form.form-disabled select[disabled],
+.application-detail-form.form-disabled textarea[disabled] {
+  background-color: #f5f5f5;
+}
+
+/* モーダル送信中はオーバーレイをクリックしても閉じないようにする */
+.modal-overlay.modal-disabled {
+  pointer-events: auto;
+  cursor: wait;
+}
+
+.modal-overlay.modal-disabled .modal-content {
+  pointer-events: auto;
 }
 
 .detail-edit-input {

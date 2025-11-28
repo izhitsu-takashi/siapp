@@ -237,6 +237,7 @@
                     <td>
                       <span class="status-badge" 
                             [class.status-pending]="application.status === '承認待ち'"
+                            [class.status-reviewing]="application.status === '確認中'"
                             [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
                             [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
                             [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
@@ -1318,13 +1319,13 @@
             </div>
             
             <div *ngFor="let dependent of dependents; let i = index" class="dependent-item">
-              <div class="dependent-header">
-                <h5>扶養者 {{ i + 1 }}</h5>
-                <button type="button" class="remove-dependent-button" (click)="removeDependent(i)">
+              <div class="dependent-header" (click)="toggleDependentExpanded(i)" style="cursor: pointer;">
+                <h5>扶養者 {{ i + 1 }} <span class="expand-icon">{{ isDependentExpanded(i) ? '▼' : '▶' }}</span></h5>
+                <button type="button" class="remove-dependent-button" (click)="removeDependent(i); $event.stopPropagation()">
                   削除
                 </button>
               </div>
-              <div class="form-grid">
+              <div class="form-grid" *ngIf="isDependentExpanded(i)">
                 <div class="form-group">
                   <label [for]="'hr-dependent-name-' + i">氏名</label>
                   <input 
@@ -1369,6 +1370,82 @@
                   >
                 </div>
                 <div class="form-group">
+                  <label [for]="'hr-dependent-gender-' + i">性別</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-gender-' + i"
+                    [(ngModel)]="dependent.gender"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 男性、女性"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-phoneNumber-' + i">電話番号</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-phoneNumber-' + i"
+                    [(ngModel)]="dependent.phoneNumber"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 090-1234-5678"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-occupation-' + i">職業</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-occupation-' + i"
+                    [(ngModel)]="dependent.occupation"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 会社員"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-annualIncome-' + i">年間収入見込み額</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-annualIncome-' + i"
+                    [(ngModel)]="dependent.annualIncome"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 1000000"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-monthlyIncome-' + i">月額収入見込み額</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-monthlyIncome-' + i"
+                    [(ngModel)]="dependent.monthlyIncome"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 100000"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-dependentStartDate-' + i">社会保険の扶養者となった日</label>
+                  <input 
+                    type="date" 
+                    [id]="'hr-dependent-dependentStartDate-' + i"
+                    [(ngModel)]="dependent.dependentStartDate"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                  >
+                </div>
+                <div class="form-group full-width">
+                  <label [for]="'hr-dependent-dependentReason-' + i">扶養に追加された理由</label>
+                  <textarea 
+                    [id]="'hr-dependent-dependentReason-' + i"
+                    [(ngModel)]="dependent.dependentReason"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input" 
+                    rows="2"
+                    placeholder="扶養に追加された理由を入力"
+                  ></textarea>
+                </div>
+                <div class="form-group">
                   <label [for]="'hr-dependent-myNumber-' + i">マイナンバー</label>
                   <input 
                     type="text" 
@@ -1377,6 +1454,28 @@
                     [ngModelOptions]="{standalone: true}"
                     class="form-input"
                     placeholder="例: 1234-5678-9012"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-livingTogether-' + i">同居/別居</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-livingTogether-' + i"
+                    [(ngModel)]="dependent.livingTogether"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 同居、別居"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-postalCode-' + i">郵便番号</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-postalCode-' + i"
+                    [(ngModel)]="dependent.postalCode"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 123-4567"
                   >
                 </div>
                 <div class="form-group full-width">
@@ -1389,6 +1488,70 @@
                     rows="2"
                     placeholder="住所を入力"
                   ></textarea>
+                </div>
+                <div class="form-group full-width">
+                  <label [for]="'hr-dependent-addressKana-' + i">住所（ヨミガナ）</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-addressKana-' + i"
+                    [(ngModel)]="dependent.addressKana"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: トウキョウトシンジュクク..."
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-addressChangeDate-' + i">住所変更年月日</label>
+                  <input 
+                    type="date" 
+                    [id]="'hr-dependent-addressChangeDate-' + i"
+                    [(ngModel)]="dependent.addressChangeDate"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                  >
+                </div>
+                <div class="form-group">
+                  <label [for]="'hr-dependent-basicPensionNumber-' + i">基礎年金番号</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-basicPensionNumber-' + i"
+                    [(ngModel)]="dependent.basicPensionNumber"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 0000-000000"
+                  >
+                </div>
+                <div class="form-group" *ngIf="dependent.disabilityCategory || dependent.disabilityCardType || dependent.disabilityCardIssueDate">
+                  <label [for]="'hr-dependent-disabilityCategory-' + i">障がい者区分</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-disabilityCategory-' + i"
+                    [(ngModel)]="dependent.disabilityCategory"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 身体障害"
+                  >
+                </div>
+                <div class="form-group" *ngIf="dependent.disabilityCategory || dependent.disabilityCardType || dependent.disabilityCardIssueDate">
+                  <label [for]="'hr-dependent-disabilityCardType-' + i">障がい者手帳の種類</label>
+                  <input 
+                    type="text" 
+                    [id]="'hr-dependent-disabilityCardType-' + i"
+                    [(ngModel)]="dependent.disabilityCardType"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                    placeholder="例: 身体障害者手帳"
+                  >
+                </div>
+                <div class="form-group" *ngIf="dependent.disabilityCategory || dependent.disabilityCardType || dependent.disabilityCardIssueDate">
+                  <label [for]="'hr-dependent-disabilityCardIssueDate-' + i">障がい者手帳の交付年月日</label>
+                  <input 
+                    type="date" 
+                    [id]="'hr-dependent-disabilityCardIssueDate-' + i"
+                    [(ngModel)]="dependent.disabilityCardIssueDate"
+                    [ngModelOptions]="{standalone: true}"
+                    class="form-input"
+                  >
                 </div>
                 <div class="form-group full-width">
                   <label [for]="'hr-dependent-notes-' + i">備考</label>
@@ -1495,7 +1658,7 @@
 </div>
 
 <!-- 申請詳細モーダル（人事側） -->
-<div class="modal-overlay" *ngIf="showApplicationDetailModal" (click)="closeApplicationDetailModal()">
+<div class="modal-overlay" *ngIf="showApplicationDetailModal">
   <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2 class="modal-title">申請詳細</h2>
@@ -1517,6 +1680,7 @@
                 (change)="onStatusChange()"
               >
                 <option value="承認待ち">承認待ち</option>
+                <option value="確認中">確認中</option>
                 <option value="承認済み">承認済み</option>
                 <option value="差し戻し">差し戻し</option>
                 <option value="再申請">再申請</option>
@@ -1587,6 +1751,7 @@
             <span class="detail-value">
               <span class="status-badge" 
                     [class.status-pending]="selectedApplication.status === '承認待ち'"
+                    [class.status-reviewing]="selectedApplication.status === '確認中'"
                     [class.status-approved]="selectedApplication.status === '承認' || selectedApplication.status === '承認済み'"
                     [class.status-rejected]="selectedApplication.status === '却下' || selectedApplication.status === '差し戻し'"
                     [class.status-resubmitted]="selectedApplication.status === '再申請' || selectedApplication.status === '再提出'">
@@ -1719,20 +1884,20 @@
         </section>
         
         <!-- 障がい者情報 -->
-        <section class="detail-section" *ngIf="selectedApplication.disabilityCategory || selectedApplication.disabilityCardType">
+        <section class="detail-section" *ngIf="selectedApplication.disabilityCategory || selectedApplication.disabilityCardType || selectedApplication.disabilityCardIssueDate">
           <h3 class="section-title">障がい者情報</h3>
           <div class="detail-grid">
-            <div class="detail-item">
+            <div class="detail-item" *ngIf="selectedApplication.disabilityCategory">
               <span class="detail-label">障がい者区分:</span>
-              <span class="detail-value">{{ selectedApplication.disabilityCategory || '-' }}</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCategory }}</span>
             </div>
-            <div class="detail-item">
+            <div class="detail-item" *ngIf="selectedApplication.disabilityCardType">
               <span class="detail-label">障がい者手帳の種類:</span>
-              <span class="detail-value">{{ selectedApplication.disabilityCardType || '-' }}</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCardType }}</span>
             </div>
-            <div class="detail-item">
+            <div class="detail-item" *ngIf="selectedApplication.disabilityCardIssueDate">
               <span class="detail-label">障がい者手帳の交付年月日:</span>
-              <span class="detail-value">{{ selectedApplication.disabilityCardIssueDate || '-' }}</span>
+              <span class="detail-value">{{ selectedApplication.disabilityCardIssueDate }}</span>
             </div>
           </div>
         </section>

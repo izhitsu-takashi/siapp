@@ -593,5 +593,63 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 社員の扶養家族情報に新しい扶養家族を追加する
+   */
+  async addDependentToEmployee(employeeNumber: string, dependentData: any): Promise<void> {
+    try {
+      // 既存の社員データを取得
+      const employeeData = await this.getEmployeeData(employeeNumber);
+      
+      if (!employeeData) {
+        throw new Error(`Employee with number ${employeeNumber} not found`);
+      }
+
+      // 既存の扶養家族情報を取得（なければ空配列）
+      const existingDependents = employeeData.dependents || [];
+      
+      // 新しい扶養家族情報を追加
+      const newDependent = {
+        name: `${dependentData.lastName || ''} ${dependentData.firstName || ''}`.trim(),
+        nameKana: `${dependentData.lastNameKana || ''} ${dependentData.firstNameKana || ''}`.trim(),
+        relationship: dependentData.relationshipType === '配偶者' 
+          ? (dependentData.spouseType || '配偶者')
+          : (dependentData.relationship || ''),
+        birthDate: dependentData.birthDate || '',
+        gender: dependentData.gender || '',
+        myNumber: dependentData.myNumber || '',
+        phoneNumber: dependentData.phoneNumber || '',
+        occupation: dependentData.occupation || '',
+        annualIncome: dependentData.annualIncome || '',
+        monthlyIncome: dependentData.monthlyIncome || '',
+        dependentStartDate: dependentData.dependentStartDate || '',
+        dependentReason: dependentData.dependentReason || '',
+        livingTogether: dependentData.livingTogether || '',
+        postalCode: dependentData.postalCode || '',
+        address: dependentData.address || '',
+        addressKana: dependentData.addressKana || '',
+        addressChangeDate: dependentData.addressChangeDate || '',
+        basicPensionNumber: dependentData.basicPensionNumber || '',
+        disabilityCategory: dependentData.disabilityCategory || '',
+        disabilityCardType: dependentData.disabilityCardType || '',
+        disabilityCardIssueDate: dependentData.disabilityCardIssueDate || ''
+      };
+
+      // 既存の扶養家族情報に追加
+      const updatedDependents = [...existingDependents, newDependent];
+
+      // 社員データを更新
+      const docRef = doc(this.db, 'employees', employeeNumber);
+      await setDoc(docRef, {
+        ...employeeData,
+        dependents: updatedDependents,
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error adding dependent to employee:', error);
+      throw error;
+    }
+  }
 }
 

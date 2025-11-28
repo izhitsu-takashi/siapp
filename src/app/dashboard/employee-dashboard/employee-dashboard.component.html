@@ -727,7 +727,11 @@
           </div>
           
           <div class="application-grid">
-            <button class="application-button" (click)="openApplicationModal('入社時申請')">
+            <button 
+              *ngIf="!hasOnboardingApplication"
+              class="application-button" 
+              (click)="openApplicationModal('入社時申請')"
+            >
               <span class="application-icon">📝</span>
               <span class="application-label">入社時申請</span>
             </button>
@@ -1003,10 +1007,10 @@
                   扶養者が登録されていません。
                 </div>
                 <div *ngFor="let dependent of dependentsData; let i = index" class="dependent-card">
-                  <div class="dependent-header">
-                    <h4 class="dependent-title">扶養者 {{ i + 1 }}</h4>
+                  <div class="dependent-header" (click)="toggleDependentExpanded(i)" style="cursor: pointer;">
+                    <h4 class="dependent-title">扶養者 {{ i + 1 }} <span class="expand-icon">{{ isDependentExpanded(i) ? '▼' : '▶' }}</span></h4>
                   </div>
-                  <div class="dependent-info-grid">
+                  <div class="dependent-info-grid" *ngIf="isDependentExpanded(i)">
                     <div class="dependent-info-item">
                       <span class="dependent-label">氏名:</span>
                       <span class="dependent-value">{{ dependent.name || '-' }}</span>
@@ -1024,13 +1028,75 @@
                       <span class="dependent-value">{{ dependent.birthDate ? (dependent.birthDate | date:'yyyy年MM月dd日') : '-' }}</span>
                     </div>
                     <div class="dependent-info-item">
+                      <span class="dependent-label">性別:</span>
+                      <span class="dependent-value">{{ dependent.gender || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">電話番号:</span>
+                      <span class="dependent-value">{{ dependent.phoneNumber || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">職業:</span>
+                      <span class="dependent-value">{{ dependent.occupation || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">年間収入見込み額:</span>
+                      <span class="dependent-value">{{ dependent.annualIncome ? (dependent.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">月額収入見込み額:</span>
+                      <span class="dependent-value">{{ dependent.monthlyIncome ? (dependent.monthlyIncome | number:'1.0-0') + '円' : '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">社会保険の扶養者となった日:</span>
+                      <span class="dependent-value">{{ dependent.dependentStartDate ? (dependent.dependentStartDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item full-width">
+                      <span class="dependent-label">扶養に追加された理由:</span>
+                      <span class="dependent-value">{{ dependent.dependentReason || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
                       <span class="dependent-label">マイナンバー:</span>
                       <span class="dependent-value">{{ dependent.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">同居/別居:</span>
+                      <span class="dependent-value">{{ dependent.livingTogether || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">郵便番号:</span>
+                      <span class="dependent-value">{{ dependent.postalCode || '-' }}</span>
                     </div>
                     <div class="dependent-info-item full-width">
                       <span class="dependent-label">住所:</span>
                       <span class="dependent-value">{{ dependent.address || '-' }}</span>
                     </div>
+                    <div class="dependent-info-item full-width">
+                      <span class="dependent-label">住所（ヨミガナ）:</span>
+                      <span class="dependent-value">{{ dependent.addressKana || '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">住所変更年月日:</span>
+                      <span class="dependent-value">{{ dependent.addressChangeDate ? (dependent.addressChangeDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                    </div>
+                    <div class="dependent-info-item">
+                      <span class="dependent-label">基礎年金番号:</span>
+                      <span class="dependent-value">{{ dependent.basicPensionNumber || '-' }}</span>
+                    </div>
+                    <ng-container *ngIf="dependent.disabilityCategory || dependent.disabilityCardType || dependent.disabilityCardIssueDate">
+                      <div class="dependent-info-item">
+                        <span class="dependent-label">障がい者区分:</span>
+                        <span class="dependent-value">{{ dependent.disabilityCategory || '-' }}</span>
+                      </div>
+                      <div class="dependent-info-item">
+                        <span class="dependent-label">障がい者手帳の種類:</span>
+                        <span class="dependent-value">{{ dependent.disabilityCardType || '-' }}</span>
+                      </div>
+                      <div class="dependent-info-item">
+                        <span class="dependent-label">障がい者手帳の交付年月日:</span>
+                        <span class="dependent-value">{{ dependent.disabilityCardIssueDate ? (dependent.disabilityCardIssueDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                      </div>
+                    </ng-container>
                     <div class="dependent-info-item full-width" *ngIf="dependent.notes">
                       <span class="dependent-label">備考:</span>
                       <span class="dependent-value">{{ dependent.notes }}</span>
@@ -1625,14 +1691,17 @@
         
         <!-- 配偶者選択時 -->
         <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者'" class="form-group">
-          <label class="radio-label">
-            <input type="radio" formControlName="spouseType" value="妻" (change)="onSpouseTypeChange()">
-            妻
-          </label>
-          <label class="radio-label">
-            <input type="radio" formControlName="spouseType" value="夫" (change)="onSpouseTypeChange()">
-            夫
-          </label>
+          <label for="spouseType">配偶者の種別 <span class="required">*</span></label>
+          <select 
+            id="spouseType" 
+            formControlName="spouseType" 
+            class="form-input"
+            (change)="onSpouseTypeChange()"
+          >
+            <option value="">選択してください</option>
+            <option value="妻">妻</option>
+            <option value="夫">夫</option>
+          </select>
         </div>
         <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者' && dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
           妻または夫を選択してください
@@ -2692,11 +2761,21 @@
 </div>
 
 <!-- 申請詳細モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationDetailModal">
-  <div class="modal-content application-detail-modal">
+<div 
+  class="modal-overlay" 
+  *ngIf="showApplicationDetailModal" 
+  [class.modal-disabled]="isSubmittingReapplication"
+  (click)="!isSubmittingReapplication && closeApplicationDetailModal()"
+>
+  <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2 class="modal-title">申請詳細</h2>
-      <button class="modal-close-button" (click)="closeApplicationDetailModal()">×</button>
+      <button 
+        class="modal-close-button" 
+        (click)="closeApplicationDetailModal()"
+        [disabled]="isSubmittingReapplication"
+        [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+      >×</button>
     </div>
     
     <div class="application-detail-content" *ngIf="selectedApplication">
@@ -2741,21 +2820,27 @@
           type="button" 
           class="edit-button" 
           (click)="enableEditMode()"
-          *ngIf="!isEditModeForReapplication">
+          *ngIf="!isEditModeForReapplication"
+          [disabled]="isSubmittingReapplication"
+          [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+        >
           修正
         </button>
         <button 
           type="button" 
           class="resubmit-button" 
           (click)="submitReapplication()"
-          *ngIf="isEditModeForReapplication">
-          再申請
+          *ngIf="isEditModeForReapplication"
+          [disabled]="isSubmittingReapplication"
+          [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+        >
+          {{ isSubmittingReapplication ? '送信中...' : '再申請' }}
         </button>
       </div>
       
       <!-- 扶養家族追加申請の詳細（表示モード・編集モード） -->
       <ng-container *ngIf="selectedApplication.applicationType === '扶養家族追加'">
-        <form [formGroup]="dependentApplicationForm" (ngSubmit)="submitReapplication()" *ngIf="dependentApplicationForm" class="application-detail-form">
+        <form [formGroup]="dependentApplicationForm" (ngSubmit)="submitReapplication()" *ngIf="dependentApplicationForm" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
         <!-- 続柄情報 -->
         <section class="detail-section">
           <h3 class="section-title">続柄 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
@@ -2789,14 +2874,15 @@
               </span>
               <!-- 編集モード -->
               <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <label class="radio-label">
-                  <input type="radio" formControlName="spouseType" value="妻" (change)="onSpouseTypeChange()">
-                  妻
-                </label>
-                <label class="radio-label">
-                  <input type="radio" formControlName="spouseType" value="夫" (change)="onSpouseTypeChange()">
-                  夫
-                </label>
+                <select 
+                  formControlName="spouseType" 
+                  class="form-input"
+                  (change)="onSpouseTypeChange()"
+                >
+                  <option value="">選択してください</option>
+                  <option value="妻">妻</option>
+                  <option value="夫">夫</option>
+                </select>
                 <div *ngIf="dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
                   妻または夫を選択してください
                 </div>
@@ -3547,7 +3633,7 @@
       
       <!-- 保険証再発行申請の詳細（表示モード・編集モード） -->
       <ng-container *ngIf="selectedApplication.applicationType === '保険証再発行申請'">
-        <form [formGroup]="insuranceCardReissueForm" (ngSubmit)="submitReapplication()" *ngIf="insuranceCardReissueForm" class="application-detail-form">
+        <form [formGroup]="insuranceCardReissueForm" (ngSubmit)="submitReapplication()" *ngIf="insuranceCardReissueForm" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
         <!-- 紛失情報 -->
         <section class="detail-section">
           <h3 class="section-title">紛失情報</h3>
@@ -4219,7 +4305,13 @@
     </div>
     
     <div class="modal-footer">
-      <button type="button" class="close-detail-button" (click)="closeApplicationDetailModal()">閉じる</button>
+      <button 
+        type="button" 
+        class="close-detail-button" 
+        (click)="closeApplicationDetailModal()"
+        [disabled]="isSubmittingReapplication"
+        [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+      >閉じる</button>
     </div>
   </div>
 </div>

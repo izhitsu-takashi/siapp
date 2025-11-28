@@ -270,6 +270,8 @@ export class HrDashboardComponent {
   
   // 扶養者一覧
   dependents: any[] = [];
+  // 扶養者情報の展開状態
+  dependentExpandedStates: boolean[] = [];
 
   // 文書作成・管理ページ用
   documentTypes = [
@@ -1030,6 +1032,25 @@ export class HrDashboardComponent {
         status === '差し戻し' ? comment : ''
       );
       
+      // 扶養家族追加申請が承認済みになった場合、扶養家族情報を社員情報に追加
+      if (status === '承認済み' && this.selectedApplication.applicationType === '扶養家族追加') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber) {
+            await this.firestoreService.addDependentToEmployee(employeeNumber, this.selectedApplication);
+            console.log('扶養家族情報を追加しました:', employeeNumber);
+            
+            // 社員情報編集モーダルが開いている場合、扶養家族情報を再読み込み
+            if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
+              await this.loadEmployeeData(employeeNumber);
+            }
+          }
+        } catch (error) {
+          console.error('扶養家族情報の追加に失敗しました:', error);
+          alert('扶養家族情報の追加に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
       // 承認済みの場合、チェックが入った文書をダウンロード
       if (status === '承認済み' && this.availableDocuments.length > 0) {
         await this.downloadSelectedDocuments();
@@ -1047,17 +1068,19 @@ export class HrDashboardComponent {
       await this.loadAllApplications();
       
       // 選択中の申請を更新（再読み込み後のデータで更新）
-      const updatedApplication = this.allApplications.find((app: any) => 
-        app.id === this.selectedApplication.id || 
-        app.applicationId === this.selectedApplication.applicationId
-      );
-      if (updatedApplication) {
-        this.selectedApplication = updatedApplication;
-        this.statusChangeForm.patchValue({
-          status: updatedApplication.status || '承認待ち',
-          comment: updatedApplication.statusComment || ''
-        });
-        this.statusComment = updatedApplication.statusComment || '';
+      if (this.selectedApplication) {
+        const updatedApplication = this.allApplications.find((app: any) => 
+          app.id === this.selectedApplication.id || 
+          app.applicationId === this.selectedApplication.applicationId
+        );
+        if (updatedApplication) {
+          this.selectedApplication = updatedApplication;
+          this.statusChangeForm.patchValue({
+            status: updatedApplication.status || '承認待ち',
+            comment: updatedApplication.statusComment || ''
+          });
+          this.statusComment = updatedApplication.statusComment || '';
+        }
       }
       
       alert(`ステータスを「${status}」に変更しました`);
@@ -1293,6 +1316,7 @@ export class HrDashboardComponent {
     this.careerHistoryFile = null;
     this.basicPensionNumberDocFile = null;
     this.dependents = [];
+    this.dependentExpandedStates = [];
   }
 
   // 新入社員情報編集フォームを作成（必須項目あり）
@@ -1623,13 +1647,31 @@ export class HrDashboardComponent {
         nameKana: dep.nameKana || '',
         relationship: dep.relationship || '',
         birthDate: dep.birthDate || '',
+        gender: dep.gender || '',
         myNumber: dep.myNumber || '',
+        phoneNumber: dep.phoneNumber || '',
+        occupation: dep.occupation || '',
+        annualIncome: dep.annualIncome || '',
+        monthlyIncome: dep.monthlyIncome || '',
+        dependentStartDate: dep.dependentStartDate || '',
+        dependentReason: dep.dependentReason || '',
+        livingTogether: dep.livingTogether || '',
+        postalCode: dep.postalCode || '',
         address: dep.address || '',
+        addressKana: dep.addressKana || '',
+        addressChangeDate: dep.addressChangeDate || '',
+        basicPensionNumber: dep.basicPensionNumber || '',
+        disabilityCategory: dep.disabilityCategory || '',
+        disabilityCardType: dep.disabilityCardType || '',
+        disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
         notes: dep.notes || ''
       }));
+      // 展開状態を初期化（すべて折りたたみ）
+      this.dependentExpandedStates = new Array(this.dependents.length).fill(false);
       console.log('Loaded dependents:', this.dependents);
     } else {
       this.dependents = [];
+      this.dependentExpandedStates = [];
       console.log('No dependents found, initializing empty array');
     }
 
@@ -2527,11 +2569,26 @@ export class HrDashboardComponent {
       address: '',
       notes: ''
     });
+    this.dependentExpandedStates.push(false);
   }
 
   // 扶養者を削除
   removeDependent(index: number) {
     this.dependents.splice(index, 1);
+    this.dependentExpandedStates.splice(index, 1);
+  }
+
+  // 扶養者情報の展開状態をトグル
+  toggleDependentExpanded(index: number) {
+    if (this.dependentExpandedStates[index] === undefined) {
+      this.dependentExpandedStates[index] = false;
+    }
+    this.dependentExpandedStates[index] = !this.dependentExpandedStates[index];
+  }
+
+  // 扶養者情報が展開されているかどうか
+  isDependentExpanded(index: number): boolean {
+    return this.dependentExpandedStates[index] === true;
   }
 
   // 年月の選択肢を生成

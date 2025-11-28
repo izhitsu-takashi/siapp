@@ -56,6 +56,7 @@ export class EmployeeDashboardComponent {
   showApplicationDetailModal = false;
   selectedApplication: any = null;
   isEditModeForReapplication = false;
+  isSubmittingReapplication = false; // 再申請送信中フラグ
   
   // 保険・扶養ページ用データ
   insuranceData: any = {
@@ -64,6 +65,8 @@ export class EmployeeDashboardComponent {
     pensionInsuranceType: '未設定'
   };
   dependentsData: any[] = [];
+  // 扶養者情報の展開状態
+  dependentExpandedStates: boolean[] = [];
 
   // フォーム
   settingsForm: FormGroup;
@@ -189,12 +192,30 @@ export class EmployeeDashboardComponent {
             nameKana: dep.nameKana || '',
             relationship: dep.relationship || '',
             birthDate: dep.birthDate || '',
+            gender: dep.gender || '',
             myNumber: dep.myNumber || '',
+            phoneNumber: dep.phoneNumber || '',
+            occupation: dep.occupation || '',
+            annualIncome: dep.annualIncome || '',
+            monthlyIncome: dep.monthlyIncome || '',
+            dependentStartDate: dep.dependentStartDate || '',
+            dependentReason: dep.dependentReason || '',
+            livingTogether: dep.livingTogether || '',
+            postalCode: dep.postalCode || '',
             address: dep.address || '',
+            addressKana: dep.addressKana || '',
+            addressChangeDate: dep.addressChangeDate || '',
+            basicPensionNumber: dep.basicPensionNumber || '',
+            disabilityCategory: dep.disabilityCategory || '',
+            disabilityCardType: dep.disabilityCardType || '',
+            disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
             notes: dep.notes || ''
           }));
+          // 展開状態を初期化（すべて折りたたみ）
+          this.dependentExpandedStates = new Array(this.dependentsData.length).fill(false);
         } else {
           this.dependentsData = [];
+          this.dependentExpandedStates = [];
         }
       }
     } catch (error) {
@@ -206,7 +227,21 @@ export class EmployeeDashboardComponent {
         pensionInsuranceType: '未設定'
       };
       this.dependentsData = [];
+      this.dependentExpandedStates = [];
     }
+  }
+
+  // 扶養者情報の展開状態をトグル
+  toggleDependentExpanded(index: number) {
+    if (this.dependentExpandedStates[index] === undefined) {
+      this.dependentExpandedStates[index] = false;
+    }
+    this.dependentExpandedStates[index] = !this.dependentExpandedStates[index];
+  }
+
+  // 扶養者情報が展開されているかどうか
+  isDependentExpanded(index: number): boolean {
+    return this.dependentExpandedStates[index] === true;
   }
 
   populateForm(data: any) {
@@ -1870,6 +1905,10 @@ export class EmployeeDashboardComponent {
   }
   
   closeApplicationDetailModal() {
+    // 再申請送信中はモーダルを閉じられないようにする
+    if (this.isSubmittingReapplication) {
+      return;
+    }
     this.showApplicationDetailModal = false;
     this.selectedApplication = null;
     this.isEditModeForReapplication = false;
@@ -2258,6 +2297,13 @@ export class EmployeeDashboardComponent {
       return;
     }
     
+    // 既に送信中の場合は処理をスキップ
+    if (this.isSubmittingReapplication) {
+      return;
+    }
+    
+    this.isSubmittingReapplication = true;
+    
     try {
       let formValid = false;
       let applicationData: any = {};
@@ -2571,6 +2617,8 @@ export class EmployeeDashboardComponent {
     } catch (error) {
       console.error('Error resubmitting application:', error);
       alert('再申請中にエラーが発生しました');
+    } finally {
+      this.isSubmittingReapplication = false;
     }
   }
   
