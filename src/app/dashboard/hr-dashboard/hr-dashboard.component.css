@@ -1966,5 +1966,183 @@
   margin-top: 0.25rem;
 }
 
+/* 入社処理実行ボタン */
+.header-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.onboarding-process-button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.onboarding-process-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.onboarding-process-button:active {
+  transform: translateY(0);
+}
+
+/* 入社処理実行モーダル */
+.onboarding-process-modal {
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.onboarding-process-modal .modal-body {
+  padding: 1.5rem;
+}
+
+.modal-description {
+  margin-bottom: 1.5rem;
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.process-actions {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.select-all-button {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-all-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.ready-employees-list {
+  margin-top: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+}
+
+.ready-employees-list .employee-table {
+  margin: 0;
+  border: none;
+}
+
+.ready-employees-list .employee-table thead {
+  background: #f8f9fa;
+}
+
+.ready-employees-list .employee-table th {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  text-align: left;
+}
+
+.ready-employees-list .employee-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.ready-employees-list .employee-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ready-employees-list .employee-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.ready-employees-list .employee-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.onboarding-process-modal .modal-actions {
+  padding: 1.5rem;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  background: #f8f9fa;
+}
+
+.onboarding-process-modal .cancel-button {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.onboarding-process-modal .cancel-button:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.onboarding-process-modal .cancel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.onboarding-process-modal .submit-button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.onboarding-process-modal .submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.onboarding-process-modal .submit-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.onboarding-process-modal .submit-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: none;
+}
+
 
 

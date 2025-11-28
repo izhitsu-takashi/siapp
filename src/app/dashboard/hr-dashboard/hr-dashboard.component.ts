@@ -44,6 +44,128 @@ export class HrDashboardComponent {
   // 新入社員一覧
   onboardingEmployees: any[] = [];
   
+  // 入社処理実行モーダル
+  showOnboardingProcessModal = false;
+  readyEmployees: any[] = [];
+  selectedEmployeeNumbers: Set<string> = new Set();
+  isProcessingOnboarding = false;
+
+  // 準備完了の社員がいるかチェック
+  hasReadyEmployees(): boolean {
+    return this.onboardingEmployees.some(emp => emp.status === '準備完了');
+  }
+
+  // 入社処理実行モーダルを開く
+  openOnboardingProcessModal() {
+    // 準備完了の社員を取得
+    this.readyEmployees = this.onboardingEmployees.filter(emp => emp.status === '準備完了');
+    
+    // デフォルトで全員にチェックを付ける
+    this.selectedEmployeeNumbers = new Set(this.readyEmployees.map(emp => emp.employeeNumber));
+    
+    this.showOnboardingProcessModal = true;
+  }
+
+  // 入社処理実行モーダルを閉じる
+  closeOnboardingProcessModal() {
+    this.showOnboardingProcessModal = false;
+    this.readyEmployees = [];
+    this.selectedEmployeeNumbers.clear();
+  }
+
+  // チェックボックスの状態を切り替え
+  toggleEmployeeSelection(employeeNumber: string) {
+    if (this.selectedEmployeeNumbers.has(employeeNumber)) {
+      this.selectedEmployeeNumbers.delete(employeeNumber);
+    } else {
+      this.selectedEmployeeNumbers.add(employeeNumber);
+    }
+  }
+
+  // 全選択/全解除
+  toggleAllEmployees() {
+    if (this.selectedEmployeeNumbers.size === this.readyEmployees.length) {
+      this.selectedEmployeeNumbers.clear();
+    } else {
+      this.selectedEmployeeNumbers = new Set(this.readyEmployees.map(emp => emp.employeeNumber));
+    }
+  }
+
+  // 入社処理を実行
+  async executeOnboardingProcess() {
+    if (this.selectedEmployeeNumbers.size === 0) {
+      alert('処理する社員を選択してください');
+      return;
+    }
+
+    if (!confirm(`${this.selectedEmployeeNumbers.size}名の社員の入社処理を実行しますか？`)) {
+      return;
+    }
+
+    this.isProcessingOnboarding = true;
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const employeeNumber of this.selectedEmployeeNumbers) {
+        try {
+          const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
+          if (!employee) continue;
+
+          // 1. 健康保険・厚生年金保険被保険者資格取得届の文書発行
+          try {
+            const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
+            if (employeeData) {
+              const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
+                '健康保険・厚生年金保険被保険者資格取得届',
+                employeeData
+              );
+              const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNumber}_${employee.name}.pdf`;
+              this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+            }
+          } catch (pdfError) {
+            console.error(`Error generating PDF for ${employeeNumber}:`, pdfError);
+            // PDF生成エラーは警告のみ（処理は続行）
+          }
+
+          // 2. 新入社員データを通常の社員データとして保存
+          const onboardingData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
+          if (onboardingData) {
+            // ステータス関連のフィールドを除外
+            const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = onboardingData;
+            await this.firestoreService.saveEmployeeData(employeeNumber, employeeDataWithoutStatus);
+          }
+
+          // 3. 新入社員コレクションから削除
+          await this.firestoreService.deleteOnboardingEmployee(employeeNumber);
+
+          successCount++;
+        } catch (error) {
+          console.error(`Error processing employee ${employeeNumber}:`, error);
+          errorCount++;
+        }
+      }
+
+      // 新入社員一覧と社員一覧を再読み込み
+      await this.loadOnboardingEmployees();
+      await this.loadEmployees();
+
+      // モーダルを閉じる
+      this.closeOnboardingProcessModal();
+
+      if (errorCount === 0) {
+        alert(`${successCount}名の社員の入社処理が完了しました`);
+      } else {
+        alert(`${successCount}名の社員の入社処理が完了しました（${errorCount}名でエラーが発生しました）`);
+      }
+    } catch (error) {
+      console.error('Error executing onboarding process:', error);
+      alert('入社処理の実行中にエラーが発生しました');
+    } finally {
+      this.isProcessingOnboarding = false;
+    }
+  }
+  
   // 社会保険料一覧データ
   insuranceList: any[] = [];
   
@@ -52,7 +174,7 @@ export class HrDashboardComponent {
   
   // 保険証管理用データ
   insuranceCards: any[] = [];
-  insuranceCardStatuses = ['配布済み', '再発行中', '回収済み'];
+  insuranceCardStatuses = ['準備中', '配布済み', '再発行中', '回収済み'];
   
   // 申請詳細モーダル用
   showApplicationDetailModal = false;
@@ -1248,26 +1370,8 @@ export class HrDashboardComponent {
       pensionHistory: [''],
       socialInsuranceAcquisitionDate: ['', Validators.required], // 必須
       socialInsuranceLossDate: [''],
-      
-      // 配偶者情報
-      spouseStatus: ['', Validators.required], // 必須
-      spouseSupport: [''], // 扶養する/扶養しない
-      spouseAnnualIncome: [''],
-      spouseBasicPensionNumberPart1: [''],
-      spouseBasicPensionNumberPart2: [''],
-      spouseLastName: [''],
-      spouseFirstName: [''],
-      spouseLastNameKana: [''],
-      spouseFirstNameKana: [''],
-      spouseBirthDate: [''],
-      spouseGender: [''],
-      spousePhoneNumber: [''],
-      spouseMyNumberPart1: [''],
-      spouseMyNumberPart2: [''],
-      spouseMyNumberPart3: [''],
-      spouseLivingTogether: [''],
-      spouseAddress: [''],
-      spouseAddressKana: [''],
+      expectedMonthlySalary: ['', Validators.required], // 見込み月給額（給与）
+      expectedMonthlySalaryInKind: ['', Validators.required], // 見込み月給額（現物）
       
       // 人事専用情報（給与）
       fixedSalary: [''],
@@ -1275,9 +1379,9 @@ export class HrDashboardComponent {
       // 保険証情報（人事専用）
       insuranceSymbol: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
       insuranceNumber: ['', [Validators.required, Validators.pattern(/^\d{3}$/)]],
-      insuranceCardIssueDate: [''],
+      insuranceCardIssueDate: ['', Validators.required],
       insuranceCardReturnDate: [''],
-      insuranceCardDistributionStatus: [''], // 固定的賃金
+      insuranceCardDistributionStatus: ['', Validators.required],
       bonusAmount: [''], // 賞与額
       bonusYear: [''], // 賞与年月（年）
       bonusMonth: [''], // 賞与年月（月）
@@ -1678,6 +1782,15 @@ export class HrDashboardComponent {
           nextInput.focus();
         }
       }
+    }
+  }
+
+  formatNumericInput(event: any, fieldName: string) {
+    let value = event.target.value.replace(/\D/g, '');
+    event.target.value = value;
+    // 新入社員モーダルが開いている場合は新入社員フォームを使用
+    if (this.showOnboardingEmployeeModal && this.onboardingEmployeeEditForm) {
+      this.onboardingEmployeeEditForm.get(fieldName)?.setValue(value);
     }
   }
 
@@ -2553,6 +2666,18 @@ export class HrDashboardComponent {
       });
     }
     
+    // 見込み月給額を設定
+    if (data.expectedMonthlySalary !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        expectedMonthlySalary: data.expectedMonthlySalary || ''
+      });
+    }
+    if (data.expectedMonthlySalaryInKind !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        expectedMonthlySalaryInKind: data.expectedMonthlySalaryInKind || ''
+      });
+    }
+    
     // 厚生年金加入履歴の状態を設定
     this.onboardingHasPensionHistory = data.pensionHistoryStatus === '有';
     
@@ -2831,7 +2956,9 @@ export class HrDashboardComponent {
           spouseBasicPensionNumber: spouseBasicPensionNumber,
           spouseMyNumber: spouseMyNumber,
           sameAsCurrentAddress: this.onboardingSameAsCurrentAddress,
-          sameAsCurrentAddressForEmergency: this.onboardingSameAsCurrentAddressForEmergency
+          sameAsCurrentAddressForEmergency: this.onboardingSameAsCurrentAddressForEmergency,
+          expectedMonthlySalary: formValue.expectedMonthlySalary || null,
+          expectedMonthlySalaryInKind: formValue.expectedMonthlySalaryInKind || null
         };
         
         // 配偶者情報の分割フィールドを削除
@@ -2868,6 +2995,36 @@ export class HrDashboardComponent {
           formData
         );
 
+        // 対応する入社時申請のデータも更新
+        await this.updateApplicationDataFromOnboardingEmployee(
+          this.selectedOnboardingEmployee.employeeNumber,
+          formData
+        );
+
+        // 必須項目が全て入力されている場合、ステータスを「準備完了」に変更
+        const requiredFieldsFilled = 
+          formData.insuranceSymbol &&
+          formData.insuranceNumber &&
+          formData.insuranceCardIssueDate &&
+          formData.insuranceCardDistributionStatus;
+        
+        if (requiredFieldsFilled && this.selectedOnboardingEmployee.status !== '準備完了') {
+          await this.firestoreService.updateOnboardingEmployeeStatus(
+            this.selectedOnboardingEmployee.employeeNumber,
+            '準備完了'
+          );
+          
+          // 対応する入社時申請のステータスも更新
+          await this.updateOnboardingApplicationStatus(
+            this.selectedOnboardingEmployee.employeeNumber,
+            '準備完了',
+            ''
+          );
+          
+          // モーダル内のステータスを更新
+          this.selectedOnboardingEmployee.status = '準備完了';
+        }
+
         // 新入社員一覧を再読み込み
         await this.loadOnboardingEmployees();
         
@@ -2897,9 +3054,105 @@ export class HrDashboardComponent {
     this.onboardingHasPensionHistory = false;
   }
 
+  // 必須項目が全て入力されているかチェック
+  checkRequiredFieldsForReadyStatus(): { isValid: boolean; missingFields: string[] } {
+    const missingFields: string[] = [];
+    const form = this.onboardingEmployeeEditForm;
+
+    // マイナンバー
+    const myNumberPart1 = form.get('myNumberPart1')?.value || '';
+    const myNumberPart2 = form.get('myNumberPart2')?.value || '';
+    const myNumberPart3 = form.get('myNumberPart3')?.value || '';
+    if (!myNumberPart1 || !myNumberPart2 || !myNumberPart3) {
+      missingFields.push('マイナンバー');
+    }
+
+    // 在籍状況
+    if (!form.get('employmentStatus')?.value) {
+      missingFields.push('在籍状況');
+    }
+
+    // 入社年月日
+    if (!form.get('joinDate')?.value) {
+      missingFields.push('入社年月日');
+    }
+
+    // 社会保険の資格取得年月日
+    if (!form.get('socialInsuranceAcquisitionDate')?.value) {
+      missingFields.push('社会保険の資格取得年月日');
+    }
+
+    // 被保険者記号
+    if (!form.get('insuranceSymbol')?.value) {
+      missingFields.push('被保険者記号');
+    }
+
+    // 被保険者番号
+    if (!form.get('insuranceNumber')?.value) {
+      missingFields.push('被保険者番号');
+    }
+
+    // 発行日
+    if (!form.get('insuranceCardIssueDate')?.value) {
+      missingFields.push('発行日');
+    }
+
+    // 配布状況
+    if (!form.get('insuranceCardDistributionStatus')?.value) {
+      missingFields.push('配布状況');
+    }
+
+    // 見込み月給額（給与）
+    if (!form.get('expectedMonthlySalary')?.value) {
+      missingFields.push('見込み月給額（給与）');
+    }
+
+    // 見込み月給額（現物）
+    if (!form.get('expectedMonthlySalaryInKind')?.value) {
+      missingFields.push('見込み月給額（現物）');
+    }
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields: missingFields
+    };
+  }
+
+  // 新入社員のステータス変更時の処理
+  onOnboardingStatusChange(event: any) {
+    const newStatus = event.target.value;
+    const oldStatus = this.selectedOnboardingEmployee.status;
+    
+    // 準備完了に変更する場合、必須項目をチェック
+    if (newStatus === '準備完了') {
+      const validation = this.checkRequiredFieldsForReadyStatus();
+      if (!validation.isValid) {
+        alert(`ステータスを「準備完了」に変更するには、以下の必須項目を入力してください：\n${validation.missingFields.join('\n')}`);
+        // ステータスを元に戻す
+        event.target.value = oldStatus;
+        this.selectedOnboardingEmployee.status = oldStatus;
+        return;
+      }
+    }
+    
+    // バリデーションが通った場合のみステータスを更新
+    this.selectedOnboardingEmployee.status = newStatus;
+  }
+
   // 新入社員のステータスを変更
   async updateOnboardingEmployeeStatus(newStatus: string) {
     if (!this.selectedOnboardingEmployee) return;
+
+    // 準備完了に変更する場合、必須項目をチェック
+    if (newStatus === '準備完了') {
+      const validation = this.checkRequiredFieldsForReadyStatus();
+      if (!validation.isValid) {
+        alert(`ステータスを「準備完了」に変更するには、以下の必須項目を入力してください：\n${validation.missingFields.join('\n')}`);
+        // ステータスを元に戻す
+        this.selectedOnboardingEmployee.status = this.selectedOnboardingEmployee.status;
+        return;
+      }
+    }
 
     try {
       await this.firestoreService.updateOnboardingEmployeeStatus(
@@ -2960,8 +3213,10 @@ export class HrDashboardComponent {
       if (onboardingApplication) {
         // 新入社員のステータスを申請ステータスにマッピング
         let applicationStatus = '承認待ち';
-        if (newStatus === '申請済み') {
-          applicationStatus = '承認済み';
+        if (newStatus === '申請待ち') {
+          applicationStatus = '承認待ち';
+        } else if (newStatus === '申請済み') {
+          applicationStatus = '申請済み';
         } else if (newStatus === '差し戻し') {
           applicationStatus = '差し戻し';
         } else if (newStatus === '準備完了') {
@@ -2978,6 +3233,51 @@ export class HrDashboardComponent {
     } catch (error) {
       console.error('Error updating onboarding application status:', error);
       // 申請の更新に失敗しても新入社員のステータス更新は成功しているので、エラーはログのみ
+    }
+  }
+
+  // 新入社員データから入社時申請のデータを更新
+  async updateApplicationDataFromOnboardingEmployee(employeeNumber: string, onboardingData: any) {
+    try {
+      // 該当する社員番号の入社時申請を検索
+      const applications = await this.firestoreService.getEmployeeApplications(employeeNumber);
+      const onboardingApplication = applications.find((app: any) => app.applicationType === '入社時申請');
+      
+      if (onboardingApplication) {
+        // 新入社員データから申請データに反映する情報を準備
+        const applicationUpdateData: any = {
+          name: onboardingData.name,
+          nameKana: onboardingData.nameKana || '',
+          birthDate: onboardingData.birthDate,
+          gender: onboardingData.gender,
+          email: onboardingData.email,
+          myNumber: onboardingData.myNumber || null,
+          postalCode: onboardingData.postalCode || '',
+          currentAddress: onboardingData.currentAddress || '',
+          currentAddressKana: onboardingData.currentAddressKana || '',
+          phoneNumber: onboardingData.phoneNumber || '',
+          currentHouseholdHead: onboardingData.currentHouseholdHead || '',
+          sameAsCurrentAddress: onboardingData.sameAsCurrentAddress || false,
+          residentAddress: onboardingData.residentAddress || '',
+          residentAddressKana: onboardingData.residentAddressKana || '',
+          residentHouseholdHead: onboardingData.residentHouseholdHead || '',
+          emergencyContact: onboardingData.emergencyContact || {},
+          bankAccount: onboardingData.bankAccount || {},
+          basicPensionNumber: onboardingData.basicPensionNumber || null,
+          pensionHistoryStatus: onboardingData.pensionHistoryStatus || '',
+          pensionHistory: onboardingData.pensionHistory || '',
+          dependentStatus: onboardingData.dependentStatus || ''
+        };
+
+        // 申請データを更新
+        await this.firestoreService.updateApplicationData(
+          onboardingApplication.id || onboardingApplication.applicationId?.toString() || '',
+          applicationUpdateData
+        );
+      }
+    } catch (error) {
+      console.error('Error updating application data from onboarding employee:', error);
+      // 申請の更新に失敗しても新入社員データの保存は成功しているので、エラーはログのみ
     }
   }
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 const firebaseConfig = {
   projectId: 'kensyu10117'
@@ -389,6 +389,35 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  // 申請のデータを更新（ステータス以外のフィールドも更新可能）
+  async updateApplicationData(applicationId: string, applicationData: any): Promise<void> {
+    try {
+      const applicationsCollection = collection(this.db, 'applications');
+      const querySnapshot = await getDocs(applicationsCollection);
+      
+      let targetDocId: string | null = null;
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        if (data['applicationId'] === parseInt(applicationId) || data['id'] === applicationId || doc.id === applicationId) {
+          targetDocId = doc.id;
+        }
+      });
+      
+      if (!targetDocId) {
+        throw new Error('Application not found');
+      }
+      
+      const applicationRef = doc(this.db, 'applications', targetDocId);
+      await updateDoc(applicationRef, {
+        ...applicationData,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating application data:', error);
+      throw error;
+    }
+  }
   
   // 申請を再提出
   /**
@@ -449,7 +478,7 @@ export class FirestoreService {
       const applicationRef = doc(this.db, 'applications', targetDocId);
       await updateDoc(applicationRef, {
         ...applicationData,
-        status: '再申請',
+        status: '申請済み',
         statusComment: '', // 差し戻しコメントをクリア
         updatedAt: new Date()
       });
@@ -548,6 +577,19 @@ export class FirestoreService {
       });
     } catch (error) {
       console.error('Error updating onboarding employee:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 新入社員を削除する
+   */
+  async deleteOnboardingEmployee(employeeNumber: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'onboardingEmployees', employeeNumber);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('Error deleting onboarding employee:', error);
       throw error;
     }
   }

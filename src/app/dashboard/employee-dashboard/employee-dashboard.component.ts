@@ -2535,9 +2535,22 @@ export class EmployeeDashboardComponent {
       }
       
       console.log('フォームは有効です。再申請を実行します。');
+      console.log('applicationData:', applicationData);
       
-      // 再申請として保存（ステータスを「再提出」に設定）
+      // 再申請として保存（ステータスを「申請済み」に設定）
       await this.firestoreService.resubmitApplication(this.selectedApplication.id, applicationData);
+      
+      // 入社時申請の場合、新入社員データも更新
+      if (this.selectedApplication.applicationType === '入社時申請' && applicationData.employeeNumber) {
+        // 申請データから新入社員データに反映する情報を準備
+        await this.updateOnboardingEmployeeDataFromApplication(applicationData);
+        
+        // 新入社員のステータスを「申請済み」に更新
+        await this.firestoreService.updateOnboardingEmployeeStatus(
+          applicationData.employeeNumber,
+          '申請済み'
+        );
+      }
       
       // 申請一覧を再読み込み
       await this.loadApplications();

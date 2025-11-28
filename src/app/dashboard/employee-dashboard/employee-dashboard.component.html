@@ -2692,8 +2692,8 @@
 </div>
 
 <!-- 申請詳細モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationDetailModal" (click)="closeApplicationDetailModal()">
-  <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showApplicationDetailModal">
+  <div class="modal-content application-detail-modal">
     <div class="modal-header">
       <h2 class="modal-title">申請詳細</h2>
       <button class="modal-close-button" (click)="closeApplicationDetailModal()">×</button>
