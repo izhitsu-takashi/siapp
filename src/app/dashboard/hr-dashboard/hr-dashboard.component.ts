@@ -31,7 +31,6 @@ export class HrDashboardComponent {
     { id: 'procedures', name: '入社手続き' },
     { id: 'document-management', name: '文書作成・管理' },
     { id: 'insurance-card', name: '保険証管理' },
-    { id: 'social-insurance', name: '社会保険料' },
     { id: 'settings', name: '設定' }
   ];
 
@@ -693,12 +692,6 @@ export class HrDashboardComponent {
     // 文書作成・管理ページに切り替えた時、従業員データを再読み込み
     if (tabName === '文書作成・管理') {
       this.loadEmployees();
-    }
-    // 社会保険料タブが選択された場合、データを読み込む
-    if (tabName === '社会保険料') {
-      this.loadInsuranceList().catch(err => {
-        console.error('Error in loadInsuranceList:', err);
-      });
     }
     // 申請管理タブが選択された場合、申請一覧を読み込む
     if (tabName === '申請管理') {
