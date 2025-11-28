@@ -2509,9 +2509,11 @@
             id="resignationDate" 
             formControlName="resignationDate" 
             class="form-input"
+            [min]="minResignationDate"
           >
           <div *ngIf="resignationForm.get('resignationDate')?.invalid && resignationForm.get('resignationDate')?.touched" class="error-message">
-            退職日を入力してください
+            <span *ngIf="resignationForm.get('resignationDate')?.errors?.['required']">退職日を入力してください</span>
+            <span *ngIf="resignationForm.get('resignationDate')?.errors?.['pastDate']">退職日は今日以降の日付を入力してください</span>
           </div>
         </div>
       </section>
@@ -2529,6 +2531,24 @@
           >
           <div *ngIf="resignationForm.get('lastWorkDate')?.invalid && resignationForm.get('lastWorkDate')?.touched" class="error-message">
             最終出社日を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 退職理由 -->
+      <section class="form-section">
+        <h3 class="section-title">退職理由</h3>
+        <div class="form-group">
+          <label for="resignationReason">退職理由 <span class="required">*</span></label>
+          <textarea 
+            id="resignationReason" 
+            formControlName="resignationReason" 
+            class="form-input"
+            rows="4"
+            placeholder="退職理由を入力してください"
+          ></textarea>
+          <div *ngIf="resignationForm.get('resignationReason')?.invalid && resignationForm.get('resignationReason')?.touched" class="error-message">
+            退職理由を入力してください
           </div>
         </div>
       </section>
@@ -2555,14 +2575,24 @@
       <section class="form-section">
         <h3 class="section-title">退職後の住所</h3>
         <div class="form-group">
-          <label for="postResignationAddress">退職後の住所 <span class="required">*</span></label>
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [checked]="sameAsCurrentAddressForResignation"
+              (change)="onSameAsCurrentAddressForResignationChange($event)"
+            >
+            変更なし（現在の住所を使用）
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="postResignationAddress">退職後の住所 <span class="required" *ngIf="!sameAsCurrentAddressForResignation">*</span></label>
           <textarea 
             id="postResignationAddress" 
             formControlName="postResignationAddress" 
             class="form-input"
             rows="3"
           ></textarea>
-          <div *ngIf="resignationForm.get('postResignationAddress')?.invalid && resignationForm.get('postResignationAddress')?.touched" class="error-message">
+          <div *ngIf="!sameAsCurrentAddressForResignation && resignationForm.get('postResignationAddress')?.invalid && resignationForm.get('postResignationAddress')?.touched" class="error-message">
             退職後の住所を入力してください
           </div>
         </div>
@@ -2572,14 +2602,24 @@
       <section class="form-section">
         <h3 class="section-title">退職後の電話番号</h3>
         <div class="form-group">
-          <label for="postResignationPhone">退職後の電話番号 <span class="required">*</span></label>
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [checked]="sameAsCurrentPhoneForResignation"
+              (change)="onSameAsCurrentPhoneForResignationChange($event)"
+            >
+            変更なし（現在の電話番号を使用）
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="postResignationPhone">退職後の電話番号 <span class="required" *ngIf="!sameAsCurrentPhoneForResignation">*</span></label>
           <input 
             type="tel" 
             id="postResignationPhone" 
             formControlName="postResignationPhone" 
             class="form-input"
           >
-          <div *ngIf="resignationForm.get('postResignationPhone')?.invalid && resignationForm.get('postResignationPhone')?.touched" class="error-message">
+          <div *ngIf="!sameAsCurrentPhoneForResignation && resignationForm.get('postResignationPhone')?.invalid && resignationForm.get('postResignationPhone')?.touched" class="error-message">
             退職後の電話番号を入力してください
           </div>
         </div>
@@ -2589,14 +2629,24 @@
       <section class="form-section">
         <h3 class="section-title">退職後のメールアドレス</h3>
         <div class="form-group">
-          <label for="postResignationEmail">退職後のメールアドレス <span class="required">*</span></label>
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [checked]="sameAsCurrentEmailForResignation"
+              (change)="onSameAsCurrentEmailForResignationChange($event)"
+            >
+            変更なし（現在のメールアドレスを使用）
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="postResignationEmail">退職後のメールアドレス <span class="required" *ngIf="!sameAsCurrentEmailForResignation">*</span></label>
           <input 
             type="email" 
             id="postResignationEmail" 
             formControlName="postResignationEmail" 
             class="form-input"
           >
-          <div *ngIf="resignationForm.get('postResignationEmail')?.invalid && resignationForm.get('postResignationEmail')?.touched" class="error-message">
+          <div *ngIf="!sameAsCurrentEmailForResignation && resignationForm.get('postResignationEmail')?.invalid && resignationForm.get('postResignationEmail')?.touched" class="error-message">
             <span *ngIf="resignationForm.get('postResignationEmail')?.errors?.['required']">退職後のメールアドレスを入力してください</span>
             <span *ngIf="resignationForm.get('postResignationEmail')?.errors?.['email']">有効なメールアドレスを入力してください</span>
           </div>

@@ -54,6 +54,18 @@ export class EmployeeDashboardComponent {
     householdHead: '',
     householdHeadName: ''
   };
+  // 退職申請用：変更なしフラグ
+  sameAsCurrentAddressForResignation = false;
+  sameAsCurrentPhoneForResignation = false;
+  sameAsCurrentEmailForResignation = false;
+  // 現在の連絡先情報（退職申請で使用）
+  currentContactInfo: any = {
+    address: '',
+    phone: '',
+    email: ''
+  };
+  // 退職日の最小日付（今日）
+  minResignationDate: string = '';
   
   // 氏名変更申請用ファイル
   nameChangeIdDocumentFile: File | null = null;
@@ -152,6 +164,13 @@ export class EmployeeDashboardComponent {
       this.employeeNumber = storedEmployeeNumber;
       this.employeeName = storedEmployeeName || '';
       
+      // 退職日の最小日付を設定（今日）
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      this.minResignationDate = `${year}-${month}-${day}`;
+      
       // 非同期処理を並列実行（エラーハンドリングを追加）
       Promise.all([
         this.loadEmployeeData().catch(err => {
@@ -181,6 +200,13 @@ export class EmployeeDashboardComponent {
           addressKana: data.currentAddressKana || '',
           householdHead: data.currentHouseholdHead || '',
           householdHeadName: data.currentHouseholdHeadName || ''
+        };
+        
+        // 現在の連絡先情報を保存（退職申請で使用）
+        this.currentContactInfo = {
+          address: data.currentAddress || '',
+          phone: data.phoneNumber || '',
+          email: data.email || ''
         };
       }
       // データ読み込み後、編集モードでない場合はフォームを無効化
@@ -914,6 +940,9 @@ export class EmployeeDashboardComponent {
     this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
     this.sameAsOldAddress = false;
     this.sameAsNewAddress = false;
+    this.sameAsCurrentAddressForResignation = false;
+    this.sameAsCurrentPhoneForResignation = false;
+    this.sameAsCurrentEmailForResignation = false;
     // ファイルをリセット
     this.dependentBasicPensionNumberDocFile = null;
     this.dependentMyNumberDocFile = null;
@@ -1081,12 +1110,13 @@ export class EmployeeDashboardComponent {
   
   createResignationForm(): FormGroup {
     return this.fb.group({
-      resignationDate: ['', Validators.required],
+      resignationDate: ['', [Validators.required, this.futureDateValidator]],
       lastWorkDate: ['', Validators.required],
+      resignationReason: ['', Validators.required], // 退職理由（必須）
       separationNotice: ['', Validators.required],
-      postResignationAddress: ['', Validators.required],
-      postResignationPhone: ['', Validators.required],
-      postResignationEmail: ['', [Validators.required, Validators.email]],
+      postResignationAddress: [''],
+      postResignationPhone: [''],
+      postResignationEmail: [''],
       postResignationInsurance: ['', Validators.required]
     });
   }
@@ -1608,21 +1638,88 @@ export class EmployeeDashboardComponent {
     }
   }
   
+  // 退職申請用：変更なしチェックボックスの変更処理
+  onSameAsCurrentAddressForResignationChange(event: any) {
+    this.sameAsCurrentAddressForResignation = event.target.checked;
+    const addressControl = this.resignationForm.get('postResignationAddress');
+    
+    if (this.sameAsCurrentAddressForResignation) {
+      this.resignationForm.patchValue({
+        postResignationAddress: this.currentContactInfo.address || ''
+      });
+      addressControl?.clearValidators();
+      addressControl?.disable();
+    } else {
+      addressControl?.setValidators([Validators.required]);
+      addressControl?.enable();
+    }
+    addressControl?.updateValueAndValidity();
+  }
+  
+  onSameAsCurrentPhoneForResignationChange(event: any) {
+    this.sameAsCurrentPhoneForResignation = event.target.checked;
+    const phoneControl = this.resignationForm.get('postResignationPhone');
+    
+    if (this.sameAsCurrentPhoneForResignation) {
+      this.resignationForm.patchValue({
+        postResignationPhone: this.currentContactInfo.phone || ''
+      });
+      phoneControl?.clearValidators();
+      phoneControl?.disable();
+    } else {
+      phoneControl?.setValidators([Validators.required]);
+      phoneControl?.enable();
+    }
+    phoneControl?.updateValueAndValidity();
+  }
+  
+  onSameAsCurrentEmailForResignationChange(event: any) {
+    this.sameAsCurrentEmailForResignation = event.target.checked;
+    const emailControl = this.resignationForm.get('postResignationEmail');
+    
+    if (this.sameAsCurrentEmailForResignation) {
+      this.resignationForm.patchValue({
+        postResignationEmail: this.currentContactInfo.email || ''
+      });
+      emailControl?.clearValidators();
+      emailControl?.disable();
+    } else {
+      emailControl?.setValidators([Validators.required, Validators.email]);
+      emailControl?.enable();
+    }
+    emailControl?.updateValueAndValidity();
+  }
+
   async submitResignationApplication() {
     if (this.resignationForm.valid) {
       try {
-        const formValue = this.resignationForm.value;
+        const formValue = this.resignationForm.getRawValue(); // disabledフィールドも取得
+        
+        // 退職後の連絡先情報を決定
+        const postResignationAddress = this.sameAsCurrentAddressForResignation 
+          ? this.currentContactInfo.address 
+          : (formValue.postResignationAddress || '');
+        const postResignationPhone = this.sameAsCurrentPhoneForResignation 
+          ? this.currentContactInfo.phone 
+          : (formValue.postResignationPhone || '');
+        const postResignationEmail = this.sameAsCurrentEmailForResignation 
+          ? this.currentContactInfo.email 
+          : (formValue.postResignationEmail || '');
         
         const applicationData: any = {
           employeeNumber: this.employeeNumber,
           applicationType: '退職申請',
           resignationDate: formValue.resignationDate,
           lastWorkDate: formValue.lastWorkDate,
+          resignationReason: formValue.resignationReason,
           separationNotice: formValue.separationNotice,
-          postResignationAddress: formValue.postResignationAddress,
-          postResignationPhone: formValue.postResignationPhone,
-          postResignationEmail: formValue.postResignationEmail,
-          postResignationInsurance: formValue.postResignationInsurance
+          postResignationAddress: postResignationAddress,
+          postResignationPhone: postResignationPhone,
+          postResignationEmail: postResignationEmail,
+          postResignationInsurance: formValue.postResignationInsurance,
+          sameAsCurrentAddress: this.sameAsCurrentAddressForResignation,
+          sameAsCurrentPhone: this.sameAsCurrentPhoneForResignation,
+          sameAsCurrentEmail: this.sameAsCurrentEmailForResignation
         };
         
         // 申請を保存
@@ -2367,12 +2464,29 @@ export class EmployeeDashboardComponent {
       this.resignationForm.patchValue({
         resignationDate: application.resignationDate || '',
         lastWorkDate: application.lastWorkDate || '',
-        resignationCertificatePreference: application.resignationCertificatePreference || application.separationNotice || '',
+        resignationReason: application.resignationReason || '',
+        separationNotice: application.separationNotice || '',
         postResignationAddress: application.postResignationAddress || '',
-        postResignationPhoneNumber: application.postResignationPhoneNumber || application.postResignationPhone || '',
+        postResignationPhone: application.postResignationPhone || '',
         postResignationEmail: application.postResignationEmail || '',
-        postResignationSocialInsurance: application.postResignationSocialInsurance || application.postResignationInsurance || ''
+        postResignationInsurance: application.postResignationInsurance || ''
       });
+      
+      // 変更なしフラグを設定
+      this.sameAsCurrentAddressForResignation = application.sameAsCurrentAddress || false;
+      this.sameAsCurrentPhoneForResignation = application.sameAsCurrentPhone || false;
+      this.sameAsCurrentEmailForResignation = application.sameAsCurrentEmail || false;
+      
+      // チェックボックスの状態に応じてフォームを更新
+      if (this.sameAsCurrentAddressForResignation) {
+        this.onSameAsCurrentAddressForResignationChange({ target: { checked: true } });
+      }
+      if (this.sameAsCurrentPhoneForResignation) {
+        this.onSameAsCurrentPhoneForResignationChange({ target: { checked: true } });
+      }
+      if (this.sameAsCurrentEmailForResignation) {
+        this.onSameAsCurrentEmailForResignationChange({ target: { checked: true } });
+      }
     }
   }
   
@@ -2624,15 +2738,31 @@ export class EmployeeDashboardComponent {
         console.log('退職申請の再申請を処理します。');
         formValid = this.resignationForm?.valid || false;
         if (formValid) {
-          const formValue = this.resignationForm.value;
+          const formValue = this.resignationForm.getRawValue(); // disabledフィールドも取得
+          
+          // 退職後の連絡先情報を決定
+          const postResignationAddress = this.sameAsCurrentAddressForResignation 
+            ? this.currentContactInfo.address 
+            : (formValue.postResignationAddress || '');
+          const postResignationPhone = this.sameAsCurrentPhoneForResignation 
+            ? this.currentContactInfo.phone 
+            : (formValue.postResignationPhone || '');
+          const postResignationEmail = this.sameAsCurrentEmailForResignation 
+            ? this.currentContactInfo.email 
+            : (formValue.postResignationEmail || '');
+          
           applicationData = {
             resignationDate: formValue.resignationDate,
             lastWorkDate: formValue.lastWorkDate,
-            separationNotice: formValue.resignationCertificatePreference,
-            postResignationAddress: formValue.postResignationAddress,
-            postResignationPhone: formValue.postResignationPhoneNumber,
-            postResignationEmail: formValue.postResignationEmail,
-            postResignationInsurance: formValue.postResignationSocialInsurance,
+            resignationReason: formValue.resignationReason,
+            separationNotice: formValue.separationNotice,
+            postResignationAddress: postResignationAddress,
+            postResignationPhone: postResignationPhone,
+            postResignationEmail: postResignationEmail,
+            postResignationInsurance: formValue.postResignationInsurance,
+            sameAsCurrentAddress: this.sameAsCurrentAddressForResignation,
+            sameAsCurrentPhone: this.sameAsCurrentPhoneForResignation,
+            sameAsCurrentEmail: this.sameAsCurrentEmailForResignation,
             employeeNumber: this.employeeNumber,
             applicationType: '退職申請'
           };
@@ -2777,6 +2907,21 @@ export class EmployeeDashboardComponent {
     const katakanaPattern = /^[ァ-ヶー\s]+$/;
     if (!katakanaPattern.test(control.value)) {
       return { katakana: true };
+    }
+    return null;
+  }
+
+  // 未来の日付のみを許可するバリデーター
+  futureDateValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // 空の場合は他のバリデーターで処理
+    }
+    const selectedDate = new Date(control.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    
+    if (selectedDate < today) {
+      return { pastDate: true };
     }
     return null;
   }

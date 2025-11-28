@@ -759,5 +759,65 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 社員の退職情報を更新する
+   */
+  async updateEmployeeResignation(employeeNumber: string, resignationData: any): Promise<void> {
+    try {
+      // 既存の社員データを取得
+      const employeeData = await this.getEmployeeData(employeeNumber);
+      
+      if (!employeeData) {
+        throw new Error(`Employee with number ${employeeNumber} not found`);
+      }
+
+      // 退職日の次の日を計算（資格喪失年月日）
+      let socialInsuranceLossDate = '';
+      if (resignationData.resignationDate) {
+        const resignationDate = new Date(resignationData.resignationDate);
+        resignationDate.setDate(resignationDate.getDate() + 1);
+        const year = resignationDate.getFullYear();
+        const month = String(resignationDate.getMonth() + 1).padStart(2, '0');
+        const day = String(resignationDate.getDate()).padStart(2, '0');
+        socialInsuranceLossDate = `${year}-${month}-${day}`;
+      }
+
+      // 退職後の社会保険加入が「社会保険を任意継続する」の場合のみ、保険者種別を「任意継続被保険者」に変更
+      const isContinuingInsurance = resignationData.postResignationInsurance === '社会保険を任意継続する';
+      
+      // 退職情報を更新
+      const updatedData: any = {
+        ...employeeData,
+        // 入退社情報
+        employmentStatus: '退職',
+        resignationDate: resignationData.resignationDate || employeeData.resignationDate || '',
+        resignationReason: resignationData.resignationReason || employeeData.resignationReason || '',
+        // 現住所や連絡先に変更があれば更新
+        currentAddress: resignationData.postResignationAddress || employeeData.currentAddress || '',
+        phoneNumber: resignationData.postResignationPhone || employeeData.phoneNumber || '',
+        email: resignationData.postResignationEmail || employeeData.email || '',
+        // 社会保険
+        socialInsuranceLossDate: socialInsuranceLossDate || employeeData.socialInsuranceLossDate || '',
+        // 保険者種別は「社会保険を任意継続する」が選択された場合のみ「任意継続被保険者」に変更
+        healthInsuranceType: isContinuingInsurance ? '任意継続被保険者' : (employeeData.healthInsuranceType || ''),
+        nursingInsuranceType: isContinuingInsurance ? '任意継続被保険者' : (employeeData.nursingInsuranceType || ''),
+        // 保険証情報
+        insuranceCardCollectionDate: resignationData.lastWorkDate || employeeData.insuranceCardCollectionDate || '',
+        insuranceCardDistributionStatus: '回収済み',
+        updatedAt: new Date()
+      };
+
+      // undefinedの値を削除
+      const cleanedData = this.removeUndefinedValues(updatedData);
+
+      // 社員データを更新
+      const docRef = doc(this.db, 'employees', employeeNumber);
+      await setDoc(docRef, cleanedData, { merge: true });
+    } catch (error) {
+      console.error('Error updating employee resignation:', error);
+      throw error;
+    }
+  }
 }
 

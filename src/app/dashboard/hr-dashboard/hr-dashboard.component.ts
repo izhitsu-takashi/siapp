@@ -1120,6 +1120,33 @@ export class HrDashboardComponent {
         }
       }
       
+      // 退職申請が承認済みになった場合、退職情報を更新
+      if (status === '承認済み' && this.selectedApplication.applicationType === '退職申請') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber) {
+            await this.firestoreService.updateEmployeeResignation(employeeNumber, {
+              resignationDate: this.selectedApplication.resignationDate,
+              lastWorkDate: this.selectedApplication.lastWorkDate,
+              resignationReason: this.selectedApplication.resignationReason,
+              postResignationAddress: this.selectedApplication.postResignationAddress,
+              postResignationPhone: this.selectedApplication.postResignationPhone,
+              postResignationEmail: this.selectedApplication.postResignationEmail,
+              postResignationInsurance: this.selectedApplication.postResignationInsurance
+            });
+            console.log('退職情報を更新しました:', employeeNumber);
+            
+            // 社員情報編集モーダルが開いている場合、退職情報を再読み込み
+            if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
+              await this.loadEmployeeData(employeeNumber);
+            }
+          }
+        } catch (error) {
+          console.error('退職情報の更新に失敗しました:', error);
+          alert('退職情報の更新に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
       // 承認済みの場合、チェックが入った文書をダウンロード
       if (status === '承認済み' && this.availableDocuments.length > 0) {
         await this.downloadSelectedDocuments();
