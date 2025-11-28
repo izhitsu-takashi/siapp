@@ -37,9 +37,6 @@ export class EmployeeDashboardComponent {
   showApplicationModal = false;
   currentApplicationType = '';
   onboardingApplicationForm!: FormGroup; // 入社時申請用フォーム
-  hasSpouseOnboarding = false; // 入社時申請の配偶者の有無
-  willSupportSpouse = false; // 入社時申請の配偶者を扶養するか
-  spouseLivingTogether = ''; // 入社時申請の配偶者との同居/別居
   dependentApplicationForm!: FormGroup;
   dependentRemovalForm!: FormGroup;
   addressChangeForm!: FormGroup;
@@ -401,108 +398,6 @@ export class EmployeeDashboardComponent {
     }
   }
 
-  // 入社時申請の配偶者ステータス変更
-  onOnboardingSpouseStatusChange(event: any) {
-    this.hasSpouseOnboarding = event.target.value === '有';
-    if (!this.hasSpouseOnboarding) {
-      this.willSupportSpouse = false;
-      this.onboardingApplicationForm.get('spouseSupport')?.setValue('');
-      this.clearSpouseFields();
-      this.clearSpouseValidators();
-    }
-  }
-
-  // 入社時申請の配偶者扶養選択変更
-  onOnboardingSpouseSupportChange(event: any) {
-    this.willSupportSpouse = event.target.value === '扶養する';
-    if (!this.willSupportSpouse) {
-      this.clearSpouseFields();
-      // バリデーションをクリア
-      this.clearSpouseValidators();
-    } else {
-      // 扶養する場合、必須フィールドを設定
-      this.setSpouseRequiredFields();
-    }
-  }
-
-  // 入社時申請の配偶者同居/別居変更
-  onOnboardingSpouseLivingTogetherChange(event: any) {
-    this.spouseLivingTogether = event.target.value;
-    if (this.spouseLivingTogether === '同居') {
-      // 同居の場合は住所フィールドをクリア
-      this.onboardingApplicationForm.get('spouseAddress')?.setValue('');
-      this.onboardingApplicationForm.get('spouseAddressKana')?.setValue('');
-      // バリデーションをクリア
-      this.onboardingApplicationForm.get('spouseAddress')?.clearValidators();
-      this.onboardingApplicationForm.get('spouseAddressKana')?.clearValidators();
-      this.onboardingApplicationForm.get('spouseAddress')?.updateValueAndValidity();
-      this.onboardingApplicationForm.get('spouseAddressKana')?.updateValueAndValidity();
-    } else if (this.spouseLivingTogether === '別居') {
-      // 別居の場合は住所を必須にする
-      this.onboardingApplicationForm.get('spouseAddress')?.setValidators([Validators.required]);
-      this.onboardingApplicationForm.get('spouseAddressKana')?.setValidators([Validators.required]);
-      this.onboardingApplicationForm.get('spouseAddress')?.updateValueAndValidity();
-      this.onboardingApplicationForm.get('spouseAddressKana')?.updateValueAndValidity();
-    }
-  }
-
-  // 配偶者フィールドをクリア
-  clearSpouseFields() {
-    this.onboardingApplicationForm.get('spouseBasicPensionNumberPart1')?.setValue('');
-    this.onboardingApplicationForm.get('spouseBasicPensionNumberPart2')?.setValue('');
-    this.onboardingApplicationForm.get('spouseLastName')?.setValue('');
-    this.onboardingApplicationForm.get('spouseFirstName')?.setValue('');
-    this.onboardingApplicationForm.get('spouseLastNameKana')?.setValue('');
-    this.onboardingApplicationForm.get('spouseFirstNameKana')?.setValue('');
-    this.onboardingApplicationForm.get('spouseBirthDate')?.setValue('');
-    this.onboardingApplicationForm.get('spouseGender')?.setValue('');
-    this.onboardingApplicationForm.get('spousePhoneNumber')?.setValue('');
-    this.onboardingApplicationForm.get('spouseAnnualIncome')?.setValue('');
-    this.onboardingApplicationForm.get('spouseMyNumberPart1')?.setValue('');
-    this.onboardingApplicationForm.get('spouseMyNumberPart2')?.setValue('');
-    this.onboardingApplicationForm.get('spouseMyNumberPart3')?.setValue('');
-    this.onboardingApplicationForm.get('spouseLivingTogether')?.setValue('');
-    this.onboardingApplicationForm.get('spouseAddress')?.setValue('');
-    this.onboardingApplicationForm.get('spouseAddressKana')?.setValue('');
-  }
-
-  // 配偶者必須フィールドを設定
-  setSpouseRequiredFields() {
-    const spouseFields = [
-      'spouseBasicPensionNumberPart1', 'spouseBasicPensionNumberPart2',
-      'spouseLastName', 'spouseFirstName', 'spouseLastNameKana', 'spouseFirstNameKana',
-      'spouseBirthDate', 'spouseGender', 'spouseAnnualIncome',
-      'spouseMyNumberPart1', 'spouseMyNumberPart2', 'spouseMyNumberPart3',
-      'spouseLivingTogether'
-    ];
-    
-    spouseFields.forEach(field => {
-      const control = this.onboardingApplicationForm.get(field);
-      if (control) {
-        control.setValidators([Validators.required]);
-        control.updateValueAndValidity();
-      }
-    });
-  }
-
-  // 配偶者バリデーションをクリア
-  clearSpouseValidators() {
-    const spouseFields = [
-      'spouseBasicPensionNumberPart1', 'spouseBasicPensionNumberPart2',
-      'spouseLastName', 'spouseFirstName', 'spouseLastNameKana', 'spouseFirstNameKana',
-      'spouseBirthDate', 'spouseGender', 'spouseAnnualIncome',
-      'spouseMyNumberPart1', 'spouseMyNumberPart2', 'spouseMyNumberPart3',
-      'spouseLivingTogether', 'spouseAddress', 'spouseAddressKana'
-    ];
-    
-    spouseFields.forEach(field => {
-      const control = this.onboardingApplicationForm.get(field);
-      if (control) {
-        control.clearValidators();
-        control.updateValueAndValidity();
-      }
-    });
-  }
 
   onFileSelected(event: any, fileType: string) {
     const file = event.target.files?.[0];
@@ -914,9 +809,6 @@ export class EmployeeDashboardComponent {
     this.currentApplicationType = applicationType;
     if (applicationType === '入社時申請') {
       this.onboardingApplicationForm = this.createOnboardingApplicationForm();
-      this.hasSpouseOnboarding = false;
-      this.willSupportSpouse = false;
-      this.spouseLivingTogether = '';
       // 既存の新入社員データから氏名とメールアドレスを取得して設定
       this.loadOnboardingEmployeeDataForApplication();
       this.showApplicationModal = true;
@@ -1028,26 +920,8 @@ export class EmployeeDashboardComponent {
       pensionHistoryStatus: ['', Validators.required],
       pensionHistory: [''],
       
-      // 配偶者情報
-      spouseStatus: ['', Validators.required],
-      spouseSupport: [''], // 扶養する/扶養しない
-      // 配偶者詳細情報（扶養する場合のみ必須）
-      spouseBasicPensionNumberPart1: [''],
-      spouseBasicPensionNumberPart2: [''],
-      spouseLastName: [''],
-      spouseFirstName: [''],
-      spouseLastNameKana: ['', this.katakanaValidator],
-      spouseFirstNameKana: ['', this.katakanaValidator],
-      spouseBirthDate: [''],
-      spouseGender: [''],
-      spousePhoneNumber: ['', Validators.pattern(/^\d*$/)], // 必須ではない、数字のみ
-      spouseAnnualIncome: [''],
-      spouseMyNumberPart1: [''],
-      spouseMyNumberPart2: [''],
-      spouseMyNumberPart3: [''],
-      spouseLivingTogether: [''],
-      spouseAddress: [''],
-      spouseAddressKana: ['', this.katakanaValidator]
+      // 扶養者有無
+      dependentStatus: ['', Validators.required]
     });
   }
 
@@ -1717,27 +1591,8 @@ export class EmployeeDashboardComponent {
           basicPensionNumber: basicPensionNumber || null,
           pensionHistoryStatus: formValue.pensionHistoryStatus || '',
           pensionHistory: formValue.pensionHistory || '',
-          // 配偶者情報
-          spouseStatus: formValue.spouseStatus || '',
-          spouseSupport: formValue.spouseSupport || '',
-          // 配偶者詳細情報（扶養する場合のみ）
-          spouseBasicPensionNumber: (formValue.spouseBasicPensionNumberPart1 && formValue.spouseBasicPensionNumberPart2) 
-            ? `${formValue.spouseBasicPensionNumberPart1}${formValue.spouseBasicPensionNumberPart2}` 
-            : null,
-          spouseLastName: formValue.spouseLastName || '',
-          spouseFirstName: formValue.spouseFirstName || '',
-          spouseLastNameKana: formValue.spouseLastNameKana || '',
-          spouseFirstNameKana: formValue.spouseFirstNameKana || '',
-          spouseBirthDate: formValue.spouseBirthDate || '',
-          spouseGender: formValue.spouseGender || '',
-          spousePhoneNumber: formValue.spousePhoneNumber || '',
-          spouseAnnualIncome: formValue.spouseAnnualIncome || '',
-          spouseMyNumber: (formValue.spouseMyNumberPart1 && formValue.spouseMyNumberPart2 && formValue.spouseMyNumberPart3)
-            ? `${formValue.spouseMyNumberPart1}${formValue.spouseMyNumberPart2}${formValue.spouseMyNumberPart3}`
-            : null,
-          spouseLivingTogether: formValue.spouseLivingTogether || '',
-          spouseAddress: formValue.spouseAddress || '',
-          spouseAddressKana: formValue.spouseAddressKana || ''
+          // 扶養者有無
+          dependentStatus: formValue.dependentStatus || ''
         };
 
         // ファイルをアップロード（履歴書、職務経歴書）
@@ -1831,22 +1686,8 @@ export class EmployeeDashboardComponent {
         basicPensionNumber: applicationData.basicPensionNumber || null,
         pensionHistoryStatus: applicationData.pensionHistoryStatus || '',
         pensionHistory: applicationData.pensionHistory || '',
-        // 配偶者情報
-        spouseStatus: applicationData.spouseStatus || '',
-        spouseAnnualIncome: applicationData.spouseAnnualIncome || '',
-        // 配偶者詳細情報（扶養する場合のみ）
-        spouseBasicPensionNumber: applicationData.spouseBasicPensionNumber || null,
-        spouseLastName: applicationData.spouseLastName || '',
-        spouseFirstName: applicationData.spouseFirstName || '',
-        spouseLastNameKana: applicationData.spouseLastNameKana || '',
-        spouseFirstNameKana: applicationData.spouseFirstNameKana || '',
-        spouseBirthDate: applicationData.spouseBirthDate || '',
-        spouseGender: applicationData.spouseGender || '',
-        spousePhoneNumber: applicationData.spousePhoneNumber || '',
-        spouseMyNumber: applicationData.spouseMyNumber || null,
-        spouseLivingTogether: applicationData.spouseLivingTogether || '',
-        spouseAddress: applicationData.spouseAddress || '',
-        spouseAddressKana: applicationData.spouseAddressKana || ''
+        // 扶養者有無
+        dependentStatus: applicationData.dependentStatus || ''
       };
 
       // 新入社員データを更新

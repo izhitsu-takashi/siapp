@@ -92,7 +92,7 @@ export class HrDashboardComponent {
   kenpoRates: any[] = [];
   showAddModal = false;
   addEmployeeForm: FormGroup;
-  employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
+  employmentTypes = ['正社員', '契約社員'];
 
   // 社員情報編集モーダル
   showEmployeeEditModal = false;

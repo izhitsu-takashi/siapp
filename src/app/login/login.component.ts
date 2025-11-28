@@ -13,7 +13,7 @@ import { FirestoreService } from '../services/firestore.service';
 })
 export class LoginComponent {
   loginForm: FormGroup;
-  loginType: 'employee' | 'hr' = 'employee';
+  loginType: 'employee' | 'roumu' | 'kyuyo' = 'employee';
   isLoading = false;
   errorMessage = '';
 
@@ -25,14 +25,35 @@ export class LoginComponent {
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: [''] // パスワードは任意
+      username: [''],
+      password: ['']
     });
+    // 初期状態は従業員ログイン用のバリデーション
+    this.loginForm.get('username')?.clearValidators();
+    this.loginForm.get('password')?.clearValidators();
   }
 
-  switchLoginType(type: 'employee' | 'hr') {
+  switchLoginType(type: 'employee' | 'roumu' | 'kyuyo') {
     this.loginType = type;
     this.loginForm.reset();
     this.errorMessage = '';
+    
+    // フォームのバリデーションを更新
+    if (type === 'employee') {
+      this.loginForm.get('email')?.setValidators([Validators.required, Validators.email]);
+      this.loginForm.get('email')?.updateValueAndValidity();
+      this.loginForm.get('username')?.clearValidators();
+      this.loginForm.get('username')?.updateValueAndValidity();
+      this.loginForm.get('password')?.setValidators([]); // 従業員はパスワード任意
+      this.loginForm.get('password')?.updateValueAndValidity();
+    } else {
+      this.loginForm.get('email')?.clearValidators();
+      this.loginForm.get('email')?.updateValueAndValidity();
+      this.loginForm.get('username')?.setValidators([Validators.required]);
+      this.loginForm.get('username')?.updateValueAndValidity();
+      this.loginForm.get('password')?.setValidators([Validators.required]);
+      this.loginForm.get('password')?.updateValueAndValidity();
+    }
   }
 
   async onSubmit() {
@@ -72,9 +93,34 @@ export class LoginComponent {
           } else {
             this.errorMessage = 'このメールアドレスは登録されていません。社員情報管理で登録されているメールアドレスでログインしてください。';
           }
-        } else {
-          // 人事用ログイン: 現時点では検証なし（後で実装可能）
-          this.router.navigate(['/dashboard/hr']);
+        } else if (this.loginType === 'roumu') {
+          // 労務担当者ログイン: ユーザーネーム：roumu、パスワード：roumu
+          const username = this.loginForm.value.username;
+          const password = this.loginForm.value.password;
+          
+          if (username === 'roumu' && password === 'roumu') {
+            if (isPlatformBrowser(this.platformId)) {
+              sessionStorage.setItem('userType', 'roumu');
+              sessionStorage.setItem('userName', '労務担当者');
+            }
+            this.router.navigate(['/dashboard/hr']);
+          } else {
+            this.errorMessage = 'ユーザーネームまたはパスワードが正しくありません。';
+          }
+        } else if (this.loginType === 'kyuyo') {
+          // 給与担当者ログイン: ユーザーネーム：kyuyo、パスワード：kyuyo
+          const username = this.loginForm.value.username;
+          const password = this.loginForm.value.password;
+          
+          if (username === 'kyuyo' && password === 'kyuyo') {
+            if (isPlatformBrowser(this.platformId)) {
+              sessionStorage.setItem('userType', 'kyuyo');
+              sessionStorage.setItem('userName', '給与担当者');
+            }
+            this.router.navigate(['/dashboard/kyuyo']);
+          } else {
+            this.errorMessage = 'ユーザーネームまたはパスワードが正しくありません。';
+          }
         }
       } catch (error) {
         console.error('Login error:', error);
