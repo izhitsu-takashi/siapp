@@ -684,5 +684,44 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 社員の住所情報と住民票情報を更新する
+   */
+  async updateEmployeeAddress(employeeNumber: string, addressData: any): Promise<void> {
+    try {
+      // 既存の社員データを取得
+      const employeeData = await this.getEmployeeData(employeeNumber);
+      
+      if (!employeeData) {
+        throw new Error(`Employee with number ${employeeNumber} not found`);
+      }
+
+      // 住所情報を更新（undefinedをnullまたは空文字列に変換）
+      const updatedData: any = {
+        ...employeeData,
+        postalCode: addressData.newAddress?.postalCode ?? employeeData.postalCode ?? '',
+        currentAddress: addressData.newAddress?.address ?? employeeData.currentAddress ?? '',
+        currentAddressKana: addressData.newAddress?.addressKana ?? employeeData.currentAddressKana ?? '',
+        currentHouseholdHead: addressData.newAddress?.householdHead ?? employeeData.currentHouseholdHead ?? '',
+        currentHouseholdHeadName: addressData.newAddress?.householdHeadName ?? employeeData.currentHouseholdHeadName ?? '',
+        residentAddress: addressData.residentAddress?.address ?? employeeData.residentAddress ?? '',
+        residentAddressKana: addressData.residentAddress?.addressKana ?? employeeData.residentAddressKana ?? '',
+        residentHouseholdHead: addressData.residentAddress?.householdHead ?? employeeData.residentHouseholdHead ?? '',
+        residentHouseholdHeadName: addressData.residentAddress?.householdHeadName ?? employeeData.residentHouseholdHeadName ?? '',
+        updatedAt: new Date()
+      };
+
+      // undefinedの値を削除
+      const cleanedData = this.removeUndefinedValues(updatedData);
+
+      // 社員データを更新
+      const docRef = doc(this.db, 'employees', employeeNumber);
+      await setDoc(docRef, cleanedData, { merge: true });
+    } catch (error) {
+      console.error('Error updating employee address:', error);
+      throw error;
+    }
+  }
 }
 

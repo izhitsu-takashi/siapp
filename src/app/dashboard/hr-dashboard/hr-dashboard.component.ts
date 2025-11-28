@@ -1079,6 +1079,28 @@ export class HrDashboardComponent {
         }
       }
       
+      // 住所変更申請が承認済みになった場合、住所情報と住民票情報を更新
+      if (status === '承認済み' && this.selectedApplication.applicationType === '住所変更申請') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber && this.selectedApplication.newAddress) {
+            await this.firestoreService.updateEmployeeAddress(employeeNumber, {
+              newAddress: this.selectedApplication.newAddress,
+              residentAddress: this.selectedApplication.residentAddress
+            });
+            console.log('住所情報を更新しました:', employeeNumber);
+            
+            // 社員情報編集モーダルが開いている場合、住所情報を再読み込み
+            if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
+              await this.loadEmployeeData(employeeNumber);
+            }
+          }
+        } catch (error) {
+          console.error('住所情報の更新に失敗しました:', error);
+          alert('住所情報の更新に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
       // 承認済みの場合、チェックが入った文書をダウンロード
       if (status === '承認済み' && this.availableDocuments.length > 0) {
         await this.downloadSelectedDocuments();

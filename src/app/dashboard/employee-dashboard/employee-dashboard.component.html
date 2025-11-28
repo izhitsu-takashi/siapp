@@ -2163,13 +2163,23 @@
           <label class="checkbox-label">
             <input 
               type="checkbox" 
+              [checked]="sameAsOldAddress"
+              (change)="onSameAsOldAddressChange($event)"
+            >
+            変更前住所と同じ
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
               [checked]="sameAsNewAddress"
               (change)="onSameAsNewAddressChange($event)"
             >
-            現住所と同じ
+            変更後の住所と同じ
           </label>
         </div>
-        <div class="form-grid" *ngIf="!sameAsNewAddress">
+        <div class="form-grid" *ngIf="!sameAsOldAddress && !sameAsNewAddress">
           <div class="form-group">
             <label for="residentPostalCode">郵便番号</label>
             <input 
@@ -2216,67 +2226,6 @@
               type="text" 
               id="residentHouseholdHeadName" 
               formControlName="residentHouseholdHeadName" 
-              class="form-input"
-            >
-          </div>
-        </div>
-      </section>
-      
-      <!-- 新しい緊急連絡先 -->
-      <section class="form-section">
-        <h3 class="section-title">新しい緊急連絡先</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="emergencyLastName">姓</label>
-            <input 
-              type="text" 
-              id="emergencyLastName" 
-              formControlName="emergencyLastName" 
-              class="form-input"
-            >
-          </div>
-          <div class="form-group">
-            <label for="emergencyFirstName">名</label>
-            <input 
-              type="text" 
-              id="emergencyFirstName" 
-              formControlName="emergencyFirstName" 
-              class="form-input"
-            >
-          </div>
-          <div class="form-group">
-            <label for="emergencyLastNameKana">姓（ヨミガナ）</label>
-            <input 
-              type="text" 
-              id="emergencyLastNameKana" 
-              formControlName="emergencyLastNameKana" 
-              class="form-input"
-            >
-          </div>
-          <div class="form-group">
-            <label for="emergencyFirstNameKana">名（ヨミガナ）</label>
-            <input 
-              type="text" 
-              id="emergencyFirstNameKana" 
-              formControlName="emergencyFirstNameKana" 
-              class="form-input"
-            >
-          </div>
-          <div class="form-group">
-            <label for="emergencyRelationship">続柄</label>
-            <input 
-              type="text" 
-              id="emergencyRelationship" 
-              formControlName="emergencyRelationship" 
-              class="form-input"
-            >
-          </div>
-          <div class="form-group">
-            <label for="emergencyPhone">電話番号</label>
-            <input 
-              type="tel" 
-              id="emergencyPhone" 
-              formControlName="emergencyPhone" 
               class="form-input"
             >
           </div>

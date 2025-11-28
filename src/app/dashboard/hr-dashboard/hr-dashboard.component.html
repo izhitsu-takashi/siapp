@@ -2035,59 +2035,32 @@
           <h3 class="section-title">新しい住民票住所</h3>
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="detail-label">現住所と同じ:</span>
+              <span class="detail-label">変更前住所と同じ:</span>
+              <span class="detail-value">{{ selectedApplication.residentAddress.sameAsOldAddress ? 'はい' : 'いいえ' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">変更後の住所と同じ:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.sameAsNewAddress ? 'はい' : 'いいえ' }}</span>
             </div>
-            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
               <span class="detail-label">郵便番号:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.postalCode || '-' }}</span>
             </div>
-            <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+            <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
               <span class="detail-label">住所:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.address || '-' }}</span>
             </div>
-            <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+            <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
               <span class="detail-label">住所（ヨミガナ）:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.addressKana || '-' }}</span>
             </div>
-            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
               <span class="detail-label">世帯主の続柄（本人/親族）:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.householdHead || '-' }}</span>
             </div>
-            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
               <span class="detail-label">世帯主氏名:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.householdHeadName || '-' }}</span>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 新しい緊急連絡先 -->
-        <section class="detail-section" *ngIf="selectedApplication.emergencyContact">
-          <h3 class="section-title">新しい緊急連絡先</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">姓:</span>
-              <span class="detail-value">{{ selectedApplication.emergencyContact.lastName || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">名:</span>
-              <span class="detail-value">{{ selectedApplication.emergencyContact.firstName || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">姓（ヨミガナ）:</span>
-              <span class="detail-value">{{ selectedApplication.emergencyContact.lastNameKana || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">名（ヨミガナ）:</span>
-              <span class="detail-value">{{ selectedApplication.emergencyContact.firstNameKana || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">続柄:</span>
-              <span class="detail-value">{{ selectedApplication.emergencyContact.relationship || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">電話番号:</span>
-              <span class="detail-value">{{ selectedApplication.emergencyContact.phone || '-' }}</span>
             </div>
           </div>
         </section>
