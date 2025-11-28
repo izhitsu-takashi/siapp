@@ -206,9 +206,6 @@ export class HrDashboardComponent {
     nursingInsurance: 0,
     pensionInsurance: 0
   };
-  hrUsers: any[] = [];
-  allUsers: any[] = [];
-  
   // 健康保険料率データ
   kenpoRates: any[] = [];
   showAddModal = false;
@@ -440,29 +437,8 @@ export class HrDashboardComponent {
         nursingInsuranceRate: this.insuranceRates.nursingInsurance,
         pensionInsuranceRate: this.insuranceRates.pensionInsurance
       });
-      
-      // 全ユーザーを読み込む（人事権限設定用）
-      await this.loadAllUsers();
     } catch (error) {
       console.error('Error loading settings:', error);
-    }
-  }
-  
-  // 全ユーザーを読み込む
-  async loadAllUsers() {
-    try {
-      const allEmployees = await this.firestoreService.getAllEmployees();
-      this.allUsers = allEmployees.map((emp: any) => ({
-        employeeNumber: emp.employeeNumber || '',
-        name: emp.name || '',
-        email: emp.email || '',
-        hasHrPermission: emp.hasHrPermission || false
-      }));
-      this.hrUsers = this.allUsers.filter((user: any) => user.hasHrPermission);
-    } catch (error) {
-      console.error('Error loading all users:', error);
-      this.allUsers = [];
-      this.hrUsers = [];
     }
   }
   
@@ -564,48 +540,6 @@ export class HrDashboardComponent {
     } catch (error) {
       console.error('Error saving insurance rates:', error);
       alert('保険料率設定の保存中にエラーが発生しました');
-    }
-  }
-  
-  // 人事権限を付与
-  async grantHrPermission(employeeNumber: string) {
-    try {
-      // Firestoreでユーザーの人事権限を更新
-      const employee = await this.firestoreService.getEmployeeData(employeeNumber);
-      if (employee) {
-        await this.firestoreService.saveEmployeeData(employeeNumber, {
-          ...employee,
-          hasHrPermission: true
-        });
-        
-        // リストを更新
-        await this.loadAllUsers();
-        alert('人事権限を付与しました');
-      }
-    } catch (error) {
-      console.error('Error granting HR permission:', error);
-      alert('人事権限の付与中にエラーが発生しました');
-    }
-  }
-  
-  // 人事権限を削除
-  async revokeHrPermission(employeeNumber: string) {
-    try {
-      // Firestoreでユーザーの人事権限を削除
-      const employee = await this.firestoreService.getEmployeeData(employeeNumber);
-      if (employee) {
-        await this.firestoreService.saveEmployeeData(employeeNumber, {
-          ...employee,
-          hasHrPermission: false
-        });
-        
-        // リストを更新
-        await this.loadAllUsers();
-        alert('人事権限を削除しました');
-      }
-    } catch (error) {
-      console.error('Error revoking HR permission:', error);
-      alert('人事権限の削除中にエラーが発生しました');
     }
   }
   
@@ -871,22 +805,32 @@ export class HrDashboardComponent {
       });
       
       // 入社時申請を除外
-      this.allApplications = allApps.filter((app: any) => app.applicationType !== '入社時申請');
+      const filteredApps = allApps.filter((app: any) => app.applicationType !== '入社時申請');
       
-      // 申請者情報を取得
-      for (const app of this.allApplications) {
-        if (app.employeeNumber) {
-          try {
-            const employee = await this.firestoreService.getEmployeeData(app.employeeNumber);
-            if (employee) {
-              app.employeeName = employee.name || '';
+      // 申請者情報を並列で取得
+      const applicationsWithNames = await Promise.all(
+        filteredApps.map(async (app: any) => {
+          if (app.employeeNumber) {
+            try {
+              const employee = await this.firestoreService.getEmployeeData(app.employeeNumber);
+              if (employee) {
+                app.employeeName = employee.name || '';
+              } else {
+                app.employeeName = '';
+              }
+            } catch (error) {
+              console.error(`Error loading employee data for ${app.employeeNumber}:`, error);
+              app.employeeName = '';
             }
-          } catch (error) {
-            console.error(`Error loading employee data for ${app.employeeNumber}:`, error);
+          } else {
             app.employeeName = '';
           }
-        }
-      }
+          return app;
+        })
+      );
+      
+      // すべての申請者情報を取得してから一度に表示
+      this.allApplications = applicationsWithNames;
     } catch (error) {
       console.error('Error loading all applications:', error);
       this.allApplications = [];
