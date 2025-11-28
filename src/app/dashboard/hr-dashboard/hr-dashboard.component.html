@@ -31,9 +31,148 @@
     <!-- メインコンテンツ -->
     <main class="main-content">
       <div class="content-area">
-        <!-- メインページ -->
-        <ng-container *ngIf="currentTab === 'メインページ'">
-          <h2 class="page-title">{{ currentTab }}のページです</h2>
+        <!-- ダッシュボードページ -->
+        <ng-container *ngIf="currentTab === 'ダッシュボード'">
+          <div class="dashboard-page">
+            
+              <!-- 申請管理票のステータス一覧 -->
+              <section class="dashboard-section">
+                <h3 class="section-title">申請管理票</h3>
+                <div class="status-cards">
+                  <div class="status-card">
+                    <div class="status-label">承認待ち</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getApplicationStatusCount('承認待ち') === 0"
+                         [class.count-red]="getApplicationStatusCount('承認待ち') > 0"
+                         [class.count-green]="false">
+                      {{ getApplicationStatusCount('承認待ち') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">確認中</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getApplicationStatusCount('確認中') === 0"
+                         [class.count-red]="getApplicationStatusCount('確認中') > 0"
+                         [class.count-green]="false">
+                      {{ getApplicationStatusCount('確認中') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">却下・差し戻し</div>
+                    <div class="status-count" 
+                         [class.count-zero]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) === 0"
+                         [class.count-red]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) > 0"
+                         [class.count-green]="false">
+                      {{ getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">再申請</div>
+                    <div class="status-count" 
+                         [class.count-zero]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) === 0"
+                         [class.count-red]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) > 0"
+                         [class.count-green]="false">
+                      {{ getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">承認済み</div>
+                    <div class="status-count" 
+                         [class.count-zero]="(getApplicationStatusCount('承認済み') + getApplicationStatusCount('承認')) === 0"
+                         [class.count-red]="false"
+                         [class.count-green]="(getApplicationStatusCount('承認済み') + getApplicationStatusCount('承認')) > 0">
+                      {{ getApplicationStatusCount('承認済み') + getApplicationStatusCount('承認') }}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            
+              <!-- 入社手続き表のステータス一覧 -->
+              <section class="dashboard-section">
+                <h3 class="section-title">入社手続き表</h3>
+                <div class="status-cards">
+                  <div class="status-card">
+                    <div class="status-label">申請待ち</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getOnboardingStatusCount('申請待ち') === 0"
+                         [class.count-red]="getOnboardingStatusCount('申請待ち') > 0"
+                         [class.count-green]="false">
+                      {{ getOnboardingStatusCount('申請待ち') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">申請済み</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getOnboardingStatusCount('申請済み') === 0"
+                         [class.count-red]="getOnboardingStatusCount('申請済み') > 0"
+                         [class.count-green]="false">
+                      {{ getOnboardingStatusCount('申請済み') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">差し戻し</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getOnboardingStatusCount('差し戻し') === 0"
+                         [class.count-red]="getOnboardingStatusCount('差し戻し') > 0"
+                         [class.count-green]="false">
+                      {{ getOnboardingStatusCount('差し戻し') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">準備完了</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getOnboardingStatusCount('準備完了') === 0"
+                         [class.count-red]="false"
+                         [class.count-green]="getOnboardingStatusCount('準備完了') > 0">
+                      {{ getOnboardingStatusCount('準備完了') }}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            
+              <!-- 保険証管理票のステータス一覧 -->
+              <section class="dashboard-section">
+                <h3 class="section-title">保険証管理票</h3>
+                <div class="status-cards">
+                  <div class="status-card">
+                    <div class="status-label">準備中</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getInsuranceCardStatusCount('準備中') === 0"
+                         [class.count-red]="getInsuranceCardStatusCount('準備中') > 0"
+                         [class.count-green]="false">
+                      {{ getInsuranceCardStatusCount('準備中') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">再発行中</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getInsuranceCardStatusCount('再発行中') === 0"
+                         [class.count-red]="getInsuranceCardStatusCount('再発行中') > 0"
+                         [class.count-green]="false">
+                      {{ getInsuranceCardStatusCount('再発行中') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">配布済み</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getInsuranceCardStatusCount('配布済み') === 0"
+                         [class.count-red]="false"
+                         [class.count-green]="getInsuranceCardStatusCount('配布済み') > 0">
+                      {{ getInsuranceCardStatusCount('配布済み') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">回収済み</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getInsuranceCardStatusCount('回収済み') === 0"
+                         [class.count-red]="false"
+                         [class.count-green]="getInsuranceCardStatusCount('回収済み') > 0">
+                      {{ getInsuranceCardStatusCount('回収済み') }}
+                    </div>
+                  </div>
+                </div>
+              </section>
+          </div>
         </ng-container>
 
         <!-- 設定ページ -->

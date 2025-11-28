@@ -22,10 +22,10 @@ interface Employee {
   styleUrl: './hr-dashboard.component.css'
 })
 export class HrDashboardComponent {
-  currentTab: string = 'メインページ';
+  currentTab: string = 'ダッシュボード';
   
   tabs = [
-    { id: 'main', name: 'メインページ' },
+    { id: 'main', name: 'ダッシュボード' },
     { id: 'employee-management', name: '社員情報管理' },
     { id: 'application-management', name: '申請管理' },
     { id: 'procedures', name: '入社手続き' },
@@ -314,6 +314,21 @@ export class HrDashboardComponent {
       this.loadGradeTable();
       this.loadKenpoRates();
       this.loadSettings();
+      // ダッシュボード用のデータを読み込む（初期表示時）
+      this.loadDashboardData();
+    }
+  }
+  
+  // ダッシュボード用のデータを読み込む
+  async loadDashboardData() {
+    try {
+      await Promise.all([
+        this.loadAllApplications(),
+        this.loadOnboardingEmployees(),
+        this.loadInsuranceCards()
+      ]);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
     }
   }
   
@@ -654,6 +669,18 @@ export class HrDashboardComponent {
     if (tabName === '設定') {
       this.loadSettings().catch(err => {
         console.error('Error in loadSettings:', err);
+      });
+    }
+    // ダッシュボードタブが選択された場合、必要なデータを読み込む
+    if (tabName === 'ダッシュボード') {
+      this.loadAllApplications().catch(err => {
+        console.error('Error in loadAllApplications:', err);
+      });
+      this.loadOnboardingEmployees().catch(err => {
+        console.error('Error in loadOnboardingEmployees:', err);
+      });
+      this.loadInsuranceCards().catch(err => {
+        console.error('Error in loadInsuranceCards:', err);
       });
     }
   }
@@ -3401,6 +3428,21 @@ export class HrDashboardComponent {
     } catch (error) {
       return dateString;
     }
+  }
+
+  // 申請管理票のステータス件数を取得
+  getApplicationStatusCount(status: string): number {
+    return this.allApplications.filter(app => app.status === status).length;
+  }
+
+  // 入社手続き表のステータス件数を取得
+  getOnboardingStatusCount(status: string): number {
+    return this.onboardingEmployees.filter(emp => emp.status === status).length;
+  }
+
+  // 保険証管理票のステータス件数を取得
+  getInsuranceCardStatusCount(status: string): number {
+    return this.insuranceCards.filter(card => card.status === status).length;
   }
 }
 
