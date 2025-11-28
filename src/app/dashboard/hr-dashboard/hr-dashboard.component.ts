@@ -242,6 +242,9 @@ export class HrDashboardComponent {
   onboardingHasPensionHistory = false;
   onboardingIsSaving = false;
   
+  // 社員情報編集モーダル用：入社時申請の扶養者情報
+  employeeDependentStatus: string = '';
+  
   // ファイル入力（フォームコントロールから分離）
   idDocumentFile: File | null = null;
   resumeFile: File | null = null;
@@ -1274,6 +1277,7 @@ export class HrDashboardComponent {
     this.selectedEmployeeNumber = '';
     this.employeeEditForm = this.createEmployeeEditForm();
     this.resetEmployeeEditForm();
+    this.employeeDependentStatus = '';
   }
 
   // 社員情報編集フォームをリセット
@@ -1504,6 +1508,20 @@ export class HrDashboardComponent {
       const data = await this.firestoreService.getEmployeeData(employeeNumber);
       if (data) {
         this.populateEmployeeEditForm(data);
+      }
+      
+      // 入社時申請から扶養者情報を取得
+      try {
+        const applications = await this.firestoreService.getEmployeeApplications(employeeNumber);
+        const onboardingApplication = applications.find((app: any) => app.applicationType === '入社時申請');
+        if (onboardingApplication && onboardingApplication.dependentStatus) {
+          this.employeeDependentStatus = onboardingApplication.dependentStatus;
+        } else {
+          this.employeeDependentStatus = '';
+        }
+      } catch (error) {
+        console.error('Error loading onboarding application:', error);
+        this.employeeDependentStatus = '';
       }
     } catch (error) {
       console.error('Error loading employee data:', error);

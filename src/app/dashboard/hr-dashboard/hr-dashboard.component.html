@@ -493,6 +493,7 @@
                     <td>{{ formatDate(card.returnDate) }}</td>
                     <td>
                       <span class="status-badge" 
+                            [class.status-preparing]="card.status === '準備中'"
                             [class.status-distributed]="card.status === '配布済み'"
                             [class.status-reissuing]="card.status === '再発行中'"
                             [class.status-returned]="card.status === '回収済み'">
@@ -811,7 +812,7 @@
                 class="form-input"
               >
             </div>
-            <div class="form-group">
+            <div class="form-group" *ngIf="employeeEditForm.get('employmentStatus')?.value !== '在籍'">
               <label for="hr-resignationDate">退職年月日</label>
               <input 
                 type="date" 
@@ -820,7 +821,7 @@
                 class="form-input"
               >
             </div>
-            <div class="form-group full-width">
+            <div class="form-group full-width" *ngIf="employeeEditForm.get('employmentStatus')?.value !== '在籍'">
               <label for="hr-resignationReason">退職事由</label>
               <textarea 
                 id="hr-resignationReason" 
@@ -876,17 +877,6 @@
               >
                 <option value="">選択してください</option>
                 <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="hr-paymentType">給与支給形態</label>
-              <select 
-                id="hr-paymentType" 
-                formControlName="paymentType" 
-                class="form-input"
-              >
-                <option value="">選択してください</option>
-                <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
               </select>
             </div>
           </div>
@@ -999,17 +989,6 @@
                 rows="2"
                 [readonly]="sameAsCurrentAddress"
               ></textarea>
-            </div>
-            <div class="form-group">
-              <label for="hr-residentHouseholdHead">世帯主（本人/親族）</label>
-              <select 
-                id="hr-residentHouseholdHead" 
-                formControlName="residentHouseholdHead" 
-                class="form-input"
-              >
-                <option value="">選択してください</option>
-                <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-              </select>
             </div>
           </div>
         </section>
@@ -1276,82 +1255,19 @@
           </div>
         </section>
 
-        <!-- 配偶者情報欄 -->
+        <!-- 扶養者情報欄 -->
         <section class="form-section">
-          <h3 class="section-title">配偶者情報</h3>
+          <h3 class="section-title">扶養者情報</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label for="hr-spouseStatus">配偶者の有無</label>
-              <select 
-                id="hr-spouseStatus" 
-                formControlName="spouseStatus" 
-                class="form-input"
-                (change)="onSpouseStatusChange($event)"
-              >
-                <option value="">選択してください</option>
-                <option *ngFor="let option of spouseOptions" [value]="option">{{ option }}</option>
-              </select>
-            </div>
-            <div class="form-group" *ngIf="hasSpouse">
-              <label for="hr-spouseAnnualIncome">配偶者の年収</label>
-              <input 
-                type="number" 
-                id="hr-spouseAnnualIncome" 
-                formControlName="spouseAnnualIncome" 
-                class="form-input"
-              >
+              <label for="hr-dependentStatus">被扶養者</label>
+              <div class="readonly-field">
+                {{ employeeDependentStatus || '-' }}
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- 給与欄（人事専用） -->
-        <section class="form-section hr-only-section">
-          <h3 class="section-title">給与情報（人事専用）</h3>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="hr-fixedSalary">固定的賃金</label>
-              <input 
-                type="number" 
-                id="hr-fixedSalary" 
-                formControlName="fixedSalary" 
-                class="form-input"
-                placeholder="例: 300000"
-              >
-            </div>
-            <div class="form-group">
-              <label for="hr-bonusAmount">賞与額</label>
-              <input 
-                type="number" 
-                id="hr-bonusAmount" 
-                formControlName="bonusAmount" 
-                class="form-input"
-                placeholder="例: 500000"
-              >
-            </div>
-            <div class="form-group">
-              <label for="hr-bonusYear">賞与年月（年）</label>
-              <select 
-                id="hr-bonusYear" 
-                formControlName="bonusYear" 
-                class="form-input"
-              >
-                <option value="">選択してください</option>
-                <option *ngFor="let year of getYears()" [value]="year">{{ year }}年</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="hr-bonusMonth">賞与年月（月）</label>
-              <select 
-                id="hr-bonusMonth" 
-                formControlName="bonusMonth" 
-                class="form-input"
-              >
-                <option value="">選択してください</option>
-                <option *ngFor="let month of getMonths()" [value]="month">{{ month }}月</option>
-              </select>
-            </div>
-          </div>
-        </section>
 
         <!-- 保険者種別欄（人事専用） -->
         <section class="form-section hr-only-section">
@@ -1399,9 +1315,6 @@
           <div class="dependents-container">
             <div class="dependents-header">
               <h4>扶養者一覧</h4>
-              <button type="button" class="add-dependent-button" (click)="addDependent()">
-                + 扶養者を追加
-              </button>
             </div>
             
             <div *ngFor="let dependent of dependents; let i = index" class="dependent-item">
@@ -1492,7 +1405,7 @@
             </div>
             
             <div *ngIf="dependents.length === 0" class="no-data">
-              扶養者が登録されていません。「+ 扶養者を追加」ボタンから追加してください。
+              扶養者が登録されていません。
             </div>
           </div>
         </section>
