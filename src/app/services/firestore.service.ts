@@ -723,5 +723,41 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 社員の氏名を更新する
+   */
+  async updateEmployeeName(employeeNumber: string, nameData: any): Promise<void> {
+    try {
+      // 既存の社員データを取得
+      const employeeData = await this.getEmployeeData(employeeNumber);
+      
+      if (!employeeData) {
+        throw new Error(`Employee with number ${employeeNumber} not found`);
+      }
+
+      // 氏名を結合
+      const newName = `${nameData.lastName || ''} ${nameData.firstName || ''}`.trim();
+      const newNameKana = `${nameData.lastNameKana || ''} ${nameData.firstNameKana || ''}`.trim();
+
+      // 氏名情報を更新
+      const updatedData: any = {
+        ...employeeData,
+        name: newName || employeeData.name || '',
+        nameKana: newNameKana || employeeData.nameKana || '',
+        updatedAt: new Date()
+      };
+
+      // undefinedの値を削除
+      const cleanedData = this.removeUndefinedValues(updatedData);
+
+      // 社員データを更新
+      const docRef = doc(this.db, 'employees', employeeNumber);
+      await setDoc(docRef, cleanedData, { merge: true });
+    } catch (error) {
+      console.error('Error updating employee name:', error);
+      throw error;
+    }
+  }
 }
 

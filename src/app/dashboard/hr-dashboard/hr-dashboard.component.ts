@@ -1101,6 +1101,25 @@ export class HrDashboardComponent {
         }
       }
       
+      // 氏名変更申請が承認済みになった場合、氏名を更新
+      if (status === '承認済み' && this.selectedApplication.applicationType === '氏名変更申請') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber && this.selectedApplication.newName) {
+            await this.firestoreService.updateEmployeeName(employeeNumber, this.selectedApplication.newName);
+            console.log('氏名を更新しました:', employeeNumber);
+            
+            // 社員情報編集モーダルが開いている場合、氏名を再読み込み
+            if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
+              await this.loadEmployeeData(employeeNumber);
+            }
+          }
+        } catch (error) {
+          console.error('氏名の更新に失敗しました:', error);
+          alert('氏名の更新に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
       // 承認済みの場合、チェックが入った文書をダウンロード
       if (status === '承認済み' && this.availableDocuments.length > 0) {
         await this.downloadSelectedDocuments();
