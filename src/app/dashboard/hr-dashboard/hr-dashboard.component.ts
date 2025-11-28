@@ -1051,6 +1051,34 @@ export class HrDashboardComponent {
         }
       }
       
+      // 扶養削除申請が承認済みになった場合、選択された扶養者情報を削除
+      if (status === '承認済み' && this.selectedApplication.applicationType === '扶養削除申請') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber && this.selectedApplication.dependent) {
+            const dependentName = this.selectedApplication.dependent.name || '';
+            const dependentRelationship = this.selectedApplication.dependent.relationship || '';
+            
+            if (dependentName && dependentRelationship) {
+              await this.firestoreService.removeDependentFromEmployee(
+                employeeNumber,
+                dependentName,
+                dependentRelationship
+              );
+              console.log('扶養家族情報を削除しました:', employeeNumber, dependentName);
+              
+              // 社員情報編集モーダルが開いている場合、扶養家族情報を再読み込み
+              if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
+                await this.loadEmployeeData(employeeNumber);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('扶養家族情報の削除に失敗しました:', error);
+          alert('扶養家族情報の削除に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
       // 承認済みの場合、チェックが入った文書をダウンロード
       if (status === '承認済み' && this.availableDocuments.length > 0) {
         await this.downloadSelectedDocuments();

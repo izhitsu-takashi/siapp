@@ -2036,6 +2036,24 @@
         </div>
       </section>
       
+      <!-- 扶養削除の理由 -->
+      <section class="form-section">
+        <h3 class="section-title">扶養削除の理由</h3>
+        <div class="form-group">
+          <label for="removalReason">扶養削除の理由 <span class="required">*</span></label>
+          <textarea 
+            id="removalReason" 
+            formControlName="removalReason" 
+            class="form-input"
+            rows="4"
+            placeholder="扶養削除の理由を入力してください"
+          ></textarea>
+          <div *ngIf="dependentRemovalForm.get('removalReason')?.invalid && dependentRemovalForm.get('removalReason')?.touched" class="error-message">
+            扶養削除の理由を入力してください
+          </div>
+        </div>
+      </section>
+      
       <!-- 送信ボタン -->
       <div class="form-actions">
         <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
@@ -3318,13 +3336,45 @@
       
       <!-- 扶養削除申請の詳細 -->
       <ng-container *ngIf="selectedApplication.applicationType === '扶養削除申請'">
+        <form [formGroup]="dependentRemovalForm" (ngSubmit)="submitReapplication()" *ngIf="dependentRemovalForm" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
         <!-- 被扶養者移動日 -->
         <section class="detail-section">
-          <h3 class="section-title">被扶養者移動日</h3>
+          <h3 class="section-title">被扶養者移動日 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
           <div class="detail-grid">
             <div class="detail-item">
               <span class="detail-label">被扶養者移動日:</span>
-              <span class="detail-value">{{ selectedApplication.removalDate || '-' }}</span>
+              <!-- 表示モード -->
+              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+                {{ selectedApplication.removalDate || '-' }}
+              </span>
+              <!-- 編集モード -->
+              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+                <input type="date" formControlName="removalDate" class="form-input">
+                <div *ngIf="dependentRemovalForm.get('removalDate')?.invalid && dependentRemovalForm.get('removalDate')?.touched" class="error-message">
+                  被扶養者移動日を入力してください
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 扶養削除の理由 -->
+        <section class="detail-section">
+          <h3 class="section-title">扶養削除の理由 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">扶養削除の理由:</span>
+              <!-- 表示モード -->
+              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+                {{ selectedApplication.removalReason || '-' }}
+              </span>
+              <!-- 編集モード -->
+              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+                <textarea formControlName="removalReason" class="form-input" rows="4" placeholder="扶養削除の理由を入力してください"></textarea>
+                <div *ngIf="dependentRemovalForm.get('removalReason')?.invalid && dependentRemovalForm.get('removalReason')?.touched" class="error-message">
+                  扶養削除の理由を入力してください
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -3363,6 +3413,7 @@
             </div>
           </div>
         </section>
+        </form>
       </ng-container>
       
       <!-- 住所変更申請の詳細 -->

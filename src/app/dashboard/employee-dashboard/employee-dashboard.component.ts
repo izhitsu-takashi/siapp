@@ -1014,7 +1014,8 @@ export class EmployeeDashboardComponent {
   createDependentRemovalForm(): FormGroup {
     return this.fb.group({
       removalDate: ['', Validators.required],
-      dependentId: ['', Validators.required]
+      dependentId: ['', Validators.required],
+      removalReason: ['', Validators.required]
     });
   }
   
@@ -1367,6 +1368,7 @@ export class EmployeeDashboardComponent {
           employeeNumber: this.employeeNumber,
           applicationType: '扶養削除申請',
           removalDate: formValue.removalDate,
+          removalReason: formValue.removalReason,
           dependent: {
             name: selectedDependent.name || '',
             nameKana: selectedDependent.nameKana || '',
@@ -2226,9 +2228,21 @@ export class EmployeeDashboardComponent {
       console.log('=== loadApplicationDataToForm 終了（入社時申請） ===');
     } else if (application.applicationType === '扶養削除申請') {
       this.dependentRemovalForm = this.createDependentRemovalForm();
+      // 扶養者IDを取得（dependentsDataから一致するものを探す）
+      let dependentId = '';
+      if (application.dependent?.name) {
+        const foundIndex = this.dependentsData.findIndex((dep: any) => 
+          dep.name === application.dependent.name && 
+          dep.relationship === application.dependent.relationship
+        );
+        if (foundIndex !== -1) {
+          dependentId = foundIndex.toString();
+        }
+      }
       this.dependentRemovalForm.patchValue({
         removalDate: application.removalDate || '',
-        dependentId: application.dependent?.name || ''
+        dependentId: dependentId,
+        removalReason: application.removalReason || ''
       });
     } else if (application.applicationType === '住所変更申請') {
       this.addressChangeForm = this.createAddressChangeForm();
@@ -2366,13 +2380,24 @@ export class EmployeeDashboardComponent {
         formValid = this.dependentRemovalForm.valid;
         if (formValid) {
           const formValue = this.dependentRemovalForm.value;
+          
+          // 選択された扶養者情報を取得
           const selectedDependent = this.dependentsData.find((dep: any, index: number) => {
             return index.toString() === formValue.dependentId;
           });
           
+          if (!selectedDependent) {
+            alert('扶養者情報が見つかりません');
+            this.isSubmittingReapplication = false;
+            return;
+          }
+          
           applicationData = {
-            ...formValue,
-            dependent: selectedDependent ? {
+            employeeNumber: this.employeeNumber,
+            applicationType: '扶養削除申請',
+            removalDate: formValue.removalDate,
+            removalReason: formValue.removalReason,
+            dependent: {
               name: selectedDependent.name || '',
               nameKana: selectedDependent.nameKana || '',
               relationship: selectedDependent.relationship || '',
@@ -2380,9 +2405,7 @@ export class EmployeeDashboardComponent {
               myNumber: selectedDependent.myNumber || '',
               address: selectedDependent.address || '',
               notes: selectedDependent.notes || ''
-            } : null,
-            employeeNumber: this.employeeNumber,
-            applicationType: '扶養削除申請'
+            }
           };
         }
       } else if (this.selectedApplication.applicationType === '住所変更申請') {

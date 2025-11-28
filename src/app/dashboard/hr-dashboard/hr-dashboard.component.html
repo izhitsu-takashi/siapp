@@ -1943,6 +1943,17 @@
           </div>
         </section>
         
+        <!-- 扶養削除の理由 -->
+        <section class="detail-section">
+          <h3 class="section-title">扶養削除の理由</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">扶養削除の理由:</span>
+              <span class="detail-value">{{ selectedApplication.removalReason || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
         <!-- 被扶養者情報 -->
         <section class="detail-section" *ngIf="selectedApplication.dependent">
           <h3 class="section-title">被扶養者情報</h3>

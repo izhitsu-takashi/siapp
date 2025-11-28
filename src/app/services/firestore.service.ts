@@ -651,5 +651,38 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 社員の扶養家族情報から指定された扶養家族を削除する
+   */
+  async removeDependentFromEmployee(employeeNumber: string, dependentName: string, dependentRelationship: string): Promise<void> {
+    try {
+      // 既存の社員データを取得
+      const employeeData = await this.getEmployeeData(employeeNumber);
+      
+      if (!employeeData) {
+        throw new Error(`Employee with number ${employeeNumber} not found`);
+      }
+
+      // 既存の扶養家族情報を取得（なければ空配列）
+      const existingDependents = employeeData.dependents || [];
+      
+      // 指定された扶養家族を削除（氏名と続柄で一致するものを削除）
+      const updatedDependents = existingDependents.filter((dep: any) => {
+        return !(dep.name === dependentName && dep.relationship === dependentRelationship);
+      });
+
+      // 社員データを更新
+      const docRef = doc(this.db, 'employees', employeeNumber);
+      await setDoc(docRef, {
+        ...employeeData,
+        dependents: updatedDependents,
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error removing dependent from employee:', error);
+      throw error;
+    }
+  }
 }
 
