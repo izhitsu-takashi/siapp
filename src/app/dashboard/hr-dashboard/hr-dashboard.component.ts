@@ -109,35 +109,54 @@ export class HrDashboardComponent {
     let errorCount = 0;
 
     try {
-      for (const employeeNumber of this.selectedEmployeeNumbers) {
-        const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
-        if (!employee) {
-          console.warn(`Employee not found: ${employeeNumber}`);
-          continue;
-        }
+      // 選択された従業員を配列に変換
+      const employeeNumbersArray = Array.from(this.selectedEmployeeNumbers);
+      
+      // 4人ずつグループ化してPDFを生成
+      for (let i = 0; i < employeeNumbersArray.length; i += 4) {
+        const group = employeeNumbersArray.slice(i, i + 4);
+        const employeeDataArray: any[] = [];
+        const employeeNames: string[] = [];
 
-        try {
-          // 健康保険・厚生年金保険被保険者資格取得届の文書発行（PDF生成のみ）
-          const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
-          if (employeeData) {
-            // PDFに従業員情報を自動記入
-            const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
-              '健康保険・厚生年金保険被保険者資格取得届',
-              employeeData
-            );
-            const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNumber}_${employee.name}.pdf`;
-            this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
-            console.log(`PDF generated successfully for ${employeeNumber}: ${employee.name}`);
-            successCount++;
-          } else {
-            console.warn(`Employee data not found for ${employeeNumber}`);
-            alert(`${employee.name} (${employeeNumber}) のデータが見つかりませんでした`);
+        // グループ内の各従業員のデータを取得
+        for (const employeeNumber of group) {
+          const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
+          if (!employee) {
+            console.warn(`Employee not found: ${employeeNumber}`);
+            continue;
+          }
+
+          try {
+            const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
+            if (employeeData) {
+              employeeDataArray.push(employeeData);
+              employeeNames.push(`${employeeNumber}_${employee.name}`);
+            } else {
+              console.warn(`Employee data not found for ${employeeNumber}`);
+              errorCount++;
+            }
+          } catch (error) {
+            console.error(`Error getting employee data for ${employeeNumber}:`, error);
             errorCount++;
           }
-        } catch (error) {
-          console.error(`Error generating PDF for ${employeeNumber}:`, error);
-          alert(`${employee.name} (${employeeNumber}) のPDF生成に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
-          errorCount++;
+        }
+
+        // グループのPDFを生成
+        if (employeeDataArray.length > 0) {
+          try {
+            const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
+              '健康保険・厚生年金保険被保険者資格取得届',
+              employeeDataArray
+            );
+            const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNames.join('_')}.pdf`;
+            this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+            console.log(`PDF generated successfully for group: ${employeeNames.join(', ')}`);
+            successCount += employeeDataArray.length;
+          } catch (error) {
+            console.error(`Error generating PDF for group:`, error);
+            alert(`グループ（${employeeNames.join(', ')}）のPDF生成に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+            errorCount += employeeDataArray.length;
+          }
         }
       }
 
@@ -170,53 +189,74 @@ export class HrDashboardComponent {
     let errorCount = 0;
 
     try {
-      for (const employeeNumber of this.selectedEmployeeNumbers) {
-        const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
-        if (!employee) {
-          console.warn(`Employee not found: ${employeeNumber}`);
-          continue;
-        }
+      // 選択された従業員を配列に変換
+      const employeeNumbersArray = Array.from(this.selectedEmployeeNumbers);
+      
+      // 4人ずつグループ化してPDFを生成
+      for (let i = 0; i < employeeNumbersArray.length; i += 4) {
+        const group = employeeNumbersArray.slice(i, i + 4);
+        const employeeDataArray: any[] = [];
+        const employeeNames: string[] = [];
+        const processedEmployees: { employeeNumber: string; employeeData: any }[] = [];
 
-        try {
-          // 1. 健康保険・厚生年金保険被保険者資格取得届の文書発行
+        // グループ内の各従業員のデータを取得
+        for (const employeeNumber of group) {
+          const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
+          if (!employee) {
+            console.warn(`Employee not found: ${employeeNumber}`);
+            continue;
+          }
+
           try {
             const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
             if (employeeData) {
-              // PDFに従業員情報を自動記入
-              const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
-                '健康保険・厚生年金保険被保険者資格取得届',
-                employeeData
-              );
-              const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNumber}_${employee.name}.pdf`;
-              this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
-              console.log(`PDF generated successfully for ${employeeNumber}: ${employee.name}`);
+              employeeDataArray.push(employeeData);
+              employeeNames.push(`${employeeNumber}_${employee.name}`);
+              processedEmployees.push({ employeeNumber, employeeData });
             } else {
               console.warn(`Employee data not found for ${employeeNumber}`);
-              alert(`${employee.name} (${employeeNumber}) のデータが見つかりませんでした`);
+              errorCount++;
             }
+          } catch (error) {
+            console.error(`Error getting employee data for ${employeeNumber}:`, error);
+            errorCount++;
+          }
+        }
+
+        // グループのPDFを生成
+        if (employeeDataArray.length > 0) {
+          try {
+            const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
+              '健康保険・厚生年金保険被保険者資格取得届',
+              employeeDataArray
+            );
+            const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNames.join('_')}.pdf`;
+            this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+            console.log(`PDF generated successfully for group: ${employeeNames.join(', ')}`);
           } catch (pdfError) {
-            console.error(`Error generating PDF for ${employeeNumber}:`, pdfError);
-            alert(`${employee.name} (${employeeNumber}) のPDF生成に失敗しました: ${pdfError instanceof Error ? pdfError.message : '不明なエラー'}`);
+            console.error(`Error generating PDF for group:`, pdfError);
+            alert(`グループ（${employeeNames.join(', ')}）のPDF生成に失敗しました: ${pdfError instanceof Error ? pdfError.message : '不明なエラー'}`);
             // PDF生成エラーは警告のみ（処理は続行）
           }
+        }
 
-          // 2. 新入社員データを通常の社員データとして保存
-          const onboardingData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
-          if (onboardingData) {
+        // グループ内の各従業員のデータを通常の社員データとして保存し、新入社員コレクションから削除
+        for (const { employeeNumber, employeeData } of processedEmployees) {
+          try {
             // ステータス関連のフィールドを除外
-            const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = onboardingData;
+            const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = employeeData;
             await this.firestoreService.saveEmployeeData(employeeNumber, employeeDataWithoutStatus);
+            
+            // 新入社員コレクションから削除
+            await this.firestoreService.deleteOnboardingEmployee(employeeNumber);
+            
+            successCount++;
+            console.log(`Successfully processed employee ${employeeNumber}`);
+          } catch (error) {
+            console.error(`Error processing employee ${employeeNumber}:`, error);
+            errorCount++;
+            alert(`${employeeNumber} の処理に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
           }
-
-          // 3. 新入社員コレクションから削除
-          await this.firestoreService.deleteOnboardingEmployee(employeeNumber);
-
-          successCount++;
-          console.log(`Successfully processed employee ${employeeNumber}: ${employee.name}`);
-        } catch (error) {
-          console.error(`Error processing employee ${employeeNumber}:`, error);
-          errorCount++;
-          alert(`${employee.name} (${employeeNumber}) の処理に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
         }
       }
 
@@ -457,16 +497,16 @@ export class HrDashboardComponent {
   // 設定フォームを作成
   createSettingsForm(): FormGroup {
     return this.fb.group({
-      // 企業情報
-      officeName: [''], // 事業所名称（旧: companyName）
-      officePostalCode: ['', [Validators.pattern(/^\d{7}$/)]], // 事業所郵便番号（数字7桁）
-      officeAddress: [''], // 事業所住所（旧: address）
+      // 企業情報（全て必須入力）
+      officeName: ['', Validators.required], // 事業所名称（旧: companyName）
+      officePostalCode: ['', [Validators.required, Validators.pattern(/^\d{7}$/)]], // 事業所郵便番号（数字7桁）
+      officeAddress: ['', Validators.required], // 事業所住所（旧: address）
       officeNumber: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]], // 事業所番号（新規追加、5桁固定）
-      employerName: [''], // 事業主氏名（新規追加）
-      officePhoneNumber: [''], // 事業所電話番号（新規追加）
-      corporateNumber: [''],
-      officeCodePart1: ['', [Validators.pattern(/^\d{0,2}$/)]], // 事業所整理番号 第1部（数字2桁）
-      officeCodePart2: ['', [Validators.pattern(/^[ァ-ヶーA-Za-z0-9]{0,4}$/)]], // 事業所整理番号 第2部（カタカナまたは英数字4桁以内）
+      employerName: ['', Validators.required], // 事業主氏名（新規追加）
+      officePhoneNumber: ['', [Validators.required, Validators.pattern(/^\d{1,11}$/)]], // 事業所電話番号（最大11桁の数字のみ）
+      corporateNumber: ['', [Validators.required, Validators.pattern(/^\d{13}$/)]], // 法人番号（13桁の数字のみ）
+      officeCodePart1: ['', [Validators.required, Validators.pattern(/^\d{2}$/)]], // 事業所整理番号 第1部（数字2桁、必須）
+      officeCodePart2: ['', [Validators.required, Validators.pattern(/^[ァ-ヶーA-Za-z0-9]{1,4}$/)]], // 事業所整理番号 第2部（カタカナまたは英数字4桁以内、必須）
       // 健康保険設定
       healthInsuranceType: ['協会けんぽ'],
       prefecture: [''], // 都道府県（協会けんぽ選択時のみ）
@@ -1530,8 +1570,10 @@ export class HrDashboardComponent {
   createOnboardingEmployeeEditForm(): FormGroup {
     return this.fb.group({
       // 基本情報
-      name: ['', Validators.required],
-      nameKana: [''],
+      lastName: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastNameKana: [''],
+      firstNameKana: [''],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -1601,6 +1643,7 @@ export class HrDashboardComponent {
       expectedMonthlySalaryInKind: ['', Validators.required], // 見込み月給額（現物）
       hasDependents: [''], // 被扶養者（有/無）
       dependentStatus: [''], // 被扶養者ステータス
+      qualificationCertificateRequired: [''], // 資格確認書発行要否
       
       // 人事専用情報（給与）
       fixedSalary: [''],
@@ -2116,6 +2159,26 @@ export class HrDashboardComponent {
     }
     event.target.value = value;
     this.settingsForm.get('officePostalCode')?.setValue(value, { emitEvent: false });
+  }
+  
+  // 事業所電話番号フォーマット（最大11桁の数字のみ）
+  formatOfficePhoneNumber(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
+    event.target.value = value;
+    this.settingsForm.get('officePhoneNumber')?.setValue(value, { emitEvent: false });
+  }
+  
+  // 法人番号フォーマット（13桁の数字のみ）
+  formatCorporateNumber(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 13) {
+      value = value.substring(0, 13);
+    }
+    event.target.value = value;
+    this.settingsForm.get('corporateNumber')?.setValue(value, { emitEvent: false });
   }
   
   // 事業所整理番号 第1部フォーマット（数字2桁のみ）
@@ -2992,6 +3055,38 @@ export class HrDashboardComponent {
   
   // 新入社員編集フォームにデータを設定
   populateOnboardingEmployeeEditForm(data: any) {
+    // 氏名を分割（既に分割されている場合はそのまま、結合されている場合は分割）
+    if (data.lastName || data.firstName) {
+      // 既に分割されている場合
+      this.onboardingEmployeeEditForm.patchValue({
+        lastName: data.lastName || '',
+        firstName: data.firstName || ''
+      });
+    } else if (data.name) {
+      // 結合されている場合は分割
+      const nameParts = (data.name || '').split(/[\s　]+/);
+      this.onboardingEmployeeEditForm.patchValue({
+        lastName: nameParts[0] || '',
+        firstName: nameParts.slice(1).join(' ') || ''
+      });
+    }
+    
+    // 氏名（ヨミガナ）を分割
+    if (data.lastNameKana || data.firstNameKana) {
+      // 既に分割されている場合
+      this.onboardingEmployeeEditForm.patchValue({
+        lastNameKana: data.lastNameKana || '',
+        firstNameKana: data.firstNameKana || ''
+      });
+    } else if (data.nameKana) {
+      // 結合されている場合は分割
+      const nameKanaParts = (data.nameKana || '').split(/[\s　]+/);
+      this.onboardingEmployeeEditForm.patchValue({
+        lastNameKana: nameKanaParts[0] || '',
+        firstNameKana: nameKanaParts.slice(1).join(' ') || ''
+      });
+    }
+    
     // マイナンバーを分割
     if (data.myNumber && data.myNumber.length === 12) {
       this.onboardingEmployeeEditForm.patchValue({
@@ -3080,6 +3175,22 @@ export class HrDashboardComponent {
       if (appData.dependentStatus !== undefined && !data.dependentStatus) {
         this.onboardingEmployeeEditForm.patchValue({
           dependentStatus: appData.dependentStatus || ''
+        });
+      }
+    }
+    
+    // 資格確認書発行要否を設定
+    if (data.qualificationCertificateRequired !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        qualificationCertificateRequired: data.qualificationCertificateRequired || ''
+      });
+    }
+    // 申請データからも取得を試みる
+    if (this.selectedOnboardingEmployee?.applicationData) {
+      const appData = this.selectedOnboardingEmployee.applicationData;
+      if (appData.qualificationCertificateRequired !== undefined && !data.qualificationCertificateRequired) {
+        this.onboardingEmployeeEditForm.patchValue({
+          qualificationCertificateRequired: appData.qualificationCertificateRequired || ''
         });
       }
     }
@@ -3392,8 +3503,21 @@ export class HrDashboardComponent {
 
         // フォームデータを準備
         const formValue = this.onboardingEmployeeEditForm.value;
+        
+        // 氏名を結合（後方互換性のため）
+        const lastName = formValue.lastName || '';
+        const firstName = formValue.firstName || '';
+        const name = lastName && firstName ? `${lastName} ${firstName}` : (lastName || firstName || '');
+        
+        // 氏名（ヨミガナ）を結合（後方互換性のため）
+        const lastNameKana = formValue.lastNameKana || '';
+        const firstNameKana = formValue.firstNameKana || '';
+        const nameKana = lastNameKana && firstNameKana ? `${lastNameKana} ${firstNameKana}` : (lastNameKana || firstNameKana || '');
+        
         const formData: any = {
           ...formValue,
+          name: name, // 後方互換性のため結合した氏名も保存
+          nameKana: nameKana, // 後方互換性のため結合した氏名（ヨミガナ）も保存
           myNumber: myNumber || null,
           basicPensionNumber: basicPensionNumber || null,
           spouseBasicPensionNumber: spouseBasicPensionNumber,
