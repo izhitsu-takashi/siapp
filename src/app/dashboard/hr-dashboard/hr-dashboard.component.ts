@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -299,7 +299,8 @@ export class HrDashboardComponent {
     private fb: FormBuilder,
     private firestoreService: FirestoreService,
     private http: HttpClient,
-    private pdfEditService: PdfEditService
+    private pdfEditService: PdfEditService,
+    private cdr: ChangeDetectorRef
   ) {
     this.addEmployeeForm = this.fb.group({
       employees: this.fb.array([this.createEmployeeFormGroup()])
@@ -383,12 +384,14 @@ export class HrDashboardComponent {
     return this.fb.group({
       // 企業情報
       officeName: [''], // 事業所名称（旧: companyName）
+      officePostalCode: ['', [Validators.pattern(/^\d{7}$/)]], // 事業所郵便番号（数字7桁）
       officeAddress: [''], // 事業所住所（旧: address）
       officeNumber: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]], // 事業所番号（新規追加、5桁固定）
       employerName: [''], // 事業主氏名（新規追加）
       officePhoneNumber: [''], // 事業所電話番号（新規追加）
       corporateNumber: [''],
-      officeCode: [''],
+      officeCodePart1: ['', [Validators.pattern(/^\d{0,2}$/)]], // 事業所整理番号 第1部（数字2桁）
+      officeCodePart2: ['', [Validators.pattern(/^[ァ-ヶーA-Za-z0-9]{0,4}$/)]], // 事業所整理番号 第2部（カタカナまたは英数字4桁以内）
       // 健康保険設定
       healthInsuranceType: ['協会けんぽ'],
       prefecture: [''], // 都道府県（協会けんぽ選択時のみ）
@@ -408,14 +411,29 @@ export class HrDashboardComponent {
       if (settings) {
         // 企業情報を読み込む
         if (settings.companyInfo) {
+          const officeCode = settings.companyInfo.officeCode || '';
+          // 事業所整理番号を2つの部分に分割（既存データがある場合）
+          let officeCodePart1 = '';
+          let officeCodePart2 = '';
+          if (officeCode) {
+            // 既存のofficeCodeを2つの部分に分割
+            // 最初の2桁が数字ならPart1、残りがPart2
+            const match = officeCode.match(/^(\d{0,2})([ァ-ヶーA-Za-z0-9]{0,4})?/);
+            if (match) {
+              officeCodePart1 = match[1] || '';
+              officeCodePart2 = match[2] || '';
+            }
+          }
+          
           this.companyInfo = {
             officeName: settings.companyInfo.officeName || settings.companyInfo.companyName || '', // 旧フィールド名にも対応
+            officePostalCode: settings.companyInfo.officePostalCode || '',
             officeAddress: settings.companyInfo.officeAddress || settings.companyInfo.address || '', // 旧フィールド名にも対応
             officeNumber: settings.companyInfo.officeNumber || '',
             employerName: settings.companyInfo.employerName || '',
             officePhoneNumber: settings.companyInfo.officePhoneNumber || '',
             corporateNumber: settings.companyInfo.corporateNumber || '',
-            officeCode: settings.companyInfo.officeCode || ''
+            officeCode: officeCode
           };
         }
         
@@ -437,15 +455,29 @@ export class HrDashboardComponent {
         }
       }
       
+        // 事業所整理番号を2つの部分に分割
+        const officeCode = this.companyInfo.officeCode || '';
+        let officeCodePart1 = '';
+        let officeCodePart2 = '';
+        if (officeCode) {
+          const match = officeCode.match(/^(\d{0,2})([ァ-ヶーA-Za-z0-9]{0,4})?/);
+          if (match) {
+            officeCodePart1 = match[1] || '';
+            officeCodePart2 = match[2] || '';
+          }
+        }
+        
         // フォームに値を設定
         this.settingsForm.patchValue({
           officeName: this.companyInfo.officeName,
+          officePostalCode: this.companyInfo.officePostalCode,
           officeAddress: this.companyInfo.officeAddress,
           officeNumber: this.companyInfo.officeNumber,
           employerName: this.companyInfo.employerName,
           officePhoneNumber: this.companyInfo.officePhoneNumber,
           corporateNumber: this.companyInfo.corporateNumber,
-          officeCode: this.companyInfo.officeCode,
+          officeCodePart1: officeCodePart1,
+          officeCodePart2: officeCodePart2,
         healthInsuranceType: this.healthInsuranceType,
         prefecture: this.selectedPrefecture,
         healthInsuranceRate: this.insuranceRates.healthInsurance,
@@ -462,15 +494,21 @@ export class HrDashboardComponent {
     try {
       const formValue = this.settingsForm.value;
       
+      // 事業所整理番号を2つの部分から結合
+      const officeCodePart1 = (formValue.officeCodePart1 || '').trim();
+      const officeCodePart2 = (formValue.officeCodePart2 || '').trim();
+      const officeCode = officeCodePart1 + officeCodePart2;
+      
       // 企業情報を更新
       this.companyInfo = {
         officeName: formValue.officeName || '',
+        officePostalCode: formValue.officePostalCode || '',
         officeAddress: formValue.officeAddress || '',
         officeNumber: formValue.officeNumber || '',
         employerName: formValue.employerName || '',
         officePhoneNumber: formValue.officePhoneNumber || '',
         corporateNumber: formValue.corporateNumber || '',
-        officeCode: formValue.officeCode || ''
+        officeCode: officeCode
       };
       
       // Firestoreから現在の設定を取得してマージ
@@ -1419,6 +1457,7 @@ export class HrDashboardComponent {
       position: [''],
       
       // 現住所と連絡先
+      postalCode: ['', [Validators.pattern(/^\d{7}$/)]], // 郵便番号（数字7桁）
       currentAddress: [''],
       currentAddressKana: [''],
       phoneNumber: [''],
@@ -1485,8 +1524,10 @@ export class HrDashboardComponent {
   createEmployeeEditForm(): FormGroup {
     return this.fb.group({
       // 基本情報
-      name: ['', Validators.required],
-      nameKana: [''],
+      lastName: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastNameKana: [''],
+      firstNameKana: [''],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -1742,12 +1783,63 @@ export class HrDashboardComponent {
       console.log('No dependents found, initializing empty array');
     }
 
+    // 氏名を姓・名に分割（既存データとの互換性を考慮）
+    let lastName = '';
+    let firstName = '';
+    let lastNameKana = '';
+    let firstNameKana = '';
+    
+    if (data.lastName && data.firstName) {
+      // 新しい形式（既に分割されている）
+      lastName = data.lastName;
+      firstName = data.firstName;
+      lastNameKana = data.lastNameKana || '';
+      firstNameKana = data.firstNameKana || '';
+    } else if (data.name) {
+      // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
+      const nameParts = data.name.split(/[\s　]+/);
+      if (nameParts.length >= 2) {
+        lastName = nameParts[0];
+        firstName = nameParts.slice(1).join('');
+      } else {
+        // 分割できない場合は最初の1文字を姓、残りを名とする
+        lastName = data.name.substring(0, 1);
+        firstName = data.name.substring(1);
+      }
+    }
+    
+    if (data.nameKana && !data.lastNameKana) {
+      // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
+      const nameKanaParts = data.nameKana.split(/[\s　]+/);
+      if (nameKanaParts.length >= 2) {
+        lastNameKana = nameKanaParts[0];
+        firstNameKana = nameKanaParts.slice(1).join('');
+      } else {
+        // 分割できない場合は最初の1文字を姓、残りを名とする
+        lastNameKana = data.nameKana.substring(0, 1);
+        firstNameKana = data.nameKana.substring(1);
+      }
+    } else if (data.lastNameKana && data.firstNameKana) {
+      lastNameKana = data.lastNameKana;
+      firstNameKana = data.firstNameKana;
+    }
+    
+    // 氏名を設定
+    this.employeeEditForm.patchValue({
+      lastName: lastName,
+      firstName: firstName,
+      lastNameKana: lastNameKana,
+      firstNameKana: firstNameKana
+    });
+    
     // その他のフィールドを設定
     const formData: any = { ...data };
     delete formData.myNumber;
     delete formData.basicPensionNumber;
     delete formData.updatedAt;
     delete formData.dependents; // 既に読み込んだので削除
+    delete formData.name; // 古い形式のnameは削除（既に分割済み）
+    delete formData.nameKana; // 古い形式のnameKanaは削除（既に分割済み）
 
     // ネストされたフォームグループを個別に設定
     if (formData.emergencyContact) {
@@ -1913,6 +2005,55 @@ export class HrDashboardComponent {
       this.onboardingEmployeeEditForm.get(fieldName)?.setValue(value);
     }
   }
+  
+  // 事業所郵便番号フォーマット（数字7桁のみ）
+  formatOfficePostalCode(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 7) {
+      value = value.substring(0, 7);
+    }
+    event.target.value = value;
+    this.settingsForm.get('officePostalCode')?.setValue(value, { emitEvent: false });
+  }
+  
+  // 事業所整理番号 第1部フォーマット（数字2桁のみ）
+  formatOfficeCodePart1(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 2) {
+      value = value.substring(0, 2);
+    }
+    event.target.value = value;
+    this.settingsForm.get('officeCodePart1')?.setValue(value, { emitEvent: false });
+    // 2桁入力されたら次のフィールドにフォーカス
+    if (value.length === 2) {
+      const nextInput = document.getElementById('officeCodePart2');
+      if (nextInput) {
+        nextInput.focus();
+      }
+    }
+  }
+  
+  // 事業所整理番号 第2部フォーマット（カタカナまたは英数字4桁以内）
+  formatOfficeCodePart2(event: any) {
+    let value = event.target.value;
+    // カタカナ、英数字のみを許可
+    value = value.replace(/[^ァ-ヶーA-Za-z0-9]/g, '');
+    if (value.length > 4) {
+      value = value.substring(0, 4);
+    }
+    event.target.value = value;
+    this.settingsForm.get('officeCodePart2')?.setValue(value, { emitEvent: false });
+  }
+  
+  // 新入社員詳細情報の郵便番号フォーマット（数字7桁のみ）
+  formatOnboardingPostalCode(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 7) {
+      value = value.substring(0, 7);
+    }
+    event.target.value = value;
+    this.onboardingEmployeeEditForm.get('postalCode')?.setValue(value, { emitEvent: false });
+  }
 
   formatBasicPensionNumberInput(event: any, part: number) {
     let value = event.target.value.replace(/\D/g, '');
@@ -2014,7 +2155,10 @@ export class HrDashboardComponent {
           myNumber: myNumber || null,
           basicPensionNumber: basicPensionNumber || null,
           sameAsCurrentAddress: this.sameAsCurrentAddress,
-          sameAsCurrentAddressForEmergency: this.sameAsCurrentAddressForEmergency
+          sameAsCurrentAddressForEmergency: this.sameAsCurrentAddressForEmergency,
+          // 後方互換性のため、姓・名を結合してnameとnameKanaも保存
+          name: (formValue.lastName || '') + (formValue.firstName || ''),
+          nameKana: (formValue.lastNameKana || '') + (formValue.firstNameKana || '')
         };
 
         // sameAsCurrentAddressがtrueの場合、現住所の値を住民票住所にコピー
@@ -2801,6 +2945,13 @@ export class HrDashboardComponent {
       });
     }
     
+    // 郵便番号を設定
+    if (data.postalCode) {
+      this.onboardingEmployeeEditForm.patchValue({
+        postalCode: data.postalCode
+      });
+    }
+    
     // 見込み月給額を設定
     if (data.expectedMonthlySalary !== undefined) {
       this.onboardingEmployeeEditForm.patchValue({
@@ -3254,8 +3405,9 @@ export class HrDashboardComponent {
   }
 
   // 新入社員のステータス変更時の処理
-  onOnboardingStatusChange(event: any) {
-    const newStatus = event.target.value;
+  onOnboardingStatusChange(newStatus: string) {
+    if (!this.selectedOnboardingEmployee) return;
+    
     const oldStatus = this.selectedOnboardingEmployee.status;
     
     // 準備完了に変更する場合、必須項目をチェック
@@ -3264,8 +3416,16 @@ export class HrDashboardComponent {
       if (!validation.isValid) {
         alert(`ステータスを「準備完了」に変更するには、以下の必須項目を入力してください：\n${validation.missingFields.join('\n')}`);
         // ステータスを元に戻す
-        event.target.value = oldStatus;
         this.selectedOnboardingEmployee.status = oldStatus;
+        // プルダウンの値を直接元に戻す（次の変更検知サイクルで確実に反映されるようにする）
+        setTimeout(() => {
+          const selectElement = document.getElementById('onboarding-status') as HTMLSelectElement;
+          if (selectElement) {
+            selectElement.value = oldStatus;
+          }
+          // 変更検知を強制的に実行してプルダウンを更新
+          this.cdr.detectChanges();
+        }, 0);
         return;
       }
     }
@@ -3283,8 +3443,10 @@ export class HrDashboardComponent {
       const validation = this.checkRequiredFieldsForReadyStatus();
       if (!validation.isValid) {
         alert(`ステータスを「準備完了」に変更するには、以下の必須項目を入力してください：\n${validation.missingFields.join('\n')}`);
-        // ステータスを元に戻す
-        this.selectedOnboardingEmployee.status = this.selectedOnboardingEmployee.status;
+        // プルダウンの表示を確実に更新する（現在のステータスを維持）
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
         return;
       }
     }

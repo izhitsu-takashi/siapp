@@ -195,6 +195,21 @@
                       placeholder="例: 株式会社サンプル"
                     >
                   </div>
+                  <div class="form-group">
+                    <label for="officePostalCode">事業所郵便番号</label>
+                    <input 
+                      type="text" 
+                      id="officePostalCode" 
+                      formControlName="officePostalCode" 
+                      class="form-input"
+                      placeholder="例: 1234567"
+                      maxlength="7"
+                      pattern="[0-9]{7}"
+                      title="7桁の数字を入力してください"
+                      (input)="formatOfficePostalCode($event)"
+                    >
+                    <small class="form-hint">7桁の数字で入力してください</small>
+                  </div>
                   <div class="form-group full-width">
                     <label for="officeAddress">事業所住所</label>
                     <textarea 
@@ -250,14 +265,31 @@
                     >
                   </div>
                   <div class="form-group">
-                    <label for="officeCode">事業所整理記号</label>
-                    <input 
-                      type="text" 
-                      id="officeCode" 
-                      formControlName="officeCode" 
-                      class="form-input"
-                      placeholder="例: 1234"
-                    >
+                    <label for="officeCodePart1">事業所整理番号</label>
+                    <div class="office-code-container">
+                      <div class="office-code-inputs">
+                        <input 
+                          type="text" 
+                          id="officeCodePart1" 
+                          formControlName="officeCodePart1" 
+                          class="form-input office-code-part"
+                          placeholder="00"
+                          maxlength="2"
+                          (input)="formatOfficeCodePart1($event)"
+                        >
+                        <span class="office-code-separator">-</span>
+                        <input 
+                          type="text" 
+                          id="officeCodePart2" 
+                          formControlName="officeCodePart2" 
+                          class="form-input office-code-part"
+                          placeholder="例: ア123"
+                          maxlength="4"
+                          (input)="formatOfficeCodePart2($event)"
+                        >
+                      </div>
+                      <small class="form-hint">第1部: 数字2桁、第2部: カタカナまたは英数字4桁以内</small>
+                    </div>
                   </div>
                 </div>
                 <div class="section-actions">
@@ -730,20 +762,38 @@
           <h3 class="section-title">基本情報</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label for="hr-name">氏名 <span class="required">*</span></label>
+              <label for="hr-lastName">姓 <span class="required">*</span></label>
               <input 
                 type="text" 
-                id="hr-name" 
-                formControlName="name" 
+                id="hr-lastName" 
+                formControlName="lastName" 
                 class="form-input"
               >
             </div>
             <div class="form-group">
-              <label for="hr-nameKana">氏名（ヨミガナ）</label>
+              <label for="hr-firstName">名 <span class="required">*</span></label>
               <input 
                 type="text" 
-                id="hr-nameKana" 
-                formControlName="nameKana" 
+                id="hr-firstName" 
+                formControlName="firstName" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-lastNameKana">姓（ヨミガナ）</label>
+              <input 
+                type="text" 
+                id="hr-lastNameKana" 
+                formControlName="lastNameKana" 
+                class="form-input"
+              >
+            </div>
+            <div class="form-group">
+              <label for="hr-firstNameKana">名（ヨミガナ）</label>
+              <input 
+                type="text" 
+                id="hr-firstNameKana" 
+                formControlName="firstNameKana" 
                 class="form-input"
               >
             </div>
@@ -2345,9 +2395,9 @@
             <select 
               id="onboarding-status"
               class="form-input"
-              [(ngModel)]="selectedOnboardingEmployee.status"
+              [ngModel]="selectedOnboardingEmployee.status"
               [ngModelOptions]="{standalone: true}"
-              (change)="onOnboardingStatusChange($event)"
+              (ngModelChange)="onOnboardingStatusChange($event)"
             >
               <option value="申請待ち">申請待ち</option>
               <option value="申請済み">申請済み</option>
@@ -2632,6 +2682,21 @@
       <section class="form-section">
         <h3 class="section-title">現住所と連絡先</h3>
         <div class="form-grid">
+          <div class="form-group">
+            <label for="onboarding-postalCode">郵便番号</label>
+            <input 
+              type="text" 
+              id="onboarding-postalCode" 
+              formControlName="postalCode" 
+              class="form-input"
+              placeholder="例: 1234567"
+              maxlength="7"
+              pattern="[0-9]{7}"
+              title="7桁の数字を入力してください"
+              (input)="formatOnboardingPostalCode($event)"
+            >
+            <small class="form-hint">7桁の数字で入力してください</small>
+          </div>
           <div class="form-group full-width">
             <label for="onboarding-currentAddress">現住所</label>
             <textarea 
@@ -3084,6 +3149,19 @@
             </select>
             <div *ngIf="onboardingEmployeeEditForm.get('insuranceCardDistributionStatus')?.invalid && onboardingEmployeeEditForm.get('insuranceCardDistributionStatus')?.touched" class="error-message">
               配布状況を選択してください
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 資格確認書発行要否欄 -->
+      <section class="form-section">
+        <h3 class="section-title">資格確認書発行要否</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>資格確認書発行要否</label>
+            <div class="readonly-field">
+              {{ selectedOnboardingEmployee?.applicationData?.qualificationCertificateRequired || '-' }}
             </div>
           </div>
         </div>

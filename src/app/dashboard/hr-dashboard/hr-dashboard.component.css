@@ -1110,6 +1110,28 @@
   font-weight: 500;
 }
 
+.office-code-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.office-code-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.office-code-part {
+  width: 100px;
+  text-align: center;
+}
+
+.office-code-separator {
+  color: #666;
+  font-weight: 500;
+}
+
 .toggle-button {
   padding: 0.5rem 1rem;
   background: #6c757d;

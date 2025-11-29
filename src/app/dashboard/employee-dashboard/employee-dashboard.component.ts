@@ -16,7 +16,7 @@ export class EmployeeDashboardComponent {
   
   tabs = [
     { id: 'main', name: 'メインページ' },
-    { id: 'settings', name: '情報設定' },
+    { id: 'settings', name: '情報照会' },
     { id: 'insurance', name: '保険・扶養' },
     { id: 'application', name: '各種申請' },
     { id: 'password-change', name: 'パスワード変更' },
@@ -287,8 +287,81 @@ export class EmployeeDashboardComponent {
   isDependentExpanded(index: number): boolean {
     return this.dependentExpandedStates[index] === true;
   }
+  
+  // 氏名を姓に分割するヘルパーメソッド
+  getLastName(name: string | undefined, lastName: string | undefined): string {
+    if (lastName) return lastName;
+    if (!name) return '-';
+    const nameParts = name.split(/[\s　]+/);
+    return nameParts.length >= 2 ? nameParts[0] : (name.substring(0, 1) || '-');
+  }
+  
+  // 氏名を名に分割するヘルパーメソッド
+  getFirstName(name: string | undefined, firstName: string | undefined): string {
+    if (firstName) return firstName;
+    if (!name) return '-';
+    const nameParts = name.split(/[\s　]+/);
+    return nameParts.length >= 2 ? nameParts.slice(1).join('') : (name.substring(1) || '-');
+  }
+  
+  // 氏名（ヨミガナ）を姓に分割するヘルパーメソッド
+  getLastNameKana(nameKana: string | undefined, lastNameKana: string | undefined): string {
+    if (lastNameKana) return lastNameKana;
+    if (!nameKana) return '-';
+    const nameKanaParts = nameKana.split(/[\s　]+/);
+    return nameKanaParts.length >= 2 ? nameKanaParts[0] : (nameKana.substring(0, 1) || '-');
+  }
+  
+  // 氏名（ヨミガナ）を名に分割するヘルパーメソッド
+  getFirstNameKana(nameKana: string | undefined, firstNameKana: string | undefined): string {
+    if (firstNameKana) return firstNameKana;
+    if (!nameKana) return '-';
+    const nameKanaParts = nameKana.split(/[\s　]+/);
+    return nameKanaParts.length >= 2 ? nameKanaParts.slice(1).join('') : (nameKana.substring(1) || '-');
+  }
 
   populateForm(data: any) {
+    // 氏名を姓・名に分割（既存データとの互換性を考慮）
+    let lastName = '';
+    let firstName = '';
+    let lastNameKana = '';
+    let firstNameKana = '';
+    
+    if (data.lastName && data.firstName) {
+      // 新しい形式（既に分割されている）
+      lastName = data.lastName;
+      firstName = data.firstName;
+      lastNameKana = data.lastNameKana || '';
+      firstNameKana = data.firstNameKana || '';
+    } else if (data.name) {
+      // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
+      const nameParts = data.name.split(/[\s　]+/);
+      if (nameParts.length >= 2) {
+        lastName = nameParts[0];
+        firstName = nameParts.slice(1).join('');
+      } else {
+        // 分割できない場合は最初の1文字を姓、残りを名とする
+        lastName = data.name.substring(0, 1);
+        firstName = data.name.substring(1);
+      }
+    }
+    
+    if (data.nameKana && !data.lastNameKana) {
+      // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
+      const nameKanaParts = data.nameKana.split(/[\s　]+/);
+      if (nameKanaParts.length >= 2) {
+        lastNameKana = nameKanaParts[0];
+        firstNameKana = nameKanaParts.slice(1).join('');
+      } else {
+        // 分割できない場合は最初の1文字を姓、残りを名とする
+        lastNameKana = data.nameKana.substring(0, 1);
+        firstNameKana = data.nameKana.substring(1);
+      }
+    } else if (data.lastNameKana && data.firstNameKana) {
+      lastNameKana = data.lastNameKana;
+      firstNameKana = data.firstNameKana;
+    }
+    
     // マイナンバーを分割
     if (data.myNumber && data.myNumber.length === 12) {
       this.settingsForm.patchValue({
@@ -297,6 +370,14 @@ export class EmployeeDashboardComponent {
         myNumberPart3: data.myNumber.substring(8, 12)
       });
     }
+    
+    // 氏名を設定
+    this.settingsForm.patchValue({
+      lastName: lastName,
+      firstName: firstName,
+      lastNameKana: lastNameKana,
+      firstNameKana: firstNameKana
+    });
 
     // 基礎年金番号を分割
     if (data.basicPensionNumber) {
@@ -354,6 +435,8 @@ export class EmployeeDashboardComponent {
     delete formData.myNumber;
     delete formData.basicPensionNumber;
     delete formData.updatedAt;
+    delete formData.name; // 古い形式のnameは削除（既に分割済み）
+    delete formData.nameKana; // 古い形式のnameKanaは削除（既に分割済み）
 
     // ネストされたフォームグループを個別に設定
     if (formData.emergencyContact) {
@@ -605,8 +688,10 @@ export class EmployeeDashboardComponent {
   createForm(): FormGroup {
     return this.fb.group({
       // 基本情報
-      name: ['', Validators.required],
-      nameKana: [''],
+      lastName: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastNameKana: [''],
+      firstNameKana: [''],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -956,8 +1041,10 @@ export class EmployeeDashboardComponent {
   createOnboardingApplicationForm(): FormGroup {
     return this.fb.group({
       // 基本情報
-      name: ['', Validators.required],
-      nameKana: ['', [Validators.required, this.katakanaValidator]],
+      lastName: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastNameKana: ['', [Validators.required, this.katakanaValidator]],
+      firstNameKana: ['', [Validators.required, this.katakanaValidator]],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -1008,7 +1095,10 @@ export class EmployeeDashboardComponent {
       pensionHistory: [''],
       
       // 扶養者有無
-      dependentStatus: ['', Validators.required]
+      dependentStatus: ['', Validators.required],
+      
+      // 資格確認書発行要否
+      qualificationCertificateRequired: ['', Validators.required]
     });
   }
 
@@ -1767,9 +1857,13 @@ export class EmployeeDashboardComponent {
         const applicationData: any = {
           employeeNumber: this.employeeNumber,
           applicationType: '入社時申請',
-          // 基本情報
-          name: formValue.name,
-          nameKana: formValue.nameKana || '',
+          // 基本情報（姓・名を結合して保存）
+          lastName: formValue.lastName || '',
+          firstName: formValue.firstName || '',
+          lastNameKana: formValue.lastNameKana || '',
+          firstNameKana: formValue.firstNameKana || '',
+          name: (formValue.lastName || '') + (formValue.firstName || ''), // 後方互換性のため
+          nameKana: (formValue.lastNameKana || '') + (formValue.firstNameKana || ''), // 後方互換性のため
           birthDate: formValue.birthDate,
           gender: formValue.gender,
           email: formValue.email,
@@ -1799,7 +1893,9 @@ export class EmployeeDashboardComponent {
           pensionHistoryStatus: formValue.pensionHistoryStatus || '',
           pensionHistory: formValue.pensionHistory || '',
           // 扶養者有無
-          dependentStatus: formValue.dependentStatus || ''
+          dependentStatus: formValue.dependentStatus || '',
+          // 資格確認書発行要否
+          qualificationCertificateRequired: formValue.qualificationCertificateRequired || ''
         };
 
         // ファイルをアップロード（履歴書、職務経歴書）
@@ -1848,13 +1944,36 @@ export class EmployeeDashboardComponent {
     try {
       const onboardingData = await this.firestoreService.getOnboardingEmployee(this.employeeNumber);
       if (onboardingData) {
+        // 氏名を姓・名に分割（既存データとの互換性を考慮）
+        let lastName = '';
+        let firstName = '';
+        
+        if (onboardingData.lastName && onboardingData.firstName) {
+          // 新しい形式（既に分割されている）
+          lastName = onboardingData.lastName;
+          firstName = onboardingData.firstName;
+        } else if (onboardingData.name) {
+          // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
+          const nameParts = onboardingData.name.split(/[\s　]+/);
+          if (nameParts.length >= 2) {
+            lastName = nameParts[0];
+            firstName = nameParts.slice(1).join('');
+          } else {
+            // 分割できない場合は最初の1文字を姓、残りを名とする
+            lastName = onboardingData.name.substring(0, 1);
+            firstName = onboardingData.name.substring(1);
+          }
+        }
+        
         // 氏名とメールアドレスをフォームに設定（編集不可にするため、値のみ設定）
         this.onboardingApplicationForm.patchValue({
-          name: onboardingData.name || '',
+          lastName: lastName,
+          firstName: firstName,
           email: onboardingData.email || ''
         });
         // 氏名とメールアドレスを編集不可にする
-        this.onboardingApplicationForm.get('name')?.disable();
+        this.onboardingApplicationForm.get('lastName')?.disable();
+        this.onboardingApplicationForm.get('firstName')?.disable();
         this.onboardingApplicationForm.get('email')?.disable();
       }
     } catch (error) {
@@ -1894,7 +2013,8 @@ export class EmployeeDashboardComponent {
         pensionHistoryStatus: applicationData.pensionHistoryStatus || '',
         pensionHistory: applicationData.pensionHistory || '',
         // 扶養者有無
-        dependentStatus: applicationData.dependentStatus || ''
+        dependentStatus: applicationData.dependentStatus || '',
+        qualificationCertificateRequired: applicationData.qualificationCertificateRequired || ''
       };
 
       // 新入社員データを更新
@@ -2335,10 +2455,53 @@ export class EmployeeDashboardComponent {
         }
       }
       
+      // 氏名を姓・名に分割（既存データとの互換性を考慮）
+      let lastName = '';
+      let firstName = '';
+      let lastNameKana = '';
+      let firstNameKana = '';
+      
+      if (application.lastName && application.firstName) {
+        // 新しい形式（既に分割されている）
+        lastName = application.lastName;
+        firstName = application.firstName;
+        lastNameKana = application.lastNameKana || '';
+        firstNameKana = application.firstNameKana || '';
+      } else if (application.name) {
+        // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
+        const nameParts = application.name.split(/[\s　]+/);
+        if (nameParts.length >= 2) {
+          lastName = nameParts[0];
+          firstName = nameParts.slice(1).join('');
+        } else {
+          // 分割できない場合は最初の1文字を姓、残りを名とする
+          lastName = application.name.substring(0, 1);
+          firstName = application.name.substring(1);
+        }
+      }
+      
+      if (application.nameKana && !application.lastNameKana) {
+        // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
+        const nameKanaParts = application.nameKana.split(/[\s　]+/);
+        if (nameKanaParts.length >= 2) {
+          lastNameKana = nameKanaParts[0];
+          firstNameKana = nameKanaParts.slice(1).join('');
+        } else {
+          // 分割できない場合は最初の1文字を姓、残りを名とする
+          lastNameKana = application.nameKana.substring(0, 1);
+          firstNameKana = application.nameKana.substring(1);
+        }
+      } else if (application.lastNameKana && application.firstNameKana) {
+        lastNameKana = application.lastNameKana;
+        firstNameKana = application.firstNameKana;
+      }
+      
       // データをフォームに設定（ネストされたフォームグループを除く）
       this.onboardingApplicationForm.patchValue({
-        name: application.name || '',
-        nameKana: application.nameKana || '',
+        lastName: lastName,
+        firstName: firstName,
+        lastNameKana: lastNameKana,
+        firstNameKana: firstNameKana,
         birthDate: application.birthDate || '',
         gender: application.gender || '',
         email: application.email || '',
@@ -2358,7 +2521,8 @@ export class EmployeeDashboardComponent {
         basicPensionNumberPart2: basicPensionNumberPart2,
         pensionHistoryStatus: application.pensionHistoryStatus || '',
         pensionHistory: application.pensionHistory || '',
-        dependentStatus: application.dependentStatus || ''
+        dependentStatus: application.dependentStatus || '',
+        qualificationCertificateRequired: application.qualificationCertificateRequired || ''
       });
       
       // ネストされたフォームグループを個別に設定
@@ -2389,7 +2553,8 @@ export class EmployeeDashboardComponent {
       this.hasPensionHistory = application.pensionHistoryStatus === '有';
       
       // 氏名とメールアドレスを編集不可にする
-      this.onboardingApplicationForm.get('name')?.disable();
+      this.onboardingApplicationForm.get('lastName')?.disable();
+      this.onboardingApplicationForm.get('firstName')?.disable();
       this.onboardingApplicationForm.get('email')?.disable();
       
       console.log('=== loadApplicationDataToForm 終了（入社時申請） ===');
@@ -2713,6 +2878,7 @@ export class EmployeeDashboardComponent {
             pensionHistoryStatus: formValue.pensionHistoryStatus || '',
             pensionHistory: formValue.pensionHistory || '',
             dependentStatus: formValue.dependentStatus || '',
+            qualificationCertificateRequired: formValue.qualificationCertificateRequired || '',
             employeeNumber: this.employeeNumber,
             applicationType: '入社時申請'
           };
