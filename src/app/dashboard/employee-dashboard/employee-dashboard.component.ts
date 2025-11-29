@@ -116,7 +116,7 @@ export class EmployeeDashboardComponent {
   // 選択肢
   employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
   departments = ['営業部', '開発部', '人事部', '経理部', '総務部'];
-  genders = ['男性', '女性', 'その他'];
+  genders = ['男性', '女性'];
   householdHeadTypes = ['本人', '親族'];
   pensionHistoryOptions = ['有', '無'];
   employmentStatuses = ['在籍', '退職'];
@@ -1013,7 +1013,10 @@ export class EmployeeDashboardComponent {
     this.currentApplicationType = '';
     // 入社時申請フォームのdisabled状態を解除
     if (this.onboardingApplicationForm) {
-      this.onboardingApplicationForm.get('name')?.enable();
+      this.onboardingApplicationForm.get('lastName')?.enable();
+      this.onboardingApplicationForm.get('firstName')?.enable();
+      this.onboardingApplicationForm.get('lastNameKana')?.enable();
+      this.onboardingApplicationForm.get('firstNameKana')?.enable();
       this.onboardingApplicationForm.get('email')?.enable();
     }
     this.dependentApplicationForm = this.createDependentApplicationForm();
@@ -1050,15 +1053,15 @@ export class EmployeeDashboardComponent {
       email: ['', [Validators.required, Validators.email]],
       
       // マイナンバー
-      myNumberPart1: ['', Validators.required],
-      myNumberPart2: ['', Validators.required],
-      myNumberPart3: ['', Validators.required],
+      myNumberPart1: [''],
+      myNumberPart2: [''],
+      myNumberPart3: [''],
       
       // 現住所と連絡先
       postalCode: ['', [Validators.required, Validators.pattern(/^\d{7}$/)]],
       currentAddress: ['', Validators.required],
       currentAddressKana: ['', [Validators.required, this.katakanaValidator]],
-      phoneNumber: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^\d{1,11}$/)]],
       currentHouseholdHead: ['', Validators.required],
       
       // 住民票住所
@@ -1071,21 +1074,21 @@ export class EmployeeDashboardComponent {
       
       // 緊急連絡先
       emergencyContact: this.fb.group({
-        name: ['', Validators.required],
-        nameKana: ['', [Validators.required, this.katakanaValidator]],
-        relationship: ['', Validators.required],
-        phone: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
-        address: ['', Validators.required],
-        addressKana: ['', [Validators.required, this.katakanaValidator]]
+        name: [''],
+        nameKana: ['', this.katakanaValidator],
+        relationship: [''],
+        phone: ['', Validators.pattern(/^\d+$/)],
+        address: [''],
+        addressKana: ['', this.katakanaValidator]
       }),
       
       // 口座情報
       bankAccount: this.fb.group({
-        bankName: ['', Validators.required],
-        accountType: ['', Validators.required],
-        accountHolder: ['', [Validators.required, this.katakanaValidator]],
-        branchName: ['', Validators.required],
-        accountNumber: ['', Validators.required]
+        bankName: [''],
+        accountType: [''],
+        accountHolder: ['', this.katakanaValidator],
+        branchName: [''],
+        accountNumber: ['']
       }),
       
       // 社会保険（基礎年金番号、厚生年金加入履歴のみ）
@@ -1947,11 +1950,15 @@ export class EmployeeDashboardComponent {
         // 氏名を姓・名に分割（既存データとの互換性を考慮）
         let lastName = '';
         let firstName = '';
+        let lastNameKana = '';
+        let firstNameKana = '';
         
         if (onboardingData.lastName && onboardingData.firstName) {
           // 新しい形式（既に分割されている）
           lastName = onboardingData.lastName;
           firstName = onboardingData.firstName;
+          lastNameKana = onboardingData.lastNameKana || '';
+          firstNameKana = onboardingData.firstNameKana || '';
         } else if (onboardingData.name) {
           // 古い形式（結合されている）- スペースまたは全角スペースで分割を試みる
           const nameParts = onboardingData.name.split(/[\s　]+/);
@@ -1963,17 +1970,34 @@ export class EmployeeDashboardComponent {
             lastName = onboardingData.name.substring(0, 1);
             firstName = onboardingData.name.substring(1);
           }
+          
+          // カタカナも分割を試みる
+          if (onboardingData.nameKana) {
+            const nameKanaParts = onboardingData.nameKana.split(/[\s　]+/);
+            if (nameKanaParts.length >= 2) {
+              lastNameKana = nameKanaParts[0];
+              firstNameKana = nameKanaParts.slice(1).join('');
+            } else {
+              // 分割できない場合は最初の1文字を姓、残りを名とする
+              lastNameKana = onboardingData.nameKana.substring(0, 1);
+              firstNameKana = onboardingData.nameKana.substring(1);
+            }
+          }
         }
         
-        // 氏名とメールアドレスをフォームに設定（編集不可にするため、値のみ設定）
+        // 氏名、カタカナ氏名、メールアドレスをフォームに設定（編集不可にするため、値のみ設定）
         this.onboardingApplicationForm.patchValue({
           lastName: lastName,
           firstName: firstName,
+          lastNameKana: lastNameKana,
+          firstNameKana: firstNameKana,
           email: onboardingData.email || ''
         });
-        // 氏名とメールアドレスを編集不可にする
+        // 氏名、カタカナ氏名、メールアドレスを編集不可にする
         this.onboardingApplicationForm.get('lastName')?.disable();
         this.onboardingApplicationForm.get('firstName')?.disable();
+        this.onboardingApplicationForm.get('lastNameKana')?.disable();
+        this.onboardingApplicationForm.get('firstNameKana')?.disable();
         this.onboardingApplicationForm.get('email')?.disable();
       }
     } catch (error) {
@@ -3108,6 +3132,10 @@ export class EmployeeDashboardComponent {
   // 電話番号フォーマット（数字のみ）
   formatPhoneNumber(event: any) {
     let value = event.target.value.replace(/\D/g, '');
+    // 最大11桁に制限
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
     event.target.value = value;
     const control = this.onboardingApplicationForm.get('phoneNumber');
     if (control) {

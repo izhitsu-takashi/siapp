@@ -869,7 +869,10 @@
 
               <!-- 人事からの依頼欄 -->
               <div class="info-card hr-request-card">
-                <h3 class="card-title">人事からの依頼</h3>
+                <h3 class="card-title">
+                  人事からの依頼
+                  <span class="request-badge" *ngIf="hrRequests.length > 0">{{ hrRequests.length }}</span>
+                </h3>
                 <div class="request-content">
                   <div *ngIf="hrRequests.length === 0" class="no-data">
                     現在、依頼はありません
@@ -1185,6 +1188,8 @@
               id="onboarding-lastNameKana" 
               formControlName="lastNameKana" 
               class="form-input"
+              [readonly]="true"
+              style="background: #f5f5f5;"
             >
             <div *ngIf="onboardingApplicationForm.get('lastNameKana')?.invalid && onboardingApplicationForm.get('lastNameKana')?.touched" class="error-message">
               <span *ngIf="onboardingApplicationForm.get('lastNameKana')?.errors?.['required']">
@@ -1202,6 +1207,8 @@
               id="onboarding-firstNameKana" 
               formControlName="firstNameKana" 
               class="form-input"
+              [readonly]="true"
+              style="background: #f5f5f5;"
             >
             <div *ngIf="onboardingApplicationForm.get('firstNameKana')?.invalid && onboardingApplicationForm.get('firstNameKana')?.touched" class="error-message">
               <span *ngIf="onboardingApplicationForm.get('firstNameKana')?.errors?.['required']">
@@ -1257,7 +1264,7 @@
 
       <!-- マイナンバー欄 -->
       <section class="form-section">
-        <h3 class="section-title">マイナンバー</h3>
+        <h3 class="section-title">マイナンバー（任意）</h3>
         <div class="form-grid">
           <div class="form-group full-width">
             <div class="my-number-container">
@@ -1348,12 +1355,13 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="onboarding-phoneNumber">電話番号 <span class="required">*</span></label>
+            <label for="onboarding-phoneNumber">電話番号（ハイフンなし） <span class="required">*</span></label>
             <input 
               type="tel" 
               id="onboarding-phoneNumber" 
               formControlName="phoneNumber" 
               class="form-input"
+              maxlength="11"
               (input)="formatPhoneNumber($event)"
             >
             <div *ngIf="onboardingApplicationForm.get('phoneNumber')?.invalid && onboardingApplicationForm.get('phoneNumber')?.touched" class="error-message">
@@ -1361,7 +1369,7 @@
                 電話番号を入力してください
               </span>
               <span *ngIf="onboardingApplicationForm.get('phoneNumber')?.errors?.['pattern']">
-                数字のみで入力してください
+                数字のみで入力してください（最大11桁）
               </span>
             </div>
           </div>
@@ -1482,7 +1490,7 @@
               >
             </div>
             <div class="form-group">
-              <label for="onboarding-emergencyNameKana">氏名（ヨミガナ） <span class="required">*</span></label>
+              <label for="onboarding-emergencyNameKana">氏名（ヨミガナ）</label>
               <input 
                 type="text" 
                 id="onboarding-emergencyNameKana" 
@@ -1490,9 +1498,6 @@
                 class="form-input"
               >
               <div *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.invalid && onboardingApplicationForm.get('emergencyContact.nameKana')?.touched" class="error-message">
-                <span *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.errors?.['required']">
-                  氏名（ヨミガナ）を入力してください
-                </span>
                 <span *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.errors?.['katakana']">
                   カタカナで入力してください
                 </span>
@@ -1508,7 +1513,7 @@
               >
             </div>
             <div class="form-group">
-              <label for="onboarding-emergencyPhone">緊急連絡先電話番号 <span class="required">*</span></label>
+              <label for="onboarding-emergencyPhone">緊急連絡先電話番号</label>
               <input 
                 type="tel" 
                 id="onboarding-emergencyPhone" 
@@ -1517,9 +1522,6 @@
                 (input)="formatEmergencyPhoneNumber($event)"
               >
               <div *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.invalid && onboardingApplicationForm.get('emergencyContact.phone')?.touched" class="error-message">
-                <span *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.errors?.['required']">
-                  緊急連絡先電話番号を入力してください
-                </span>
                 <span *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.errors?.['pattern']">
                   数字のみで入力してください
                 </span>
@@ -1535,7 +1537,7 @@
               ></textarea>
             </div>
             <div class="form-group full-width">
-              <label for="onboarding-emergencyAddressKana">住所（ヨミガナ） <span class="required">*</span></label>
+              <label for="onboarding-emergencyAddressKana">住所（ヨミガナ）</label>
               <textarea 
                 id="onboarding-emergencyAddressKana" 
                 formControlName="addressKana" 
@@ -1543,9 +1545,6 @@
                 rows="2"
               ></textarea>
               <div *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.invalid && onboardingApplicationForm.get('emergencyContact.addressKana')?.touched" class="error-message">
-                <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['required']">
-                  住所（ヨミガナ）を入力してください
-                </span>
                 <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['katakana']">
                   カタカナで入力してください
                 </span>
@@ -1583,7 +1582,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="onboarding-accountHolder">名義（カタカナ） <span class="required">*</span></label>
+              <label for="onboarding-accountHolder">名義（カタカナ）</label>
               <input 
                 type="text" 
                 id="onboarding-accountHolder" 
@@ -1591,9 +1590,6 @@
                 class="form-input"
               >
               <div *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.invalid && onboardingApplicationForm.get('bankAccount.accountHolder')?.touched" class="error-message">
-                <span *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.errors?.['required']">
-                  名義（カタカナ）を入力してください
-                </span>
                 <span *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.errors?.['katakana']">
                   カタカナで入力してください
                 </span>
@@ -2866,7 +2862,6 @@
   class="modal-overlay" 
   *ngIf="showApplicationDetailModal" 
   [class.modal-disabled]="isSubmittingReapplication"
-  (click)="!isSubmittingReapplication && closeApplicationDetailModal()"
 >
   <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">

@@ -494,13 +494,17 @@ export class FirestoreService {
   async saveOnboardingEmployee(employeeNumber: string, data: any): Promise<void> {
     try {
       const docRef = doc(this.db, 'onboardingEmployees', employeeNumber);
+      const docSnap = await getDoc(docRef);
+      const existingData = docSnap.exists() ? docSnap.data() : {};
+      
       await setDoc(docRef, {
+        ...existingData,
         ...data,
         employeeNumber: employeeNumber,
-        status: '申請待ち',
-        createdAt: new Date(),
+        status: existingData['status'] || '申請待ち',
+        createdAt: existingData['createdAt'] || new Date(),
         updatedAt: new Date()
-      });
+      }, { merge: true });
     } catch (error) {
       console.error('Error saving onboarding employee:', error);
       throw error;

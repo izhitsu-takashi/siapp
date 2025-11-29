@@ -640,7 +640,7 @@
   </div>
 
   <!-- 社員追加モーダル -->
-  <div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal()">
+  <div *ngIf="showAddModal" class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">新規社員追加</h3>
@@ -668,6 +668,62 @@
             
             <div class="form-grid">
               <div class="form-group">
+                <label [for]="'lastName' + i">姓 <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  [id]="'lastName' + i"
+                  formControlName="lastName" 
+                  class="form-input"
+                  placeholder="例: 山田"
+                >
+              </div>
+              <div class="form-group">
+                <label [for]="'firstName' + i">名 <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  [id]="'firstName' + i"
+                  formControlName="firstName" 
+                  class="form-input"
+                  placeholder="例: 太郎"
+                >
+              </div>
+              <div class="form-group">
+                <label [for]="'lastNameKana' + i">姓（カタカナ） <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  [id]="'lastNameKana' + i"
+                  formControlName="lastNameKana" 
+                  class="form-input"
+                  placeholder="例: ヤマダ"
+                >
+                <div *ngIf="employeesFormArray.at(i).get('lastNameKana')?.invalid && employeesFormArray.at(i).get('lastNameKana')?.touched" class="error-message">
+                  <span *ngIf="employeesFormArray.at(i).get('lastNameKana')?.errors?.['required']">
+                    姓（カタカナ）を入力してください
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('lastNameKana')?.errors?.['katakana']">
+                    カタカナで入力してください
+                  </span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label [for]="'firstNameKana' + i">名（カタカナ） <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  [id]="'firstNameKana' + i"
+                  formControlName="firstNameKana" 
+                  class="form-input"
+                  placeholder="例: タロウ"
+                >
+                <div *ngIf="employeesFormArray.at(i).get('firstNameKana')?.invalid && employeesFormArray.at(i).get('firstNameKana')?.touched" class="error-message">
+                  <span *ngIf="employeesFormArray.at(i).get('firstNameKana')?.errors?.['required']">
+                    名（カタカナ）を入力してください
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('firstNameKana')?.errors?.['katakana']">
+                    カタカナで入力してください
+                  </span>
+                </div>
+              </div>
+              <div class="form-group">
                 <label [for]="'employeeNumber' + i">社員番号 <span class="required">*</span></label>
                 <input 
                   type="text" 
@@ -675,16 +731,6 @@
                   formControlName="employeeNumber" 
                   class="form-input"
                   placeholder="例: EMP001"
-                >
-              </div>
-              <div class="form-group">
-                <label [for]="'name' + i">氏名 <span class="required">*</span></label>
-                <input 
-                  type="text" 
-                  [id]="'name' + i"
-                  formControlName="name" 
-                  class="form-input"
-                  placeholder="例: 山田 太郎"
                 >
               </div>
               <div class="form-group">
@@ -749,7 +795,7 @@
   </div>
 
   <!-- 社員情報編集モーダル -->
-  <div *ngIf="showEmployeeEditModal" class="modal-overlay" (click)="closeEmployeeEditModal()">
+  <div *ngIf="showEmployeeEditModal" class="modal-overlay">
     <div class="modal-content employee-edit-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">社員情報編集</h3>
@@ -2378,7 +2424,7 @@
 </div>
 
 <!-- 新入社員詳細モーダル -->
-<div *ngIf="showOnboardingEmployeeModal" class="modal-overlay" (click)="closeOnboardingEmployeeModal()">
+<div *ngIf="showOnboardingEmployeeModal" class="modal-overlay">
   <div class="modal-content employee-edit-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3 class="modal-title">新入社員詳細情報</h3>
@@ -2502,7 +2548,7 @@
         <h3 class="section-title">マイナンバー</h3>
         <div class="form-grid">
           <div class="form-group full-width">
-            <label for="onboarding-myNumberPart1">マイナンバー <span class="required">*</span></label>
+            <label for="onboarding-myNumberPart1">マイナンバー</label>
             <div class="my-number-container">
               <div class="my-number-inputs">
                 <input 
@@ -2612,28 +2658,6 @@
               [readonly]="true"
               style="background: #f5f5f5;"
             >
-          </div>
-          <div class="form-group">
-            <label for="onboarding-office">事業所</label>
-            <select 
-              id="onboarding-office" 
-              formControlName="office" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option *ngFor="let office of offices" [value]="office">{{ office }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="onboarding-workContent">業務内容</label>
-            <select 
-              id="onboarding-workContent" 
-              formControlName="workContent" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option *ngFor="let content of workContents" [value]="content">{{ content }}</option>
-            </select>
           </div>
           <div class="form-group">
             <label for="onboarding-employmentType">雇用形態</label>
@@ -3194,7 +3218,7 @@
 </div>
 
   <!-- 入社処理実行モーダル -->
-  <div *ngIf="showOnboardingProcessModal" class="modal-overlay" (click)="closeOnboardingProcessModal()">
+  <div *ngIf="showOnboardingProcessModal" class="modal-overlay">
     <div class="modal-content onboarding-process-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">入社処理実行</h3>

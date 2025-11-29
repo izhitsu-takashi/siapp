@@ -1,7 +1,7 @@
 import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { FormBuilder, FormArray, FormGroup, Validators, ReactiveFormsModule, FormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { FirestoreService } from '../../services/firestore.service';
 import { PdfEditService } from '../../services/pdf-edit.service';
@@ -285,7 +285,7 @@ export class HrDashboardComponent {
   kenpoRates: any[] = [];
   showAddModal = false;
   addEmployeeForm: FormGroup;
-  employmentTypes = ['正社員', '契約社員'];
+  employmentTypes = ['正社員', '契約社員', '短時間労働者'];
 
   // 社員情報編集モーダル
   showEmployeeEditModal = false;
@@ -732,10 +732,25 @@ export class HrDashboardComponent {
     return null;
   }
 
+  // カタカナバリデーター
+  katakanaValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // 空の場合は他のバリデーターで処理
+    }
+    const katakanaPattern = /^[ァ-ヶー\s]+$/;
+    if (!katakanaPattern.test(control.value)) {
+      return { katakana: true };
+    }
+    return null;
+  }
+
   createEmployeeFormGroup(): FormGroup {
     return this.fb.group({
+      lastName: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
+      firstNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
       employeeNumber: ['', Validators.required],
-      name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       employmentType: ['', Validators.required],
       initialPassword: ['', [Validators.required, Validators.minLength(6)]]
@@ -1428,10 +1443,19 @@ export class HrDashboardComponent {
       // 各社員を新入社員一覧に保存
       for (const employee of newEmployees) {
         try {
+          // 姓と名を結合してnameを作成
+          const fullName = `${employee.lastName} ${employee.firstName}`.trim();
+          const fullNameKana = `${employee.lastNameKana || ''} ${employee.firstNameKana || ''}`.trim();
+          
           // 新入社員データを保存（ステータス: 申請待ち）
           await this.firestoreService.saveOnboardingEmployee(employee.employeeNumber, {
             employeeNumber: employee.employeeNumber,
-            name: employee.name,
+            name: fullName,
+            nameKana: fullNameKana || '',
+            lastName: employee.lastName,
+            firstName: employee.firstName,
+            lastNameKana: employee.lastNameKana || '',
+            firstNameKana: employee.firstNameKana || '',
             email: employee.email,
             employmentType: employee.employmentType,
             password: employee.initialPassword, // パスワードを保存（後でハッシュ化推奨）
@@ -1442,17 +1466,18 @@ export class HrDashboardComponent {
           try {
             await this.firestoreService.sendOnboardingEmail(
               employee.email,
-              employee.name,
+              fullName,
               employee.initialPassword
             );
           } catch (emailError) {
             console.error('Error sending email:', emailError);
             // メール送信エラーは警告のみ（社員追加は成功）
-            alert(`${employee.name}さんのメール送信に失敗しましたが、社員データは保存されました。`);
+            alert(`${fullName}さんのメール送信に失敗しましたが、社員データは保存されました。`);
           }
         } catch (error) {
           console.error('Error adding employee:', error);
-          alert(`${employee.name}さんの追加に失敗しました`);
+          const fullName = `${employee.lastName} ${employee.firstName}`.trim();
+          alert(`${fullName}さんの追加に失敗しました`);
         }
       }
       
@@ -1511,10 +1536,10 @@ export class HrDashboardComponent {
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       
-      // マイナンバー（必須）
-      myNumberPart1: ['', Validators.required],
-      myNumberPart2: ['', Validators.required],
-      myNumberPart3: ['', Validators.required],
+      // マイナンバー
+      myNumberPart1: [''],
+      myNumberPart2: [''],
+      myNumberPart3: [''],
       
       // 入退社情報
       employmentStatus: ['', Validators.required], // 必須
@@ -1524,8 +1549,6 @@ export class HrDashboardComponent {
       
       // 業務情報
       employeeNumber: ['', Validators.required],
-      office: [''],
-      workContent: [''],
       employmentType: [''],
       paymentType: [''],
       
@@ -2931,9 +2954,19 @@ export class HrDashboardComponent {
     try {
       const data = await this.firestoreService.getOnboardingEmployee(employeeNumber);
       if (data) {
-        // 申請データが存在する場合は、申請データから配偶者情報を優先的に取得
+        // 申請データが存在する場合は、申請データから情報を優先的に取得
         if (this.selectedOnboardingEmployee?.applicationData) {
           const appData = this.selectedOnboardingEmployee.applicationData;
+          // 申請データから現住所と連絡先情報をマージ
+          if (appData.postalCode) data.postalCode = appData.postalCode;
+          if (appData.currentAddress) data.currentAddress = appData.currentAddress;
+          if (appData.currentAddressKana) data.currentAddressKana = appData.currentAddressKana;
+          if (appData.phoneNumber) data.phoneNumber = appData.phoneNumber;
+          if (appData.currentHouseholdHead) data.currentHouseholdHead = appData.currentHouseholdHead;
+          // 申請データから住民票住所情報をマージ
+          if (appData.residentAddress) data.residentAddress = appData.residentAddress;
+          if (appData.residentAddressKana) data.residentAddressKana = appData.residentAddressKana;
+          if (appData.residentHouseholdHead) data.residentHouseholdHead = appData.residentHouseholdHead;
           // 申請データから配偶者情報をマージ
           if (appData.spouseStatus) data.spouseStatus = appData.spouseStatus;
           if (appData.spouseBasicPensionNumber) data.spouseBasicPensionNumber = appData.spouseBasicPensionNumber;
@@ -3468,14 +3501,6 @@ export class HrDashboardComponent {
   checkRequiredFieldsForReadyStatus(): { isValid: boolean; missingFields: string[] } {
     const missingFields: string[] = [];
     const form = this.onboardingEmployeeEditForm;
-
-    // マイナンバー
-    const myNumberPart1 = form.get('myNumberPart1')?.value || '';
-    const myNumberPart2 = form.get('myNumberPart2')?.value || '';
-    const myNumberPart3 = form.get('myNumberPart3')?.value || '';
-    if (!myNumberPart1 || !myNumberPart2 || !myNumberPart3) {
-      missingFields.push('マイナンバー');
-    }
 
     // 在籍状況
     if (!form.get('employmentStatus')?.value) {
