@@ -3167,6 +3167,19 @@
         </div>
       </section>
 
+      <!-- 被扶養者情報欄 -->
+      <section class="form-section">
+        <h3 class="section-title">被扶養者情報</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>被扶養者（有/無）</label>
+            <div class="readonly-field">
+              {{ getOnboardingDependentStatus() }}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 送信ボタン -->
       <div class="modal-actions">
         <button type="button" class="cancel-button" (click)="closeOnboardingEmployeeModal()">

@@ -583,7 +583,9 @@ export class HrDashboardComponent {
         employerName: formValue.employerName || '',
         officePhoneNumber: formValue.officePhoneNumber || '',
         corporateNumber: formValue.corporateNumber || '',
-        officeCode: officeCode
+        officeCode: officeCode, // 後方互換性のため保持
+        officeCodePart1: officeCodePart1, // 個別に保存
+        officeCodePart2: officeCodePart2  // 個別に保存
       };
       
       // Firestoreから現在の設定を取得してマージ
@@ -1574,6 +1576,8 @@ export class HrDashboardComponent {
       socialInsuranceLossDate: [''],
       expectedMonthlySalary: ['', Validators.required], // 見込み月給額（給与）
       expectedMonthlySalaryInKind: ['', Validators.required], // 見込み月給額（現物）
+      hasDependents: [''], // 被扶養者（有/無）
+      dependentStatus: [''], // 被扶養者ステータス
       
       // 人事専用情報（給与）
       fixedSalary: [''],
@@ -3021,6 +3025,32 @@ export class HrDashboardComponent {
       });
     }
     
+    // 被扶養者情報を設定
+    if (data.hasDependents !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        hasDependents: data.hasDependents || ''
+      });
+    }
+    if (data.dependentStatus !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        dependentStatus: data.dependentStatus || ''
+      });
+    }
+    // 申請データからも取得を試みる
+    if (this.selectedOnboardingEmployee?.applicationData) {
+      const appData = this.selectedOnboardingEmployee.applicationData;
+      if (appData.hasDependents !== undefined && !data.hasDependents) {
+        this.onboardingEmployeeEditForm.patchValue({
+          hasDependents: appData.hasDependents || ''
+        });
+      }
+      if (appData.dependentStatus !== undefined && !data.dependentStatus) {
+        this.onboardingEmployeeEditForm.patchValue({
+          dependentStatus: appData.dependentStatus || ''
+        });
+      }
+    }
+    
     // 厚生年金加入履歴の状態を設定
     this.onboardingHasPensionHistory = data.pensionHistoryStatus === '有';
     
@@ -3141,6 +3171,43 @@ export class HrDashboardComponent {
     if (birthDate) {
       this.onboardingCalculateAge(birthDate);
     }
+  }
+  
+  // 新入社員の被扶養者情報を取得
+  getOnboardingDependentStatus(): string {
+    // フォームから取得
+    const hasDependents = this.onboardingEmployeeEditForm.get('hasDependents')?.value;
+    const dependentStatus = this.onboardingEmployeeEditForm.get('dependentStatus')?.value;
+    
+    if (dependentStatus) {
+      return dependentStatus;
+    }
+    if (hasDependents) {
+      return hasDependents === 'true' || hasDependents === true ? '有' : '無';
+    }
+    
+    // 申請データから取得
+    if (this.selectedOnboardingEmployee?.applicationData) {
+      const appData = this.selectedOnboardingEmployee.applicationData;
+      if (appData.dependentStatus) {
+        return appData.dependentStatus;
+      }
+      if (appData.hasDependents !== undefined) {
+        return appData.hasDependents === 'true' || appData.hasDependents === true ? '有' : '無';
+      }
+    }
+    
+    // 新入社員データから直接取得
+    if (this.selectedOnboardingEmployee) {
+      if (this.selectedOnboardingEmployee.dependentStatus) {
+        return this.selectedOnboardingEmployee.dependentStatus;
+      }
+      if (this.selectedOnboardingEmployee.hasDependents !== undefined) {
+        return this.selectedOnboardingEmployee.hasDependents === 'true' || this.selectedOnboardingEmployee.hasDependents === true ? '有' : '無';
+      }
+    }
+    
+    return '-';
   }
   
   // 新入社員の住民票住所が現住所と同じかチェック

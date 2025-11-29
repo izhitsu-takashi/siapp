@@ -181,6 +181,24 @@ export class PdfEditService {
         try {
           const settings = await this.firestoreService.getSettings();
           companyInfo = settings?.companyInfo || null;
+          // デバッグログ
+          console.log('Company info for PDF:', companyInfo);
+          console.log('Full settings:', settings);
+          if (companyInfo) {
+            console.log('officeCodePart1:', companyInfo.officeCodePart1);
+            console.log('officeCodePart2:', companyInfo.officeCodePart2);
+            console.log('officeCode:', companyInfo.officeCode);
+            // officeCodePart1とofficeCodePart2が存在しない場合、officeCodeから分割を試みる
+            if (!companyInfo.officeCodePart1 && !companyInfo.officeCodePart2 && companyInfo.officeCode) {
+              const officeCode = companyInfo.officeCode;
+              const match = officeCode.match(/^(\d{0,2})([ァ-ヶーA-Za-z0-9]{0,4})?/);
+              if (match) {
+                companyInfo.officeCodePart1 = match[1] || '';
+                companyInfo.officeCodePart2 = match[2] || '';
+                console.log('Parsed from officeCode:', { officeCodePart1: companyInfo.officeCodePart1, officeCodePart2: companyInfo.officeCodePart2 });
+              }
+            }
+          }
         } catch (error) {
           console.warn('企業情報の取得に失敗しました:', error);
         }
@@ -259,59 +277,82 @@ export class PdfEditService {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     
-    // 年の数字：(35,60)
-    page.drawText(String(reiwaYear).padStart(2, '0'), {
-      x: 35,
-      y: height - 60,
-      size: fontSize,
-      font: font,
-    });
+    // 年の数字：(47,62) - x座標は各文字の左端
+    const yearStr = String(reiwaYear).padStart(2, '0');
+    let xPos = 47;
+    for (let i = 0; i < yearStr.length; i++) {
+      page.drawText(yearStr[i], {
+        x: xPos,
+        y: height - 62,
+        size: fontSize,
+        font: font,
+      });
+      xPos += 5; // 次の文字の左端位置（間隔5座標分）
+    }
     
-    // 月の数字：(65,60)
-    page.drawText(month, {
-      x: 65,
-      y: height - 60,
-      size: fontSize,
-      font: font,
-    });
+    // 月の数字：(75,62) - x座標は各文字の左端
+    xPos = 75;
+    for (let i = 0; i < month.length; i++) {
+      page.drawText(month[i], {
+        x: xPos,
+        y: height - 62,
+        size: fontSize,
+        font: font,
+      });
+      xPos += 5; // 次の文字の左端位置（間隔5座標分）
+    }
     
-    // 日の数字：(93,60)
-    page.drawText(day, {
-      x: 93,
-      y: height - 60,
-      size: fontSize,
-      font: font,
-    });
+    // 日の数字：(105,62) - x座標は各文字の左端
+    xPos = 105;
+    for (let i = 0; i < day.length; i++) {
+      page.drawText(day[i], {
+        x: xPos,
+        y: height - 62,
+        size: fontSize,
+        font: font,
+      });
+      xPos += 5; // 次の文字の左端位置（間隔5座標分）
+    }
     
     // ②事業所整理番号
-    if (companyInfo?.officeCode) {
-      const officeCode = companyInfo.officeCode;
-      // 最初の数字2桁(間隔はx座標10くらい開ける）：(80,80)
-      if (officeCode.length >= 2) {
-        const part1 = officeCode.substring(0, 2);
-        page.drawText(part1, {
-          x: 80,
+    // officeCodePart1とofficeCodePart2から直接取得
+    const officeCodePart1 = companyInfo?.officeCodePart1 || '';
+    const officeCodePart2 = companyInfo?.officeCodePart2 || '';
+    console.log('Office code parts:', { officeCodePart1, officeCodePart2 });
+    
+    // 最初の数字2桁(間隔はx座標13開ける）：(86,80)
+    if (officeCodePart1) {
+      let xPos = 87;
+      for (let i = 0; i < officeCodePart1.length; i++) {
+        page.drawText(officeCodePart1[i], {
+          x: xPos,
           y: height - 80,
           size: fontSize,
           font: font,
         });
-      }
-      // 英数字4桁(間隔はx座標10くらい開ける）：(105,80)
-      if (officeCode.length >= 6) {
-        const part2 = officeCode.substring(2, 6);
-        page.drawText(part2, {
-          x: 105,
-          y: height - 80,
-          size: fontSize,
-          font: font,
-        });
+        xPos += 13; // 次の文字の左端位置（間隔13座標分）
       }
     }
     
-    // ③事業所番号(間隔はx座標12くらい開ける）：(197,80)
+    // 第2部の英数字4桁(間隔はx座標13開ける）：(118,80)
+    if (officeCodePart2) {
+      let xPos = 118;
+      for (let i = 0; i < officeCodePart2.length; i++) {
+        page.drawText(officeCodePart2[i], {
+          x: xPos,
+          y: height - 80,
+          size: fontSize,
+          font: font,
+        });
+        xPos += 13.5; // 次の文字の左端位置（間隔13座標分）
+      }
+    }
+    
+    // ③事業所番号(間隔はx座標17開ける）：(210,80)
+    // x座標は各文字の左端として扱う
     if (companyInfo?.officeNumber) {
       const officeNumber = companyInfo.officeNumber;
-      let xPos = 197;
+      let xPos = 210;
       for (let i = 0; i < officeNumber.length; i++) {
         page.drawText(officeNumber[i], {
           x: xPos,
@@ -319,131 +360,203 @@ export class PdfEditService {
           size: fontSize,
           font: font,
         });
-        xPos += 12;
+        xPos += 17; // 次の文字の左端位置（間隔17座標分）
       }
     }
     
     // ④事業所郵便番号
+    // x座標は各文字の左端として扱う
     if (companyInfo?.officePostalCode) {
       const postalCode = companyInfo.officePostalCode.replace(/\D/g, '');
-      // 最初の3桁：(70,103)
+      // 最初の3桁：(80,101)
       if (postalCode.length >= 3) {
-        page.drawText(postalCode.substring(0, 3), {
-          x: 70,
-          y: height - 103,
-          size: fontSize,
-          font: font,
-        });
+        let xPos = 80;
+        for (let i = 0; i < 3; i++) {
+          page.drawText(postalCode[i], {
+            x: xPos,
+            y: height - 101,
+            size: fontSize,
+            font: font,
+          });
+          xPos += 5; // 次の文字の左端位置（間隔5座標分）
+        }
       }
-      // 残りの4桁：(110,103)
+      // 残りの4桁：(123,101)
       if (postalCode.length >= 7) {
-        page.drawText(postalCode.substring(3, 7), {
-          x: 110,
-          y: height - 103,
-          size: fontSize,
-          font: font,
-        });
+        let xPos = 123;
+        for (let i = 3; i < 7; i++) {
+          page.drawText(postalCode[i], {
+            x: xPos,
+            y: height - 101,
+            size: fontSize,
+            font: font,
+          });
+          xPos += 5; // 次の文字の左端位置（間隔5座標分）
+        }
       }
     }
     
-    // ⑤事業所所在地：(50,120)※表示がx=270を超える場合は文字を少し小さくして折り返し表示する。
+    // ⑤事業所所在地：(65,120)
+    // ※23文字を超えた以降の値は、(65,137)から追加で表示
     if (companyInfo?.officeAddress && hasJapaneseFont) {
       const address = companyInfo.officeAddress;
-      this.drawTextWithWrap(page, font, address, 50, height - 120, 270, fontSize, hasJapaneseFont);
+      if (address.length <= 23) {
+        page.drawText(address, {
+          x: 65,
+          y: height - 120,
+          size: fontSize,
+          font: font,
+        });
+      } else {
+        // 最初の23文字
+        page.drawText(address.substring(0, 23), {
+          x: 65,
+          y: height - 120,
+          size: fontSize,
+          font: font,
+        });
+        // 23文字以降は(65,137)から表示
+        page.drawText(address.substring(23), {
+          x: 65,
+          y: height - 137,
+          size: fontSize,
+          font: font,
+        });
+      }
     }
     
-    // ⑥事業所名称：(50,160)※表示がx=270を超える場合は文字を少し小さくして折り返し表示する。
+    // ⑥事業所名称：(65,155)
+    // ※23文字を超えた以降の値は、(65,171)から追加で表示
     if (companyInfo?.officeName && hasJapaneseFont) {
       const officeName = companyInfo.officeName;
-      this.drawTextWithWrap(page, font, officeName, 50, height - 160, 270, fontSize, hasJapaneseFont);
+      if (officeName.length <= 23) {
+        page.drawText(officeName, {
+          x: 65,
+          y: height - 155,
+          size: fontSize,
+          font: font,
+        });
+      } else {
+        // 最初の23文字
+        page.drawText(officeName.substring(0, 23), {
+          x: 65,
+          y: height - 155,
+          size: fontSize,
+          font: font,
+        });
+        // 23文字以降は(65,171)から表示
+        page.drawText(officeName.substring(23), {
+          x: 65,
+          y: height - 171,
+          size: fontSize,
+          font: font,
+        });
+      }
     }
     
-    // ⑦事業主氏名：(50,180)
+    // ⑦事業主氏名：(65,183)
     if (companyInfo?.employerName && hasJapaneseFont) {
       page.drawText(companyInfo.employerName, {
-        x: 50,
-        y: height - 180,
+        x: 65,
+        y: height - 183,
         size: fontSize,
         font: font,
       });
     }
     
     // ⑧事業所電話番号
+    // x座標は各文字の左端として扱う
     if (companyInfo?.officePhoneNumber) {
       const phone = companyInfo.officePhoneNumber.replace(/\D/g, '');
-      // 最初の2桁：(90,202)
+      // 最初の2桁：(115,203)
       if (phone.length >= 2) {
-        page.drawText(phone.substring(0, 2), {
-          x: 90,
-          y: height - 202,
-          size: fontSize,
-          font: font,
-        });
+        let xPos = 115;
+        for (let i = 0; i < 2; i++) {
+          page.drawText(phone[i], {
+            x: xPos,
+            y: height - 203,
+            size: fontSize,
+            font: font,
+          });
+          xPos += 5; // 次の文字の左端位置（間隔5座標分）
+        }
       }
-      // 次の4桁：(150,202)
+      // 次の4桁：(160,203)
       if (phone.length >= 6) {
-        page.drawText(phone.substring(2, 6), {
-          x: 150,
-          y: height - 202,
-          size: fontSize,
-          font: font,
-        });
+        let xPos = 160;
+        for (let i = 2; i < 6; i++) {
+          page.drawText(phone[i], {
+            x: xPos,
+            y: height - 203,
+            size: fontSize,
+            font: font,
+          });
+          xPos += 5; // 次の文字の左端位置（間隔5座標分）
+        }
       }
-      // 残った数字：(205,202)
+      // 残った数字：(220,203)
       if (phone.length > 6) {
-        page.drawText(phone.substring(6), {
-          x: 205,
-          y: height - 202,
-          size: fontSize,
-          font: font,
-        });
+        let xPos = 220;
+        for (let i = 6; i < phone.length; i++) {
+          page.drawText(phone[i], {
+            x: xPos,
+            y: height - 203,
+            size: fontSize,
+            font: font,
+          });
+          xPos += 5; // 次の文字の左端位置（間隔5座標分）
+        }
       }
     }
     
-    // ⑨被保険者氏名（フリガナ）※小さめのフォント
+    // ⑨被保険者氏名（フリガナ）※小さめのフォント、指定したX座標は要素の中心
     const nameKana = employeeData.nameKana || '';
     if (nameKana && hasJapaneseFont) {
       // 姓と名を分割
       const nameKanaParts = this.splitName(nameKana);
-      // 姓：(135,220)
+      // 姓：(170,221) - X座標は要素の中心
       if (nameKanaParts.lastName) {
+        const textWidth = this.getTextWidth(nameKanaParts.lastName, smallFontSize, font);
         page.drawText(nameKanaParts.lastName, {
-          x: 135,
-          y: height - 220,
+          x: 170 - (textWidth / 2),
+          y: height - 221,
           size: smallFontSize,
           font: font,
         });
       }
-      // 名：(235,220)
+      // 名：(280,221) - X座標は要素の中心
       if (nameKanaParts.firstName) {
+        const textWidth = this.getTextWidth(nameKanaParts.firstName, smallFontSize, font);
         page.drawText(nameKanaParts.firstName, {
-          x: 235,
-          y: height - 220,
+          x: 270 - (textWidth / 2),
+          y: height - 221,
           size: smallFontSize,
           font: font,
         });
       }
     }
     
-    // ⑩被保険者氏名（漢字）
+    // ⑩被保険者氏名（漢字）※指定したX座標は要素の中心
     const name = employeeData.name || '';
     if (name && hasJapaneseFont) {
       // 姓と名を分割
       const nameParts = this.splitName(name);
-      // 姓：(130,238)
+      // 姓：(180,240) - X座標は要素の中心
       if (nameParts.lastName) {
+        const textWidth = this.getTextWidth(nameParts.lastName, fontSize, font);
         page.drawText(nameParts.lastName, {
-          x: 130,
-          y: height - 238,
+          x: 170 - (textWidth / 2),
+          y: height - 240,
           size: fontSize,
           font: font,
         });
       }
-      // 名：(235,238)
+      // 名：(295,240) - X座標は要素の中心
       if (nameParts.firstName) {
+        const textWidth = this.getTextWidth(nameParts.firstName, fontSize, font);
         page.drawText(nameParts.firstName, {
-          x: 235,
-          y: height - 238,
+          x: 270 - (textWidth / 2),
+          y: height - 240,
           size: fontSize,
           font: font,
         });
@@ -458,63 +571,65 @@ export class PdfEditService {
       const month = String(birthDate.getMonth() + 1).padStart(2, '0');
       const day = String(birthDate.getDate()).padStart(2, '0');
       
-      // 元号の丸を描画
+      // 元号の丸を描画（直径3座標分）
       if (era === '昭和') {
-        this.drawCircle(page, 350, height - 222, 4, font);
+        this.drawCircle(page, 363, height - 222, 1.5, font);
       } else if (era === '平成') {
-        this.drawCircle(page, 350, height - 230, 4, font);
+        this.drawCircle(page, 362, height - 230, 1.5, font);
       } else if (era === '令和') {
-        this.drawCircle(page, 350, height - 240, 4, font);
+        this.drawCircle(page, 362, height - 240, 1.5, font);
       }
       
-      // 年（1月の場合は01と記入。数字の間隔を5座標分開ける。月も日も同様）：(370,230)
-      let xPos = 370;
+      // 年（1月の場合は01と記入。間隔はx座標12開ける。月も日も同様）：(382,233)
+      // x座標は各文字の左端として扱う
+      let xPos = 382;
       const yearStr = String(eraYear).padStart(2, '0');
       for (let i = 0; i < yearStr.length; i++) {
         page.drawText(yearStr[i], {
           x: xPos,
-          y: height - 230,
+          y: height - 233,
           size: fontSize,
           font: font,
         });
-        xPos += 5;
+        xPos += 12; // 次の文字の左端位置（間隔12座標分）
       }
       
-      // 月：(390,230)
-      xPos = 390;
+      // 月：(408,233)
+      xPos = 408;
       for (let i = 0; i < month.length; i++) {
         page.drawText(month[i], {
           x: xPos,
-          y: height - 230,
+          y: height - 233,
           size: fontSize,
           font: font,
         });
-        xPos += 5;
+        xPos += 12; // 次の文字の左端位置（間隔12座標分）
       }
       
-      // 日：(413,230)
-      xPos = 413;
+      // 日：(433,233)
+      xPos = 433;
       for (let i = 0; i < day.length; i++) {
         page.drawText(day[i], {
           x: xPos,
-          y: height - 230,
+          y: height - 233,
           size: fontSize,
           font: font,
         });
-        xPos += 5;
+        xPos += 12; // 次の文字の左端位置（間隔12座標分）
       }
     }
     
-    // ⑫性別※指定の場所に直径6座標分の〇を付ける
+    // ⑫性別※指定の場所に直径4座標分の〇を付ける
     const gender = employeeData.gender || '';
-    if (gender === '男') {
-      this.drawCircle(page, 480, height - 223, 3, font);
-    } else if (gender === '女') {
-      this.drawCircle(page, 480, height - 228, 3, font);
+    console.log('Gender for PDF:', gender, 'from employeeData:', employeeData);
+    if (gender === '男' || gender === '男性') {
+      this.drawCircle(page, 492, height - 220, 2, font);
+    } else if (gender === '女' || gender === '女性') {
+      this.drawCircle(page, 492, height - 225, 2, font);
     }
     
-    // ⑬指定の場所に直径6座標分の〇付け：(49,252)
-    this.drawCircle(page, 49, height - 252, 3, font);
+    // ⑬指定の場所に直径4座標分の〇付け：(62,252)
+    this.drawCircle(page, 62, height - 252, 2, font);
     
     // ⑭マイナンバー（マイナンバーの情報が無い場合は基礎年金番号を入力、どちらの場合も数字の間隔を12座標分開ける）
     let myNumber = '';
@@ -531,29 +646,32 @@ export class PdfEditService {
       basicPensionNumber = (employeeData.basicPensionNumberPart1 + employeeData.basicPensionNumberPart2).replace(/\D/g, '');
     }
     
-    // マイナンバー(ハイフンなしで12桁ならべて入力)：(102,265)
-    // 基礎年金番号(ハイフンなしで10桁ならべて入力)：(102,265)
+    // マイナンバー(ハイフンなしで12桁ならべて入力)：(123,267)
+    // 基礎年金番号(ハイフンなしで10桁ならべて入力)：(123,267)
+    // x座標は各文字の左端として扱う、間隔は18座標分
+    let hasMyNumber = false;
     if (myNumber && myNumber.length === 12) {
-      let xPos = 102;
+      hasMyNumber = true;
+      let xPos = 123;
       for (let i = 0; i < myNumber.length; i++) {
         page.drawText(myNumber[i], {
           x: xPos,
-          y: height - 265,
+          y: height - 267,
           size: fontSize,
           font: font,
         });
-        xPos += 12;
+        xPos += 17.5; // 次の文字の左端位置（間隔18座標分）
       }
     } else if (basicPensionNumber && basicPensionNumber.length === 10) {
-      let xPos = 102;
+      let xPos = 123;
       for (let i = 0; i < basicPensionNumber.length; i++) {
         page.drawText(basicPensionNumber[i], {
           x: xPos,
-          y: height - 265,
+          y: height - 267,
           size: fontSize,
           font: font,
         });
-        xPos += 12;
+        xPos += 18; // 次の文字の左端位置（間隔18座標分）
       }
     }
     
@@ -564,130 +682,163 @@ export class PdfEditService {
       const monthAcq = String(acquisitionDate.getMonth() + 1).padStart(2, '0');
       const dayAcq = String(acquisitionDate.getDate()).padStart(2, '0');
       
-      // 年（令和１年の場合は01と入力、間隔5座標分開ける。月も日も同様）：(370,265)
-      let xPos = 370;
+      // 年（令和１年の場合は01と入力、間隔はx座標12開ける。月も日も同様）：(382,267)
+      // x座標は各文字の左端として扱う
+      let xPos = 382;
       const yearStrAcq = String(reiwaYearAcq).padStart(2, '0');
       for (let i = 0; i < yearStrAcq.length; i++) {
         page.drawText(yearStrAcq[i], {
           x: xPos,
-          y: height - 265,
+          y: height - 267,
           size: fontSize,
           font: font,
         });
-        xPos += 5;
+        xPos += 12; // 次の文字の左端位置（間隔12座標分）
       }
       
-      // 月：(389,265)
-      xPos = 389;
+      // 月：(408,267)
+      xPos = 408;
       for (let i = 0; i < monthAcq.length; i++) {
         page.drawText(monthAcq[i], {
           x: xPos,
-          y: height - 265,
+          y: height - 267,
           size: fontSize,
           font: font,
         });
-        xPos += 5;
+        xPos += 12; // 次の文字の左端位置（間隔12座標分）
       }
       
-      // 日：(425,265)
-      xPos = 425;
+      // 日：(433,267)
+      xPos = 433;
       for (let i = 0; i < dayAcq.length; i++) {
         page.drawText(dayAcq[i], {
           x: xPos,
-          y: height - 265,
+          y: height - 267,
           size: fontSize,
           font: font,
         });
-        xPos += 5;
+        xPos += 12; // 次の文字の左端位置（間隔12座標分）
       }
     }
     
     // ⑯被扶養者（指定の場所に直径8座標分の丸を付ける）
     const hasDependents = employeeData.hasDependents === 'true' || employeeData.dependentStatus === '有';
     if (hasDependents) {
-      this.drawCircle(page, 527, height - 265, 4, font);
+      this.drawCircle(page, 544, height - 263, 4, font);
     } else {
-      this.drawCircle(page, 483, height - 265, 4, font);
+      this.drawCircle(page, 600, height - 263, 4, font);
     }
     
     // ⑰見込み給与額
-    const standardMonthlySalary = employeeData.standardMonthlySalary || 0;
-    if (standardMonthlySalary > 0) {
-      // 給与：(80,285)
-      page.drawText('給与', {
-        x: 80,
-        y: height - 285,
-        size: fontSize,
-        font: font,
-      });
-      
-      // 現物：(80,305)
-      page.drawText('現物', {
-        x: 80,
-        y: height - 305,
-        size: fontSize,
-        font: font,
-      });
-      
-      // 給与と現物の合計額(数字の間隔を15座標分開ける、この要素だけx座標右詰め）：(295,300)
-      const salaryStr = String(standardMonthlySalary);
-      let xPos = 295 - (salaryStr.length * 15); // 右詰め
+    // 給与：expectedMonthlySalary
+    // 現物：expectedMonthlySalaryInKind
+    // 合計額：給与と現物の合計
+    const expectedMonthlySalary = parseFloat(employeeData.expectedMonthlySalary) || 0;
+    const expectedMonthlySalaryInKind = parseFloat(employeeData.expectedMonthlySalaryInKind) || 0;
+    const totalSalary = expectedMonthlySalary + expectedMonthlySalaryInKind;
+    console.log('Salary info:', { expectedMonthlySalary, expectedMonthlySalaryInKind, totalSalary });
+    
+    // 給与：(110,292)
+    if (expectedMonthlySalary > 0) {
+      const salaryStr = String(Math.floor(expectedMonthlySalary));
+      let xPos = 110;
       for (let i = 0; i < salaryStr.length; i++) {
         page.drawText(salaryStr[i], {
           x: xPos,
-          y: height - 300,
+          y: height - 292,
           size: fontSize,
           font: font,
         });
-        xPos += 15;
+        xPos += 5; // 次の文字の左端位置（間隔5座標分）
       }
     }
     
-    // ⑱備考(条件に当てはまれば指定の位置に直径6座標分の丸を付ける)
+    // 現物：(110,305)
+    if (expectedMonthlySalaryInKind > 0) {
+      const inKindStr = String(Math.floor(expectedMonthlySalaryInKind));
+      let xPos = 110;
+      for (let i = 0; i < inKindStr.length; i++) {
+        page.drawText(inKindStr[i], {
+          x: xPos,
+          y: height - 305,
+          size: fontSize,
+          font: font,
+        });
+        xPos += 5; // 次の文字の左端位置（間隔5座標分）
+      }
+    }
+    
+    // 給与と現物の合計額(数字の間隔を13座標分開ける、この要素だけx座標右詰め）：(318,305)
+    if (totalSalary > 0) {
+      const totalStr = String(Math.floor(totalSalary));
+      // 右詰め：最後の文字の右端が318になるように計算
+      let xPos = 318 - (totalStr.length * 13);
+      for (let i = 0; i < totalStr.length; i++) {
+        page.drawText(totalStr[i], {
+          x: xPos,
+          y: height - 305,
+          size: fontSize,
+          font: font,
+        });
+        xPos += 13; // 次の文字の左端位置（間隔13座標分）
+      }
+    }
+    
+    // ⑱備考(条件に当てはまれば指定の位置に直径4座標分の丸を付ける)
     const age = employeeData.age || 0;
     const isPartTime = employeeData.isPartTime === 'true';
     if (age >= 70) {
-      this.drawCircle(page, 357, height - 295, 3, font);
+      this.drawCircle(page, 370, height - 295, 2, font);
     }
     if (isPartTime) {
-      this.drawCircle(page, 440, height - 280, 3, font);
+      this.drawCircle(page, 450, height - 280, 2, font);
     }
     
-    // ⑲被保険者住所（⑭にて基礎年金番号を記入した場合のみ記入）
-    if (basicPensionNumber && basicPensionNumber.length === 10) {
+    // ⑲被保険者住所（⑭にてマイナンバーを記入した場合はPDFに情報を記入しない）
+    // 基礎年金番号を記入した場合のみ記入
+    if (!hasMyNumber && basicPensionNumber && basicPensionNumber.length === 10) {
       const postalCode = (employeeData.currentPostalCode || employeeData.postalCode || '').replace(/\D/g, '');
       const address = employeeData.currentAddress || employeeData.address || '';
       const addressKana = employeeData.currentAddressKana || employeeData.addressKana || '';
       
-      // 郵便番号の最初の3桁（小さめのフォント）：(60,320)
+      // 郵便番号の最初の3桁（小さめのフォント）：(72,321)
+      // x座標は各文字の左端として扱う
       if (postalCode.length >= 3) {
-        page.drawText(postalCode.substring(0, 3), {
-          x: 60,
-          y: height - 320,
-          size: smallFontSize,
-          font: font,
-        });
+        let xPos = 72;
+        for (let i = 0; i < 3; i++) {
+          page.drawText(postalCode[i], {
+            x: xPos,
+            y: height - 321,
+            size: smallFontSize,
+            font: font,
+          });
+          xPos += 4; // 次の文字の左端位置（小さめフォントなので間隔4座標分）
+        }
       }
       
-      // 郵便番号の残りの4桁（小さめのフォント）：(78,320)
+      // 郵便番号の残りの4桁（小さめのフォント）：(97,321)
       if (postalCode.length >= 7) {
-        page.drawText(postalCode.substring(3, 7), {
-          x: 78,
-          y: height - 320,
-          size: smallFontSize,
-          font: font,
-        });
+        let xPos = 97;
+        for (let i = 3; i < 7; i++) {
+          page.drawText(postalCode[i], {
+            x: xPos,
+            y: height - 321,
+            size: smallFontSize,
+            font: font,
+          });
+          xPos += 4; // 次の文字の左端位置（小さめフォントなので間隔4座標分）
+        }
       }
       
-      // 住所(要素のx座標が300を超える場合は小さめのフォント）：(55,330)
+      // 住所(要素のx座標が300を超える場合は小さめのフォント）：(63,328)
       if (address && hasJapaneseFont) {
-        this.drawTextWithWrap(page, font, address, 55, height - 330, 300, fontSize, hasJapaneseFont);
+        this.drawTextWithWrap(page, font, address, 63, height - 328, 300, fontSize, hasJapaneseFont);
       }
       
-      // 住所（ヨミガナ）（小さめのフォント）：(130,319)
+      // 住所（ヨミガナ）（小さめのフォント）：(140,319)
       if (addressKana && hasJapaneseFont) {
         page.drawText(addressKana, {
-          x: 130,
+          x: 140,
           y: height - 319,
           size: smallFontSize,
           font: font,
@@ -699,8 +850,8 @@ export class PdfEditService {
     const qualificationCertificateRequired = employeeData.qualificationCertificateRequired || 
                                             employeeData.applicationData?.qualificationCertificateRequired;
     if (qualificationCertificateRequired === '必要') {
-      // チェックマークを描画：(478,325)
-      this.drawCheckMark(page, 478, height - 325, font);
+      // チェックマークを描画：(490,325)
+      this.drawCheckMark(page, 490, height - 325, font);
     }
     
     console.log('被保険者資格取得届の記入処理を実行しました');
@@ -717,19 +868,23 @@ export class PdfEditService {
     y: number,
     maxX: number,
     fontSize: number,
-    hasJapaneseFont: boolean
+    hasJapaneseFont: boolean,
+    wrapX?: number,
+    wrapY?: number
   ) {
     if (!hasJapaneseFont) return;
     
     let currentX = x;
     let currentY = y;
     const charWidth = fontSize * 0.6; // おおよその文字幅
+    const wrapStartX = wrapX !== undefined ? wrapX : x;
+    const wrapStartY = wrapY !== undefined ? wrapY : y;
     
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
       if (currentX + charWidth > maxX) {
-        // 折り返し
-        currentX = x;
+        // 折り返し（文字の間隔は変更せず、指定位置から折り返し）
+        currentX = wrapStartX;
         currentY -= fontSize * 1.2; // 行間
       }
       page.drawText(char, {
@@ -766,6 +921,24 @@ export class PdfEditService {
     }
     
     return { lastName: name, firstName: '' };
+  }
+  
+  /**
+   * テキストの幅を計算する（おおよその値）
+   */
+  private getTextWidth(text: string, fontSize: number, font: PDFFont): number {
+    // 日本語文字は約1.0倍、英数字は約0.6倍の幅と仮定
+    let width = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      // 日本語文字（ひらがな、カタカナ、漢字）の判定
+      if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(char)) {
+        width += fontSize * 1.0;
+      } else {
+        width += fontSize * 0.6;
+      }
+    }
+    return width;
   }
   
   /**
