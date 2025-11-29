@@ -91,6 +91,70 @@ export class HrDashboardComponent {
   }
 
   // 入社処理を実行
+  /**
+   * PDFのみ生成する（テスト用）
+   */
+  async generatePdfOnly() {
+    if (this.selectedEmployeeNumbers.size === 0) {
+      alert('処理する社員を選択してください');
+      return;
+    }
+
+    if (!confirm(`${this.selectedEmployeeNumbers.size}名の社員のPDFを生成しますか？\n（データの移動は行いません）`)) {
+      return;
+    }
+
+    this.isProcessingOnboarding = true;
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const employeeNumber of this.selectedEmployeeNumbers) {
+        const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
+        if (!employee) {
+          console.warn(`Employee not found: ${employeeNumber}`);
+          continue;
+        }
+
+        try {
+          // 健康保険・厚生年金保険被保険者資格取得届の文書発行（PDF生成のみ）
+          const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
+          if (employeeData) {
+            // PDFに従業員情報を自動記入
+            const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
+              '健康保険・厚生年金保険被保険者資格取得届',
+              employeeData
+            );
+            const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNumber}_${employee.name}.pdf`;
+            this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+            console.log(`PDF generated successfully for ${employeeNumber}: ${employee.name}`);
+            successCount++;
+          } else {
+            console.warn(`Employee data not found for ${employeeNumber}`);
+            alert(`${employee.name} (${employeeNumber}) のデータが見つかりませんでした`);
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`Error generating PDF for ${employeeNumber}:`, error);
+          alert(`${employee.name} (${employeeNumber}) のPDF生成に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+          errorCount++;
+        }
+      }
+
+      // モーダルは閉じない（テスト用なので）
+      if (errorCount === 0) {
+        alert(`${successCount}名の社員のPDFを生成しました`);
+      } else {
+        alert(`${successCount}名の社員のPDFを生成しました（${errorCount}名でエラーが発生しました）`);
+      }
+    } catch (error) {
+      console.error('Error generating PDFs:', error);
+      alert('PDF生成中にエラーが発生しました');
+    } finally {
+      this.isProcessingOnboarding = false;
+    }
+  }
+
   async executeOnboardingProcess() {
     if (this.selectedEmployeeNumbers.size === 0) {
       alert('処理する社員を選択してください');
@@ -107,23 +171,32 @@ export class HrDashboardComponent {
 
     try {
       for (const employeeNumber of this.selectedEmployeeNumbers) {
-        try {
-          const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
-          if (!employee) continue;
+        const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
+        if (!employee) {
+          console.warn(`Employee not found: ${employeeNumber}`);
+          continue;
+        }
 
+        try {
           // 1. 健康保険・厚生年金保険被保険者資格取得届の文書発行
           try {
             const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
             if (employeeData) {
+              // PDFに従業員情報を自動記入
               const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
                 '健康保険・厚生年金保険被保険者資格取得届',
                 employeeData
               );
               const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNumber}_${employee.name}.pdf`;
               this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+              console.log(`PDF generated successfully for ${employeeNumber}: ${employee.name}`);
+            } else {
+              console.warn(`Employee data not found for ${employeeNumber}`);
+              alert(`${employee.name} (${employeeNumber}) のデータが見つかりませんでした`);
             }
           } catch (pdfError) {
             console.error(`Error generating PDF for ${employeeNumber}:`, pdfError);
+            alert(`${employee.name} (${employeeNumber}) のPDF生成に失敗しました: ${pdfError instanceof Error ? pdfError.message : '不明なエラー'}`);
             // PDF生成エラーは警告のみ（処理は続行）
           }
 
@@ -139,9 +212,11 @@ export class HrDashboardComponent {
           await this.firestoreService.deleteOnboardingEmployee(employeeNumber);
 
           successCount++;
+          console.log(`Successfully processed employee ${employeeNumber}: ${employee.name}`);
         } catch (error) {
           console.error(`Error processing employee ${employeeNumber}:`, error);
           errorCount++;
+          alert(`${employee.name} (${employeeNumber}) の処理に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
         }
       }
 
@@ -2698,49 +2773,31 @@ export class HrDashboardComponent {
       // 文書に必要な情報を収集
       const documentInfo = await this.collectDocumentInfo(this.selectedDocumentType, employeeData);
 
-      // 1. テンプレートPDFをそのままダウンロード（情報を記入しない）
-      const pdfBytes = await this.pdfEditService.loadPdfTemplate(this.selectedDocumentType);
-      const pdfFileName = `${this.selectedDocumentType}_${this.selectedEmployee.employeeNumber}_${this.selectedEmployee.name}.pdf`;
-      this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+      // 1. 従業員データをPDFに記入してダウンロード
+      try {
+        const pdfBytes = await this.pdfEditService.fillPdfWithEmployeeData(
+          this.selectedDocumentType,
+          employeeData
+        );
+        const pdfFileName = `${this.selectedDocumentType}_${this.selectedEmployee.employeeNumber}_${this.selectedEmployee.name}.pdf`;
+        this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+        
+        // メッセージを表示
+        const hasMissingInfo = Object.values(documentInfo).some(value => value === '情報なし' || (typeof value === 'string' && value.includes('情報なし')));
+        if (hasMissingInfo) {
+          alert('PDFを作成しました。\n\n注意: 一部の情報が不足しているため、「情報なし」と記載されている箇所があります。\n不足している情報を確認し、必要に応じて設定ページや社員情報を更新してください。');
+        } else {
+          alert('PDFを作成しました。\n\n従業員情報を自動で記入したPDFをダウンロードしました。');
+        }
+      } catch (pdfError) {
+        console.error('PDF作成エラー:', pdfError);
+        alert(`PDFの作成に失敗しました: ${pdfError instanceof Error ? pdfError.message : '不明なエラー'}`);
+        // PDF作成に失敗した場合は、テンプレートPDFをそのままダウンロード
+        const pdfBytes = await this.pdfEditService.loadPdfTemplate(this.selectedDocumentType);
+        const pdfFileName = `${this.selectedDocumentType}_${this.selectedEmployee.employeeNumber}_${this.selectedEmployee.name}_テンプレート.pdf`;
+        this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
+      }
 
-      // 2. 必要な情報をテキストファイルとしてダウンロード
-      const hasMissingInfo = Object.values(documentInfo).some(value => value === '情報なし' || (typeof value === 'string' && value.includes('情報なし')));
-      
-      let fileContent = `${this.selectedDocumentType} 作成に必要な情報\n`;
-      fileContent += `========================================\n\n`;
-      fileContent += `社員番号: ${this.selectedEmployee.employeeNumber}\n`;
-      fileContent += `従業員氏名: ${this.selectedEmployee.name}\n\n`;
-      fileContent += `必要な情報一覧:\n`;
-      fileContent += `----------------------------------------\n\n`;
-      
-      for (const [key, value] of Object.entries(documentInfo)) {
-        fileContent += `${key}: ${value}\n`;
-      }
-      
-      if (hasMissingInfo) {
-        fileContent += `\n\n========================================\n`;
-        fileContent += `注意: 情報が不足しているため、「情報なし」と記載しています。\n`;
-        fileContent += `不足している情報を確認し、必要に応じて設定ページや社員情報を更新してください。\n`;
-      }
-      
-      // テキストファイルをダウンロード
-      const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const textFileName = `${this.selectedDocumentType}作成に必要な情報_${this.selectedEmployee.employeeNumber}_${this.selectedEmployee.name}.txt`;
-      link.download = textFileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      // メッセージを表示
-      if (hasMissingInfo) {
-        alert('文書テンプレートと必要な情報ファイルをダウンロードしました。\n\n注意: 情報が不足しているため、「情報なし」と記載しています。\n不足している情報を確認し、必要に応じて設定ページや社員情報を更新してください。');
-      } else {
-        alert('文書テンプレートと必要な情報ファイルをダウンロードしました。');
-      }
     } catch (error) {
       console.error('Error creating document:', error);
       alert('文書の作成に失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
