@@ -3610,18 +3610,26 @@ export class HrDashboardComponent {
         residentAddressKana: currentAddressKana,
         residentHouseholdHead: currentHouseholdHead
       });
-      this.onboardingEmployeeEditForm.get('residentPostalCode')?.disable();
-      this.onboardingEmployeeEditForm.get('residentAddress')?.disable();
-      this.onboardingEmployeeEditForm.get('residentAddressKana')?.disable();
-      this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.disable();
-    } else {
-      this.onboardingEmployeeEditForm.get('residentPostalCode')?.enable();
-      this.onboardingEmployeeEditForm.get('residentAddress')?.enable();
-      this.onboardingEmployeeEditForm.get('residentAddressKana')?.enable();
-      this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.enable();
+      // 労務担当も編集できるように、disable()を削除
     }
   }
   
+  // 新入社員の住民票住所を記載しないチェック変更
+  onOnboardingSkipResidentAddressChange(event: any) {
+    const skipResidentAddress = event.target.checked;
+    this.onboardingEmployeeEditForm.patchValue({
+      skipResidentAddress: skipResidentAddress
+    });
+    
+    // チェックが外れた場合、理由フィールドをクリア
+    if (!skipResidentAddress) {
+      this.onboardingEmployeeEditForm.patchValue({
+        residentAddressSkipReason: '',
+        residentAddressSkipReasonOther: ''
+      });
+    }
+  }
+
   // 新入社員の緊急連絡先住所が現住所と同じかチェック
   onOnboardingSameAddressForEmergencyChange(event: any) {
     this.onboardingSameAsCurrentAddressForEmergency = event.target.checked;

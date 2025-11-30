@@ -651,7 +651,7 @@ export class PdfEditService {
     // 性別のx座標（年金基金に加入している場合は30増やす）
     let genderX = 492;
     if (hasPensionFund) {
-      genderX += 37;
+      genderX += 35;
     }
     
     // 性別のy座標（坑内員の場合は230に設定、それ以外は通常通り）
@@ -1015,9 +1015,9 @@ export class PdfEditService {
         
         // 理由に応じて〇を付ける（直径3座標分）
         if (residentAddressSkipReason === '海外在住' || residentAddressSkipReason === 'Overseas Resident') {
-          this.drawCircle(page, 345, y(314), 1.5, font);
+          this.drawCircle(page, 345, y(313), 1.5, font);
         } else if (residentAddressSkipReason === '短期留学' || residentAddressSkipReason === 'Short-term Study Abroad') {
-          this.drawCircle(page, 345, y(319), 1.5, font);
+          this.drawCircle(page, 345, y(318), 1.5, font);
         } else if (residentAddressSkipReason === 'その他' || residentAddressSkipReason === 'Other') {
           this.drawCircle(page, 345, y(324), 1.5, font);
           

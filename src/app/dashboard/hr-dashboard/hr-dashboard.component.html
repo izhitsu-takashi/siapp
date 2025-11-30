@@ -3068,8 +3068,7 @@
               maxlength="7"
               pattern="[0-9]{7}"
               title="7桁の数字を入力してください"
-              (input)="formatOnboardingPostalCode($event)"
-              [readonly]="onboardingSameAsCurrentAddress"
+              readonly
             >
             <small class="form-hint">7桁の数字で入力してください</small>
           </div>
@@ -3080,7 +3079,7 @@
               formControlName="residentAddress" 
               class="form-input" 
               rows="2"
-              [readonly]="onboardingSameAsCurrentAddress"
+              readonly
             ></textarea>
           </div>
           <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('skipResidentAddress')?.value">
@@ -3090,7 +3089,7 @@
               formControlName="residentAddressKana" 
               class="form-input" 
               rows="2"
-              [readonly]="onboardingSameAsCurrentAddress"
+              readonly
             ></textarea>
           </div>
         </div>
