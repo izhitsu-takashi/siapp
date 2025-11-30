@@ -1508,7 +1508,188 @@
           </div>
         </section>
 
-        <!-- 扶養者情報欄（人事専用） -->
+        <!-- 坑内員欄（人事専用） -->
+        <section class="form-section hr-only-section">
+          <h3 class="section-title">坑内員（人事専用）</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>坑内員であるか</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="isMiner" 
+                    value="はい"
+                    name="employee-isMiner"
+                  >
+                  はい
+                </label>
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="isMiner" 
+                    value="いいえ"
+                    name="employee-isMiner"
+                  >
+                  いいえ
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- その他資格情報欄（人事専用） -->
+        <section class="form-section hr-only-section">
+          <h3 class="section-title">その他資格情報（人事専用）</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>二以上事業所勤務者の取得か</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="multipleWorkplaceAcquisition" 
+                    value="はい"
+                    name="employee-multipleWorkplaceAcquisition"
+                  >
+                  はい
+                </label>
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="multipleWorkplaceAcquisition" 
+                    value="いいえ"
+                    name="employee-multipleWorkplaceAcquisition"
+                  >
+                  いいえ
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>退職後の継続再雇用者の取得か</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="reemploymentAfterRetirement" 
+                    value="はい"
+                    name="employee-reemploymentAfterRetirement"
+                  >
+                  はい
+                </label>
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="reemploymentAfterRetirement" 
+                    value="いいえ"
+                    name="employee-reemploymentAfterRetirement"
+                  >
+                  いいえ
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>その他</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="otherQualificationAcquisition" 
+                    value="はい"
+                    name="employee-otherQualificationAcquisition"
+                    (change)="onEmployeeOtherQualificationAcquisitionChange($event)"
+                  >
+                  はい
+                </label>
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="otherQualificationAcquisition" 
+                    value="いいえ"
+                    name="employee-otherQualificationAcquisition"
+                    (change)="onEmployeeOtherQualificationAcquisitionChange($event)"
+                  >
+                  いいえ
+                </label>
+              </div>
+            </div>
+            <div class="form-group full-width" *ngIf="employeeEditForm.get('otherQualificationAcquisition')?.value === 'はい'">
+              <label for="employee-otherQualificationReason">理由 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="employee-otherQualificationReason" 
+                formControlName="otherQualificationReason" 
+                class="form-input"
+                placeholder="理由を入力してください"
+              >
+              <div *ngIf="employeeEditForm.get('otherQualificationReason')?.invalid && employeeEditForm.get('otherQualificationReason')?.touched" class="error-message">
+                理由を入力してください
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 坑内員欄（人事専用） -->
+        <section class="form-section hr-only-section">
+          <h3 class="section-title">坑内員（人事専用）</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>坑内員であるか <span class="required">*</span></label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="isMiner" 
+                    value="はい"
+                    name="onboarding-isMiner"
+                  >
+                  はい
+                </label>
+                <label class="radio-label">
+                  <input 
+                    type="radio" 
+                    formControlName="isMiner" 
+                    value="いいえ"
+                    name="onboarding-isMiner"
+                  >
+                  いいえ
+                </label>
+              </div>
+            </div>
+        </div>
+      </section>
+
+      <!-- 坑内員欄（人事専用） -->
+      <section class="form-section hr-only-section">
+        <h3 class="section-title">坑内員（人事専用）</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>坑内員であるか</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="isMiner" 
+                  value="はい"
+                  name="onboarding-isMiner"
+                >
+                はい
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="isMiner" 
+                  value="いいえ"
+                  name="onboarding-isMiner"
+                >
+                いいえ
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 扶養者情報欄（人事専用） -->
         <section class="form-section hr-only-section">
           <h3 class="section-title">扶養者情報（人事専用）</h3>
           <div class="dependents-container">
@@ -2765,7 +2946,18 @@
       <section class="form-section">
         <h3 class="section-title">現住所と連絡先</h3>
         <div class="form-grid">
-          <div class="form-group">
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                formControlName="isOverseasResident"
+                [checked]="onboardingEmployeeEditForm.get('isOverseasResident')?.value"
+                [disabled]="true"
+              >
+              海外に在住
+            </label>
+          </div>
+          <div class="form-group" *ngIf="!onboardingEmployeeEditForm.get('isOverseasResident')?.value">
             <label for="onboarding-postalCode">郵便番号</label>
             <input 
               type="text" 
@@ -2780,7 +2972,7 @@
             >
             <small class="form-hint">7桁の数字で入力してください</small>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('isOverseasResident')?.value">
             <label for="onboarding-currentAddress">現住所</label>
             <textarea 
               id="onboarding-currentAddress" 
@@ -2789,13 +2981,23 @@
               rows="2"
             ></textarea>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('isOverseasResident')?.value">
             <label for="onboarding-currentAddressKana">現住所（ヨミガナ）</label>
             <textarea 
               id="onboarding-currentAddressKana" 
               formControlName="currentAddressKana" 
               class="form-input" 
               rows="2"
+            ></textarea>
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingEmployeeEditForm.get('isOverseasResident')?.value">
+            <label for="onboarding-overseasAddress">住所（海外）</label>
+            <textarea 
+              id="onboarding-overseasAddress" 
+              formControlName="overseasAddress" 
+              class="form-input" 
+              rows="2"
+              readonly
             ></textarea>
           </div>
           <div class="form-group">
@@ -2806,17 +3008,6 @@
               formControlName="phoneNumber" 
               class="form-input"
             >
-          </div>
-          <div class="form-group">
-            <label for="onboarding-currentHouseholdHead">世帯主（本人/親族）</label>
-            <select 
-              id="onboarding-currentHouseholdHead" 
-              formControlName="currentHouseholdHead" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-            </select>
           </div>
         </div>
       </section>
@@ -2829,13 +3020,60 @@
             <label class="checkbox-label">
               <input 
                 type="checkbox" 
+                formControlName="skipResidentAddress"
+                [checked]="onboardingEmployeeEditForm.get('skipResidentAddress')?.value"
+                [disabled]="true"
+              >
+              住民票住所を記載しない
+            </label>
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingEmployeeEditForm.get('skipResidentAddress')?.value">
+            <label for="onboarding-residentAddressSkipReason">理由</label>
+            <input 
+              type="text" 
+              id="onboarding-residentAddressSkipReason" 
+              formControlName="residentAddressSkipReason" 
+              class="form-input"
+              readonly
+            >
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingEmployeeEditForm.get('skipResidentAddress')?.value && onboardingEmployeeEditForm.get('residentAddressSkipReason')?.value === 'その他'">
+            <label for="onboarding-residentAddressSkipReasonOther">理由（その他）</label>
+            <input 
+              type="text" 
+              id="onboarding-residentAddressSkipReasonOther" 
+              formControlName="residentAddressSkipReasonOther" 
+              class="form-input"
+              readonly
+            >
+          </div>
+          <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('skipResidentAddress')?.value">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
                 [checked]="onboardingSameAsCurrentAddress" 
                 (change)="onOnboardingSameAddressChange($event)"
               >
               住所（現住所と同じ）
             </label>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group" *ngIf="!onboardingEmployeeEditForm.get('skipResidentAddress')?.value">
+            <label for="onboarding-residentPostalCode">郵便番号</label>
+            <input 
+              type="text" 
+              id="onboarding-residentPostalCode" 
+              formControlName="residentPostalCode" 
+              class="form-input"
+              placeholder="例: 1234567"
+              maxlength="7"
+              pattern="[0-9]{7}"
+              title="7桁の数字を入力してください"
+              (input)="formatOnboardingPostalCode($event)"
+              [readonly]="onboardingSameAsCurrentAddress"
+            >
+            <small class="form-hint">7桁の数字で入力してください</small>
+          </div>
+          <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('skipResidentAddress')?.value">
             <label for="onboarding-residentAddress">住所</label>
             <textarea 
               id="onboarding-residentAddress" 
@@ -2845,7 +3083,7 @@
               [readonly]="onboardingSameAsCurrentAddress"
             ></textarea>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('skipResidentAddress')?.value">
             <label for="onboarding-residentAddressKana">住所（ヨミガナ）</label>
             <textarea 
               id="onboarding-residentAddressKana" 
@@ -2854,17 +3092,6 @@
               rows="2"
               [readonly]="onboardingSameAsCurrentAddress"
             ></textarea>
-          </div>
-          <div class="form-group">
-            <label for="onboarding-residentHouseholdHead">世帯主（本人/親族）</label>
-            <select 
-              id="onboarding-residentHouseholdHead" 
-              formControlName="residentHouseholdHead" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-            </select>
           </div>
         </div>
       </section>
@@ -3232,6 +3459,160 @@
             </select>
             <div *ngIf="onboardingEmployeeEditForm.get('insuranceCardDistributionStatus')?.invalid && onboardingEmployeeEditForm.get('insuranceCardDistributionStatus')?.touched" class="error-message">
               配布状況を選択してください
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 年金基金加入欄 -->
+      <section class="form-section">
+        <h3 class="section-title">年金基金加入</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>年金基金に加入しているか</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="pensionFundMembership" 
+                  value="はい"
+                  name="onboarding-pensionFundMembership"
+                >
+                はい
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="pensionFundMembership" 
+                  value="いいえ"
+                  name="onboarding-pensionFundMembership"
+                >
+                いいえ
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 坑内員欄（人事専用） -->
+      <section class="form-section hr-only-section">
+        <h3 class="section-title">坑内員（人事専用）</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>坑内員であるか <span class="required">*</span></label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="isMiner" 
+                  value="はい"
+                  name="onboarding-isMiner"
+                >
+                はい
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="isMiner" 
+                  value="いいえ"
+                  name="onboarding-isMiner"
+                >
+                いいえ
+              </label>
+            </div>
+            <div *ngIf="onboardingEmployeeEditForm.get('isMiner')?.invalid && onboardingEmployeeEditForm.get('isMiner')?.touched" class="error-message">
+              坑内員であるかを選択してください
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- その他資格情報欄（人事専用） -->
+      <section class="form-section hr-only-section">
+        <h3 class="section-title">その他資格情報（人事専用）</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>二以上事業所勤務者の取得か</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="multipleWorkplaceAcquisition" 
+                  value="はい"
+                  name="onboarding-multipleWorkplaceAcquisition"
+                >
+                はい
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="multipleWorkplaceAcquisition" 
+                  value="いいえ"
+                  name="onboarding-multipleWorkplaceAcquisition"
+                >
+                いいえ
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>退職後の継続再雇用者の取得か</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="reemploymentAfterRetirement" 
+                  value="はい"
+                  name="onboarding-reemploymentAfterRetirement"
+                >
+                はい
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="reemploymentAfterRetirement" 
+                  value="いいえ"
+                  name="onboarding-reemploymentAfterRetirement"
+                >
+                いいえ
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>その他</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="otherQualificationAcquisition" 
+                  value="はい"
+                  name="onboarding-otherQualificationAcquisition"
+                  (change)="onOtherQualificationAcquisitionChange($event)"
+                >
+                はい
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="otherQualificationAcquisition" 
+                  value="いいえ"
+                  name="onboarding-otherQualificationAcquisition"
+                  (change)="onOtherQualificationAcquisitionChange($event)"
+                >
+                いいえ
+              </label>
+            </div>
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingEmployeeEditForm.get('otherQualificationAcquisition')?.value === 'はい'">
+            <label for="onboarding-otherQualificationReason">理由 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="onboarding-otherQualificationReason" 
+              formControlName="otherQualificationReason" 
+              class="form-input"
+              placeholder="理由を入力してください"
+            >
+            <div *ngIf="onboardingEmployeeEditForm.get('otherQualificationReason')?.invalid && onboardingEmployeeEditForm.get('otherQualificationReason')?.touched" class="error-message">
+              理由を入力してください
             </div>
           </div>
         </div>

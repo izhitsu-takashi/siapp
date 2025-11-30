@@ -1456,7 +1456,18 @@ export class HrDashboardComponent {
   async loadEmployees() {
     try {
       const allEmployees = await this.firestoreService.getAllEmployees();
-      this.employees = allEmployees
+      // 新入社員コレクションに存在する社員を取得（入社手続きが完了していない社員を除外するため）
+      const onboardingEmployees = await this.firestoreService.getAllOnboardingEmployees();
+      const onboardingEmployeeNumbers = new Set(
+        onboardingEmployees.map(emp => emp.employeeNumber).filter(num => num)
+      );
+      
+      // 新入社員コレクションに存在しない社員のみを表示（入社手続きが完了した社員のみ）
+      const completedEmployees = allEmployees.filter(
+        emp => emp.employeeNumber && !onboardingEmployeeNumbers.has(emp.employeeNumber)
+      );
+      
+      this.employees = completedEmployees
         .filter(emp => emp.employeeNumber && emp.name && emp.email && emp.employmentType)
         .map(emp => ({
           employeeNumber: emp.employeeNumber,
@@ -1465,8 +1476,8 @@ export class HrDashboardComponent {
           employmentType: emp.employmentType
         }));
       
-      // 文書作成用の全従業員データも読み込む
-      this.allEmployeesForDocument = allEmployees;
+      // 文書作成用の全従業員データも読み込む（新入社員を除外）
+      this.allEmployeesForDocument = completedEmployees;
       this.filteredEmployees = this.employees;
     } catch (error) {
       console.error('Error loading employees:', error);
@@ -1599,17 +1610,21 @@ export class HrDashboardComponent {
       position: [''],
       
       // 現住所と連絡先
+      isOverseasResident: [false], // 海外に在住チェックボックス
       postalCode: ['', [Validators.pattern(/^\d{7}$/)]], // 郵便番号（数字7桁）
       currentAddress: [''],
       currentAddressKana: [''],
+      overseasAddress: [''], // 海外住所
       phoneNumber: [''],
-      currentHouseholdHead: [''],
       
       // 住民票住所
       sameAsCurrentAddress: [false],
+      skipResidentAddress: [false], // 住民票住所を記載しないチェックボックス
+      residentAddressSkipReason: [''], // 住民票住所を記載しない理由
+      residentAddressSkipReasonOther: [''], // その他の理由
+      residentPostalCode: [''], // 住民票住所の郵便番号
       residentAddress: [''],
       residentAddressKana: [''],
-      residentHouseholdHead: [''],
       
       // 緊急連絡先
       emergencyContact: this.fb.group({
@@ -1661,7 +1676,19 @@ export class HrDashboardComponent {
       // 人事専用情報（保険者種別）
       healthInsuranceType: [''], // 健康保険者種別
       nursingInsuranceType: [''], // 介護保険者種別
-      pensionInsuranceType: [''] // 厚生年金保険者種別
+      pensionInsuranceType: [''], // 厚生年金保険者種別
+      
+      // 坑内員（人事専用）
+      isMiner: ['', Validators.required], // はい/いいえ（必須）
+      
+      // 入社時申請の情報
+      pensionFundMembership: [''], // 年金基金加入
+      
+      // その他資格情報（人事専用）
+      multipleWorkplaceAcquisition: [''], // 二以上事業所勤務者の取得か（はい/いいえ）
+      reemploymentAfterRetirement: [''], // 退職後の継続再雇用者の取得か（はい/いいえ）
+      otherQualificationAcquisition: [''], // その他（はい/いいえ）
+      otherQualificationReason: [''] // その他の理由（バリデーションは動的に変更）
     });
   }
 
@@ -1775,7 +1802,16 @@ export class HrDashboardComponent {
       // 人事専用情報（保険者種別）
       healthInsuranceType: [''], // 健康保険者種別
       nursingInsuranceType: [''], // 介護保険者種別
-      pensionInsuranceType: [''] // 厚生年金保険者種別
+      pensionInsuranceType: [''], // 厚生年金保険者種別
+      
+      // 坑内員（人事専用）
+      isMiner: [''], // はい/いいえ
+      
+      // その他資格情報（人事専用）
+      multipleWorkplaceAcquisition: [''], // 二以上事業所勤務者の取得か（はい/いいえ）
+      reemploymentAfterRetirement: [''], // 退職後の継続再雇用者の取得か（はい/いいえ）
+      otherQualificationAcquisition: [''], // その他（はい/いいえ）
+      otherQualificationReason: [''] // その他の理由（バリデーションは動的に変更）
     });
   }
 
@@ -1787,12 +1823,33 @@ export class HrDashboardComponent {
         this.populateEmployeeEditForm(data);
       }
       
-      // 入社時申請から扶養者情報を取得
+      // 入社時申請から情報を取得
       try {
         const applications = await this.firestoreService.getEmployeeApplications(employeeNumber);
         const onboardingApplication = applications.find((app: any) => app.applicationType === '入社時申請');
-        if (onboardingApplication && onboardingApplication.dependentStatus) {
-          this.employeeDependentStatus = onboardingApplication.dependentStatus;
+        if (onboardingApplication) {
+          if (onboardingApplication.dependentStatus) {
+            this.employeeDependentStatus = onboardingApplication.dependentStatus;
+          }
+          // 入社時申請の情報を社員データに反映
+          if (onboardingApplication.isOverseasResident !== undefined) {
+            data.isOverseasResident = onboardingApplication.isOverseasResident;
+          }
+          if (onboardingApplication.overseasAddress) {
+            data.overseasAddress = onboardingApplication.overseasAddress;
+          }
+          if (onboardingApplication.skipResidentAddress !== undefined) {
+            data.skipResidentAddress = onboardingApplication.skipResidentAddress;
+          }
+          if (onboardingApplication.residentAddressSkipReason) {
+            data.residentAddressSkipReason = onboardingApplication.residentAddressSkipReason;
+          }
+          if (onboardingApplication.residentAddressSkipReasonOther) {
+            data.residentAddressSkipReasonOther = onboardingApplication.residentAddressSkipReasonOther;
+          }
+          if (onboardingApplication.pensionFundMembership) {
+            data.pensionFundMembership = onboardingApplication.pensionFundMembership;
+          }
         } else {
           this.employeeDependentStatus = '';
         }
@@ -2003,6 +2060,69 @@ export class HrDashboardComponent {
 
     // 残りのフィールドを設定
     this.employeeEditForm.patchValue(formData);
+    
+    // 入社時申請の情報を設定（海外在住、住民票住所を記載しない理由、年金基金加入、坑内員）
+    if (data.isOverseasResident !== undefined) {
+      this.employeeEditForm.patchValue({
+        isOverseasResident: data.isOverseasResident
+      });
+    }
+    if (data.overseasAddress) {
+      this.employeeEditForm.patchValue({
+        overseasAddress: data.overseasAddress
+      });
+    }
+    if (data.skipResidentAddress !== undefined) {
+      this.employeeEditForm.patchValue({
+        skipResidentAddress: data.skipResidentAddress
+      });
+    }
+    if (data.residentAddressSkipReason) {
+      this.employeeEditForm.patchValue({
+        residentAddressSkipReason: data.residentAddressSkipReason
+      });
+    }
+    if (data.residentAddressSkipReasonOther) {
+      this.employeeEditForm.patchValue({
+        residentAddressSkipReasonOther: data.residentAddressSkipReasonOther
+      });
+    }
+    if (data.pensionFundMembership) {
+      this.employeeEditForm.patchValue({
+        pensionFundMembership: data.pensionFundMembership
+      });
+    }
+    if (data.isMiner) {
+      this.employeeEditForm.patchValue({
+        isMiner: data.isMiner
+      });
+    }
+    
+    // その他資格情報を設定
+    if (data.multipleWorkplaceAcquisition) {
+      this.employeeEditForm.patchValue({
+        multipleWorkplaceAcquisition: data.multipleWorkplaceAcquisition
+      });
+    }
+    if (data.reemploymentAfterRetirement) {
+      this.employeeEditForm.patchValue({
+        reemploymentAfterRetirement: data.reemploymentAfterRetirement
+      });
+    }
+    if (data.otherQualificationAcquisition) {
+      this.employeeEditForm.patchValue({
+        otherQualificationAcquisition: data.otherQualificationAcquisition
+      });
+      // 「その他」が「はい」の場合、理由のバリデーションを追加
+      if (data.otherQualificationAcquisition === 'はい') {
+        this.employeeEditForm.get('otherQualificationReason')?.setValidators([Validators.required]);
+      }
+    }
+    if (data.otherQualificationReason) {
+      this.employeeEditForm.patchValue({
+        otherQualificationReason: data.otherQualificationReason
+      });
+    }
     
     // sameAsCurrentAddressがtrueの場合、住民票住所フィールドを無効化
     if (this.sameAsCurrentAddress) {
@@ -3021,15 +3141,21 @@ export class HrDashboardComponent {
         if (this.selectedOnboardingEmployee?.applicationData) {
           const appData = this.selectedOnboardingEmployee.applicationData;
           // 申請データから現住所と連絡先情報をマージ
+          if (appData.isOverseasResident !== undefined) data.isOverseasResident = appData.isOverseasResident;
           if (appData.postalCode) data.postalCode = appData.postalCode;
           if (appData.currentAddress) data.currentAddress = appData.currentAddress;
           if (appData.currentAddressKana) data.currentAddressKana = appData.currentAddressKana;
+          if (appData.overseasAddress) data.overseasAddress = appData.overseasAddress;
           if (appData.phoneNumber) data.phoneNumber = appData.phoneNumber;
-          if (appData.currentHouseholdHead) data.currentHouseholdHead = appData.currentHouseholdHead;
           // 申請データから住民票住所情報をマージ
+          if (appData.skipResidentAddress !== undefined) data.skipResidentAddress = appData.skipResidentAddress;
+          if (appData.residentAddressSkipReason) data.residentAddressSkipReason = appData.residentAddressSkipReason;
+          if (appData.residentAddressSkipReasonOther) data.residentAddressSkipReasonOther = appData.residentAddressSkipReasonOther;
+          if (appData.residentPostalCode) data.residentPostalCode = appData.residentPostalCode;
           if (appData.residentAddress) data.residentAddress = appData.residentAddress;
           if (appData.residentAddressKana) data.residentAddressKana = appData.residentAddressKana;
-          if (appData.residentHouseholdHead) data.residentHouseholdHead = appData.residentHouseholdHead;
+          // 申請データから年金基金加入情報をマージ
+          if (appData.pensionFundMembership) data.pensionFundMembership = appData.pensionFundMembership;
           // 申請データから配偶者情報をマージ
           if (appData.spouseStatus) data.spouseStatus = appData.spouseStatus;
           if (appData.spouseBasicPensionNumber) data.spouseBasicPensionNumber = appData.spouseBasicPensionNumber;
@@ -3195,6 +3321,80 @@ export class HrDashboardComponent {
       }
     }
     
+    // 海外在住情報を設定
+    if (data.isOverseasResident !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        isOverseasResident: data.isOverseasResident
+      });
+    }
+    if (data.overseasAddress) {
+      this.onboardingEmployeeEditForm.patchValue({
+        overseasAddress: data.overseasAddress
+      });
+    }
+    
+    // 住民票住所を記載しない情報を設定
+    if (data.skipResidentAddress !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        skipResidentAddress: data.skipResidentAddress
+      });
+    }
+    if (data.residentAddressSkipReason) {
+      this.onboardingEmployeeEditForm.patchValue({
+        residentAddressSkipReason: data.residentAddressSkipReason
+      });
+    }
+    if (data.residentAddressSkipReasonOther) {
+      this.onboardingEmployeeEditForm.patchValue({
+        residentAddressSkipReasonOther: data.residentAddressSkipReasonOther
+      });
+    }
+    
+    // 年金基金加入情報を設定
+    if (data.pensionFundMembership) {
+      this.onboardingEmployeeEditForm.patchValue({
+        pensionFundMembership: data.pensionFundMembership
+      });
+    }
+    // 申請データからも取得を試みる
+    if (this.selectedOnboardingEmployee?.applicationData) {
+      const appData = this.selectedOnboardingEmployee.applicationData;
+      if (appData.pensionFundMembership !== undefined && !data.pensionFundMembership) {
+        this.onboardingEmployeeEditForm.patchValue({
+          pensionFundMembership: appData.pensionFundMembership || ''
+        });
+      }
+    }
+    
+    // 坑内員情報を設定
+    if (data.isMiner) {
+      this.onboardingEmployeeEditForm.patchValue({
+        isMiner: data.isMiner
+      });
+    }
+    
+    // その他資格情報を設定
+    if (data.multipleWorkplaceAcquisition) {
+      this.onboardingEmployeeEditForm.patchValue({
+        multipleWorkplaceAcquisition: data.multipleWorkplaceAcquisition
+      });
+    }
+    if (data.reemploymentAfterRetirement) {
+      this.onboardingEmployeeEditForm.patchValue({
+        reemploymentAfterRetirement: data.reemploymentAfterRetirement
+      });
+    }
+    if (data.otherQualificationAcquisition) {
+      this.onboardingEmployeeEditForm.patchValue({
+        otherQualificationAcquisition: data.otherQualificationAcquisition
+      });
+    }
+    if (data.otherQualificationReason) {
+      this.onboardingEmployeeEditForm.patchValue({
+        otherQualificationReason: data.otherQualificationReason
+      });
+    }
+    
     // 厚生年金加入履歴の状態を設定
     this.onboardingHasPensionHistory = data.pensionHistoryStatus === '有';
     
@@ -3246,17 +3446,27 @@ export class HrDashboardComponent {
     // 住民票住所が現住所と同じかチェック
     this.onboardingSameAsCurrentAddress = data.sameAsCurrentAddress || false;
     if (this.onboardingSameAsCurrentAddress) {
+      const postalCode = this.onboardingEmployeeEditForm.get('postalCode')?.value || '';
       const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
       const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
       const currentHouseholdHead = this.onboardingEmployeeEditForm.get('currentHouseholdHead')?.value || '';
       this.onboardingEmployeeEditForm.patchValue({
+        residentPostalCode: postalCode,
         residentAddress: currentAddress,
         residentAddressKana: currentAddressKana,
         residentHouseholdHead: currentHouseholdHead
       });
+      this.onboardingEmployeeEditForm.get('residentPostalCode')?.disable();
       this.onboardingEmployeeEditForm.get('residentAddress')?.disable();
       this.onboardingEmployeeEditForm.get('residentAddressKana')?.disable();
       this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.disable();
+    }
+    
+    // 住民票住所の郵便番号を設定
+    if (data.residentPostalCode) {
+      this.onboardingEmployeeEditForm.patchValue({
+        residentPostalCode: data.residentPostalCode
+      });
     }
     
     // 緊急連絡先住所が現住所と同じかチェック
@@ -3285,6 +3495,38 @@ export class HrDashboardComponent {
     
     // 残りのフィールドを設定
     this.onboardingEmployeeEditForm.patchValue(data);
+    
+    // 入社時申請の情報を設定（海外在住、住民票住所を記載しない理由、年金基金加入）
+    if (data.isOverseasResident !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        isOverseasResident: data.isOverseasResident
+      });
+    }
+    if (data.overseasAddress) {
+      this.onboardingEmployeeEditForm.patchValue({
+        overseasAddress: data.overseasAddress
+      });
+    }
+    if (data.skipResidentAddress !== undefined) {
+      this.onboardingEmployeeEditForm.patchValue({
+        skipResidentAddress: data.skipResidentAddress
+      });
+    }
+    if (data.residentAddressSkipReason) {
+      this.onboardingEmployeeEditForm.patchValue({
+        residentAddressSkipReason: data.residentAddressSkipReason
+      });
+    }
+    if (data.residentAddressSkipReasonOther) {
+      this.onboardingEmployeeEditForm.patchValue({
+        residentAddressSkipReasonOther: data.residentAddressSkipReasonOther
+      });
+    }
+    if (data.pensionFundMembership) {
+      this.onboardingEmployeeEditForm.patchValue({
+        pensionFundMembership: data.pensionFundMembership
+      });
+    }
     
     // 年齢を計算
     const birthDate = this.onboardingEmployeeEditForm.get('birthDate')?.value;
@@ -3358,18 +3600,22 @@ export class HrDashboardComponent {
   onOnboardingSameAddressChange(event: any) {
     this.onboardingSameAsCurrentAddress = event.target.checked;
     if (this.onboardingSameAsCurrentAddress) {
+      const postalCode = this.onboardingEmployeeEditForm.get('postalCode')?.value || '';
       const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
       const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
       const currentHouseholdHead = this.onboardingEmployeeEditForm.get('currentHouseholdHead')?.value || '';
       this.onboardingEmployeeEditForm.patchValue({
+        residentPostalCode: postalCode,
         residentAddress: currentAddress,
         residentAddressKana: currentAddressKana,
         residentHouseholdHead: currentHouseholdHead
       });
+      this.onboardingEmployeeEditForm.get('residentPostalCode')?.disable();
       this.onboardingEmployeeEditForm.get('residentAddress')?.disable();
       this.onboardingEmployeeEditForm.get('residentAddressKana')?.disable();
       this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.disable();
     } else {
+      this.onboardingEmployeeEditForm.get('residentPostalCode')?.enable();
       this.onboardingEmployeeEditForm.get('residentAddress')?.enable();
       this.onboardingEmployeeEditForm.get('residentAddressKana')?.enable();
       this.onboardingEmployeeEditForm.get('residentHouseholdHead')?.enable();
@@ -3465,6 +3711,38 @@ export class HrDashboardComponent {
   toggleOnboardingMyNumber() {
     this.onboardingShowMyNumber = !this.onboardingShowMyNumber;
   }
+
+  // その他資格情報の「その他」変更処理（新入社員詳細モーダル用）
+  onOtherQualificationAcquisitionChange(event: any) {
+    const isOther = event.target.value === 'はい';
+    const otherQualificationReasonControl = this.onboardingEmployeeEditForm.get('otherQualificationReason');
+
+    if (isOther) {
+      // 「その他」が「はい」の場合：理由のバリデーションを追加
+      otherQualificationReasonControl?.setValidators([Validators.required]);
+    } else {
+      // 「その他」が「いいえ」の場合：理由のバリデーションを削除
+      otherQualificationReasonControl?.clearValidators();
+      otherQualificationReasonControl?.setValue('');
+    }
+    otherQualificationReasonControl?.updateValueAndValidity();
+  }
+
+  // その他資格情報の「その他」変更処理（社員情報編集モーダル用）
+  onEmployeeOtherQualificationAcquisitionChange(event: any) {
+    const isOther = event.target.value === 'はい';
+    const otherQualificationReasonControl = this.employeeEditForm.get('otherQualificationReason');
+
+    if (isOther) {
+      // 「その他」が「はい」の場合：理由のバリデーションを追加
+      otherQualificationReasonControl?.setValidators([Validators.required]);
+    } else {
+      // 「その他」が「いいえ」の場合：理由のバリデーションを削除
+      otherQualificationReasonControl?.clearValidators();
+      otherQualificationReasonControl?.setValue('');
+    }
+    otherQualificationReasonControl?.updateValueAndValidity();
+  }
   
   // 新入社員データを保存
   async saveOnboardingEmployeeData() {
@@ -3537,9 +3815,11 @@ export class HrDashboardComponent {
 
         // sameAsCurrentAddressがtrueの場合、住民票住所を現住所で上書き
         if (this.onboardingSameAsCurrentAddress) {
+          const postalCode = this.onboardingEmployeeEditForm.get('postalCode')?.value || '';
           const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
           const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
           const currentHouseholdHead = this.onboardingEmployeeEditForm.get('currentHouseholdHead')?.value || '';
+          formData.residentPostalCode = postalCode;
           formData.residentAddress = currentAddress;
           formData.residentAddressKana = currentAddressKana;
           formData.residentHouseholdHead = currentHouseholdHead;

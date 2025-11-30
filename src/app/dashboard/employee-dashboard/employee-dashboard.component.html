@@ -1305,8 +1305,18 @@
       <section class="form-section">
         <h3 class="section-title">現住所と連絡先</h3>
         <div class="form-grid">
-          <div class="form-group">
-            <label for="onboarding-postalCode">郵便番号 <span class="required">*</span></label>
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                formControlName="isOverseasResident"
+                (change)="onOverseasResidentChange($event)"
+              >
+              海外に在住
+            </label>
+          </div>
+          <div class="form-group" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value">
+            <label for="onboarding-postalCode">郵便番号</label>
             <input 
               type="text" 
               id="onboarding-postalCode" 
@@ -1317,15 +1327,12 @@
               placeholder="1234567"
             >
             <div *ngIf="onboardingApplicationForm.get('postalCode')?.invalid && onboardingApplicationForm.get('postalCode')?.touched" class="error-message">
-              <span *ngIf="onboardingApplicationForm.get('postalCode')?.errors?.['required']">
-                郵便番号を入力してください
-              </span>
               <span *ngIf="onboardingApplicationForm.get('postalCode')?.errors?.['pattern']">
                 7桁の数字を入力してください
               </span>
             </div>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value">
             <label for="onboarding-currentAddress">現住所 <span class="required">*</span></label>
             <textarea 
               id="onboarding-currentAddress" 
@@ -1337,7 +1344,7 @@
               現住所を入力してください
             </div>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value">
             <label for="onboarding-currentAddressKana">現住所（ヨミガナ） <span class="required">*</span></label>
             <textarea 
               id="onboarding-currentAddressKana" 
@@ -1352,6 +1359,19 @@
               <span *ngIf="onboardingApplicationForm.get('currentAddressKana')?.errors?.['katakana']">
                 カタカナで入力してください
               </span>
+            </div>
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingApplicationForm.get('isOverseasResident')?.value">
+            <label for="onboarding-overseasAddress">住所 <span class="required">*</span></label>
+            <textarea 
+              id="onboarding-overseasAddress" 
+              formControlName="overseasAddress" 
+              class="form-input" 
+              rows="2"
+              placeholder="海外住所を入力してください"
+            ></textarea>
+            <div *ngIf="onboardingApplicationForm.get('overseasAddress')?.invalid && onboardingApplicationForm.get('overseasAddress')?.touched" class="error-message">
+              住所を入力してください
             </div>
           </div>
           <div class="form-group">
@@ -1373,17 +1393,6 @@
               </span>
             </div>
           </div>
-          <div class="form-group">
-            <label for="onboarding-currentHouseholdHead">世帯主（本人/親族）</label>
-            <select 
-              id="onboarding-currentHouseholdHead" 
-              formControlName="currentHouseholdHead" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-            </select>
-          </div>
         </div>
       </section>
 
@@ -1395,13 +1404,73 @@
             <label class="checkbox-label">
               <input 
                 type="checkbox" 
+                formControlName="skipResidentAddress"
+                (change)="onSkipResidentAddressChange($event)"
+              >
+              住民票住所を記載しない
+            </label>
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingApplicationForm.get('skipResidentAddress')?.value">
+            <label for="onboarding-residentAddressSkipReason">理由 <span class="required">*</span></label>
+            <select 
+              id="onboarding-residentAddressSkipReason" 
+              formControlName="residentAddressSkipReason" 
+              class="form-input"
+              (change)="onResidentAddressSkipReasonChange($event)"
+            >
+              <option value="">選択してください</option>
+              <option value="海外在住">海外在住</option>
+              <option value="短期留学">短期留学</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="onboardingApplicationForm.get('residentAddressSkipReason')?.invalid && onboardingApplicationForm.get('residentAddressSkipReason')?.touched" class="error-message">
+              理由を選択してください
+            </div>
+          </div>
+          <div class="form-group full-width" *ngIf="onboardingApplicationForm.get('skipResidentAddress')?.value && onboardingApplicationForm.get('residentAddressSkipReason')?.value === 'その他'">
+            <label for="onboarding-residentAddressSkipReasonOther">理由（その他） <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="onboarding-residentAddressSkipReasonOther" 
+              formControlName="residentAddressSkipReasonOther" 
+              class="form-input"
+              placeholder="理由を入力してください"
+            >
+            <div *ngIf="onboardingApplicationForm.get('residentAddressSkipReasonOther')?.invalid && onboardingApplicationForm.get('residentAddressSkipReasonOther')?.touched" class="error-message">
+              理由を入力してください
+            </div>
+          </div>
+          <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('skipResidentAddress')?.value">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
                 formControlName="sameAsCurrentAddress"
                 (change)="onOnboardingSameAddressChange($event)"
               >
               住所（現住所と同じ）
             </label>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group" *ngIf="!onboardingApplicationForm.get('skipResidentAddress')?.value">
+            <label for="onboarding-residentPostalCode">郵便番号 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="onboarding-residentPostalCode" 
+              formControlName="residentPostalCode" 
+              class="form-input"
+              maxlength="7"
+              (input)="formatResidentPostalCode($event)"
+              placeholder="1234567"
+            >
+            <div *ngIf="onboardingApplicationForm.get('residentPostalCode')?.invalid && onboardingApplicationForm.get('residentPostalCode')?.touched" class="error-message">
+              <span *ngIf="onboardingApplicationForm.get('residentPostalCode')?.errors?.['required']">
+                郵便番号を入力してください
+              </span>
+              <span *ngIf="onboardingApplicationForm.get('residentPostalCode')?.errors?.['pattern']">
+                7桁の数字を入力してください
+              </span>
+            </div>
+          </div>
+          <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('skipResidentAddress')?.value">
             <label for="onboarding-residentAddress">住所 <span class="required">*</span></label>
             <textarea 
               id="onboarding-residentAddress" 
@@ -1414,7 +1483,7 @@
               住所を入力してください
             </div>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('skipResidentAddress')?.value">
             <label for="onboarding-residentAddressKana">住所（ヨミガナ） <span class="required">*</span></label>
             <textarea 
               id="onboarding-residentAddressKana" 
@@ -1431,17 +1500,6 @@
                 カタカナで入力してください
               </span>
             </div>
-          </div>
-          <div class="form-group">
-            <label for="onboarding-residentHouseholdHead">世帯主（本人/親族）</label>
-            <select 
-              id="onboarding-residentHouseholdHead" 
-              formControlName="residentHouseholdHead" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-            </select>
           </div>
         </div>
       </section>
@@ -1727,6 +1785,39 @@
             </div>
             <div *ngIf="onboardingApplicationForm.get('qualificationCertificateRequired')?.invalid && onboardingApplicationForm.get('qualificationCertificateRequired')?.touched" class="error-message">
               資格確認書発行要否を選択してください
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 年金基金加入欄 -->
+      <section class="form-section">
+        <h3 class="section-title">年金基金加入</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>年金基金に加入しているか <span class="required">*</span></label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="pensionFundMembership" 
+                  value="はい"
+                  name="pensionFundMembership"
+                >
+                はい
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  formControlName="pensionFundMembership" 
+                  value="いいえ"
+                  name="pensionFundMembership"
+                >
+                いいえ
+              </label>
+            </div>
+            <div *ngIf="onboardingApplicationForm.get('pensionFundMembership')?.invalid && onboardingApplicationForm.get('pensionFundMembership')?.touched" class="error-message">
+              年金基金に加入しているかを選択してください
             </div>
           </div>
         </div>

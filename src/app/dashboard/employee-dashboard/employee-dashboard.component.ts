@@ -551,13 +551,105 @@ export class EmployeeDashboardComponent {
     const isSame = event.target.checked;
     if (isSame) {
       // 現住所の値を住民票住所にコピー
+      const postalCode = this.onboardingApplicationForm.get('postalCode')?.value || '';
       const currentAddress = this.onboardingApplicationForm.get('currentAddress')?.value || '';
       const currentAddressKana = this.onboardingApplicationForm.get('currentAddressKana')?.value || '';
       this.onboardingApplicationForm.patchValue({
+        residentPostalCode: postalCode,
         residentAddress: currentAddress,
         residentAddressKana: currentAddressKana
       });
     }
+  }
+
+  // 海外在住チェックボックスの変更処理
+  onOverseasResidentChange(event: any) {
+    const isOverseas = event.target.checked;
+    const postalCodeControl = this.onboardingApplicationForm.get('postalCode');
+    const currentAddressControl = this.onboardingApplicationForm.get('currentAddress');
+    const currentAddressKanaControl = this.onboardingApplicationForm.get('currentAddressKana');
+    const overseasAddressControl = this.onboardingApplicationForm.get('overseasAddress');
+
+    if (isOverseas) {
+      // 海外在住の場合：郵便番号、現住所、現住所（ヨミガナ）のバリデーションを削除
+      postalCodeControl?.clearValidators();
+      currentAddressControl?.clearValidators();
+      currentAddressKanaControl?.clearValidators();
+      // 海外住所のバリデーションを追加
+      overseasAddressControl?.setValidators([Validators.required]);
+      // 値をクリア
+      postalCodeControl?.setValue('');
+      currentAddressControl?.setValue('');
+      currentAddressKanaControl?.setValue('');
+    } else {
+      // 国内在住の場合：郵便番号、現住所、現住所（ヨミガナ）のバリデーションを追加
+      postalCodeControl?.setValidators([Validators.pattern(/^\d{7}$/)]);
+      currentAddressControl?.setValidators([Validators.required]);
+      currentAddressKanaControl?.setValidators([Validators.required, this.katakanaValidator]);
+      // 海外住所のバリデーションを削除
+      overseasAddressControl?.clearValidators();
+      // 値をクリア
+      overseasAddressControl?.setValue('');
+    }
+    postalCodeControl?.updateValueAndValidity();
+    currentAddressControl?.updateValueAndValidity();
+    currentAddressKanaControl?.updateValueAndValidity();
+    overseasAddressControl?.updateValueAndValidity();
+  }
+
+  // 住民票住所を記載しないチェックボックスの変更処理
+  onSkipResidentAddressChange(event: any) {
+    const skipResident = event.target.checked;
+    const residentPostalCodeControl = this.onboardingApplicationForm.get('residentPostalCode');
+    const residentAddressControl = this.onboardingApplicationForm.get('residentAddress');
+    const residentAddressKanaControl = this.onboardingApplicationForm.get('residentAddressKana');
+    const residentAddressSkipReasonControl = this.onboardingApplicationForm.get('residentAddressSkipReason');
+    const residentAddressSkipReasonOtherControl = this.onboardingApplicationForm.get('residentAddressSkipReasonOther');
+
+    if (skipResident) {
+      // 住民票住所を記載しない場合：バリデーションを削除
+      residentPostalCodeControl?.clearValidators();
+      residentAddressControl?.clearValidators();
+      residentAddressKanaControl?.clearValidators();
+      // 理由のバリデーションを追加
+      residentAddressSkipReasonControl?.setValidators([Validators.required]);
+      // 値をクリア
+      residentPostalCodeControl?.setValue('');
+      residentAddressControl?.setValue('');
+      residentAddressKanaControl?.setValue('');
+    } else {
+      // 住民票住所を記載する場合：バリデーションを追加
+      residentPostalCodeControl?.setValidators([Validators.required, Validators.pattern(/^\d{7}$/)]);
+      residentAddressControl?.setValidators([Validators.required]);
+      residentAddressKanaControl?.setValidators([Validators.required, this.katakanaValidator]);
+      // 理由のバリデーションを削除
+      residentAddressSkipReasonControl?.clearValidators();
+      residentAddressSkipReasonOtherControl?.clearValidators();
+      // 値をクリア
+      residentAddressSkipReasonControl?.setValue('');
+      residentAddressSkipReasonOtherControl?.setValue('');
+    }
+    residentPostalCodeControl?.updateValueAndValidity();
+    residentAddressControl?.updateValueAndValidity();
+    residentAddressKanaControl?.updateValueAndValidity();
+    residentAddressSkipReasonControl?.updateValueAndValidity();
+    residentAddressSkipReasonOtherControl?.updateValueAndValidity();
+  }
+
+  // 住民票住所を記載しない理由の変更処理
+  onResidentAddressSkipReasonChange(event: any) {
+    const reason = event.target.value;
+    const residentAddressSkipReasonOtherControl = this.onboardingApplicationForm.get('residentAddressSkipReasonOther');
+    
+    if (reason === 'その他') {
+      // その他の場合：理由入力欄のバリデーションを追加
+      residentAddressSkipReasonOtherControl?.setValidators([Validators.required]);
+    } else {
+      // その他以外の場合：理由入力欄のバリデーションを削除
+      residentAddressSkipReasonOtherControl?.clearValidators();
+      residentAddressSkipReasonOtherControl?.setValue('');
+    }
+    residentAddressSkipReasonOtherControl?.updateValueAndValidity();
   }
 
 
@@ -1058,17 +1150,21 @@ export class EmployeeDashboardComponent {
       myNumberPart3: [''],
       
       // 現住所と連絡先
-      postalCode: ['', [Validators.required, Validators.pattern(/^\d{7}$/)]],
+      isOverseasResident: [false], // 海外に在住チェックボックス
+      postalCode: [''], // バリデーションは動的に変更
       currentAddress: ['', Validators.required],
       currentAddressKana: ['', [Validators.required, this.katakanaValidator]],
+      overseasAddress: [''], // 海外住所（バリデーションは動的に変更）
       phoneNumber: ['', [Validators.required, Validators.pattern(/^\d{1,11}$/)]],
-      currentHouseholdHead: ['', Validators.required],
       
       // 住民票住所
       sameAsCurrentAddress: [false],
+      skipResidentAddress: [false], // 住民票住所を記載しないチェックボックス
+      residentAddressSkipReason: [''], // 住民票住所を記載しない理由（バリデーションは動的に変更）
+      residentAddressSkipReasonOther: [''], // その他の理由（バリデーションは動的に変更）
+      residentPostalCode: [''], // 住民票住所の郵便番号（バリデーションは動的に変更）
       residentAddress: ['', Validators.required],
       residentAddressKana: ['', [Validators.required, this.katakanaValidator]],
-      residentHouseholdHead: ['', Validators.required],
       
       // 履歴書・職務経歴書（ファイル入力はフォームから分離）
       
@@ -1101,7 +1197,10 @@ export class EmployeeDashboardComponent {
       dependentStatus: ['', Validators.required],
       
       // 資格確認書発行要否
-      qualificationCertificateRequired: ['', Validators.required]
+      qualificationCertificateRequired: ['', Validators.required],
+      
+      // 年金基金加入
+      pensionFundMembership: ['', Validators.required] // はい/いいえ
     });
   }
 
@@ -1873,20 +1972,26 @@ export class EmployeeDashboardComponent {
           // マイナンバー
           myNumber: myNumber || null,
           // 現住所と連絡先
+          isOverseasResident: formValue.isOverseasResident || false,
           postalCode: formValue.postalCode || '',
           currentAddress: formValue.currentAddress || '',
           currentAddressKana: formValue.currentAddressKana || '',
+          overseasAddress: formValue.overseasAddress || '',
           phoneNumber: formValue.phoneNumber || '',
-          currentHouseholdHead: formValue.currentHouseholdHead || '',
           // 住民票住所
           sameAsCurrentAddress: formValue.sameAsCurrentAddress || false,
+          skipResidentAddress: formValue.skipResidentAddress || false,
+          residentAddressSkipReason: formValue.residentAddressSkipReason || '',
+          residentAddressSkipReasonOther: formValue.residentAddressSkipReasonOther || '',
+          residentPostalCode: formValue.sameAsCurrentAddress 
+            ? (formValue.postalCode || '') 
+            : (formValue.residentPostalCode || ''),
           residentAddress: formValue.sameAsCurrentAddress 
             ? (formValue.currentAddress || '') 
             : (formValue.residentAddress || ''),
           residentAddressKana: formValue.sameAsCurrentAddress 
             ? (formValue.currentAddressKana || '') 
             : (formValue.residentAddressKana || ''),
-          residentHouseholdHead: formValue.residentHouseholdHead || '',
           // 緊急連絡先
           emergencyContact: formValue.emergencyContact || {},
           // 口座情報
@@ -1898,7 +2003,9 @@ export class EmployeeDashboardComponent {
           // 扶養者有無
           dependentStatus: formValue.dependentStatus || '',
           // 資格確認書発行要否
-          qualificationCertificateRequired: formValue.qualificationCertificateRequired || ''
+          qualificationCertificateRequired: formValue.qualificationCertificateRequired || '',
+          // 年金基金加入
+          pensionFundMembership: formValue.pensionFundMembership || ''
         };
 
         // ファイルをアップロード（履歴書、職務経歴書）
@@ -3124,6 +3231,19 @@ export class EmployeeDashboardComponent {
     }
     event.target.value = value;
     const control = this.onboardingApplicationForm.get('postalCode');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // 住民票住所の郵便番号フォーマット（数字7桁のみ）
+  formatResidentPostalCode(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 7) {
+      value = value.substring(0, 7);
+    }
+    event.target.value = value;
+    const control = this.onboardingApplicationForm.get('residentPostalCode');
     if (control) {
       control.setValue(value, { emitEvent: false });
     }

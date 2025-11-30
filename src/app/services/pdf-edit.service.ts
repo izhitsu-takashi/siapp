@@ -639,10 +639,36 @@ export class PdfEditService {
     // ⑫性別※指定の場所に直径4座標分の〇を付ける
     const gender = employeeData.gender || '';
     console.log('Gender for PDF:', gender, 'from employeeData:', employeeData);
+    
+    // 年金基金に加入しているかチェック
+    const pensionFundMembership = employeeData.pensionFundMembership || 
+                                   employeeData.applicationData?.pensionFundMembership;
+    const hasPensionFund = pensionFundMembership === 'はい' || pensionFundMembership === 'yes';
+    
+    // 坑内員であるかチェック
+    const isMiner = employeeData.isMiner === 'はい' || employeeData.isMiner === 'yes';
+    
+    // 性別のx座標（年金基金に加入している場合は30増やす）
+    let genderX = 492;
+    if (hasPensionFund) {
+      genderX += 37;
+    }
+    
+    // 性別のy座標（坑内員の場合は230に設定、それ以外は通常通り）
+    let genderY = y(220);
+    if (isMiner) {
+      genderY = y(234);
+    }
+    
     if (gender === '男' || gender === '男性') {
-      this.drawCircle(page, 492, y(220), 2, font);
+      this.drawCircle(page, genderX, genderY, 2, font);
     } else if (gender === '女' || gender === '女性') {
-      this.drawCircle(page, 492, y(227), 2, font);
+      // 女性の場合も坑内員の場合はy座標を調整
+      let femaleY = y(227);
+      if (isMiner) {
+        femaleY = y(230);
+      }
+      this.drawCircle(page, genderX, femaleY, 2, font);
     }
     
     // ⑬指定の場所に直径4座標分の〇付け：(62,252)
@@ -867,63 +893,198 @@ export class PdfEditService {
       this.drawCircle(page, 455, y(284), 2, font);
     }
     
+    // その他資格情報のチェック
+    const multipleWorkplaceAcquisition = employeeData.multipleWorkplaceAcquisition || 
+                                         employeeData.applicationData?.multipleWorkplaceAcquisition;
+    const reemploymentAfterRetirement = employeeData.reemploymentAfterRetirement || 
+                                        employeeData.applicationData?.reemploymentAfterRetirement;
+    const otherQualificationAcquisition = employeeData.otherQualificationAcquisition || 
+                                           employeeData.applicationData?.otherQualificationAcquisition;
+    const otherQualificationReason = employeeData.otherQualificationReason || 
+                                     employeeData.applicationData?.otherQualificationReason;
+    
+    // 二以上事業所勤務者の取得かが「はい」の場合
+    if (multipleWorkplaceAcquisition === 'はい' || multipleWorkplaceAcquisition === 'yes') {
+      this.drawCircle(page, 372, y(299), 2, font);
+    }
+    
+    // 退職後の継続再雇用者の取得かが「はい」の場合
+    if (reemploymentAfterRetirement === 'はい' || reemploymentAfterRetirement === 'yes') {
+      this.drawCircle(page, 455, y(284), 2, font);
+    }
+    
+    // その他資格情報欄のその他が「はい」の場合
+    if (otherQualificationAcquisition === 'はい' || otherQualificationAcquisition === 'yes') {
+      this.drawCircle(page, 455, y(299), 2, font);
+      
+      // その他がはいの場合の内容を記入（かなり小さめのフォント）
+      if (otherQualificationReason && hasJapaneseFont) {
+        const verySmallFontSize = 5; // かなり小さめのフォント
+        page.drawText(otherQualificationReason, {
+          x: 490,
+          y: y(302),
+          size: verySmallFontSize,
+          font: font,
+        });
+      }
+    }
+    
     // ⑲被保険者住所（⑭にてマイナンバーを記入した場合はPDFに情報を記入しない）
     // 基礎年金番号を記入した場合のみ記入
+    // 住民票住所を記載しないかチェック
+    const skipResidentAddress = employeeData.skipResidentAddress || 
+                                employeeData.applicationData?.skipResidentAddress;
+    const residentAddressSkipReason = employeeData.residentAddressSkipReason || 
+                                      employeeData.applicationData?.residentAddressSkipReason;
+    const residentAddressSkipReasonOther = employeeData.residentAddressSkipReasonOther || 
+                                            employeeData.applicationData?.residentAddressSkipReasonOther;
+    const isOverseasResident = employeeData.isOverseasResident || 
+                               employeeData.applicationData?.isOverseasResident;
+    const overseasAddress = employeeData.overseasAddress || 
+                            employeeData.applicationData?.overseasAddress;
+    
     if (!hasMyNumber && basicPensionNumber && basicPensionNumber.length === 10) {
-      const postalCode = (employeeData.currentPostalCode || employeeData.postalCode || '').replace(/\D/g, '');
-      const address = employeeData.currentAddress || employeeData.address || '';
-      const addressKana = employeeData.currentAddressKana || employeeData.addressKana || '';
-      
       // 被保険者住所欄のフォントサイズ（統一）
       const verySmallFontSize = 6; // さらに小さなフォントサイズ
       
-      // 郵便番号の最初の3桁：(72,321)
-      // x座標は各文字の左端として扱う
-      if (postalCode.length >= 3) {
-        let xPos = 72;
-        for (let i = 0; i < 3; i++) {
-          page.drawText(postalCode[i], {
-            x: xPos,
+      if (skipResidentAddress) {
+        // 住民票住所を記載しない場合：現住所と連絡先欄の住所を入力
+        // 海外に在住のチェックがはいっている場合は、そこに記載されている住所を入力
+        let postalCode = '';
+        let address = '';
+        let addressKana = '';
+        
+        if (isOverseasResident && overseasAddress) {
+          // 海外在住の場合：海外住所を使用
+          address = overseasAddress;
+          // 海外住所の場合は郵便番号とカナは空
+        } else {
+          // 現住所を使用
+          postalCode = (employeeData.currentPostalCode || employeeData.postalCode || '').replace(/\D/g, '');
+          address = employeeData.currentAddress || employeeData.address || '';
+          addressKana = employeeData.currentAddressKana || employeeData.addressKana || '';
+        }
+        
+        // 郵便番号の最初の3桁：(72,321)（海外在住の場合は記入しない）
+        if (postalCode.length >= 3) {
+          let xPos = 72;
+          for (let i = 0; i < 3; i++) {
+            page.drawText(postalCode[i], {
+              x: xPos,
+              y: y(321),
+              size: verySmallFontSize,
+              font: font,
+            });
+            xPos += 3;
+          }
+        }
+        
+        // 郵便番号の残りの4桁：(97,321)（海外在住の場合は記入しない）
+        if (postalCode.length >= 7) {
+          let xPos = 97;
+          for (let i = 3; i < 7; i++) {
+            page.drawText(postalCode[i], {
+              x: xPos,
+              y: y(321),
+              size: verySmallFontSize,
+              font: font,
+            });
+            xPos += 3;
+          }
+        }
+        
+        // 住所：(63,328)
+        if (address && hasJapaneseFont) {
+          page.drawText(address, {
+            x: 63,
+            y: y(328),
+            size: verySmallFontSize,
+            font: font,
+          });
+        }
+        
+        // 住所（ヨミガナ）：(140,319)（海外在住の場合は記入しない）
+        if (addressKana && hasJapaneseFont && !isOverseasResident) {
+          page.drawText(addressKana, {
+            x: 140,
             y: y(321),
             size: verySmallFontSize,
             font: font,
           });
-          xPos += 3; // 次の文字の左端位置（さらに小さめフォントなので間隔3座標分）
         }
-      }
-      
-      // 郵便番号の残りの4桁：(97,321)
-      if (postalCode.length >= 7) {
-        let xPos = 97;
-        for (let i = 3; i < 7; i++) {
-          page.drawText(postalCode[i], {
-            x: xPos,
+        
+        // 理由に応じて〇を付ける（直径3座標分）
+        if (residentAddressSkipReason === '海外在住' || residentAddressSkipReason === 'Overseas Resident') {
+          this.drawCircle(page, 345, y(314), 1.5, font);
+        } else if (residentAddressSkipReason === '短期留学' || residentAddressSkipReason === 'Short-term Study Abroad') {
+          this.drawCircle(page, 345, y(319), 1.5, font);
+        } else if (residentAddressSkipReason === 'その他' || residentAddressSkipReason === 'Other') {
+          this.drawCircle(page, 345, y(324), 1.5, font);
+          
+          // その他場合の内容（かなり小さめのフォント）：(365,330)
+          if (residentAddressSkipReasonOther && hasJapaneseFont) {
+            const extraSmallFontSize = 5; // かなり小さめのフォント
+            page.drawText(residentAddressSkipReasonOther, {
+              x: 366,
+              y: y(326),
+              size: extraSmallFontSize,
+              font: font,
+            });
+          }
+        }
+      } else {
+        // 住民票住所を参照して記入
+        const postalCode = (employeeData.residentPostalCode || employeeData.postalCode || '').replace(/\D/g, '');
+        const address = employeeData.residentAddress || employeeData.currentAddress || employeeData.address || '';
+        const addressKana = employeeData.residentAddressKana || employeeData.currentAddressKana || employeeData.addressKana || '';
+        
+        // 郵便番号の最初の3桁：(72,321)
+        if (postalCode.length >= 3) {
+          let xPos = 72;
+          for (let i = 0; i < 3; i++) {
+            page.drawText(postalCode[i], {
+              x: xPos,
+              y: y(321),
+              size: verySmallFontSize,
+              font: font,
+            });
+            xPos += 3;
+          }
+        }
+        
+        // 郵便番号の残りの4桁：(97,321)
+        if (postalCode.length >= 7) {
+          let xPos = 97;
+          for (let i = 3; i < 7; i++) {
+            page.drawText(postalCode[i], {
+              x: xPos,
+              y: y(321),
+              size: verySmallFontSize,
+              font: font,
+            });
+            xPos += 3;
+          }
+        }
+        
+        // 住所（さらに小さめのフォント、折り返しなし）：(63,328)
+        if (address && hasJapaneseFont) {
+          page.drawText(address, {
+            x: 63,
+            y: y(328),
+            size: verySmallFontSize,
+            font: font,
+          });
+        }
+        
+        // 住所（ヨミガナ）（さらに小さめのフォント）：(140,319)
+        if (addressKana && hasJapaneseFont) {
+          page.drawText(addressKana, {
+            x: 140,
             y: y(321),
             size: verySmallFontSize,
             font: font,
           });
-          xPos += 3; // 次の文字の左端位置（さらに小さめフォントなので間隔3座標分）
         }
-      }
-      
-      // 住所（さらに小さめのフォント、折り返しなし）：(63,328)
-      if (address && hasJapaneseFont) {
-        page.drawText(address, {
-          x: 63,
-          y: y(328),
-          size: verySmallFontSize,
-          font: font,
-        });
-      }
-      
-      // 住所（ヨミガナ）（さらに小さめのフォント）：(140,319)
-      if (addressKana && hasJapaneseFont) {
-        page.drawText(addressKana, {
-          x: 140,
-          y: y(321),
-          size: verySmallFontSize,
-          font: font,
-        });
       }
     }
     
@@ -1258,7 +1419,7 @@ export class PdfEditService {
    * PDFをダウンロードする
    */
   downloadPdf(pdfBytes: Uint8Array, fileName: string) {
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const blob = new Blob([pdfBytes as BlobPart], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
