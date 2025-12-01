@@ -865,88 +865,6 @@ export class HrDashboardComponent {
     }
   }
   
-  // 社会保険料一覧を読み込む
-  async loadInsuranceList() {
-    try {
-      // 全社員データを取得
-      const allEmployees = await this.firestoreService.getAllEmployees();
-      
-      // 設定から保険料率を取得
-      const settings = await this.firestoreService.getSettings();
-      const healthInsuranceRate = settings?.insuranceRates?.healthInsurance || this.insuranceRates.healthInsurance || 0;
-      const nursingInsuranceRate = settings?.insuranceRates?.nursingInsurance || this.insuranceRates.nursingInsurance || 0;
-      const pensionInsuranceRate = settings?.insuranceRates?.pensionInsurance || this.insuranceRates.pensionInsurance || 0;
-      
-      // 保険料一覧データを構築（社員番号と氏名があるもののみ）
-      if (Array.isArray(allEmployees)) {
-        this.insuranceList = allEmployees
-          .filter((emp: any) => emp && emp.employeeNumber && emp.name)
-          .map((emp: any) => {
-            const fixedSalary = Number(emp.fixedSalary) || 0;
-            // 標準報酬月額を計算
-            const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
-            const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
-            const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
-            
-            // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
-            // 小数第2位まで保持（表示用）
-            const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
-            const nursingInsuranceRaw = standardMonthlySalary * (nursingInsuranceRate / 100);
-            const pensionInsuranceRaw = standardMonthlySalary * (pensionInsuranceRate / 100);
-            
-            // 社員負担額を計算
-            // (健康保険料 + 介護保険料) ÷ 2 を50円単位で切り上げ/切り捨て
-            const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-            const healthNursingBurden = this.roundToFifty(healthNursingHalf);
-            
-            // 厚生年金保険料 ÷ 2 を50円単位で切り上げ/切り捨て
-            const pensionHalf = pensionInsuranceRaw / 2;
-            const pensionBurden = this.roundToFifty(pensionHalf);
-            
-            // 社員負担額（合計）
-            const employeeBurden = healthNursingBurden + pensionBurden;
-            
-            return {
-              employeeNumber: emp.employeeNumber || '',
-              name: emp.name || '',
-              fixedSalary: fixedSalary,
-              grade: grade,
-              standardMonthlySalary: standardMonthlySalary,
-              healthInsurance: healthInsuranceRaw, // 小数第2位まで
-              nursingInsurance: nursingInsuranceRaw, // 小数第2位まで
-              pensionInsurance: pensionInsuranceRaw, // 小数第2位まで
-              employeeBurden: employeeBurden // 社員負担額
-            };
-          });
-      } else {
-        this.insuranceList = [];
-      }
-    } catch (error) {
-      console.error('Error loading insurance list:', error);
-      this.insuranceList = [];
-    }
-  }
-  
-  // 事業主負担額合計を計算
-  getTotalEmployerBurden(): number {
-    let totalInsurance = 0;
-    let totalEmployeeBurden = 0;
-    
-    this.insuranceList.forEach((item: any) => {
-      // 保険料の合計（小数点以下切り捨て）
-      const healthInsurance = Math.floor(item.healthInsurance);
-      const nursingInsurance = Math.floor(item.nursingInsurance);
-      const pensionInsurance = Math.floor(item.pensionInsurance);
-      totalInsurance += healthInsurance + nursingInsurance + pensionInsurance;
-      
-      // 社員負担額の合計
-      totalEmployeeBurden += item.employeeBurden || 0;
-    });
-    
-    // 事業主負担額 = 保険料合計 - 社員負担額合計
-    return totalInsurance - totalEmployeeBurden;
-  }
-
   // トラッキング関数（パフォーマンス向上）
   trackByEmployeeNumber(index: number, item: any): string {
     return item.employeeNumber || index.toString();
@@ -1336,10 +1254,7 @@ export class HrDashboardComponent {
     const employeeNumber = this.selectedApplication.employeeNumber || '';
     const employeeName = this.selectedApplication.employeeName || this.selectedApplication.name || '';
 
-    // 社会保険料一覧が読み込まれていない場合は読み込む（標準報酬月額を取得するため）
-    if (this.insuranceList.length === 0) {
-      await this.loadInsuranceList();
-    }
+    // 社会保険料一覧はkyuyo-dashboardで管理するため、ここでは読み込まない
 
     // 従業員の詳細データを取得
     const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
@@ -2890,10 +2805,7 @@ export class HrDashboardComponent {
     }
 
     try {
-      // 社会保険料一覧が読み込まれていない場合は読み込む（標準報酬月額を取得するため）
-      if (this.insuranceList.length === 0) {
-        await this.loadInsuranceList();
-      }
+      // 社会保険料一覧はkyuyo-dashboardで管理するため、ここでは読み込まない
 
       // 従業員の詳細データを取得
       const employeeData = await this.firestoreService.getEmployeeData(
@@ -2965,10 +2877,7 @@ export class HrDashboardComponent {
     this.isCreatingDocument = true;
 
     try {
-      // 社会保険料一覧が読み込まれていない場合は読み込む（標準報酬月額を取得するため）
-      if (this.insuranceList.length === 0) {
-        await this.loadInsuranceList();
-      }
+      // 社会保険料一覧はkyuyo-dashboardで管理するため、ここでは読み込まない
 
       // 従業員の詳細データを取得
       const employeeData = await this.firestoreService.getEmployeeData(

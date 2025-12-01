@@ -17,14 +17,16 @@
     <!-- サイドバー -->
     <aside class="sidebar">
       <nav class="sidebar-nav">
-        <button
-          *ngFor="let tab of tabs"
-          class="sidebar-item"
-          [class.active]="currentTab === tab.name"
-          (click)="switchTab(tab.name)"
-        >
-          {{ tab.name }}
-        </button>
+        <ng-container *ngFor="let tab of tabs">
+          <button
+            *ngIf="tab.name !== '文書作成・管理'"
+            class="sidebar-item"
+            [class.active]="currentTab === tab.name"
+            (click)="switchTab(tab.name)"
+          >
+            {{ tab.name }}
+          </button>
+        </ng-container>
       </nav>
     </aside>
 
@@ -449,8 +451,8 @@
           </div>
         </ng-container>
 
-        <!-- 文書作成・管理ページ -->
-        <ng-container *ngIf="currentTab === '文書作成・管理'">
+        <!-- 文書作成・管理ページ（非表示） -->
+        <ng-container *ngIf="false && currentTab === '文書作成・管理'">
           <div class="document-management-page">
             <h2 class="page-title">文書作成・管理</h2>
             
@@ -2079,8 +2081,8 @@
               </div>
             </div>
             
-            <!-- 文書自動作成欄（承認済みの場合のみ表示） -->
-            <div class="document-auto-generation-section" *ngIf="statusChangeForm.get('status')?.value === '承認済み' && availableDocuments.length > 0">
+            <!-- 文書自動作成欄（承認済みの場合のみ表示）（非表示） -->
+            <div class="document-auto-generation-section" *ngIf="false && statusChangeForm.get('status')?.value === '承認済み' && availableDocuments.length > 0">
               <h4 class="document-section-title">対応する文書を自動作成</h4>
               <div class="document-checkboxes">
                 <label *ngFor="let doc of availableDocuments" class="document-checkbox-label">

@@ -1,14 +1,14 @@
 import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { FirestoreService } from '../../services/firestore.service';
 import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-kyuyo-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
   templateUrl: './kyuyo-dashboard.component.html',
   styleUrl: './kyuyo-dashboard.component.css'
 })
@@ -26,6 +26,13 @@ export class KyuyoDashboardComponent {
 
   // 社会保険料一覧データ
   insuranceList: any[] = [];
+  filteredInsuranceList: any[] = []; // フィルタリング後の保険料一覧
+  insuranceListYear: number = 2025; // 保険料一覧の年
+  insuranceListMonth: number = 4; // 保険料一覧の月（2025年4月以降）
+  insuranceListType: 'salary' | 'bonus' = 'salary'; // 給与または賞与の切り替え
+  
+  // 社員一覧（社員情報管理票の社員のみ）
+  employees: any[] = [];
   
   // 保険料率
   insuranceRates: any = {
@@ -44,6 +51,23 @@ export class KyuyoDashboardComponent {
   
   // 健康保険料率データ
   kenpoRates: any[] = [];
+  
+  // 給与ページ用データ
+  salaryEmployees: any[] = []; // 給与設定対象の社員一覧
+  selectedSalaryEmployee: string = ''; // 選択された社員番号
+  salaryYear: number = new Date().getFullYear(); // 給与設定の年
+  salaryMonth: number = new Date().getMonth() + 1; // 給与設定の月
+  salaryAmount: number = 0; // 給与額（固定的賃金）
+  salaryHistory: any[] = []; // 給与設定履歴
+  
+  // 賞与ページ用データ
+  bonusEmployees: any[] = []; // 賞与設定対象の社員一覧
+  selectedBonusEmployee: string = ''; // 選択された社員番号
+  bonusYear: number = new Date().getFullYear(); // 賞与設定の年
+  bonusMonth: number = new Date().getMonth() + 1; // 賞与設定の月
+  bonusAmount: number = 0; // 賞与額
+  bonusHistory: any[] = []; // 賞与設定履歴
+  bonusList: any[] = []; // 賞与一覧（保険料計算用）
 
   constructor(
     private router: Router,
@@ -314,11 +338,40 @@ export class KyuyoDashboardComponent {
     }
   }
   
+  // 社員情報管理票の社員を読み込む（入社手続きが完了した社員のみ）
+  async loadEmployees() {
+    try {
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      // 新入社員コレクションに存在する社員を取得（入社手続きが完了していない社員を除外するため）
+      const onboardingEmployees = await this.firestoreService.getAllOnboardingEmployees();
+      const onboardingEmployeeNumbers = new Set(
+        onboardingEmployees.map((emp: any) => emp.employeeNumber).filter((num: any) => num)
+      );
+      
+      // 新入社員コレクションに存在しない社員のみを表示（入社手続きが完了した社員のみ）
+      const completedEmployees = allEmployees.filter(
+        (emp: any) => emp.employeeNumber && !onboardingEmployeeNumbers.has(emp.employeeNumber)
+      );
+      
+      this.employees = completedEmployees
+        .filter((emp: any) => emp.employeeNumber && emp.name && emp.email && emp.employmentType)
+        .map((emp: any) => ({
+          employeeNumber: emp.employeeNumber,
+          name: emp.name,
+          email: emp.email,
+          employmentType: emp.employmentType
+        }));
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      this.employees = [];
+    }
+  }
+  
   // 社会保険料一覧を読み込む
   async loadInsuranceList() {
     try {
-      // 全社員データを取得
-      const allEmployees = await this.firestoreService.getAllEmployees();
+      // 社員情報管理票に表示されている社員のみを取得（入社手続きが完了した社員のみ）
+      await this.loadEmployees();
       
       // 設定から保険料率を取得
       const settings = await this.firestoreService.getSettings();
@@ -326,14 +379,57 @@ export class KyuyoDashboardComponent {
       const nursingInsuranceRate = settings?.insuranceRates?.nursingInsurance || this.insuranceRates.nursingInsurance || 0;
       const pensionInsuranceRate = settings?.insuranceRates?.pensionInsurance || this.insuranceRates.pensionInsurance || 0;
       
-      // 保険料一覧データを構築（社員番号と氏名があるもののみ）
-      if (Array.isArray(allEmployees)) {
-        this.insuranceList = allEmployees
+      // 給与設定履歴と賞与設定履歴を読み込む
+      this.salaryHistory = await this.firestoreService.getSalaryHistory();
+      const bonuses = await this.firestoreService.getBonusHistory();
+      this.bonusHistory = bonuses;
+      this.bonusList = bonuses.map((bonus: any) => {
+        const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
+        return {
+          ...bonus,
+          name: employee?.name || ''
+        };
+      });
+      
+      // 保険料一覧データを構築（社員情報管理票の社員のみ）
+      if (this.employees.length > 0) {
+        // 社員情報管理票の社員番号を取得
+        const employeeNumbers = new Set(this.employees.map((emp: any) => emp.employeeNumber));
+        
+        // 全社員データを取得して、社員情報管理票の社員のみをフィルタリング
+        const allEmployees = await this.firestoreService.getAllEmployees();
+        const filteredEmployees = allEmployees.filter((emp: any) => 
+          emp && emp.employeeNumber && employeeNumbers.has(emp.employeeNumber)
+        );
+        
+        // 各社員の詳細データを取得
+        const employeeDetails = await Promise.all(
+          filteredEmployees.map(async (emp: any) => {
+            const employeeData = await this.firestoreService.getEmployeeData(emp.employeeNumber);
+            return employeeData || emp;
+          })
+        );
+        
+        this.insuranceList = employeeDetails
           .filter((emp: any) => emp && emp.employeeNumber && emp.name)
           .map((emp: any) => {
-            const fixedSalary = Number(emp.fixedSalary) || 0;
+            // 固定的賃金額を見込み給与額（給与）と見込み給与額（賞与）の合計にする
+            const expectedMonthlySalary = Number(emp.expectedMonthlySalary) || 0;
+            // 見込み給与額（賞与）は年額なので、月額に変換（12で割る）
+            // 賞与は年1回支給される想定で、年額を12で割って月額換算
+            // 新入社員データから賞与情報を取得（applicationDataからも取得を試みる）
+            const expectedAnnualBonus = Number(emp.expectedAnnualBonus) || 
+                                       Number(emp.applicationData?.expectedAnnualBonus) || 0;
+            const expectedMonthlyBonus = expectedAnnualBonus / 12;
+            
+            // 固定的賃金額 = 見込み給与額（給与）+ 見込み給与額（賞与の月額換算）
+            const fixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
+            
+            // 既に設定されている固定的賃金がある場合はそれを使用（給与ページで設定された値）
+            const setFixedSalary = Number(emp.fixedSalary) || 0;
+            const finalFixedSalary = setFixedSalary > 0 ? setFixedSalary : fixedSalary;
             // 標準報酬月額を計算
-            const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
+            const standardSalaryInfo = this.calculateStandardMonthlySalary(finalFixedSalary);
             const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
             const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
             
@@ -358,7 +454,7 @@ export class KyuyoDashboardComponent {
             return {
               employeeNumber: emp.employeeNumber || '',
               name: emp.name || '',
-              fixedSalary: fixedSalary,
+              fixedSalary: finalFixedSalary,
               grade: grade,
               standardMonthlySalary: standardMonthlySalary,
               healthInsurance: healthInsuranceRaw, // 小数第2位まで
@@ -370,9 +466,16 @@ export class KyuyoDashboardComponent {
       } else {
         this.insuranceList = [];
       }
+      
+      // 初期表示時は2025年4月の給与でフィルタリング
+      this.insuranceListYear = 2025;
+      this.insuranceListMonth = 4;
+      this.insuranceListType = 'salary';
+      await this.filterInsuranceListByDate();
     } catch (error) {
       console.error('Error loading insurance list:', error);
       this.insuranceList = [];
+      this.filteredInsuranceList = [];
     }
   }
   
@@ -381,7 +484,9 @@ export class KyuyoDashboardComponent {
     let totalInsurance = 0;
     let totalEmployeeBurden = 0;
     
-    this.insuranceList.forEach((item: any) => {
+    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    
+    listToUse.forEach((item: any) => {
       // 保険料の合計（小数点以下切り捨て）
       const healthInsurance = Math.floor(item.healthInsurance);
       const nursingInsurance = Math.floor(item.nursingInsurance);
@@ -394,6 +499,30 @@ export class KyuyoDashboardComponent {
     
     // 事業主負担額 = 保険料合計 - 社員負担額合計
     return totalInsurance - totalEmployeeBurden;
+  }
+  
+  // 健康保険料合計を計算
+  getTotalHealthInsurance(): number {
+    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    return listToUse.reduce((sum: number, item: any) => sum + (item.healthInsurance || 0), 0);
+  }
+  
+  // 介護保険料合計を計算
+  getTotalNursingInsurance(): number {
+    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    return listToUse.reduce((sum: number, item: any) => sum + (item.nursingInsurance || 0), 0);
+  }
+  
+  // 厚生年金保険料合計を計算
+  getTotalPensionInsurance(): number {
+    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    return listToUse.reduce((sum: number, item: any) => sum + (item.pensionInsurance || 0), 0);
+  }
+  
+  // 社員負担額合計を計算
+  getTotalEmployeeBurden(): number {
+    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    return listToUse.reduce((sum: number, item: any) => sum + (item.employeeBurden || 0), 0);
   }
 
   // トラッキング関数（パフォーマンス向上）
@@ -430,11 +559,269 @@ export class KyuyoDashboardComponent {
       });
     }
     
+    // 給与タブが選択された場合、給与データを読み込む
+    if (tabName === '給与') {
+      this.loadSalaryData().catch(err => {
+        console.error('Error in loadSalaryData:', err);
+      });
+    }
+    
+    // 賞与タブが選択された場合、賞与データを読み込む
+    if (tabName === '賞与') {
+      this.loadBonusData().catch(err => {
+        console.error('Error in loadBonusData:', err);
+      });
+    }
+    
     // 設定タブが選択された場合、設定を読み込む
     if (tabName === '設定') {
       this.loadSettings().catch(err => {
         console.error('Error in loadSettings:', err);
       });
+    }
+  }
+  
+  // 保険料一覧を年月でフィルタリング
+  async filterInsuranceListByDate() {
+    try {
+      // 設定から保険料率を取得
+      const settings = await this.firestoreService.getSettings();
+      const healthInsuranceRate = settings?.insuranceRates?.healthInsurance || this.insuranceRates.healthInsurance || 0;
+      const nursingInsuranceRate = settings?.insuranceRates?.nursingInsurance || this.insuranceRates.nursingInsurance || 0;
+      const pensionInsuranceRate = settings?.insuranceRates?.pensionInsurance || this.insuranceRates.pensionInsurance || 0;
+      
+      if (this.insuranceListType === 'salary') {
+        // 給与の場合：選択された年月の固定的賃金で計算
+        this.filteredInsuranceList = this.insuranceList.map((item: any) => {
+          // 給与設定履歴から該当年月以前の最新の固定的賃金を取得
+          const relevantSalaries = this.salaryHistory
+            .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
+            .filter((s: any) => {
+              if (s['year'] < this.insuranceListYear) return true;
+              if (s['year'] === this.insuranceListYear && s['month'] <= this.insuranceListMonth) return true;
+              return false;
+            })
+            .sort((a: any, b: any) => {
+              if (a['year'] !== b['year']) return b['year'] - a['year'];
+              return b['month'] - a['month'];
+            });
+          
+          const latestSalary = relevantSalaries.length > 0 ? relevantSalaries[0] : null;
+          const fixedSalary = latestSalary ? latestSalary['amount'] : item.fixedSalary;
+          
+          // 標準報酬月額を再計算
+          const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
+          const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
+          const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+          
+          // 各保険料を計算
+          const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
+          const nursingInsuranceRaw = standardMonthlySalary * (nursingInsuranceRate / 100);
+          const pensionInsuranceRaw = standardMonthlySalary * (pensionInsuranceRate / 100);
+          
+          // 社員負担額を計算
+          const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
+          const healthNursingBurden = this.roundToFifty(healthNursingHalf);
+          const pensionHalf = pensionInsuranceRaw / 2;
+          const pensionBurden = this.roundToFifty(pensionHalf);
+          const employeeBurden = healthNursingBurden + pensionBurden;
+          
+          return {
+            ...item,
+            fixedSalary: fixedSalary,
+            grade: grade,
+            standardMonthlySalary: standardMonthlySalary,
+            healthInsurance: healthInsuranceRaw,
+            nursingInsurance: nursingInsuranceRaw,
+            pensionInsurance: pensionInsuranceRaw,
+            employeeBurden: employeeBurden
+          };
+        });
+      } else {
+        // 賞与の場合：選択された年月の賞与で計算
+        this.filteredInsuranceList = this.bonusList
+          .filter((bonus: any) => 
+            bonus['year'] === this.insuranceListYear &&
+            bonus['month'] === this.insuranceListMonth
+          )
+          .map((bonus: any) => {
+            // 標準賞与額 = 賞与の1000円未満の値を切り捨てた額
+            const standardBonusAmount = Math.floor(bonus['amount'] / 1000) * 1000;
+            
+            // 各保険料を計算（標準賞与額 × 各保険料率）
+            const healthInsuranceRaw = standardBonusAmount * (healthInsuranceRate / 100);
+            const nursingInsuranceRaw = standardBonusAmount * (nursingInsuranceRate / 100);
+            const pensionInsuranceRaw = standardBonusAmount * (pensionInsuranceRate / 100);
+            
+            // 社員負担額を計算
+            const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
+            const healthNursingBurden = this.roundToFifty(healthNursingHalf);
+            const pensionHalf = pensionInsuranceRaw / 2;
+            const pensionBurden = this.roundToFifty(pensionHalf);
+            const employeeBurden = healthNursingBurden + pensionBurden;
+            
+            return {
+              employeeNumber: bonus['employeeNumber'],
+              name: bonus.name,
+              bonusAmount: bonus['amount'],
+              standardBonusAmount: standardBonusAmount,
+              healthInsurance: healthInsuranceRaw,
+              nursingInsurance: nursingInsuranceRaw,
+              pensionInsurance: pensionInsuranceRaw,
+              employeeBurden: employeeBurden
+            };
+          });
+      }
+    } catch (error) {
+      console.error('Error filtering insurance list:', error);
+      this.filteredInsuranceList = [];
+    }
+  }
+  
+  // 保険料一覧のタイプを切り替え
+  async switchInsuranceListType(type: 'salary' | 'bonus') {
+    this.insuranceListType = type;
+    await this.filterInsuranceListByDate();
+  }
+  
+  // 保険料一覧の年月を変更
+  async onInsuranceListDateChange() {
+    await this.filterInsuranceListByDate();
+  }
+  
+  // 給与データを読み込む
+  async loadSalaryData() {
+    try {
+      await this.loadEmployees();
+      this.salaryEmployees = this.employees;
+      
+      // 給与設定履歴を読み込む（Firestoreから）
+      this.salaryHistory = await this.firestoreService.getSalaryHistory();
+      
+      // 社員名を追加
+      for (const salary of this.salaryHistory) {
+        const employee = this.employees.find((e: any) => e.employeeNumber === salary['employeeNumber']);
+        if (employee) {
+          salary.name = employee.name;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading salary data:', error);
+    }
+  }
+  
+  // 賞与データを読み込む
+  async loadBonusData() {
+    try {
+      await this.loadEmployees();
+      this.bonusEmployees = this.employees;
+      
+      // 賞与設定履歴を読み込む（Firestoreから）
+      const bonuses = await this.firestoreService.getBonusHistory();
+      this.bonusHistory = bonuses;
+      
+      // 社員名を追加してbonusListに設定
+      this.bonusList = bonuses.map((bonus: any) => {
+        const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
+        return {
+          ...bonus,
+          name: employee?.name || ''
+        };
+      });
+    } catch (error) {
+      console.error('Error loading bonus data:', error);
+    }
+  }
+  
+  // 給与を保存
+  async saveSalary() {
+    if (!this.selectedSalaryEmployee || !this.salaryAmount || this.salaryAmount <= 0) {
+      alert('社員と給与額を入力してください');
+      return;
+    }
+    
+    try {
+      // 給与設定をFirestoreに保存
+      await this.firestoreService.saveSalary(
+        this.selectedSalaryEmployee,
+        this.salaryYear,
+        this.salaryMonth,
+        this.salaryAmount
+      );
+      
+      // 社員データの固定的賃金を更新
+      await this.firestoreService.saveEmployeeData(this.selectedSalaryEmployee, {
+        fixedSalary: this.salaryAmount
+      });
+      
+      // 給与設定履歴を再読み込み
+      this.salaryHistory = await this.firestoreService.getSalaryHistory();
+      
+      // 社員名を追加
+      for (const salary of this.salaryHistory) {
+        if (!salary.name) {
+          const employee = this.employees.find((e: any) => e.employeeNumber === salary['employeeNumber']);
+          if (employee) {
+            salary.name = employee.name;
+          }
+        }
+      }
+      
+      // 保険料一覧を再読み込み
+      await this.loadInsuranceList();
+      await this.filterInsuranceListByDate();
+      
+      alert('給与を設定しました');
+      
+      // フォームをリセット
+      this.selectedSalaryEmployee = '';
+      this.salaryAmount = 0;
+    } catch (error) {
+      console.error('Error saving salary:', error);
+      alert('給与の設定に失敗しました');
+    }
+  }
+  
+  // 賞与を保存
+  async saveBonus() {
+    if (!this.selectedBonusEmployee || !this.bonusAmount || this.bonusAmount <= 0) {
+      alert('社員と賞与額を入力してください');
+      return;
+    }
+    
+    try {
+      // 賞与設定をFirestoreに保存
+      await this.firestoreService.saveBonus(
+        this.selectedBonusEmployee,
+        this.bonusYear,
+        this.bonusMonth,
+        this.bonusAmount
+      );
+      
+      // 賞与設定履歴を再読み込み
+      const bonuses = await this.firestoreService.getBonusHistory();
+      this.bonusHistory = bonuses;
+      
+      // 社員名を追加してbonusListに設定
+      this.bonusList = bonuses.map((bonus: any) => {
+        const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
+        return {
+          ...bonus,
+          name: employee?.name || ''
+        };
+      });
+      
+      // 保険料一覧を再フィルタリング
+      await this.filterInsuranceListByDate();
+      
+      alert('賞与を設定しました');
+      
+      // フォームをリセット
+      this.selectedBonusEmployee = '';
+      this.bonusAmount = 0;
+    } catch (error) {
+      console.error('Error saving bonus:', error);
+      alert('賞与の設定に失敗しました');
     }
   }
 

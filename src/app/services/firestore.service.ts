@@ -823,5 +823,99 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * 給与設定を保存
+   */
+  async saveSalary(employeeNumber: string, year: number, month: number, amount: number): Promise<void> {
+    try {
+      const docId = `${employeeNumber}_${year}_${month}`;
+      const docRef = doc(this.db, 'salaries', docId);
+      await setDoc(docRef, {
+        employeeNumber: employeeNumber,
+        year: year,
+        month: month,
+        amount: amount,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error saving salary:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 給与設定履歴を取得
+   */
+  async getSalaryHistory(employeeNumber?: string): Promise<any[]> {
+    try {
+      const salariesRef = collection(this.db, 'salaries');
+      const snapshot = await getDocs(salariesRef);
+      const salaries: any[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (!employeeNumber || data['employeeNumber'] === employeeNumber) {
+          salaries.push({
+            id: doc.id,
+            ...data
+          });
+        }
+      });
+      
+      return salaries;
+    } catch (error) {
+      console.error('Error getting salary history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 賞与設定を保存
+   */
+  async saveBonus(employeeNumber: string, year: number, month: number, amount: number): Promise<void> {
+    try {
+      const docId = `${employeeNumber}_${year}_${month}_bonus`;
+      const docRef = doc(this.db, 'bonuses', docId);
+      await setDoc(docRef, {
+        employeeNumber: employeeNumber,
+        year: year,
+        month: month,
+        amount: amount,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error saving bonus:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 賞与設定履歴を取得
+   */
+  async getBonusHistory(employeeNumber?: string): Promise<any[]> {
+    try {
+      const bonusesRef = collection(this.db, 'bonuses');
+      const snapshot = await getDocs(bonusesRef);
+      const bonuses: any[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (!employeeNumber || data['employeeNumber'] === employeeNumber) {
+          bonuses.push({
+            id: doc.id,
+            ...data
+          });
+        }
+      });
+      
+      return bonuses;
+    } catch (error) {
+      console.error('Error getting bonus history:', error);
+      return [];
+    }
+  }
 }
 

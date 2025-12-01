@@ -36,6 +36,48 @@
           <div class="insurance-list-page">
             <h2 class="page-title">社会保険料一覧</h2>
             
+            <!-- フィルターと切り替え -->
+            <div class="insurance-list-controls">
+              <div class="filter-group">
+                <label>表示タイプ:</label>
+                <button 
+                  class="toggle-button" 
+                  [class.active]="insuranceListType === 'salary'"
+                  (click)="switchInsuranceListType('salary')"
+                >
+                  給与
+                </button>
+                <button 
+                  class="toggle-button" 
+                  [class.active]="insuranceListType === 'bonus'"
+                  (click)="switchInsuranceListType('bonus')"
+                >
+                  賞与
+                </button>
+              </div>
+              <div class="filter-group">
+                <label>年月:</label>
+                <input 
+                  type="number" 
+                  [(ngModel)]="insuranceListYear" 
+                  (change)="onInsuranceListDateChange()"
+                  min="2025"
+                  max="2099"
+                  class="year-input"
+                >
+                <span>年</span>
+                <input 
+                  type="number" 
+                  [(ngModel)]="insuranceListMonth" 
+                  (change)="onInsuranceListDateChange()"
+                  min="1"
+                  max="12"
+                  class="month-input"
+                >
+                <span>月</span>
+              </div>
+            </div>
+            
             <!-- 事業主負担額合計 -->
             <div class="employer-burden-summary">
               <div class="summary-card">
@@ -44,13 +86,15 @@
               </div>
             </div>
             
-            <div class="table-container">
+            <!-- 給与テーブル -->
+            <div class="table-container" *ngIf="insuranceListType === 'salary'">
               <table class="insurance-table">
                 <thead>
                   <tr>
                     <th>社員番号</th>
                     <th>氏名</th>
                     <th>固定的賃金</th>
+                    <th>等級</th>
                     <th>標準報酬月額</th>
                     <th>健康保険料</th>
                     <th>介護保険料</th>
@@ -59,20 +103,80 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let item of insuranceList; trackBy: trackByEmployeeNumber">
+                  <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber">
                     <td>{{ item.employeeNumber }}</td>
                     <td>{{ item.name }}</td>
                     <td class="number-cell">{{ item.fixedSalary | number:'1.0-0' }}円</td>
+                    <td>{{ item.grade }}</td>
                     <td class="number-cell">{{ item.standardMonthlySalary | number:'1.0-0' }}円</td>
                     <td class="number-cell">{{ formatInsuranceAmount(item.healthInsurance) }}円</td>
                     <td class="number-cell">{{ formatInsuranceAmount(item.nursingInsurance) }}円</td>
                     <td class="number-cell">{{ formatInsuranceAmount(item.pensionInsurance) }}円</td>
                     <td class="number-cell total-cell">{{ item.employeeBurden | number:'1.0-0' }}円</td>
                   </tr>
-                  <tr *ngIf="insuranceList && insuranceList.length === 0">
+                  <tr *ngIf="filteredInsuranceList.length === 0">
+                    <td colspan="9" class="empty-message">データがありません</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="5" class="total-label">合計</td>
+                    <td>{{ getTotalHealthInsurance() | number:'1.2-2' }}</td>
+                    <td>{{ getTotalNursingInsurance() | number:'1.2-2' }}</td>
+                    <td>{{ getTotalPensionInsurance() | number:'1.2-2' }}</td>
+                    <td>{{ getTotalEmployeeBurden() | number:'1.0-0' }}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="8" class="total-label">事業主負担額</td>
+                    <td>{{ getTotalEmployerBurden() | number:'1.0-0' }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- 賞与テーブル -->
+            <div class="table-container" *ngIf="insuranceListType === 'bonus'">
+              <table class="insurance-table">
+                <thead>
+                  <tr>
+                    <th>社員番号</th>
+                    <th>氏名</th>
+                    <th>賞与額</th>
+                    <th>標準賞与額</th>
+                    <th>健康保険料</th>
+                    <th>介護保険料</th>
+                    <th>厚生年金保険料</th>
+                    <th>社員負担額</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber">
+                    <td>{{ item.employeeNumber }}</td>
+                    <td>{{ item.name }}</td>
+                    <td class="number-cell">{{ item.bonusAmount | number:'1.0-0' }}円</td>
+                    <td class="number-cell">{{ item.standardBonusAmount | number:'1.0-0' }}円</td>
+                    <td class="number-cell">{{ formatInsuranceAmount(item.healthInsurance) }}円</td>
+                    <td class="number-cell">{{ formatInsuranceAmount(item.nursingInsurance) }}円</td>
+                    <td class="number-cell">{{ formatInsuranceAmount(item.pensionInsurance) }}円</td>
+                    <td class="number-cell total-cell">{{ item.employeeBurden | number:'1.0-0' }}円</td>
+                  </tr>
+                  <tr *ngIf="filteredInsuranceList.length === 0">
                     <td colspan="8" class="empty-message">データがありません</td>
                   </tr>
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="4" class="total-label">合計</td>
+                    <td>{{ getTotalHealthInsurance() | number:'1.2-2' }}</td>
+                    <td>{{ getTotalNursingInsurance() | number:'1.2-2' }}</td>
+                    <td>{{ getTotalPensionInsurance() | number:'1.2-2' }}</td>
+                    <td>{{ getTotalEmployeeBurden() | number:'1.0-0' }}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="7" class="total-label">事業主負担額</td>
+                    <td>{{ getTotalEmployerBurden() | number:'1.0-0' }}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -80,17 +184,137 @@
 
         <!-- 給与ページ -->
         <ng-container *ngIf="currentTab === '給与'">
-          <h2 class="page-title">給与</h2>
-          <div class="page-description">
-            <p>給与の管理ページです。</p>
+          <div class="page-header">
+            <h2 class="page-title">給与設定</h2>
+          </div>
+
+          <div class="salary-form-container">
+            <form class="salary-form" (ngSubmit)="saveSalary()">
+              <div class="form-group">
+                <label for="salaryEmployee">社員 <span class="required">*</span></label>
+                <select 
+                  id="salaryEmployee" 
+                  [(ngModel)]="selectedSalaryEmployee" 
+                  name="salaryEmployee"
+                  class="form-input"
+                  required
+                >
+                  <option value="">選択してください</option>
+                  <option *ngFor="let emp of salaryEmployees" [value]="emp.employeeNumber">
+                    {{ emp.employeeNumber }} - {{ emp.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="salaryYear">年 <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="salaryYear" 
+                  [(ngModel)]="salaryYear" 
+                  name="salaryYear"
+                  class="form-input"
+                  min="2025"
+                  max="2099"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="salaryMonth">月 <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="salaryMonth" 
+                  [(ngModel)]="salaryMonth" 
+                  name="salaryMonth"
+                  class="form-input"
+                  min="1"
+                  max="12"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="salaryAmount">固定的賃金額（円） <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="salaryAmount" 
+                  [(ngModel)]="salaryAmount" 
+                  name="salaryAmount"
+                  class="form-input"
+                  min="0"
+                  required
+                >
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="submit-button">給与を設定</button>
+              </div>
+            </form>
           </div>
         </ng-container>
 
         <!-- 賞与ページ -->
         <ng-container *ngIf="currentTab === '賞与'">
-          <h2 class="page-title">賞与</h2>
-          <div class="page-description">
-            <p>賞与の管理ページです。</p>
+          <div class="page-header">
+            <h2 class="page-title">賞与設定</h2>
+          </div>
+
+          <div class="bonus-form-container">
+            <form class="bonus-form" (ngSubmit)="saveBonus()">
+              <div class="form-group">
+                <label for="bonusEmployee">社員 <span class="required">*</span></label>
+                <select 
+                  id="bonusEmployee" 
+                  [(ngModel)]="selectedBonusEmployee" 
+                  name="bonusEmployee"
+                  class="form-input"
+                  required
+                >
+                  <option value="">選択してください</option>
+                  <option *ngFor="let emp of bonusEmployees" [value]="emp.employeeNumber">
+                    {{ emp.employeeNumber }} - {{ emp.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="bonusYear">年 <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="bonusYear" 
+                  [(ngModel)]="bonusYear" 
+                  name="bonusYear"
+                  class="form-input"
+                  min="2025"
+                  max="2099"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="bonusMonth">月 <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="bonusMonth" 
+                  [(ngModel)]="bonusMonth" 
+                  name="bonusMonth"
+                  class="form-input"
+                  min="1"
+                  max="12"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="bonusAmount">賞与額（円） <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="bonusAmount" 
+                  [(ngModel)]="bonusAmount" 
+                  name="bonusAmount"
+                  class="form-input"
+                  min="0"
+                  required
+                >
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="submit-button">賞与を設定</button>
+              </div>
+            </form>
           </div>
         </ng-container>
 
