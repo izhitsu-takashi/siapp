@@ -99,6 +99,72 @@ export class FirestoreService {
     }
   }
 
+  /**
+   * 申請要求を保存する
+   */
+  async saveApplicationRequest(requestData: any): Promise<void> {
+    try {
+      const requestId = `request_${requestData.employeeNumber}_${Date.now()}`;
+      const docRef = doc(this.db, 'applicationRequests', requestId);
+      await setDoc(docRef, {
+        ...requestData,
+        id: requestId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error saving application request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 社員番号に基づいて申請要求を取得する
+   */
+  async getApplicationRequestsByEmployee(employeeNumber: string): Promise<any[]> {
+    try {
+      const requestsCollection = collection(this.db, 'applicationRequests');
+      const querySnapshot = await getDocs(requestsCollection);
+      
+      const requests: any[] = [];
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        if (data['employeeNumber'] === employeeNumber && data['status'] !== '対応済み') {
+          requests.push({
+            id: doc.id,
+            ...data
+          });
+        }
+      });
+      
+      // 日付順にソート（新しいものから）
+      return requests.sort((a, b) => {
+        const dateA = a.requestedAt?.toDate ? a.requestedAt.toDate() : new Date(a.requestedAt || 0);
+        const dateB = b.requestedAt?.toDate ? b.requestedAt.toDate() : new Date(b.requestedAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+    } catch (error) {
+      console.error('Error getting application requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 申請要求のステータスを更新する
+   */
+  async updateApplicationRequestStatus(requestId: string, status: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'applicationRequests', requestId);
+      await updateDoc(docRef, {
+        status: status,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating application request status:', error);
+      throw error;
+    }
+  }
+
   async getAllEmployees(): Promise<any[]> {
     try {
       const employeesCollection = collection(this.db, 'employees');

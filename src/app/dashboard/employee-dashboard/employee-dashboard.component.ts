@@ -43,7 +43,6 @@ export class EmployeeDashboardComponent {
   nameChangeForm!: FormGroup;
   maternityLeaveForm!: FormGroup;
   resignationForm!: FormGroup;
-  insuranceCardReissueForm!: FormGroup;
   sameAsOldAddress = false; // 変更前住所と同じ
   sameAsNewAddress = false; // 変更後の住所と同じ
   // 現在の住所情報（変更前住所）
@@ -147,8 +146,6 @@ export class EmployeeDashboardComponent {
     this.maternityLeaveForm = this.createMaternityLeaveForm();
     // 退職申請フォームを初期化
     this.resignationForm = this.createResignationForm();
-    // 保険証再発行申請フォームを初期化
-    this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
     
     // ブラウザ環境でのみセッションストレージにアクセス
     if (isPlatformBrowser(this.platformId)) {
@@ -1091,9 +1088,6 @@ export class EmployeeDashboardComponent {
     } else if (applicationType === '退職申請') {
       this.resignationForm = this.createResignationForm();
       this.showApplicationModal = true;
-    } else if (applicationType === '保険証再発行申請') {
-      this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
-      this.showApplicationModal = true;
     } else {
       // 他の申請タイプは今後実装
       alert(`${applicationType}の申請フォームを開きます（実装予定）`);
@@ -1117,7 +1111,6 @@ export class EmployeeDashboardComponent {
     this.nameChangeForm = this.createNameChangeForm();
     this.maternityLeaveForm = this.createMaternityLeaveForm();
     this.resignationForm = this.createResignationForm();
-    this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
     this.sameAsOldAddress = false;
     this.sameAsNewAddress = false;
     this.sameAsCurrentAddressForResignation = false;
@@ -1313,14 +1306,6 @@ export class EmployeeDashboardComponent {
     });
   }
   
-  createInsuranceCardReissueForm(): FormGroup {
-    return this.fb.group({
-      lostDate: ['', Validators.required],
-      lostLocation: ['', Validators.required],
-      theftPossibility: ['', Validators.required],
-      hasMedicalAppointment: ['', Validators.required]
-    });
-  }
   
   // 変更前住所と同じチェックボックスの変更処理
   onSameAsOldAddressChange(event: any) {
@@ -1600,8 +1585,14 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
+        // 該当する申請要求のステータスを「対応済み」に更新
+        await this.updateApplicationRequestStatus('扶養家族追加');
+        
         // 申請一覧を再読み込み
         await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み
+        await this.loadHrRequests();
         
         // モーダルを閉じる
         this.closeApplicationModal();
@@ -1652,8 +1643,14 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
+        // 該当する申請要求のステータスを「対応済み」に更新
+        await this.updateApplicationRequestStatus('扶養削除申請');
+        
         // 申請一覧を再読み込み
         await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み
+        await this.loadHrRequests();
         
         // モーダルを閉じる
         this.closeApplicationModal();
@@ -1730,8 +1727,14 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
+        // 該当する申請要求のステータスを「対応済み」に更新
+        await this.updateApplicationRequestStatus('扶養家族追加');
+        
         // 申請一覧を再読み込み
         await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み
+        await this.loadHrRequests();
         
         // モーダルを閉じる
         this.closeApplicationModal();
@@ -1769,8 +1772,14 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
+        // 該当する申請要求のステータスを「対応済み」に更新
+        await this.updateApplicationRequestStatus('扶養家族追加');
+        
         // 申請一覧を再読み込み
         await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み
+        await this.loadHrRequests();
         
         // モーダルを閉じる
         this.closeApplicationModal();
@@ -1808,8 +1817,14 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
+        // 該当する申請要求のステータスを「対応済み」に更新
+        await this.updateApplicationRequestStatus('扶養家族追加');
+        
         // 申請一覧を再読み込み
         await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み
+        await this.loadHrRequests();
         
         // モーダルを閉じる
         this.closeApplicationModal();
@@ -1917,8 +1932,14 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
+        // 該当する申請要求のステータスを「対応済み」に更新
+        await this.updateApplicationRequestStatus('退職申請');
+        
         // 申請一覧を再読み込み
         await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み
+        await this.loadHrRequests();
         
         // モーダルを閉じる
         this.closeApplicationModal();
@@ -2157,40 +2178,6 @@ export class EmployeeDashboardComponent {
     }
   }
 
-  async submitInsuranceCardReissueApplication() {
-    if (this.insuranceCardReissueForm.valid) {
-      try {
-        const formValue = this.insuranceCardReissueForm.value;
-        
-        const applicationData: any = {
-          employeeNumber: this.employeeNumber,
-          applicationType: '保険証再発行申請',
-          lostDate: formValue.lostDate,
-          lostLocation: formValue.lostLocation,
-          theftPossibility: formValue.theftPossibility,
-          hasMedicalAppointment: formValue.hasMedicalAppointment
-        };
-        
-        // 申請を保存
-        await this.firestoreService.saveApplication(applicationData);
-        
-        // 申請一覧を再読み込み
-        await this.loadApplications();
-        
-        // モーダルを閉じる
-        this.closeApplicationModal();
-        
-        alert('申請しました');
-      } catch (error) {
-        console.error('Error submitting application:', error);
-        alert('申請中にエラーが発生しました');
-      }
-    } else {
-      // フォームのエラーを表示
-      this.insuranceCardReissueForm.markAllAsTouched();
-      alert('必須項目を入力してください');
-    }
-  }
   
   async loadMainPageData() {
     try {
@@ -2237,10 +2224,43 @@ export class EmployeeDashboardComponent {
         });
       }
 
-      // その他の人事からの依頼を読み込む（今後実装予定）
-      // TODO: Firestoreから人事からの依頼を読み込む
+      // Firestoreから申請要求を読み込む
+      try {
+        const applicationRequests = await this.firestoreService.getApplicationRequestsByEmployee(this.employeeNumber);
+        for (const request of applicationRequests) {
+          this.hrRequests.push({
+            id: request.id,
+            title: request.applicationType,
+            date: request.requestedAt?.toDate ? request.requestedAt.toDate() : new Date(request.requestedAt || new Date()),
+            message: request.message || `${request.applicationType}を行ってください`,
+            applicationType: request.applicationType
+          });
+        }
+      } catch (error) {
+        console.error('Error loading application requests:', error);
+      }
     } catch (error) {
       console.error('Error loading HR requests:', error);
+    }
+  }
+  
+  // 申請要求のステータスを更新するヘルパーメソッド
+  async updateApplicationRequestStatus(applicationType: string) {
+    try {
+      const pendingRequests = this.hrRequests.filter(req => 
+        req.applicationType === applicationType && req.id
+      );
+      for (const request of pendingRequests) {
+        if (request.id) {
+          try {
+            await this.firestoreService.updateApplicationRequestStatus(request.id, '対応済み');
+          } catch (error) {
+            console.error('Error updating application request status:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating application request status:', error);
     }
   }
 
@@ -2381,18 +2401,6 @@ export class EmployeeDashboardComponent {
         console.log('退職申請のフォームを初期化します。');
         this.resignationForm = this.createResignationForm();
         this.loadApplicationDataToForm(this.selectedApplication);
-      } else if (this.selectedApplication.applicationType === '保険証再発行申請') {
-        console.log('保険証再発行申請のフォームを初期化します。');
-        this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
-        console.log('insuranceCardReissueForm 作成完了:', this.insuranceCardReissueForm);
-        console.log('insuranceCardReissueForm.valid:', this.insuranceCardReissueForm.valid);
-        console.log('insuranceCardReissueForm.value:', this.insuranceCardReissueForm.value);
-        
-        // データをフォームにロード
-        console.log('データをフォームにロードします。');
-        this.loadApplicationDataToForm(this.selectedApplication);
-        console.log('データロード後の insuranceCardReissueForm.value:', this.insuranceCardReissueForm.value);
-        console.log('データロード後の insuranceCardReissueForm.valid:', this.insuranceCardReissueForm.valid);
       } else {
         console.log('未対応の申請タイプ:', this.selectedApplication.applicationType);
       }
@@ -2508,57 +2516,6 @@ export class EmployeeDashboardComponent {
       });
       
       console.log('=== loadApplicationDataToForm 終了 ===');
-    } else if (application.applicationType === '保険証再発行申請') {
-      console.log('保険証再発行申請のデータをロードします。');
-      // フォームは既に初期化されている前提（enableEditModeで初期化済み）
-      if (!this.insuranceCardReissueForm) {
-        console.log('insuranceCardReissueForm が存在しないため、作成します。');
-        this.insuranceCardReissueForm = this.createInsuranceCardReissueForm();
-      } else {
-        console.log('insuranceCardReissueForm は既に存在します。');
-      }
-      
-      console.log('application のデータ:', {
-        lostDate: application.lostDate,
-        lostLocation: application.lostLocation,
-        theftPossibility: application.theftPossibility,
-        hasMedicalAppointment: application.hasMedicalAppointment
-      });
-      
-      // データをフォームに設定
-      console.log('patchValue を実行します。');
-      // hasMedicalAppointmentの値を文字列に変換（'有'/'無'またはtrue/falseの両方に対応）
-      let hasMedicalAppointmentValue = '';
-      if (application.hasMedicalAppointment === true || application.hasMedicalAppointment === '有' || application.hasMedicalAppointment === 'true') {
-        hasMedicalAppointmentValue = '有';
-      } else if (application.hasMedicalAppointment === false || application.hasMedicalAppointment === '無' || application.hasMedicalAppointment === 'false') {
-        hasMedicalAppointmentValue = '無';
-      }
-      
-      this.insuranceCardReissueForm.patchValue({
-        lostDate: application.lostDate || '',
-        lostLocation: application.lostLocation || '',
-        theftPossibility: application.theftPossibility || '',
-        hasMedicalAppointment: hasMedicalAppointmentValue || ''
-      });
-      
-      console.log('patchValue 後の insuranceCardReissueForm.value:', this.insuranceCardReissueForm.value);
-      console.log('patchValue 後の insuranceCardReissueForm.valid:', this.insuranceCardReissueForm.valid);
-      console.log('patchValue 後の insuranceCardReissueForm.errors:', this.insuranceCardReissueForm.errors);
-      
-      // 各フィールドのエラーを確認
-      Object.keys(this.insuranceCardReissueForm.controls).forEach(key => {
-        const control = this.insuranceCardReissueForm.get(key);
-        if (control && control.invalid) {
-          console.log(`フィールド ${key} が無効:`, {
-            value: control.value,
-            errors: control.errors,
-            touched: control.touched
-          });
-        }
-      });
-      
-      console.log('=== loadApplicationDataToForm 終了（保険証再発行申請） ===');
     } else if (application.applicationType === '入社時申請') {
       // 入社時申請フォームを初期化
       if (!this.onboardingApplicationForm) {
@@ -3064,51 +3021,6 @@ export class EmployeeDashboardComponent {
             applicationType: '退職申請'
           };
         }
-      } else if (this.selectedApplication.applicationType === '保険証再発行申請') {
-        console.log('保険証再発行申請の再申請を処理します。');
-        console.log('insuranceCardReissueForm:', this.insuranceCardReissueForm);
-        console.log('insuranceCardReissueForm.valid:', this.insuranceCardReissueForm?.valid);
-        console.log('insuranceCardReissueForm.value:', this.insuranceCardReissueForm?.value);
-        
-        if (this.insuranceCardReissueForm) {
-          // 各フィールドのエラーを確認
-          Object.keys(this.insuranceCardReissueForm.controls).forEach(key => {
-            const control = this.insuranceCardReissueForm.get(key);
-            if (control && control.invalid) {
-              console.log(`フィールド ${key} が無効:`, {
-                value: control.value,
-                errors: control.errors,
-                touched: control.touched
-              });
-            }
-          });
-        } else {
-          console.log('insuranceCardReissueForm が存在しません！');
-        }
-        
-        formValid = this.insuranceCardReissueForm?.valid || false;
-        console.log('formValid:', formValid);
-        
-        if (formValid) {
-          console.log('フォームが有効です。データを取得します。');
-          const formValue = this.insuranceCardReissueForm.value;
-          console.log('formValue:', formValue);
-          
-          // hasMedicalAppointmentの値を適切な形式に変換
-          const hasMedicalAppointment = formValue.hasMedicalAppointment === '有' || formValue.hasMedicalAppointment === true || formValue.hasMedicalAppointment === 'true';
-          
-          applicationData = {
-            lostDate: formValue.lostDate,
-            lostLocation: formValue.lostLocation,
-            theftPossibility: formValue.theftPossibility,
-            hasMedicalAppointment: hasMedicalAppointment,
-            employeeNumber: this.employeeNumber,
-            applicationType: '保険証再発行申請'
-          };
-          console.log('applicationData:', applicationData);
-        } else {
-          console.log('フォームが無効です。');
-        }
       }
       
       console.log('formValid:', formValid);
@@ -3120,9 +3032,6 @@ export class EmployeeDashboardComponent {
           console.log('すべてのフィールドを touched に設定しました。');
         } else if (this.selectedApplication.applicationType === '入社時申請' && this.onboardingApplicationForm) {
           this.onboardingApplicationForm.markAllAsTouched();
-          console.log('すべてのフィールドを touched に設定しました。');
-        } else if (this.selectedApplication.applicationType === '保険証再発行申請' && this.insuranceCardReissueForm) {
-          this.insuranceCardReissueForm.markAllAsTouched();
           console.log('すべてのフィールドを touched に設定しました。');
         }
         alert('必須項目を入力してください');

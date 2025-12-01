@@ -274,7 +274,19 @@
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
+}
+
+.application-list-section .table-container {
+  max-height: calc(5 * 3.5rem + 3rem); /* 5行分の高さ + ヘッダー */
+  overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.application-list-section .table-container thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .section-header {
@@ -298,6 +310,9 @@
 .application-table thead {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .application-table th {
@@ -409,6 +424,11 @@
 .status-pending {
   background: #fff3cd;
   color: #856404;
+}
+
+.status-reviewing {
+  background: #cfe2ff;
+  color: #084298;
 }
 
 .status-approved {

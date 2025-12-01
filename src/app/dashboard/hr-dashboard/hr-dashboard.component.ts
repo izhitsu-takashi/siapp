@@ -30,7 +30,7 @@ export class HrDashboardComponent {
     { id: 'application-management', name: '申請管理' },
     { id: 'procedures', name: '入社手続き' },
     { id: 'document-management', name: '文書作成・管理' },
-    { id: 'insurance-card', name: '保険証管理' },
+    // { id: 'insurance-card', name: '保険証管理' }, // 機能は残すが表示しない
     { id: 'settings', name: '設定' }
   ];
 
@@ -305,6 +305,19 @@ export class HrDashboardComponent {
   newInsuranceCardStatus: string = '';
   insuranceCardStatusHistory: any[] = [];
   
+  // 申請要求モーダル用
+  showApplicationRequestModal = false;
+  applicationRequestForm!: FormGroup;
+  availableApplicationTypes = [
+    '扶養家族追加',
+    '扶養削除申請',
+    '住所変更申請',
+    '氏名変更申請',
+    '産前産後休業申請',
+    '退職申請',
+    '保険証再発行申請'
+  ];
+  
   // 入社手続き用フィルター
   onboardingStatusFilter: string = 'すべて';
   onboardingStatuses = ['すべて', '申請待ち', '申請済み', '差し戻し', '準備完了'];
@@ -451,6 +464,12 @@ export class HrDashboardComponent {
       this.loadSettings();
       // ダッシュボード用のデータを読み込む（初期表示時）
       this.loadDashboardData();
+      
+      // 申請要求フォームを初期化
+      this.applicationRequestForm = this.fb.group({
+        employeeNumber: ['', Validators.required],
+        applicationType: ['', Validators.required]
+      });
     }
   }
   
@@ -894,7 +913,7 @@ export class HrDashboardComponent {
     try {
       const employees = await this.firestoreService.getAllOnboardingEmployees();
       // FirestoreのTimestampをDateに変換
-      this.onboardingEmployees = employees.map((emp: any) => {
+      let processedEmployees = employees.map((emp: any) => {
         if (emp.createdAt && typeof emp.createdAt.toDate === 'function') {
           emp.createdAt = emp.createdAt.toDate();
         }
@@ -908,7 +927,7 @@ export class HrDashboardComponent {
       try {
         const onboardingApplications = await this.firestoreService.getEmployeeApplicationsByType('入社時申請');
         for (const app of onboardingApplications) {
-          const employee = this.onboardingEmployees.find((emp: any) => emp.employeeNumber === app.employeeNumber);
+          const employee = processedEmployees.find((emp: any) => emp.employeeNumber === app.employeeNumber);
           if (employee && employee.status === '申請待ち') {
             await this.firestoreService.updateOnboardingEmployeeStatus(employee.employeeNumber, '申請済み');
             employee.status = '申請済み';
@@ -918,12 +937,15 @@ export class HrDashboardComponent {
         console.error('Error checking onboarding applications:', error);
       }
       
-      // 元のデータをリセット
-      this.allOnboardingEmployees = [];
+      // 元のデータを保持
+      this.allOnboardingEmployees = [...processedEmployees];
+      
+      // ソート処理を実行してから代入
       this.filterAndSortOnboardingEmployees();
     } catch (error) {
       console.error('Error loading onboarding employees:', error);
       this.onboardingEmployees = [];
+      this.allOnboardingEmployees = [];
     }
   }
   
@@ -1303,7 +1325,7 @@ export class HrDashboardComponent {
               updatedAt: new Date()
             });
             
-            console.log('扶養家族情報と保険証情報を追加しました:', employeeNumber, isNewDependent ? '新しい扶養者を追加' : '既存の扶養者を更新');
+            console.log('扶養家族情報を追加しました:', employeeNumber, isNewDependent ? '新しい扶養者を追加' : '既存の扶養者を更新');
             
             // 社員情報編集モーダルが開いている場合、扶養家族情報を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -4534,6 +4556,53 @@ export class HrDashboardComponent {
     const insuredCount = this.insuranceCards.filter(card => card.status === status).length;
     const dependentCount = this.dependentInsuranceCards.filter(card => card.status === status).length;
     return insuredCount + dependentCount;
+  }
+  
+  // 申請要求モーダルを開く
+  openApplicationRequestModal() {
+    this.showApplicationRequestModal = true;
+    this.applicationRequestForm.reset();
+  }
+  
+  // 申請要求モーダルを閉じる
+  closeApplicationRequestModal() {
+    this.showApplicationRequestModal = false;
+    this.applicationRequestForm.reset();
+  }
+  
+  // 申請要求を送信
+  async submitApplicationRequest() {
+    if (this.applicationRequestForm.invalid) {
+      this.applicationRequestForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+      return;
+    }
+    
+    try {
+      const employeeNumber = this.applicationRequestForm.get('employeeNumber')?.value;
+      const applicationType = this.applicationRequestForm.get('applicationType')?.value;
+      
+      if (!employeeNumber || !applicationType) {
+        alert('社員と申請種類を選択してください');
+        return;
+      }
+      
+      // Firestoreに申請要求を保存
+      await this.firestoreService.saveApplicationRequest({
+        employeeNumber: employeeNumber,
+        applicationType: applicationType,
+        requestedAt: new Date(),
+        requestedBy: this.hrName,
+        status: '未対応',
+        message: `${applicationType}を行ってください`
+      });
+      
+      alert('申請要求を送信しました');
+      this.closeApplicationRequestModal();
+    } catch (error) {
+      console.error('Error submitting application request:', error);
+      alert('申請要求の送信に失敗しました');
+    }
   }
 }
 

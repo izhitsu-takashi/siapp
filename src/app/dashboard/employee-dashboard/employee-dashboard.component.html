@@ -815,16 +815,6 @@
               <span class="application-icon">🚪</span>
               <span class="application-label">退職申請</span>
             </button>
-            
-            <button 
-              class="application-button" 
-              (click)="openApplicationModal('保険証再発行申請')"
-              [disabled]="!hasOnboardingApplication"
-              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
-            >
-              <span class="application-icon">🆔</span>
-              <span class="application-label">保険証再発行申請</span>
-            </button>
           </div>
         </ng-container>
 
@@ -910,12 +900,10 @@
                       <td>
                         <span class="status-badge"
                               [class.status-pending]="application.status === '承認待ち'"
+                              [class.status-reviewing]="application.status === '確認中'"
                               [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
                               [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
-                              [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'" 
-                              [class.status-pending]="application.status === '承認待ち'"
-                              [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
-                              [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'">
+                              [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
                           {{ application.status }}
                         </span>
                         <div *ngIf="application.status === '差し戻し' && application.statusComment" class="status-comment-preview">
@@ -2857,97 +2845,6 @@
   </div>
 </div>
 
-<!-- 保険証再発行申請モーダル -->
-<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '保険証再発行申請'">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 class="modal-title">保険証再発行申請</h2>
-      <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
-    </div>
-    
-    <form [formGroup]="insuranceCardReissueForm" (ngSubmit)="submitInsuranceCardReissueApplication()" class="application-form">
-      <!-- 紛失した日付 -->
-      <section class="form-section">
-        <h3 class="section-title">紛失した日付</h3>
-        <div class="form-group">
-          <!-- <label for="lostDate">紛失した日付 <span class="required">*</span></label> -->
-          <input 
-            type="date" 
-            id="lostDate" 
-            formControlName="lostDate" 
-            class="form-input"
-          >
-          <div *ngIf="insuranceCardReissueForm.get('lostDate')?.invalid && insuranceCardReissueForm.get('lostDate')?.touched" class="error-message">
-            紛失した日付を入力してください
-          </div>
-        </div>
-      </section>
-      
-      <!-- どこで失くしたか -->
-      <section class="form-section">
-        <h3 class="section-title">どこで失くしたか</h3>
-        <div class="form-group">
-          <!-- <label for="lostLocation">どこで失くしたか <span class="required">*</span></label> -->
-          <textarea 
-            id="lostLocation" 
-            formControlName="lostLocation" 
-            class="form-input"
-            rows="3"
-            placeholder="例: 電車内、自宅、外出先など"
-          ></textarea>
-          <div *ngIf="insuranceCardReissueForm.get('lostLocation')?.invalid && insuranceCardReissueForm.get('lostLocation')?.touched" class="error-message">
-            どこで失くしたかを入力してください
-          </div>
-        </div>
-      </section>
-      
-      <!-- 盗難の可能性 -->
-      <section class="form-section">
-        <h3 class="section-title">盗難の可能性</h3>
-        <div class="form-group">
-          <label class="radio-label">
-            <input type="radio" formControlName="theftPossibility" value="有">
-            有
-          </label>
-          <label class="radio-label">
-            <input type="radio" formControlName="theftPossibility" value="無">
-            無
-          </label>
-          <div *ngIf="insuranceCardReissueForm.get('theftPossibility')?.invalid && insuranceCardReissueForm.get('theftPossibility')?.touched" class="error-message">
-            選択してください
-          </div>
-        </div>
-      </section>
-      
-      <!-- 保険証再発行までに通院する予定があるか -->
-      <section class="form-section">
-        <h3 class="section-title">保険証再発行までに通院する予定があるか</h3>
-        <div class="form-group">
-          <label class="radio-label">
-            <input type="radio" formControlName="hasMedicalAppointment" value="有">
-            有
-          </label>
-          <label class="radio-label">
-            <input type="radio" formControlName="hasMedicalAppointment" value="無">
-            無
-          </label>
-          <div *ngIf="insuranceCardReissueForm.get('hasMedicalAppointment')?.invalid && insuranceCardReissueForm.get('hasMedicalAppointment')?.touched" class="error-message">
-            選択してください
-          </div>
-        </div>
-      </section>
-      
-      <!-- 送信ボタン -->
-      <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="insuranceCardReissueForm.invalid">
-          申請
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- 申請詳細モーダル -->
 <div 
   class="modal-overlay" 
@@ -3849,88 +3746,6 @@
             </div>
           </div>
         </section>
-      </ng-container>
-      
-      <!-- 保険証再発行申請の詳細（表示モード・編集モード） -->
-      <ng-container *ngIf="selectedApplication.applicationType === '保険証再発行申請'">
-        <form [formGroup]="insuranceCardReissueForm" (ngSubmit)="submitReapplication()" *ngIf="insuranceCardReissueForm" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
-        <!-- 紛失情報 -->
-        <section class="detail-section">
-          <h3 class="section-title">紛失情報</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">紛失した日付 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.lostDate || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="date" formControlName="lostDate" class="form-input">
-                <div *ngIf="insuranceCardReissueForm.get('lostDate')?.invalid && insuranceCardReissueForm.get('lostDate')?.touched" class="error-message">
-                  紛失した日付を入力してください
-                </div>
-              </div>
-            </div>
-            <div class="detail-item full-width">
-              <span class="detail-label">どこで失くしたか <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.lostLocation || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="lostLocation" class="form-input" placeholder="例：電車内、自宅など">
-                <div *ngIf="insuranceCardReissueForm.get('lostLocation')?.invalid && insuranceCardReissueForm.get('lostLocation')?.touched" class="error-message">
-                  どこで失くしたかを入力してください
-                </div>
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">盗難の可能性 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.theftPossibility || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <label class="radio-label">
-                  <input type="radio" formControlName="theftPossibility" value="有">
-                  有
-                </label>
-                <label class="radio-label">
-                  <input type="radio" formControlName="theftPossibility" value="無">
-                  無
-                </label>
-                <div *ngIf="insuranceCardReissueForm.get('theftPossibility')?.invalid && insuranceCardReissueForm.get('theftPossibility')?.touched" class="error-message">
-                  選択してください
-                </div>
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">保険証再発行までに通院する予定があるか <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.hasMedicalAppointment === true || selectedApplication.hasMedicalAppointment === '有' ? '有' : (selectedApplication.hasMedicalAppointment === false || selectedApplication.hasMedicalAppointment === '無' ? '無' : '-') }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <label class="radio-label">
-                  <input type="radio" formControlName="hasMedicalAppointment" value="有">
-                  有
-                </label>
-                <label class="radio-label">
-                  <input type="radio" formControlName="hasMedicalAppointment" value="無">
-                  無
-                </label>
-                <div *ngIf="insuranceCardReissueForm.get('hasMedicalAppointment')?.invalid && insuranceCardReissueForm.get('hasMedicalAppointment')?.touched" class="error-message">
-                  選択してください
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        </form>
       </ng-container>
       
       <!-- 入社時申請の詳細（表示モード・編集モード） -->

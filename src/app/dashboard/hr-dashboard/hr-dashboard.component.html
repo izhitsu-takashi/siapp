@@ -19,7 +19,7 @@
       <nav class="sidebar-nav">
         <ng-container *ngFor="let tab of tabs">
           <button
-            *ngIf="tab.name !== '文書作成・管理'"
+            *ngIf="tab.name !== '文書作成・管理' && tab.name !== '保険証管理'"
             class="sidebar-item"
             [class.active]="currentTab === tab.name"
             (click)="switchTab(tab.name)"
@@ -132,7 +132,8 @@
                 </div>
               </section>
             
-              <!-- 保険証管理票のステータス一覧 -->
+              <!-- 保険証管理票のステータス一覧（一旦コメントアウト） -->
+              <!--
               <section class="dashboard-section">
                 <h3 class="section-title">保険証管理票</h3>
                 <div class="status-cards">
@@ -183,8 +184,66 @@
                   </div>
                 </div>
               </section>
+              -->
           </div>
         </ng-container>
+        
+        <!-- 申請要求モーダル -->
+        <div *ngIf="showApplicationRequestModal" class="modal-overlay">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3 class="modal-title">申請を要求</h3>
+              <button class="modal-close" (click)="closeApplicationRequestModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+              <form [formGroup]="applicationRequestForm" (ngSubmit)="submitApplicationRequest()">
+                <div class="form-group">
+                  <label for="requestEmployeeNumber">社員 <span class="required">*</span></label>
+                  <select 
+                    id="requestEmployeeNumber" 
+                    formControlName="employeeNumber" 
+                    class="form-input"
+                  >
+                    <option value="">選択してください</option>
+                    <option *ngFor="let emp of employees" [value]="emp.employeeNumber">
+                      {{ emp.employeeNumber }} - {{ emp.name }}
+                    </option>
+                  </select>
+                  <div *ngIf="applicationRequestForm.get('employeeNumber')?.invalid && applicationRequestForm.get('employeeNumber')?.touched" class="error-message">
+                    社員を選択してください
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="requestApplicationType">申請種類 <span class="required">*</span></label>
+                  <select 
+                    id="requestApplicationType" 
+                    formControlName="applicationType" 
+                    class="form-input"
+                  >
+                    <option value="">選択してください</option>
+                    <option *ngFor="let type of availableApplicationTypes" [value]="type">
+                      {{ type }}
+                    </option>
+                  </select>
+                  <div *ngIf="applicationRequestForm.get('applicationType')?.invalid && applicationRequestForm.get('applicationType')?.touched" class="error-message">
+                    申請種類を選択してください
+                  </div>
+                </div>
+                
+                <div class="modal-actions">
+                  <button type="button" class="cancel-button" (click)="closeApplicationRequestModal()">
+                    キャンセル
+                  </button>
+                  <button type="submit" class="submit-button" [disabled]="applicationRequestForm.invalid">
+                    要求を送信
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
 
         <!-- 設定ページ -->
         <ng-container *ngIf="currentTab === '設定'">
@@ -358,7 +417,16 @@
         <!-- 申請管理ページ -->
         <ng-container *ngIf="currentTab === '申請管理'">
           <div class="application-management-page">
-            <h2 class="page-title">申請管理</h2>
+            <div class="page-header-with-button">
+              <h2 class="page-title">申請管理</h2>
+              <button 
+                type="button" 
+                class="request-application-button"
+                (click)="openApplicationRequestModal()"
+              >
+                申請を要求
+              </button>
+            </div>
             
             <div class="filter-section">
               <label for="applicationStatusFilter">ステータスフィルター:</label>
@@ -632,8 +700,8 @@
           </div>
         </ng-container>
 
-        <!-- 保険証管理ページ -->
-        <ng-container *ngIf="currentTab === '保険証管理'">
+        <!-- 保険証管理ページ（機能は残すが表示しない） -->
+        <ng-container *ngIf="false && currentTab === '保険証管理'">
           <div class="insurance-card-management-page">
             <h2 class="page-title">保険証管理</h2>
             
@@ -2108,75 +2176,6 @@
           </div>
         </section>
 
-        <!-- 保険証情報（人事専用）欄 -->
-        <section class="form-section hr-only-section">
-          <h3 class="section-title">保険証情報（人事専用）</h3>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="hr-insuranceSymbol">被保険者記号 <span class="required">*</span></label>
-              <input 
-                type="text" 
-                id="hr-insuranceSymbol" 
-                formControlName="insuranceSymbol" 
-                class="form-input"
-                maxlength="8"
-                pattern="[0-9]*"
-                (input)="formatInsuranceSymbolInput($event)"
-                placeholder="00000000"
-              >
-              <div *ngIf="employeeEditForm.get('insuranceSymbol')?.invalid && employeeEditForm.get('insuranceSymbol')?.touched" class="error-message">
-                被保険者記号を入力してください（8桁の数字）
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="hr-insuranceNumber">被保険者番号 <span class="required">*</span></label>
-              <input 
-                type="text" 
-                id="hr-insuranceNumber" 
-                formControlName="insuranceNumber" 
-                class="form-input"
-                maxlength="3"
-                pattern="[0-9]*"
-                (input)="formatInsuranceNumberInput($event)"
-                placeholder="000"
-              >
-              <div *ngIf="employeeEditForm.get('insuranceNumber')?.invalid && employeeEditForm.get('insuranceNumber')?.touched" class="error-message">
-                被保険者番号を入力してください（3桁の数字）
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="hr-insuranceCardIssueDate">発行日</label>
-              <input 
-                type="date" 
-                id="hr-insuranceCardIssueDate" 
-                formControlName="insuranceCardIssueDate" 
-                class="form-input"
-              >
-            </div>
-            <div class="form-group">
-              <label for="hr-insuranceCardReturnDate">回収日</label>
-              <input 
-                type="date" 
-                id="hr-insuranceCardReturnDate" 
-                formControlName="insuranceCardReturnDate" 
-                class="form-input"
-              >
-            </div>
-            <div class="form-group">
-              <label for="hr-insuranceCardStatus">配布状況</label>
-              <select 
-                id="hr-insuranceCardStatus" 
-                formControlName="insuranceCardStatus" 
-                class="form-input"
-              >
-                <option value="">選択してください</option>
-                <option *ngFor="let status of insuranceCardStatuses" [value]="status">
-                  {{ status }}
-                </option>
-              </select>
-            </div>
-          </div>
-        </section>
 
         <!-- 送信ボタン -->
         <div class="modal-actions">
@@ -3555,83 +3554,6 @@
         </div>
       </section>
 
-      <!-- 保険証情報（人事専用）欄 -->
-      <section class="form-section hr-only-section">
-        <h3 class="section-title">保険証情報（人事専用）</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="onboarding-insuranceSymbol">被保険者記号 <span class="required">*</span></label>
-            <input 
-              type="text" 
-              id="onboarding-insuranceSymbol" 
-              formControlName="insuranceSymbol" 
-              class="form-input"
-              maxlength="8"
-              pattern="[0-9]*"
-              (input)="formatInsuranceSymbolInput($event)"
-              placeholder="00000000"
-            >
-            <div *ngIf="onboardingEmployeeEditForm.get('insuranceSymbol')?.invalid && onboardingEmployeeEditForm.get('insuranceSymbol')?.touched" class="error-message">
-              <span *ngIf="onboardingEmployeeEditForm.get('insuranceSymbol')?.errors?.['required']">被保険者記号を入力してください</span>
-              <span *ngIf="onboardingEmployeeEditForm.get('insuranceSymbol')?.errors?.['pattern']">8桁の数字を入力してください</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="onboarding-insuranceNumber">被保険者番号 <span class="required">*</span></label>
-            <input 
-              type="text" 
-              id="onboarding-insuranceNumber" 
-              formControlName="insuranceNumber" 
-              class="form-input"
-              maxlength="3"
-              pattern="[0-9]*"
-              (input)="formatInsuranceNumberInput($event)"
-              placeholder="000"
-            >
-            <div *ngIf="onboardingEmployeeEditForm.get('insuranceNumber')?.invalid && onboardingEmployeeEditForm.get('insuranceNumber')?.touched" class="error-message">
-              <span *ngIf="onboardingEmployeeEditForm.get('insuranceNumber')?.errors?.['required']">被保険者番号を入力してください</span>
-              <span *ngIf="onboardingEmployeeEditForm.get('insuranceNumber')?.errors?.['pattern']">3桁の数字を入力してください</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="onboarding-insuranceCardIssueDate">発行日 <span class="required">*</span></label>
-            <input 
-              type="date" 
-              id="onboarding-insuranceCardIssueDate" 
-              formControlName="insuranceCardIssueDate" 
-              class="form-input"
-            >
-            <div *ngIf="onboardingEmployeeEditForm.get('insuranceCardIssueDate')?.invalid && onboardingEmployeeEditForm.get('insuranceCardIssueDate')?.touched" class="error-message">
-              発行日を入力してください
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="onboarding-insuranceCardReturnDate">回収日</label>
-            <input 
-              type="date" 
-              id="onboarding-insuranceCardReturnDate" 
-              formControlName="insuranceCardReturnDate" 
-              class="form-input"
-            >
-          </div>
-          <div class="form-group">
-            <label for="onboarding-insuranceCardDistributionStatus">配布状況 <span class="required">*</span></label>
-            <select 
-              id="onboarding-insuranceCardDistributionStatus" 
-              formControlName="insuranceCardDistributionStatus" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option *ngFor="let status of insuranceCardStatuses" [value]="status">
-                {{ status }}
-              </option>
-            </select>
-            <div *ngIf="onboardingEmployeeEditForm.get('insuranceCardDistributionStatus')?.invalid && onboardingEmployeeEditForm.get('insuranceCardDistributionStatus')?.touched" class="error-message">
-              配布状況を選択してください
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- 年金基金加入欄 -->
       <section class="form-section">
