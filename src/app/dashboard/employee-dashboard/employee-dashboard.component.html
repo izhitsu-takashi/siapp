@@ -2538,7 +2538,7 @@
       
       <!-- 双子以上か -->
       <section class="form-section">
-        <h3 class="section-title">双子以上か</h3>
+        <h3 class="section-title">双子以上か <span class="required">*</span></h3>
         <div class="form-group">
           <label class="radio-label">
             <input type="radio" formControlName="isMultipleBirth" value="はい">
@@ -2556,9 +2556,8 @@
       
       <!-- 出産予定日を確認できる書類添付 -->
       <section class="form-section">
-        <h3 class="section-title">出産予定日を確認できる書類添付</h3>
         <div class="form-group">
-          <label for="maternityLeaveDocument">出産予定日を確認できる書類添付 <span class="required">*</span></label>
+          <label for="maternityLeaveDocument">出産予定日を確認できる書類添付</label>
           <input 
             type="file" 
             id="maternityLeaveDocument" 
@@ -2567,58 +2566,38 @@
             (change)="onFileSelected($event, 'maternityLeaveDocument')"
           >
           <div *ngIf="maternityLeaveDocumentFile" class="file-name">{{ maternityLeaveDocumentFile.name }}</div>
-          <div *ngIf="!maternityLeaveDocumentFile" class="error-message">
-            出産予定日を確認できる書類を添付してください
-          </div>
         </div>
       </section>
       
-      <!-- 産前休業期間 -->
+      <!-- 産前産後休業期間 -->
       <section class="form-section">
-        <h3 class="section-title">産前休業期間</h3>
+        <h3 class="section-title">産前産後休業期間</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label for="preMaternityLeaveStartDate">産前休業開始日</label>
+            <label for="maternityLeaveStartDate">産前産後休業開始日</label>
             <input 
               type="date" 
-              id="preMaternityLeaveStartDate" 
-              formControlName="preMaternityLeaveStartDate" 
+              id="maternityLeaveStartDate" 
+              formControlName="maternityLeaveStartDate" 
               class="form-input"
+              [disabled]="!maternityLeaveForm.get('expectedDeliveryDate')?.value"
             >
+            <small class="form-hint" *ngIf="!maternityLeaveForm.get('expectedDeliveryDate')?.value">
+              出産予定日を入力すると自動で設定されます
+            </small>
           </div>
           <div class="form-group">
-            <label for="preMaternityLeaveEndDate">産前休業終了日</label>
+            <label for="maternityLeaveEndDate">産前産後休業終了日</label>
             <input 
               type="date" 
-              id="preMaternityLeaveEndDate" 
-              formControlName="preMaternityLeaveEndDate" 
+              id="maternityLeaveEndDate" 
+              formControlName="maternityLeaveEndDate" 
               class="form-input"
+              [disabled]="!maternityLeaveForm.get('expectedDeliveryDate')?.value"
             >
-          </div>
-        </div>
-      </section>
-      
-      <!-- 産後休業期間 -->
-      <section class="form-section">
-        <h3 class="section-title">産後休業期間</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="postMaternityLeaveStartDate">産後休業開始日</label>
-            <input 
-              type="date" 
-              id="postMaternityLeaveStartDate" 
-              formControlName="postMaternityLeaveStartDate" 
-              class="form-input"
-            >
-          </div>
-          <div class="form-group">
-            <label for="postMaternityLeaveEndDate">産後休業終了日</label>
-            <input 
-              type="date" 
-              id="postMaternityLeaveEndDate" 
-              formControlName="postMaternityLeaveEndDate" 
-              class="form-input"
-            >
+            <small class="form-hint" *ngIf="!maternityLeaveForm.get('expectedDeliveryDate')?.value">
+              出産予定日を入力すると自動で設定されます
+            </small>
           </div>
         </div>
       </section>
@@ -2641,7 +2620,7 @@
       <!-- 送信ボタン -->
       <div class="form-actions">
         <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="maternityLeaveForm.invalid || !maternityLeaveDocumentFile">
+        <button type="submit" class="submit-button" [disabled]="maternityLeaveForm.invalid">
           申請
         </button>
       </div>
@@ -3654,32 +3633,17 @@
           </div>
         </section>
         
-        <!-- 産前休業期間 -->
+        <!-- 産前産後休業期間 -->
         <section class="detail-section">
-          <h3 class="section-title">産前休業期間</h3>
+          <h3 class="section-title">産前産後休業期間</h3>
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="detail-label">産前休業開始日:</span>
-              <span class="detail-value">{{ selectedApplication.preMaternityLeaveStartDate || '-' }}</span>
+              <span class="detail-label">産前産後休業開始日:</span>
+              <span class="detail-value">{{ selectedApplication.maternityLeaveStartDate || selectedApplication.preMaternityLeaveStartDate || '-' }}</span>
             </div>
             <div class="detail-item">
-              <span class="detail-label">産前休業終了日:</span>
-              <span class="detail-value">{{ selectedApplication.preMaternityLeaveEndDate || '-' }}</span>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 産後休業期間 -->
-        <section class="detail-section">
-          <h3 class="section-title">産後休業期間</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">産後休業開始日:</span>
-              <span class="detail-value">{{ selectedApplication.postMaternityLeaveStartDate || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">産後休業終了日:</span>
-              <span class="detail-value">{{ selectedApplication.postMaternityLeaveEndDate || '-' }}</span>
+              <span class="detail-label">産前産後休業終了日:</span>
+              <span class="detail-value">{{ selectedApplication.maternityLeaveEndDate || selectedApplication.postMaternityLeaveEndDate || '-' }}</span>
             </div>
           </div>
         </section>

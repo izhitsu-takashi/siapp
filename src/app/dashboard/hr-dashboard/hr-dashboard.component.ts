@@ -1477,6 +1477,28 @@ export class HrDashboardComponent {
         }
       }
       
+      // 産前産後休業申請が承認済みになった場合、産前産後休業期間を社員情報に保存
+      if (status === '承認済み' && this.selectedApplication.applicationType === '産前産後休業申請') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber) {
+            const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+            if (employeeData) {
+              await this.firestoreService.saveEmployeeData(employeeNumber, {
+                ...employeeData,
+                maternityLeaveStartDate: this.selectedApplication.maternityLeaveStartDate || this.selectedApplication.preMaternityLeaveStartDate || '',
+                maternityLeaveEndDate: this.selectedApplication.maternityLeaveEndDate || this.selectedApplication.postMaternityLeaveEndDate || '',
+                updatedAt: new Date()
+              });
+              console.log('産前産後休業期間を保存しました:', employeeNumber);
+            }
+          }
+        } catch (error) {
+          console.error('産前産後休業期間の保存に失敗しました:', error);
+          alert('産前産後休業期間の保存に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
       // 退職申請が承認済みになった場合、退職情報を更新
       if (status === '承認済み' && this.selectedApplication.applicationType === '退職申請') {
         try {

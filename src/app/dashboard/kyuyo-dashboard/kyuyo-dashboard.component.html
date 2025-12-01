@@ -605,17 +605,18 @@
           </div>
         </div>
 
-        <!-- 育休/産休状況 -->
+        <!-- 産前産後休業 -->
         <div class="info-section">
-          <h3 class="section-title">育休/産休状況</h3>
+          <h3 class="section-title">産前産後休業</h3>
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">育休:</span>
-              <span class="info-value">無し</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">産休:</span>
-              <span class="info-value">無し</span>
+              <span class="info-label">産前産後休業期間:</span>
+              <span class="info-value">
+                <span *ngIf="selectedEmployeeInfo.maternityLeaveStartDate && selectedEmployeeInfo.maternityLeaveEndDate">
+                  {{ formatDate(selectedEmployeeInfo.maternityLeaveStartDate) }} ～ {{ formatDate(selectedEmployeeInfo.maternityLeaveEndDate) }}
+                </span>
+                <span *ngIf="!selectedEmployeeInfo.maternityLeaveStartDate || !selectedEmployeeInfo.maternityLeaveEndDate">無し</span>
+              </span>
             </div>
           </div>
         </div>

@@ -1282,15 +1282,71 @@ export class EmployeeDashboardComponent {
   }
   
   createMaternityLeaveForm(): FormGroup {
-    return this.fb.group({
+    const form = this.fb.group({
       expectedDeliveryDate: ['', Validators.required],
       isMultipleBirth: ['', Validators.required],
-      preMaternityLeaveStartDate: [''],
-      preMaternityLeaveEndDate: [''],
-      postMaternityLeaveStartDate: [''],
-      postMaternityLeaveEndDate: [''],
+      maternityLeaveStartDate: [''],
+      maternityLeaveEndDate: [''],
       stayAddress: ['']
     });
+    
+    // 出産予定日が変更されたときに産前産後休業期間を自動設定
+    form.get('expectedDeliveryDate')?.valueChanges.subscribe(date => {
+      if (date) {
+        const isMultipleBirth = form.get('isMultipleBirth')?.value || '';
+        this.setMaternityLeavePeriod(form, date, isMultipleBirth);
+      } else {
+        form.get('maternityLeaveStartDate')?.setValue('');
+        form.get('maternityLeaveEndDate')?.setValue('');
+        form.get('maternityLeaveStartDate')?.disable();
+        form.get('maternityLeaveEndDate')?.disable();
+      }
+    });
+    
+    // 双子以上かが変更されたときに産前産後休業期間を再計算
+    form.get('isMultipleBirth')?.valueChanges.subscribe(isMultipleBirth => {
+      const expectedDeliveryDate = form.get('expectedDeliveryDate')?.value;
+      if (expectedDeliveryDate) {
+        this.setMaternityLeavePeriod(form, expectedDeliveryDate, isMultipleBirth || '');
+      }
+    });
+    
+    return form;
+  }
+
+  setMaternityLeavePeriod(form: FormGroup, expectedDeliveryDate: string, isMultipleBirth: string): void {
+    if (!expectedDeliveryDate) {
+      form.get('maternityLeaveStartDate')?.disable();
+      form.get('maternityLeaveEndDate')?.disable();
+      return;
+    }
+    
+    const deliveryDate = new Date(expectedDeliveryDate);
+    if (isNaN(deliveryDate.getTime())) {
+      return;
+    }
+    
+    // 産前休業開始日：双子以上が「はい」の場合は98日前、それ以外は42日前
+    const daysBefore = isMultipleBirth === 'はい' ? 98 : 42;
+    const preStartDate = new Date(deliveryDate);
+    preStartDate.setDate(preStartDate.getDate() - daysBefore);
+    
+    // 産後休業終了日：出産予定日の55日後
+    const postEndDate = new Date(deliveryDate);
+    postEndDate.setDate(postEndDate.getDate() + 55);
+    
+    // 日付をYYYY-MM-DD形式に変換
+    const formatDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    form.get('maternityLeaveStartDate')?.enable();
+    form.get('maternityLeaveEndDate')?.enable();
+    form.get('maternityLeaveStartDate')?.setValue(formatDate(preStartDate));
+    form.get('maternityLeaveEndDate')?.setValue(formatDate(postEndDate));
   }
   
   createResignationForm(): FormGroup {
@@ -1797,7 +1853,7 @@ export class EmployeeDashboardComponent {
   }
   
   async submitMaternityLeaveApplication() {
-    if (this.maternityLeaveForm.valid && this.maternityLeaveDocumentFile) {
+    if (this.maternityLeaveForm.valid) {
       try {
         const formValue = this.maternityLeaveForm.value;
         
@@ -1806,10 +1862,8 @@ export class EmployeeDashboardComponent {
           applicationType: '産前産後休業申請',
           expectedDeliveryDate: formValue.expectedDeliveryDate,
           isMultipleBirth: formValue.isMultipleBirth,
-          preMaternityLeaveStartDate: formValue.preMaternityLeaveStartDate || '',
-          preMaternityLeaveEndDate: formValue.preMaternityLeaveEndDate || '',
-          postMaternityLeaveStartDate: formValue.postMaternityLeaveStartDate || '',
-          postMaternityLeaveEndDate: formValue.postMaternityLeaveEndDate || '',
+          maternityLeaveStartDate: formValue.maternityLeaveStartDate || '',
+          maternityLeaveEndDate: formValue.maternityLeaveEndDate || '',
           stayAddress: formValue.stayAddress || '',
           hasDocument: !!this.maternityLeaveDocumentFile
         };
@@ -1818,7 +1872,7 @@ export class EmployeeDashboardComponent {
         await this.firestoreService.saveApplication(applicationData);
         
         // 該当する申請要求のステータスを「対応済み」に更新
-        await this.updateApplicationRequestStatus('扶養家族追加');
+        await this.updateApplicationRequestStatus('産前産後休業申請');
         
         // 申請一覧を再読み込み
         await this.loadApplications();
@@ -1837,11 +1891,7 @@ export class EmployeeDashboardComponent {
     } else {
       // フォームのエラーを表示
       this.maternityLeaveForm.markAllAsTouched();
-      if (!this.maternityLeaveDocumentFile) {
-        alert('出産予定日を確認できる書類を添付してください');
-      } else {
-        alert('必須項目を入力してください');
-      }
+      alert('必須項目を入力してください');
     }
   }
   
@@ -2706,10 +2756,8 @@ export class EmployeeDashboardComponent {
       this.maternityLeaveForm.patchValue({
         expectedDeliveryDate: application.expectedDeliveryDate || '',
         isMultipleBirth: application.isMultipleBirth || '',
-        preMaternityLeaveStartDate: application.preMaternityLeaveStartDate || '',
-        preMaternityLeaveEndDate: application.preMaternityLeaveEndDate || '',
-        postMaternityLeaveStartDate: application.postMaternityLeaveStartDate || '',
-        postMaternityLeaveEndDate: application.postMaternityLeaveEndDate || '',
+        maternityLeaveStartDate: application.maternityLeaveStartDate || application.preMaternityLeaveStartDate || '',
+        maternityLeaveEndDate: application.maternityLeaveEndDate || application.postMaternityLeaveEndDate || '',
         stayAddress: application.stayAddress || ''
       });
     } else if (application.applicationType === '退職申請') {
@@ -2979,10 +3027,8 @@ export class EmployeeDashboardComponent {
             expectedDeliveryDate: formValue.expectedDeliveryDate,
             isMultipleBirth: formValue.isMultipleBirth,
             hasDocument: !!this.maternityLeaveDocumentFile,
-            preMaternityLeaveStartDate: formValue.preMaternityLeaveStartDate || '',
-            preMaternityLeaveEndDate: formValue.preMaternityLeaveEndDate || '',
-            postMaternityLeaveStartDate: formValue.postMaternityLeaveStartDate || '',
-            postMaternityLeaveEndDate: formValue.postMaternityLeaveEndDate || '',
+            maternityLeaveStartDate: formValue.maternityLeaveStartDate || '',
+            maternityLeaveEndDate: formValue.maternityLeaveEndDate || '',
             stayAddress: formValue.stayAddress || '',
             employeeNumber: this.employeeNumber,
             applicationType: '産前産後休業申請'

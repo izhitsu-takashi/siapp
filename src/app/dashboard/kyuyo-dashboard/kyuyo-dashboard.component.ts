@@ -859,7 +859,9 @@ export class KyuyoDashboardComponent {
               nursingInsurance: nursingInsuranceRaw, // 小数第2位まで
               pensionInsurance: pensionInsuranceRaw, // 小数第2位まで
               employeeBurden: employeeBurden, // 社員負担額
-              birthDate: emp.birthDate || null // 生年月日（年齢計算用）
+              birthDate: emp.birthDate || null, // 生年月日（年齢計算用）
+              maternityLeaveStartDate: emp.maternityLeaveStartDate || null, // 産前産後休業開始日
+              maternityLeaveEndDate: emp.maternityLeaveEndDate || null // 産前産後休業終了日
             };
           });
       } else {
@@ -1003,6 +1005,65 @@ export class KyuyoDashboardComponent {
     }
   }
   
+  // 産前産後休業期間内かどうかを判定
+  isInMaternityLeavePeriod(maternityLeaveStartDate: any, maternityLeaveEndDate: any, year: number, month: number): boolean {
+    if (!maternityLeaveStartDate || !maternityLeaveEndDate) {
+      return false;
+    }
+    
+    // 日付をDateオブジェクトに変換
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (maternityLeaveStartDate instanceof Date) {
+      startDate = maternityLeaveStartDate;
+    } else if (maternityLeaveStartDate && typeof maternityLeaveStartDate.toDate === 'function') {
+      startDate = maternityLeaveStartDate.toDate();
+    } else if (typeof maternityLeaveStartDate === 'string') {
+      startDate = new Date(maternityLeaveStartDate);
+    } else {
+      return false;
+    }
+    
+    if (maternityLeaveEndDate instanceof Date) {
+      endDate = maternityLeaveEndDate;
+    } else if (maternityLeaveEndDate && typeof maternityLeaveEndDate.toDate === 'function') {
+      endDate = maternityLeaveEndDate.toDate();
+    } else if (typeof maternityLeaveEndDate === 'string') {
+      endDate = new Date(maternityLeaveEndDate);
+    } else {
+      return false;
+    }
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return false;
+    }
+    
+    // 開始月と終了月を取得
+    const startYear = startDate.getFullYear();
+    const startMonth = startDate.getMonth() + 1;
+    const endYear = endDate.getFullYear();
+    const endMonth = endDate.getMonth() + 1;
+    
+    // 終了月の前月までが免除対象
+    let exemptEndYear = endYear;
+    let exemptEndMonth = endMonth - 1;
+    if (exemptEndMonth < 1) {
+      exemptEndMonth = 12;
+      exemptEndYear--;
+    }
+    
+    // 選択された年月が開始月から終了月の前月までの範囲内かどうかを判定
+    if (year < startYear || (year === startYear && month < startMonth)) {
+      return false;
+    }
+    if (year > exemptEndYear || (year === exemptEndYear && month > exemptEndMonth)) {
+      return false;
+    }
+    
+    return true;
+  }
+
   // 保険料一覧を年月でフィルタリング
   async filterInsuranceListByDate() {
     try {
@@ -1037,6 +1098,14 @@ export class KyuyoDashboardComponent {
           const latestSalary = relevantSalaries.length > 0 ? relevantSalaries[0] : null;
           const fixedSalary = latestSalary ? latestSalary['amount'] : item.fixedSalary;
           
+          // 産前産後休業期間内かどうかを判定
+          const isInMaternityLeave = this.isInMaternityLeavePeriod(
+            item.maternityLeaveStartDate,
+            item.maternityLeaveEndDate,
+            filterYear,
+            filterMonth
+          );
+          
           // 標準報酬月額を再計算
           const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
           let standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
@@ -1051,22 +1120,25 @@ export class KyuyoDashboardComponent {
           // 厚生年金保険料計算用の標準報酬月額（kouseinenkinReiwa7リストを参照）
           const pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalary(fixedSalary);
           
-          // 各保険料を計算
-          const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
-          const nursingInsuranceRaw = isOver40 ? 0 : standardMonthlySalary * (nursingInsuranceRate / 100);
-          const pensionInsuranceRaw = pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
+          // 各保険料を計算（産前産後休業期間内の場合は0円）
+          const healthInsuranceRaw = isInMaternityLeave ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
+          const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isOver40 ? 0 : standardMonthlySalary * (nursingInsuranceRate / 100));
+          const pensionInsuranceRaw = isInMaternityLeave ? 0 : pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
           
-          // 社員負担額を計算
-          // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
-          const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-          const healthNursingBurden = this.roundHalf(healthNursingHalf);
-          
-          // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
-          const pensionHalf = pensionInsuranceRaw / 2;
-          const pensionBurden = this.roundHalf(pensionHalf);
-          
-          // 社員負担額（合計）
-          const employeeBurden = healthNursingBurden + pensionBurden;
+          // 社員負担額を計算（産前産後休業期間内の場合は0円）
+          let employeeBurden = 0;
+          if (!isInMaternityLeave) {
+            // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+            const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
+            const healthNursingBurden = this.roundHalf(healthNursingHalf);
+            
+            // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+            const pensionHalf = pensionInsuranceRaw / 2;
+            const pensionBurden = this.roundHalf(pensionHalf);
+            
+            // 社員負担額（合計）
+            employeeBurden = healthNursingBurden + pensionBurden;
+          }
           
           return {
             ...item,
@@ -1093,9 +1165,17 @@ export class KyuyoDashboardComponent {
               // 標準賞与額 = 賞与の1000円未満の値を切り捨てた額
               let standardBonusAmount = Math.floor(bonus['amount'] / 1000) * 1000;
               
-              // 社員情報を取得して年齢を計算
+              // 社員情報を取得して年齢と産前産後休業期間を計算
               const employeeData = await this.firestoreService.getEmployeeData(bonus['employeeNumber']);
               const age = this.calculateAge(employeeData?.birthDate);
+              
+              // 産前産後休業期間内かどうかを判定
+              const isInMaternityLeave = this.isInMaternityLeavePeriod(
+                employeeData?.maternityLeaveStartDate,
+                employeeData?.maternityLeaveEndDate,
+                filterYear,
+                filterMonth
+              );
               
               // 40歳以上の従業員は介護保険料を0円にする
               const isOver40 = age !== null && age >= 40;
@@ -1103,22 +1183,25 @@ export class KyuyoDashboardComponent {
               // 厚生年金保険料計算用の標準賞与額（kouseinenkinReiwa7リストを参照）
               const pensionStandardBonusAmount = this.calculatePensionStandardMonthlySalary(bonus['amount']);
               
-              // 各保険料を計算（標準賞与額 × 各保険料率）
-              const healthInsuranceRaw = standardBonusAmount * (healthInsuranceRate / 100);
-              const nursingInsuranceRaw = isOver40 ? 0 : standardBonusAmount * (nursingInsuranceRate / 100);
-              const pensionInsuranceRaw = pensionStandardBonusAmount * (pensionInsuranceRate / 100);
+              // 各保険料を計算（産前産後休業期間内の場合は0円）
+              const healthInsuranceRaw = isInMaternityLeave ? 0 : standardBonusAmount * (healthInsuranceRate / 100);
+              const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isOver40 ? 0 : standardBonusAmount * (nursingInsuranceRate / 100));
+              const pensionInsuranceRaw = isInMaternityLeave ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100);
               
-              // 社員負担額を計算
-              // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
-              const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-              const healthNursingBurden = this.roundHalf(healthNursingHalf);
-              
-              // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
-              const pensionHalf = pensionInsuranceRaw / 2;
-              const pensionBurden = this.roundHalf(pensionHalf);
-              
-              // 社員負担額（合計）
-              const employeeBurden = healthNursingBurden + pensionBurden;
+              // 社員負担額を計算（産前産後休業期間内の場合は0円）
+              let employeeBurden = 0;
+              if (!isInMaternityLeave) {
+                // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
+                const healthNursingBurden = this.roundHalf(healthNursingHalf);
+                
+                // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                const pensionHalf = pensionInsuranceRaw / 2;
+                const pensionBurden = this.roundHalf(pensionHalf);
+                
+                // 社員負担額（合計）
+                employeeBurden = healthNursingBurden + pensionBurden;
+              }
               
               return {
                 employeeNumber: bonus['employeeNumber'],

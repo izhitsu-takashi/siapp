@@ -2704,32 +2704,17 @@
           </div>
         </section>
         
-        <!-- 産前休業期間 -->
+        <!-- 産前産後休業期間 -->
         <section class="detail-section">
-          <h3 class="section-title">産前休業期間</h3>
+          <h3 class="section-title">産前産後休業期間</h3>
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="detail-label">産前休業開始日:</span>
-              <span class="detail-value">{{ selectedApplication.preMaternityLeaveStartDate || '-' }}</span>
+              <span class="detail-label">産前産後休業開始日:</span>
+              <span class="detail-value">{{ selectedApplication.maternityLeaveStartDate || selectedApplication.preMaternityLeaveStartDate || '-' }}</span>
             </div>
             <div class="detail-item">
-              <span class="detail-label">産前休業終了日:</span>
-              <span class="detail-value">{{ selectedApplication.preMaternityLeaveEndDate || '-' }}</span>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 産後休業期間 -->
-        <section class="detail-section">
-          <h3 class="section-title">産後休業期間</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">産後休業開始日:</span>
-              <span class="detail-value">{{ selectedApplication.postMaternityLeaveStartDate || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">産後休業終了日:</span>
-              <span class="detail-value">{{ selectedApplication.postMaternityLeaveEndDate || '-' }}</span>
+              <span class="detail-label">産前産後休業終了日:</span>
+              <span class="detail-value">{{ selectedApplication.maternityLeaveEndDate || selectedApplication.postMaternityLeaveEndDate || '-' }}</span>
             </div>
           </div>
         </section>
