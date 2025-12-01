@@ -81,6 +81,10 @@ export class KyuyoDashboardComponent {
   bonusHistory: any[] = []; // 賞与設定履歴
   bonusList: any[] = []; // 賞与一覧（保険料計算用）
 
+  // 社員情報モーダル
+  showEmployeeInfoModal = false;
+  selectedEmployeeInfo: any = null;
+
   constructor(
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -1429,6 +1433,74 @@ export class KyuyoDashboardComponent {
       sessionStorage.clear();
     }
     this.router.navigate(['/login']);
+  }
+
+  formatDate(dateValue: any): string {
+    if (!dateValue) return '-';
+    
+    let date: Date;
+    if (dateValue instanceof Date) {
+      date = dateValue;
+    } else if (dateValue && dateValue.toDate) {
+      date = dateValue.toDate();
+    } else if (typeof dateValue === 'string') {
+      date = new Date(dateValue);
+    } else {
+      return '-';
+    }
+    
+    if (isNaN(date.getTime())) {
+      return '-';
+    }
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}/${month}/${day}`;
+  }
+
+  async openEmployeeInfoModal(employeeNumber: string): Promise<void> {
+    try {
+      this.showEmployeeInfoModal = true;
+      this.selectedEmployeeInfo = null;
+      
+      // 社員情報を取得
+      const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+      
+      if (employeeData) {
+        // 年齢を計算（生年月日から）
+        let age: number | null = null;
+        if (employeeData.birthDate) {
+          const birthDate = employeeData.birthDate instanceof Date 
+            ? employeeData.birthDate 
+            : (employeeData.birthDate.toDate ? employeeData.birthDate.toDate() : new Date(employeeData.birthDate));
+          const today = new Date();
+          age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+        }
+        
+        this.selectedEmployeeInfo = {
+          ...employeeData,
+          age: age
+        };
+      } else {
+        alert('社員情報が見つかりませんでした。');
+        this.closeEmployeeInfoModal();
+      }
+    } catch (error) {
+      console.error('Error loading employee info:', error);
+      alert('社員情報の読み込みに失敗しました。');
+      this.closeEmployeeInfoModal();
+    }
+  }
+
+  closeEmployeeInfoModal(): void {
+    this.showEmployeeInfoModal = false;
+    this.selectedEmployeeInfo = null;
   }
 }
 

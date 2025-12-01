@@ -101,7 +101,9 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber">
+                  <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber" 
+                      (click)="openEmployeeInfoModal(item.employeeNumber)"
+                      class="clickable-row">
                     <td>{{ item.employeeNumber }}</td>
                     <td>{{ item.name }}</td>
                     <td class="number-cell">{{ item.fixedSalary | number:'1.0-0' }}円</td>
@@ -144,7 +146,9 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber">
+                  <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber" 
+                      (click)="openEmployeeInfoModal(item.employeeNumber)"
+                      class="clickable-row">
                     <td>{{ item.employeeNumber }}</td>
                     <td>{{ item.name }}</td>
                     <td class="number-cell">{{ item.bonusAmount | number:'1.0-0' }}円</td>
@@ -551,6 +555,93 @@
         </ng-container>
       </div>
     </main>
+  </div>
+</div>
+
+<!-- 社員情報モーダル -->
+<div class="modal-overlay" *ngIf="showEmployeeInfoModal" (click)="closeEmployeeInfoModal()">
+  <div class="modal-content employee-info-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">社員情報</h2>
+      <button class="modal-close-button" (click)="closeEmployeeInfoModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="selectedEmployeeInfo" class="employee-info-container">
+        <!-- 基本情報 -->
+        <div class="info-section">
+          <h3 class="section-title">基本情報</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">社員番号:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.employeeNumber }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">氏名:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.name }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">雇用形態:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.employmentType || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 被保険者種別 -->
+        <div class="info-section">
+          <h3 class="section-title">被保険者種別</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">健康保険:</span>
+              <span class="info-value">加入</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">厚生年金保険:</span>
+              <span class="info-value">加入</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">介護保険:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.age && selectedEmployeeInfo.age >= 40 ? '加入' : '対象外' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 育休/産休状況 -->
+        <div class="info-section">
+          <h3 class="section-title">育休/産休状況</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">育休:</span>
+              <span class="info-value">無し</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">産休:</span>
+              <span class="info-value">無し</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 在籍状況 -->
+        <div class="info-section">
+          <h3 class="section-title">在籍状況</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">在籍状況:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.employmentStatus || '在籍' }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedEmployeeInfo.resignationDate">
+              <span class="info-label">退職日:</span>
+              <span class="info-value">{{ formatDate(selectedEmployeeInfo.resignationDate) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="!selectedEmployeeInfo" class="loading-message">
+        情報を読み込み中...
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-button" (click)="closeEmployeeInfoModal()">閉じる</button>
+    </div>
   </div>
 </div>
 

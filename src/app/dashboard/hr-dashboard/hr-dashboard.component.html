@@ -1011,6 +1011,17 @@
                   class="form-input"
                   placeholder="例: EMP001"
                 >
+                <div *ngIf="employeesFormArray.at(i).get('employeeNumber')?.invalid && employeesFormArray.at(i).get('employeeNumber')?.touched" class="error-message">
+                  <span *ngIf="employeesFormArray.at(i).get('employeeNumber')?.errors?.['required']">
+                    社員番号を入力してください
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('employeeNumber')?.errors?.['duplicate']">
+                    この社員番号は既に使用されています
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('employeeNumber')?.errors?.['duplicateInForm']">
+                    同じフォーム内で社員番号が重複しています
+                  </span>
+                </div>
               </div>
               <div class="form-group">
                 <label [for]="'email' + i">メールアドレス <span class="required">*</span></label>
@@ -1021,6 +1032,20 @@
                   class="form-input"
                   placeholder="例: example@email.com"
                 >
+                <div *ngIf="employeesFormArray.at(i).get('email')?.invalid && employeesFormArray.at(i).get('email')?.touched" class="error-message">
+                  <span *ngIf="employeesFormArray.at(i).get('email')?.errors?.['required']">
+                    メールアドレスを入力してください
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('email')?.errors?.['email']">
+                    有効なメールアドレスを入力してください
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('email')?.errors?.['duplicate']">
+                    このメールアドレスは既に使用されています
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('email')?.errors?.['duplicateInForm']">
+                    同じフォーム内でメールアドレスが重複しています
+                  </span>
+                </div>
               </div>
               <div class="form-group">
                 <label [for]="'employmentType' + i">雇用形態 <span class="required">*</span></label>

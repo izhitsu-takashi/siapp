@@ -39,6 +39,8 @@ export class HrDashboardComponent {
 
   // 社員一覧
   employees: Employee[] = [];
+  allExistingEmployeeNumbers: Set<string> = new Set();
+  allExistingEmails: Set<string> = new Set();
   
   // 新入社員一覧
   onboardingEmployees: any[] = [];
@@ -822,14 +824,74 @@ export class HrDashboardComponent {
     return null;
   }
 
+  // 社員番号重複チェックバリデーター
+  employeeNumberDuplicateValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // requiredバリデーターで処理
+    }
+    
+    // 同じフォーム内の他の行の社員番号と重複チェック
+    const formArray = control.parent?.parent as FormArray;
+    if (formArray) {
+      const currentIndex = formArray.controls.findIndex(group => 
+        group.get('employeeNumber') === control
+      );
+      const otherEmployeeNumbers = formArray.controls
+        .map((group, index) => index !== currentIndex ? group.get('employeeNumber')?.value : null)
+        .filter(val => val);
+      
+      if (otherEmployeeNumbers.includes(control.value)) {
+        return { duplicateInForm: true };
+      }
+    }
+    
+    // 既存の社員番号と重複チェック
+    if (this.allExistingEmployeeNumbers.has(control.value)) {
+      return { duplicate: true };
+    }
+    
+    return null;
+  }
+
+  // メールアドレス重複チェックバリデーター
+  emailDuplicateValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // requiredバリデーターで処理
+    }
+    
+    const emailLower = control.value.toLowerCase();
+    
+    // 同じフォーム内の他の行のメールアドレスと重複チェック
+    const formArray = control.parent?.parent as FormArray;
+    if (formArray) {
+      const currentIndex = formArray.controls.findIndex(group => 
+        group.get('email') === control
+      );
+      const otherEmails = formArray.controls
+        .map((group, index) => index !== currentIndex ? group.get('email')?.value?.toLowerCase() : null)
+        .filter(val => val);
+      
+      if (otherEmails.includes(emailLower)) {
+        return { duplicateInForm: true };
+      }
+    }
+    
+    // 既存のメールアドレスと重複チェック
+    if (this.allExistingEmails.has(emailLower)) {
+      return { duplicate: true };
+    }
+    
+    return null;
+  }
+
   createEmployeeFormGroup(): FormGroup {
     return this.fb.group({
       lastName: ['', Validators.required],
       firstName: ['', Validators.required],
       lastNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
       firstNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
-      employeeNumber: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      employeeNumber: ['', [Validators.required, this.employeeNumberDuplicateValidator.bind(this)]],
+      email: ['', [Validators.required, Validators.email, this.emailDuplicateValidator.bind(this)]],
       employmentType: ['', Validators.required],
       initialPassword: ['', [Validators.required, Validators.minLength(6)]]
     });
@@ -841,6 +903,11 @@ export class HrDashboardComponent {
 
   addEmployeeRow() {
     this.employeesFormArray.push(this.createEmployeeFormGroup());
+    // 新しい行を追加した後、既存の行のバリデーションを再実行
+    this.employeesFormArray.controls.forEach(control => {
+      control.get('employeeNumber')?.updateValueAndValidity();
+      control.get('email')?.updateValueAndValidity();
+    });
   }
 
   removeEmployeeRow(index: number) {
@@ -1590,7 +1657,9 @@ export class HrDashboardComponent {
     this.router.navigate(['/login']);
   }
 
-  openAddModal() {
+  async openAddModal() {
+    // モーダルを開く前に既存の社員データを読み込んで重複チェック用のセットを更新
+    await this.loadEmployees();
     this.showAddModal = true;
     // フォームをリセットして1行目を追加
     this.addEmployeeForm = this.fb.group({
@@ -1610,6 +1679,30 @@ export class HrDashboardComponent {
       const onboardingEmployeeNumbers = new Set(
         onboardingEmployees.map(emp => emp.employeeNumber).filter(num => num)
       );
+      
+      // 重複チェック用に既存の社員番号とメールアドレスを収集
+      this.allExistingEmployeeNumbers = new Set();
+      this.allExistingEmails = new Set();
+      
+      // 既存の社員データから社員番号とメールアドレスを収集
+      allEmployees.forEach(emp => {
+        if (emp.employeeNumber) {
+          this.allExistingEmployeeNumbers.add(emp.employeeNumber);
+        }
+        if (emp.email) {
+          this.allExistingEmails.add(emp.email.toLowerCase());
+        }
+      });
+      
+      // 新入社員データからも社員番号とメールアドレスを収集
+      onboardingEmployees.forEach(emp => {
+        if (emp.employeeNumber) {
+          this.allExistingEmployeeNumbers.add(emp.employeeNumber);
+        }
+        if (emp.email) {
+          this.allExistingEmails.add(emp.email.toLowerCase());
+        }
+      });
       
       // 新入社員コレクションに存在しない社員のみを表示（入社手続きが完了した社員のみ）
       const completedEmployees = allEmployees.filter(
@@ -1633,6 +1726,8 @@ export class HrDashboardComponent {
       this.employees = [];
       this.allEmployeesForDocument = [];
       this.filteredEmployees = [];
+      this.allExistingEmployeeNumbers = new Set();
+      this.allExistingEmails = new Set();
     }
   }
 
