@@ -149,6 +149,45 @@
   padding: 2rem;
 }
 
+/* 社員情報管理ページ */
+.employee-management-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.employee-management-page .page-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+/* 入社手続きページ */
+.onboarding-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.onboarding-page .page-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.onboarding-page .header-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
 /* ダッシュボードページ */
 .dashboard-page {
   padding: 2rem;
@@ -219,13 +258,21 @@
 /* 申請管理ページ */
 .application-management-page {
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .application-management-page .page-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
   margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .application-management-page .page-description {
+  color: #666;
   margin-bottom: 2rem;
 }
 
@@ -874,6 +921,8 @@
 /* 保険証管理ページ */
 .insurance-card-management-page {
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .insurance-card-management-page .page-title {

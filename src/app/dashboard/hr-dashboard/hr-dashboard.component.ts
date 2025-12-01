@@ -35,7 +35,7 @@ export class HrDashboardComponent {
   ];
 
   // サンプルデータ（実際の実装では認証サービスから取得）
-  hrName = '人事 花子';
+  hrName = '労務担当者';
 
   // 社員一覧
   employees: Employee[] = [];

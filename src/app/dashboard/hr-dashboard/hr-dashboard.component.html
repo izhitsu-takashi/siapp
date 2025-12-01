@@ -393,21 +393,19 @@
 
         <!-- 入社手続きページ -->
         <ng-container *ngIf="currentTab === '入社手続き'">
-          <div class="page-content">
-            <div class="page-header">
-              <h2 class="page-title">入社手続き</h2>
-              <div class="header-buttons">
-                <button 
-                  *ngIf="hasReadyEmployees()" 
-                  class="onboarding-process-button" 
-                  (click)="openOnboardingProcessModal()"
-                >
-                  入社処理実行
-                </button>
-                <button class="add-employee-button" (click)="openAddModal()">
-                  社員を追加
-                </button>
-              </div>
+          <div class="onboarding-page">
+            <h2 class="page-title">入社手続き</h2>
+            <div class="header-buttons">
+              <button 
+                *ngIf="hasReadyEmployees()" 
+                class="onboarding-process-button" 
+                (click)="openOnboardingProcessModal()"
+              >
+                入社処理実行
+              </button>
+              <button class="add-employee-button" (click)="openAddModal()">
+                社員を追加
+              </button>
             </div>
 
             <!-- 新入社員一覧表 -->
@@ -649,12 +647,11 @@
 
         <!-- 社員情報管理ページ -->
         <ng-container *ngIf="currentTab === '社員情報管理'">
-          <div class="page-header">
+          <div class="employee-management-page">
             <h2 class="page-title">社員情報管理</h2>
-          </div>
 
-          <!-- 社員一覧テーブル -->
-          <div class="table-container">
+            <!-- 社員一覧テーブル -->
+            <div class="table-container">
             <table class="employee-table">
               <thead>
                 <tr>
@@ -675,7 +672,8 @@
                   <td colspan="4" class="empty-message">社員データがありません</td>
                 </tr>
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </ng-container>
       </div>
