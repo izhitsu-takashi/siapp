@@ -27,8 +27,8 @@ export class KyuyoDashboardComponent {
   // 社会保険料一覧データ
   insuranceList: any[] = [];
   filteredInsuranceList: any[] = []; // フィルタリング後の保険料一覧
-  insuranceListYear: number = 2025; // 保険料一覧の年
-  insuranceListMonth: number = 4; // 保険料一覧の月（2025年4月以降）
+  insuranceListYear: number = new Date().getFullYear(); // 保険料一覧の年（現在の年）
+  insuranceListMonth: number = new Date().getMonth() + 1; // 保険料一覧の月（現在の月）
   insuranceListType: 'salary' | 'bonus' = 'salary'; // 給与または賞与の切り替え
   
   // 年月フィルター用の選択肢
@@ -747,6 +747,8 @@ export class KyuyoDashboardComponent {
         const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
         return {
           ...bonus,
+          year: Number(bonus['year']), // 数値型に変換
+          month: Number(bonus['month']), // 数値型に変換
           name: employee?.name || ''
         };
       });
@@ -785,9 +787,32 @@ export class KyuyoDashboardComponent {
             // 固定的賃金額 = 見込み給与額（給与）+ 見込み給与額（賞与の月額換算）
             const fixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
             
-            // 既に設定されている固定的賃金がある場合はそれを使用（給与ページで設定された値）
-            const setFixedSalary = Number(emp.fixedSalary) || 0;
-            const finalFixedSalary = setFixedSalary > 0 ? setFixedSalary : fixedSalary;
+            // 給与設定履歴から、現在の年月以前の最新の給与を取得
+            // （給与設定は「その年月以降の給与を設定する」という意味）
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            
+            const relevantSalaries = this.salaryHistory
+              .filter((s: any) => s['employeeNumber'] === emp.employeeNumber)
+              .filter((s: any) => {
+                const salaryYear = Number(s['year']);
+                const salaryMonth = Number(s['month']);
+                if (salaryYear < currentYear) return true;
+                if (salaryYear === currentYear && salaryMonth <= currentMonth) return true;
+                return false;
+              })
+              .sort((a: any, b: any) => {
+                const aYear = Number(a['year']);
+                const bYear = Number(b['year']);
+                const aMonth = Number(a['month']);
+                const bMonth = Number(b['month']);
+                if (aYear !== bYear) return bYear - aYear;
+                return bMonth - aMonth;
+              });
+            
+            const latestSalary = relevantSalaries.length > 0 ? relevantSalaries[0] : null;
+            const finalFixedSalary = latestSalary ? latestSalary['amount'] : fixedSalary;
             // 標準報酬月額を計算
             const standardSalaryInfo = this.calculateStandardMonthlySalary(finalFixedSalary);
             let standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
@@ -837,9 +862,10 @@ export class KyuyoDashboardComponent {
         this.insuranceList = [];
       }
       
-      // 初期表示時は2025年4月の給与でフィルタリング
-      this.insuranceListYear = 2025;
-      this.insuranceListMonth = 4;
+      // 初期表示時は現在の年月の給与でフィルタリング
+      const now = new Date();
+      this.insuranceListYear = now.getFullYear();
+      this.insuranceListMonth = now.getMonth() + 1;
       this.insuranceListType = 'salary';
       await this.filterInsuranceListByDate();
     } catch (error) {
@@ -856,17 +882,20 @@ export class KyuyoDashboardComponent {
     let totalPensionInsurance = 0;
     let totalEmployeeBurden = 0;
     
-    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    // 賞与テーブルの場合はfilteredInsuranceListのみを使用（給与テーブルのデータを参照しない）
+    const listToUse = this.insuranceListType === 'bonus' 
+      ? this.filteredInsuranceList 
+      : (this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList);
     
     listToUse.forEach((item: any) => {
       // 全体の健康保険料（端数を切り落とした額）
-      totalHealthInsurance += Math.floor(item.healthInsurance);
+      totalHealthInsurance += Math.floor(item.healthInsurance || 0);
       
       // 全体の介護保険料（端数を切り落とした額）
-      totalNursingInsurance += Math.floor(item.nursingInsurance);
+      totalNursingInsurance += Math.floor(item.nursingInsurance || 0);
       
       // 全体の厚生年金保険料（端数を切り落とした額）
-      totalPensionInsurance += Math.floor(item.pensionInsurance);
+      totalPensionInsurance += Math.floor(item.pensionInsurance || 0);
       
       // 社員負担額の合計
       totalEmployeeBurden += item.employeeBurden || 0;
@@ -880,25 +909,37 @@ export class KyuyoDashboardComponent {
   
   // 健康保険料合計を計算
   getTotalHealthInsurance(): number {
-    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    // 賞与テーブルの場合はfilteredInsuranceListのみを使用（給与テーブルのデータを参照しない）
+    const listToUse = this.insuranceListType === 'bonus' 
+      ? this.filteredInsuranceList 
+      : (this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList);
     return listToUse.reduce((sum: number, item: any) => sum + (item.healthInsurance || 0), 0);
   }
   
   // 介護保険料合計を計算
   getTotalNursingInsurance(): number {
-    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    // 賞与テーブルの場合はfilteredInsuranceListのみを使用（給与テーブルのデータを参照しない）
+    const listToUse = this.insuranceListType === 'bonus' 
+      ? this.filteredInsuranceList 
+      : (this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList);
     return listToUse.reduce((sum: number, item: any) => sum + (item.nursingInsurance || 0), 0);
   }
   
   // 厚生年金保険料合計を計算
   getTotalPensionInsurance(): number {
-    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    // 賞与テーブルの場合はfilteredInsuranceListのみを使用（給与テーブルのデータを参照しない）
+    const listToUse = this.insuranceListType === 'bonus' 
+      ? this.filteredInsuranceList 
+      : (this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList);
     return listToUse.reduce((sum: number, item: any) => sum + (item.pensionInsurance || 0), 0);
   }
   
   // 社員負担額合計を計算
   getTotalEmployeeBurden(): number {
-    const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
+    // 賞与テーブルの場合はfilteredInsuranceListのみを使用（給与テーブルのデータを参照しない）
+    const listToUse = this.insuranceListType === 'bonus' 
+      ? this.filteredInsuranceList 
+      : (this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList);
     return listToUse.reduce((sum: number, item: any) => sum + (item.employeeBurden || 0), 0);
   }
 
@@ -961,6 +1002,10 @@ export class KyuyoDashboardComponent {
   // 保険料一覧を年月でフィルタリング
   async filterInsuranceListByDate() {
     try {
+      // 年月を数値型に変換（HTMLのselectから文字列型で来る可能性があるため）
+      const filterYear = Number(this.insuranceListYear);
+      const filterMonth = Number(this.insuranceListMonth);
+      
       // 設定から保険料率を取得
       const settings = await this.firestoreService.getSettings();
       const healthInsuranceRate = settings?.insuranceRates?.healthInsurance || this.insuranceRates.healthInsurance || 0;
@@ -974,8 +1019,10 @@ export class KyuyoDashboardComponent {
           const relevantSalaries = this.salaryHistory
             .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
             .filter((s: any) => {
-              if (s['year'] < this.insuranceListYear) return true;
-              if (s['year'] === this.insuranceListYear && s['month'] <= this.insuranceListMonth) return true;
+              const salaryYear = Number(s['year']);
+              const salaryMonth = Number(s['month']);
+              if (salaryYear < filterYear) return true;
+              if (salaryYear === filterYear && salaryMonth <= filterMonth) return true;
               return false;
             })
             .sort((a: any, b: any) => {
@@ -1032,10 +1079,12 @@ export class KyuyoDashboardComponent {
         // 賞与の場合：選択された年月の賞与で計算
         this.filteredInsuranceList = await Promise.all(
           this.bonusList
-            .filter((bonus: any) => 
-              bonus['year'] === this.insuranceListYear &&
-              bonus['month'] === this.insuranceListMonth
-            )
+            .filter((bonus: any) => {
+              // 年月を数値型に変換して比較（Firestoreから取得したデータが文字列型の場合があるため）
+              const bonusYear = Number(bonus['year']);
+              const bonusMonth = Number(bonus['month']);
+              return bonusYear === filterYear && bonusMonth === filterMonth;
+            })
             .map(async (bonus: any) => {
               // 標準賞与額 = 賞与の1000円未満の値を切り捨てた額
               let standardBonusAmount = Math.floor(bonus['amount'] / 1000) * 1000;
@@ -1089,11 +1138,17 @@ export class KyuyoDashboardComponent {
   // 保険料一覧のタイプを切り替え
   async switchInsuranceListType(type: 'salary' | 'bonus') {
     this.insuranceListType = type;
+    // 年月を数値型に変換（HTMLのselectから文字列型で来る可能性があるため）
+    this.insuranceListYear = Number(this.insuranceListYear);
+    this.insuranceListMonth = Number(this.insuranceListMonth);
     await this.filterInsuranceListByDate();
   }
   
   // 保険料一覧の年月を変更
   async onInsuranceListDateChange() {
+    // 年月を数値型に変換（HTMLのselectから文字列型で来る可能性があるため）
+    this.insuranceListYear = Number(this.insuranceListYear);
+    this.insuranceListMonth = Number(this.insuranceListMonth);
     await this.filterInsuranceListByDate();
   }
   
@@ -1133,12 +1188,84 @@ export class KyuyoDashboardComponent {
         const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
         return {
           ...bonus,
+          year: Number(bonus['year']), // 数値型に変換
+          month: Number(bonus['month']), // 数値型に変換
           name: employee?.name || ''
         };
       });
     } catch (error) {
       console.error('Error loading bonus data:', error);
     }
+  }
+  
+  // 給与額の入力制限（マイナス値や先頭が0の数値を防ぐ）
+  onSalaryAmountInput(event: any) {
+    let value = event.target.value;
+    
+    // 空の場合は0に
+    if (value === '' || value === null || value === undefined) {
+      this.salaryAmount = 0;
+      event.target.value = '';
+      return;
+    }
+    
+    // マイナス記号を削除
+    value = value.replace(/-/g, '');
+    
+    // 先頭の0を削除（ただし、0のみの場合は残す）
+    if (value.length > 1 && value.startsWith('0')) {
+      value = value.replace(/^0+/, '');
+      if (value === '') {
+        value = '0';
+      }
+    }
+    
+    // 数値に変換
+    let numValue = Number(value);
+    
+    // マイナス値やNaNの場合は0に
+    if (isNaN(numValue) || numValue < 0) {
+      numValue = 0;
+      value = '0';
+    }
+    
+    this.salaryAmount = numValue;
+    event.target.value = value;
+  }
+  
+  // 賞与額の入力制限（マイナス値や先頭が0の数値を防ぐ）
+  onBonusAmountInput(event: any) {
+    let value = event.target.value;
+    
+    // 空の場合は0に
+    if (value === '' || value === null || value === undefined) {
+      this.bonusAmount = 0;
+      event.target.value = '';
+      return;
+    }
+    
+    // マイナス記号を削除
+    value = value.replace(/-/g, '');
+    
+    // 先頭の0を削除（ただし、0のみの場合は残す）
+    if (value.length > 1 && value.startsWith('0')) {
+      value = value.replace(/^0+/, '');
+      if (value === '') {
+        value = '0';
+      }
+    }
+    
+    // 数値に変換
+    let numValue = Number(value);
+    
+    // マイナス値やNaNの場合は0に
+    if (isNaN(numValue) || numValue < 0) {
+      numValue = 0;
+      value = '0';
+    }
+    
+    this.bonusAmount = numValue;
+    event.target.value = value;
   }
   
   // 給与を保存
@@ -1148,19 +1275,18 @@ export class KyuyoDashboardComponent {
       return;
     }
     
+    // 年月を数値型に変換（selectから文字列型で来る可能性があるため）
+    this.salaryYear = Number(this.salaryYear);
+    this.salaryMonth = Number(this.salaryMonth);
+    
     try {
-      // 給与設定をFirestoreに保存
+      // 給与設定をFirestoreに保存（指定年月以降の給与を設定）
       await this.firestoreService.saveSalary(
         this.selectedSalaryEmployee,
         this.salaryYear,
         this.salaryMonth,
         this.salaryAmount
       );
-      
-      // 社員データの固定的賃金を更新
-      await this.firestoreService.saveEmployeeData(this.selectedSalaryEmployee, {
-        fixedSalary: this.salaryAmount
-      });
       
       // 給与設定履歴を再読み込み
       this.salaryHistory = await this.firestoreService.getSalaryHistory();
@@ -1197,6 +1323,10 @@ export class KyuyoDashboardComponent {
       return;
     }
     
+    // 年月を数値型に変換（selectから文字列型で来る可能性があるため）
+    this.bonusYear = Number(this.bonusYear);
+    this.bonusMonth = Number(this.bonusMonth);
+    
     try {
       // 賞与設定をFirestoreに保存
       await this.firestoreService.saveBonus(
@@ -1215,6 +1345,8 @@ export class KyuyoDashboardComponent {
         const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
         return {
           ...bonus,
+          year: Number(bonus['year']), // 数値型に変換
+          month: Number(bonus['month']), // 数値型に変換
           name: employee?.name || ''
         };
       });
