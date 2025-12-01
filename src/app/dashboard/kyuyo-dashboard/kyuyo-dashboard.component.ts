@@ -30,6 +30,7 @@ export class KyuyoDashboardComponent {
   insuranceListYear: number = new Date().getFullYear(); // 保険料一覧の年（現在の年）
   insuranceListMonth: number = new Date().getMonth() + 1; // 保険料一覧の月（現在の月）
   insuranceListType: 'salary' | 'bonus' = 'salary'; // 給与または賞与の切り替え
+  isLoadingInsuranceList: boolean = false; // 保険料一覧の読み込み中フラグ
   
   // 年月フィルター用の選択肢
   availableYears: number[] = [];
@@ -733,6 +734,7 @@ export class KyuyoDashboardComponent {
   
   // 社会保険料一覧を読み込む
   async loadInsuranceList() {
+    this.isLoadingInsuranceList = true;
     try {
       // 社員情報管理票に表示されている社員のみを取得（入社手続きが完了した社員のみ）
       await this.loadEmployees();
@@ -881,6 +883,8 @@ export class KyuyoDashboardComponent {
       console.error('Error loading insurance list:', error);
       this.insuranceList = [];
       this.filteredInsuranceList = [];
+    } finally {
+      this.isLoadingInsuranceList = false;
     }
   }
   
@@ -1132,6 +1136,7 @@ export class KyuyoDashboardComponent {
 
   // 保険料一覧を年月でフィルタリング
   async filterInsuranceListByDate() {
+    this.isLoadingInsuranceList = true;
     try {
       // 年月を数値型に変換（HTMLのselectから文字列型で来る可能性があるため）
       const filterYear = Number(this.insuranceListYear);
@@ -1411,6 +1416,8 @@ export class KyuyoDashboardComponent {
     } catch (error) {
       console.error('Error filtering insurance list:', error);
       this.filteredInsuranceList = [];
+    } finally {
+      this.isLoadingInsuranceList = false;
     }
   }
   

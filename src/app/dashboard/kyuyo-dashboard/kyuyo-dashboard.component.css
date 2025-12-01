@@ -284,6 +284,15 @@
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow-x: auto;
+  position: relative;
+  min-height: 200px;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
 }
 
 .insurance-table {
@@ -306,6 +315,12 @@
   font-weight: 600;
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+.insurance-table th.name-column,
+.insurance-table td.name-column {
+  min-width: 150px;
+  width: 150px;
 }
 
 .insurance-table tbody tr {
