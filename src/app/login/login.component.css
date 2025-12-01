@@ -1,11 +1,6 @@
 .login-container {
-  display: flex;
   min-height: 100vh;
   width: 100%;
-}
-
-.left-section {
-  flex: 1;
   background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80');
   background-size: cover;
   background-position: center;
@@ -17,7 +12,7 @@
   position: relative;
 }
 
-.left-section::before {
+.login-container::before {
   content: '';
   position: absolute;
   top: 0;
@@ -28,49 +23,23 @@
   z-index: 1;
 }
 
-.app-title {
-  color: white;
-  font-size: 4rem;
-  font-weight: 700;
-  margin: 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  position: relative;
-  z-index: 2;
-}
-
-.right-section {
-  flex: 1;
-  background-image: url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  position: relative;
-}
-
-.right-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
-  z-index: 1;
-}
-
 .login-form-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
   background: white;
   padding: 3rem;
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   position: relative;
   z-index: 2;
+}
+
+.app-title {
+  color: #333;
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 0 2rem 0;
+  text-align: center;
 }
 
 .login-type-tabs {
@@ -199,14 +168,6 @@
 }
 
 @media (max-width: 768px) {
-  .login-container {
-    flex-direction: column;
-  }
-
-  .left-section {
-    min-height: 200px;
-  }
-
   .app-title {
     font-size: 2.5rem;
   }

@@ -1,119 +1,112 @@
 <div class="login-container">
-  <div class="left-section">
+  <div class="login-form-container">
     <h1 class="app-title">SIApp</h1>
-  </div>
-  <div class="right-section">
-    <div class="login-form-container">
-      <div class="login-type-tabs">
-        <button
-          type="button"
-          class="tab-button"
-          [class.active]="loginType === 'employee'"
-          (click)="switchLoginType('employee')"
-        >
-          従業員
-        </button>
-        <button
-          type="button"
-          class="tab-button"
-          [class.active]="loginType === 'roumu'"
-          (click)="switchLoginType('roumu')"
-        >
-          労務担当者
-        </button>
-        <button
-          type="button"
-          class="tab-button"
-          [class.active]="loginType === 'kyuyo'"
-          (click)="switchLoginType('kyuyo')"
-        >
-          給与担当者
-        </button>
-      </div>
-
-      <h2 class="form-title">
-        {{ loginType === 'employee' ? '従業員ログイン' : loginType === 'roumu' ? '労務担当者ログイン' : '給与担当者ログイン' }}
-      </h2>
-      
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-        <div class="form-group" *ngIf="loginType === 'employee'">
-          <label for="email">メールアドレス</label>
-          <input
-            type="email"
-            id="email"
-            formControlName="email"
-            class="form-input"
-            placeholder="example@email.com"
-          />
-          <div
-            *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
-            class="error-message"
-          >
-            <span *ngIf="loginForm.get('email')?.errors?.['required']">
-              メールアドレスを入力してください
-            </span>
-            <span *ngIf="loginForm.get('email')?.errors?.['email']">
-              有効なメールアドレスを入力してください
-            </span>
-          </div>
-        </div>
-
-        <div class="form-group" *ngIf="loginType === 'roumu' || loginType === 'kyuyo'">
-          <label for="username">ユーザーネーム</label>
-          <input
-            type="text"
-            id="username"
-            formControlName="username"
-            class="form-input"
-            placeholder="ユーザーネームを入力"
-          />
-          <div
-            *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
-            class="error-message"
-          >
-            <span *ngIf="loginForm.get('username')?.errors?.['required']">
-              ユーザーネームを入力してください
-            </span>
-          </div>
-        </div>
-
-        <div class="form-group" *ngIf="loginType === 'roumu' || loginType === 'kyuyo'">
-          <label for="password-admin">パスワード</label>
-          <input
-            type="password"
-            id="password-admin"
-            formControlName="password"
-            class="form-input"
-            placeholder="パスワードを入力"
-          />
-          <div
-            *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-            class="error-message"
-          >
-            <span *ngIf="loginForm.get('password')?.errors?.['required']">
-              パスワードを入力してください
-            </span>
-          </div>
-        </div>
-
-        <div *ngIf="errorMessage" class="error-message general-error">
-          {{ errorMessage }}
-        </div>
-
-        <button
-          type="submit"
-          class="login-button"
-          [disabled]="loginForm.invalid || isLoading"
-        >
-          <span *ngIf="!isLoading">ログイン</span>
-          <span *ngIf="isLoading">ログイン中...</span>
-        </button>
-      </form>
-
-      <div class="signup-link" *ngIf="loginType === 'employee'">
-        <a routerLink="/signup">アカウント新規作成</a>
-      </div>
+    
+    <div class="login-type-tabs">
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="loginType === 'employee'"
+        (click)="switchLoginType('employee')"
+      >
+        従業員
+      </button>
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="loginType === 'roumu'"
+        (click)="switchLoginType('roumu')"
+      >
+        労務担当者
+      </button>
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="loginType === 'kyuyo'"
+        (click)="switchLoginType('kyuyo')"
+      >
+        給与担当者
+      </button>
     </div>
+
+    <h2 class="form-title">
+      {{ loginType === 'employee' ? '従業員ログイン' : loginType === 'roumu' ? '労務担当者ログイン' : '給与担当者ログイン' }}
+    </h2>
+    
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group" *ngIf="loginType === 'employee'">
+        <label for="email">メールアドレス</label>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          class="form-input"
+          placeholder="example@email.com"
+        />
+        <div
+          *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+          class="error-message"
+        >
+          <span *ngIf="loginForm.get('email')?.errors?.['required']">
+            メールアドレスを入力してください
+          </span>
+          <span *ngIf="loginForm.get('email')?.errors?.['email']">
+            有効なメールアドレスを入力してください
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="loginType === 'roumu' || loginType === 'kyuyo'">
+        <label for="username">ユーザーネーム</label>
+        <input
+          type="text"
+          id="username"
+          formControlName="username"
+          class="form-input"
+          placeholder="ユーザーネームを入力"
+        />
+        <div
+          *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
+          class="error-message"
+        >
+          <span *ngIf="loginForm.get('username')?.errors?.['required']">
+            ユーザーネームを入力してください
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="loginType === 'roumu' || loginType === 'kyuyo'">
+        <label for="password-admin">パスワード</label>
+        <input
+          type="password"
+          id="password-admin"
+          formControlName="password"
+          class="form-input"
+          placeholder="パスワードを入力"
+        />
+        <div
+          *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          class="error-message"
+        >
+          <span *ngIf="loginForm.get('password')?.errors?.['required']">
+            パスワードを入力してください
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="errorMessage" class="error-message general-error">
+        {{ errorMessage }}
+      </div>
+
+      <button
+        type="submit"
+        class="login-button"
+        [disabled]="loginForm.invalid || isLoading"
+      >
+        <span *ngIf="!isLoading">ログイン</span>
+        <span *ngIf="isLoading">ログイン中...</span>
+      </button>
+    </form>
   </div>
 </div>
 
