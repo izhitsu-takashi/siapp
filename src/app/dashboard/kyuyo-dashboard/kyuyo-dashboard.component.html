@@ -178,65 +178,101 @@
             <h2 class="page-title">給与設定</h2>
           </div>
 
-          <div class="salary-form-container">
+          <!-- 給与設定フォーム -->
+          <div class="form-container">
+            <h3 class="form-section-title">給与設定</h3>
             <form class="salary-form" (ngSubmit)="saveSalary()">
-              <div class="form-group">
-                <label for="salaryEmployee">社員 <span class="required">*</span></label>
-                <select 
-                  id="salaryEmployee" 
-                  [(ngModel)]="selectedSalaryEmployee" 
-                  name="salaryEmployee"
-                  class="form-input"
-                  required
-                >
-                  <option value="">選択してください</option>
-                  <option *ngFor="let emp of salaryEmployees" [value]="emp.employeeNumber">
-                    {{ emp.employeeNumber }} - {{ emp.name }}
-                  </option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="salaryYear">年 <span class="required">*</span></label>
-                <select 
-                  id="salaryYear" 
-                  [(ngModel)]="salaryYear" 
-                  name="salaryYear"
-                  class="form-input"
-                  required
-                >
-                  <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="salaryMonth">月 <span class="required">*</span></label>
-                <select 
-                  id="salaryMonth" 
-                  [(ngModel)]="salaryMonth" 
-                  name="salaryMonth"
-                  class="form-input"
-                  required
-                >
-                  <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="salaryAmount">固定的賃金額（円） <span class="required">*</span></label>
-                <input 
-                  type="number" 
-                  id="salaryAmount" 
-                  [(ngModel)]="salaryAmount" 
-                  name="salaryAmount"
-                  class="form-input"
-                  min="1"
-                  step="1"
-                  (input)="onSalaryAmountInput($event)"
-                  required
-                >
-              </div>
-              <div class="form-actions">
-                <button type="submit" class="submit-button">給与を設定</button>
+              <div class="form-row-wide">
+                <div class="form-group">
+                  <label for="salaryEmployee">社員 <span class="required">*</span></label>
+                  <select 
+                    id="salaryEmployee" 
+                    [(ngModel)]="selectedSalaryEmployee" 
+                    name="salaryEmployee"
+                    class="form-input"
+                    required
+                  >
+                    <option value="">選択してください</option>
+                    <option *ngFor="let emp of salaryEmployees" [value]="emp.employeeNumber">
+                      {{ emp.employeeNumber }} - {{ emp.name }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="salaryYear">年 <span class="required">*</span></label>
+                  <select 
+                    id="salaryYear" 
+                    [(ngModel)]="salaryYear" 
+                    name="salaryYear"
+                    class="form-input"
+                    required
+                  >
+                    <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="salaryMonth">月 <span class="required">*</span></label>
+                  <select 
+                    id="salaryMonth" 
+                    [(ngModel)]="salaryMonth" 
+                    name="salaryMonth"
+                    class="form-input"
+                    required
+                  >
+                    <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="salaryAmount">固定的賃金額（円） <span class="required">*</span></label>
+                  <input 
+                    type="number" 
+                    id="salaryAmount" 
+                    [(ngModel)]="salaryAmount" 
+                    name="salaryAmount"
+                    class="form-input"
+                    min="1"
+                    step="1"
+                    (input)="onSalaryAmountInput($event)"
+                    required
+                  >
+                </div>
+                <div class="form-group form-group-button">
+                  <button type="submit" class="submit-button">給与を設定</button>
+                </div>
               </div>
             </form>
+          </div>
+
+          <!-- 給与履歴表 -->
+          <div class="history-container">
+            <h3 class="form-section-title">給与設定履歴</h3>
+            <div class="table-container">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>社員番号</th>
+                    <th>氏名</th>
+                    <th>年</th>
+                    <th>月</th>
+                    <th>固定的賃金額</th>
+                    <th>設定日時</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let record of salaryHistory">
+                    <td>{{ record.employeeNumber }}</td>
+                    <td>{{ getEmployeeName(record.employeeNumber) }}</td>
+                    <td>{{ record.year }}</td>
+                    <td>{{ record.month }}</td>
+                    <td>{{ record.amount | number:'1.0-0' }}円</td>
+                    <td>{{ formatDateTime(record.createdAt) }}</td>
+                  </tr>
+                  <tr *ngIf="salaryHistory.length === 0">
+                    <td colspan="6" class="empty-message">履歴がありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </ng-container>
 
@@ -246,65 +282,101 @@
             <h2 class="page-title">賞与設定</h2>
           </div>
 
-          <div class="bonus-form-container">
+          <!-- 賞与設定フォーム -->
+          <div class="form-container">
+            <h3 class="form-section-title">賞与設定</h3>
             <form class="bonus-form" (ngSubmit)="saveBonus()">
-              <div class="form-group">
-                <label for="bonusEmployee">社員 <span class="required">*</span></label>
-                <select 
-                  id="bonusEmployee" 
-                  [(ngModel)]="selectedBonusEmployee" 
-                  name="bonusEmployee"
-                  class="form-input"
-                  required
-                >
-                  <option value="">選択してください</option>
-                  <option *ngFor="let emp of bonusEmployees" [value]="emp.employeeNumber">
-                    {{ emp.employeeNumber }} - {{ emp.name }}
-                  </option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="bonusYear">年 <span class="required">*</span></label>
-                <select 
-                  id="bonusYear" 
-                  [(ngModel)]="bonusYear" 
-                  name="bonusYear"
-                  class="form-input"
-                  required
-                >
-                  <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="bonusMonth">月 <span class="required">*</span></label>
-                <select 
-                  id="bonusMonth" 
-                  [(ngModel)]="bonusMonth" 
-                  name="bonusMonth"
-                  class="form-input"
-                  required
-                >
-                  <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="bonusAmount">賞与額（円） <span class="required">*</span></label>
-                <input 
-                  type="number" 
-                  id="bonusAmount" 
-                  [(ngModel)]="bonusAmount" 
-                  name="bonusAmount"
-                  class="form-input"
-                  min="1"
-                  step="1"
-                  (input)="onBonusAmountInput($event)"
-                  required
-                >
-              </div>
-              <div class="form-actions">
-                <button type="submit" class="submit-button">賞与を設定</button>
+              <div class="form-row-wide">
+                <div class="form-group">
+                  <label for="bonusEmployee">社員 <span class="required">*</span></label>
+                  <select 
+                    id="bonusEmployee" 
+                    [(ngModel)]="selectedBonusEmployee" 
+                    name="bonusEmployee"
+                    class="form-input"
+                    required
+                  >
+                    <option value="">選択してください</option>
+                    <option *ngFor="let emp of bonusEmployees" [value]="emp.employeeNumber">
+                      {{ emp.employeeNumber }} - {{ emp.name }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="bonusYear">年 <span class="required">*</span></label>
+                  <select 
+                    id="bonusYear" 
+                    [(ngModel)]="bonusYear" 
+                    name="bonusYear"
+                    class="form-input"
+                    required
+                  >
+                    <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="bonusMonth">月 <span class="required">*</span></label>
+                  <select 
+                    id="bonusMonth" 
+                    [(ngModel)]="bonusMonth" 
+                    name="bonusMonth"
+                    class="form-input"
+                    required
+                  >
+                    <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="bonusAmount">賞与額（円） <span class="required">*</span></label>
+                  <input 
+                    type="number" 
+                    id="bonusAmount" 
+                    [(ngModel)]="bonusAmount" 
+                    name="bonusAmount"
+                    class="form-input"
+                    min="1"
+                    step="1"
+                    (input)="onBonusAmountInput($event)"
+                    required
+                  >
+                </div>
+                <div class="form-group form-group-button">
+                  <button type="submit" class="submit-button">賞与を設定</button>
+                </div>
               </div>
             </form>
+          </div>
+
+          <!-- 賞与履歴表 -->
+          <div class="history-container">
+            <h3 class="form-section-title">賞与設定履歴</h3>
+            <div class="table-container">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>社員番号</th>
+                    <th>氏名</th>
+                    <th>年</th>
+                    <th>月</th>
+                    <th>賞与額</th>
+                    <th>設定日時</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let record of bonusHistory">
+                    <td>{{ record.employeeNumber }}</td>
+                    <td>{{ getEmployeeName(record.employeeNumber) }}</td>
+                    <td>{{ record.year }}</td>
+                    <td>{{ record.month }}</td>
+                    <td>{{ record.amount | number:'1.0-0' }}円</td>
+                    <td>{{ formatDateTime(record.createdAt) }}</td>
+                  </tr>
+                  <tr *ngIf="bonusHistory.length === 0">
+                    <td colspan="6" class="empty-message">履歴がありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </ng-container>
 

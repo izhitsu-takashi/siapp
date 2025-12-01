@@ -552,43 +552,66 @@
   margin-bottom: 2rem;
 }
 
-.salary-form-container,
-.bonus-form-container {
-  max-width: 600px;
-  margin: 0 auto;
+.form-container {
   background: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.form-section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #56ab2f;
+}
+
+.form-row-wide {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.form-group-button {
+  display: flex;
+  align-items: flex-end;
+}
+
+.history-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.history-container .table-container {
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .salary-form,
 .bonus-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e0e0e0;
+  gap: 1rem;
 }
 
 .submit-button {
   background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
   color: white;
   border: none;
-  padding: 0.875rem 3rem;
+  padding: 0.75rem 2rem;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
-  min-width: 200px;
+  white-space: nowrap;
 }
 
 .submit-button:hover {
@@ -600,6 +623,60 @@
 .submit-button:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+}
+
+.history-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-table thead {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  color: white;
+}
+
+.history-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.history-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.history-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.history-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.history-table td {
+  padding: 1rem;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.history-table .empty-message {
+  text-align: center;
+  color: #999;
+  padding: 3rem !important;
+  font-style: italic;
 }
 
 .submit-button:disabled {

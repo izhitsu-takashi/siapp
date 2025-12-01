@@ -1159,7 +1159,14 @@ export class KyuyoDashboardComponent {
       this.salaryEmployees = this.employees;
       
       // 給与設定履歴を読み込む（Firestoreから）
-      this.salaryHistory = await this.firestoreService.getSalaryHistory();
+      const history = await this.firestoreService.getSalaryHistory();
+      
+      // 日時順にソート（新しいものから）
+      this.salaryHistory = history.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
       
       // 社員名を追加
       for (const salary of this.salaryHistory) {
@@ -1181,7 +1188,13 @@ export class KyuyoDashboardComponent {
       
       // 賞与設定履歴を読み込む（Firestoreから）
       const bonuses = await this.firestoreService.getBonusHistory();
-      this.bonusHistory = bonuses;
+      
+      // 日時順にソート（新しいものから）
+      this.bonusHistory = bonuses.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
       
       // 社員名を追加してbonusListに設定
       this.bonusList = bonuses.map((bonus: any) => {
@@ -1268,6 +1281,39 @@ export class KyuyoDashboardComponent {
     event.target.value = value;
   }
   
+  // 社員名を取得
+  getEmployeeName(employeeNumber: string): string {
+    const employee = this.employees.find(emp => emp.employeeNumber === employeeNumber);
+    return employee ? employee.name : '-';
+  }
+
+  // 日時をフォーマット
+  formatDateTime(date: any): string {
+    if (!date) return '-';
+    try {
+      let dateObj: Date;
+      if (date.toDate && typeof date.toDate === 'function') {
+        dateObj = date.toDate();
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else {
+        return '-';
+      }
+      
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const hours = String(dateObj.getHours()).padStart(2, '0');
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+      
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
+    } catch (error) {
+      return '-';
+    }
+  }
+
   // 給与を保存
   async saveSalary() {
     if (!this.selectedSalaryEmployee || !this.salaryAmount || this.salaryAmount <= 0) {
@@ -1289,7 +1335,14 @@ export class KyuyoDashboardComponent {
       );
       
       // 給与設定履歴を再読み込み
-      this.salaryHistory = await this.firestoreService.getSalaryHistory();
+      const history = await this.firestoreService.getSalaryHistory();
+      
+      // 日時順にソート（新しいものから）
+      this.salaryHistory = history.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
       
       // 社員名を追加
       for (const salary of this.salaryHistory) {
@@ -1338,7 +1391,13 @@ export class KyuyoDashboardComponent {
       
       // 賞与設定履歴を再読み込み
       const bonuses = await this.firestoreService.getBonusHistory();
-      this.bonusHistory = bonuses;
+      
+      // 日時順にソート（新しいものから）
+      this.bonusHistory = bonuses.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
       
       // 社員名を追加してbonusListに設定
       this.bonusList = bonuses.map((bonus: any) => {
