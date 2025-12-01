@@ -292,8 +292,18 @@ export class HrDashboardComponent {
   // 保険証管理用データ
   insuranceCards: any[] = [];
   filteredInsuranceCards: any[] = [];
+  dependentInsuranceCards: any[] = [];
+  filteredDependentInsuranceCards: any[] = [];
   insuranceCardStatusFilter: string = 'すべて';
-  insuranceCardStatuses = ['準備中', '配布済み', '再発行中', '回収済み'];
+  insuranceCardStatuses = ['準備中', '配布済み', '再発行中', '回収待ち', '回収済み'];
+  insuranceCardViewType: 'insured' | 'dependent' = 'insured'; // 被保険者/被扶養者の切り替え
+  
+  // 保険証ステータス変更モーダル用
+  showInsuranceCardStatusModal = false;
+  selectedInsuranceCard: any = null;
+  selectedInsuranceCardType: 'insured' | 'dependent' = 'insured';
+  newInsuranceCardStatus: string = '';
+  insuranceCardStatusHistory: any[] = [];
   
   // 入社手続き用フィルター
   onboardingStatusFilter: string = 'すべて';
@@ -1166,6 +1176,16 @@ export class HrDashboardComponent {
     const status = this.statusChangeForm.get('status')?.value;
     const comment = this.statusChangeForm.get('comment')?.value || '';
     
+    // 承認済みに変更する場合は確認ダイアログを表示
+    if (status === '承認済み' && this.selectedApplication.status !== '承認済み') {
+      const confirmed = confirm('承認済みにしたステータスは戻せません。よろしいですか？');
+      if (!confirmed) {
+        // キャンセルされた場合、ステータスを元に戻す
+        this.statusChangeForm.patchValue({ status: this.selectedApplication.status });
+        return;
+      }
+    }
+    
     // 差し戻しの場合はコメント必須
     if (status === '差し戻し' && !comment.trim()) {
       alert('差し戻しの場合はコメントを入力してください');
@@ -1184,13 +1204,114 @@ export class HrDashboardComponent {
         try {
           const employeeNumber = this.selectedApplication.employeeNumber;
           if (employeeNumber) {
-            await this.firestoreService.addDependentToEmployee(employeeNumber, this.selectedApplication);
-            console.log('扶養家族情報を追加しました:', employeeNumber);
+            // 申請内容から扶養者情報を取得
+            // 申請データのフィールド名を確認（従業員側のフォームでは lastName, firstName などが使われている）
+            const lastName = this.selectedApplication.lastName || '';
+            const firstName = this.selectedApplication.firstName || '';
+            const lastNameKana = this.selectedApplication.lastNameKana || '';
+            const firstNameKana = this.selectedApplication.firstNameKana || '';
+            const dependentName = `${lastName} ${firstName}`.trim();
+            const relationship = this.selectedApplication.relationship || 
+              (this.selectedApplication.relationshipType === '配偶者' 
+                ? (this.selectedApplication.spouseType || '配偶者')
+                : this.selectedApplication.relationshipType) || '';
+            
+            // 保険証情報は申請時点では含まれていない可能性があるため、空文字列で初期化
+            // 後で保険証情報を設定する必要がある
+            const insuranceSymbol = this.selectedApplication.insuranceSymbol || '';
+            const insuranceNumber = this.selectedApplication.insuranceNumber || '';
+            
+            // 既存の社員データを取得
+            const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+            if (!employeeData) {
+              throw new Error('社員データが見つかりません');
+            }
+            
+            // 既存の扶養家族情報を取得
+            const dependents = employeeData.dependents || [];
+            
+            // 同じ名前と続柄の扶養者が既に存在するかチェック（重複防止）
+            const existingDependentIndex = dependents.findIndex((dep: any) => {
+              const depName = dep.name || `${dep.lastName || ''} ${dep.firstName || ''}`.trim();
+              return depName === dependentName && dep.relationship === relationship;
+            });
+            
+            let isNewDependent = false;
+            if (existingDependentIndex >= 0) {
+              // 既存の扶養者情報を更新（保険証情報を追加または更新）
+              dependents[existingDependentIndex] = {
+                ...dependents[existingDependentIndex],
+                insuranceSymbol: insuranceSymbol || dependents[existingDependentIndex].insuranceSymbol || '',
+                insuranceNumber: insuranceNumber || dependents[existingDependentIndex].insuranceNumber || '',
+                insuranceCardIssueDate: dependents[existingDependentIndex].insuranceCardIssueDate || this.selectedApplication.dependentStartDate || new Date(),
+                insuranceCardReturnDate: dependents[existingDependentIndex].insuranceCardReturnDate || '',
+                insuranceCardStatus: dependents[existingDependentIndex].insuranceCardStatus || '準備中',
+                insuranceCardStatusHistory: dependents[existingDependentIndex].insuranceCardStatusHistory || [{
+                  status: '準備中',
+                  changedAt: new Date(),
+                  changedBy: this.hrName
+                }]
+              };
+            } else {
+              // 新しい扶養者情報を作成（保険証情報を含む）
+              const newDependent = {
+                name: dependentName,
+                nameKana: `${lastNameKana} ${firstNameKana}`.trim(),
+                lastName: lastName,
+                firstName: firstName,
+                lastNameKana: lastNameKana,
+                firstNameKana: firstNameKana,
+                relationship: relationship,
+                birthDate: this.selectedApplication.birthDate || '',
+                gender: this.selectedApplication.gender || '',
+                myNumber: this.selectedApplication.myNumber || '',
+                phoneNumber: this.selectedApplication.phoneNumber || '',
+                occupation: this.selectedApplication.occupation || '',
+                annualIncome: this.selectedApplication.annualIncome || '',
+                monthlyIncome: this.selectedApplication.monthlyIncome || '',
+                dependentStartDate: this.selectedApplication.dependentStartDate || '',
+                dependentReason: this.selectedApplication.dependentReason || '',
+                livingTogether: this.selectedApplication.livingTogether || '',
+                postalCode: this.selectedApplication.postalCode || '',
+                address: this.selectedApplication.address || '',
+                addressKana: this.selectedApplication.addressKana || '',
+                addressChangeDate: this.selectedApplication.addressChangeDate || '',
+                basicPensionNumber: this.selectedApplication.basicPensionNumber || '',
+                disabilityCategory: this.selectedApplication.disabilityCategory || '',
+                disabilityCardType: this.selectedApplication.disabilityCardType || '',
+                disabilityCardIssueDate: this.selectedApplication.disabilityCardIssueDate || '',
+                insuranceSymbol: insuranceSymbol,
+                insuranceNumber: insuranceNumber,
+                insuranceCardIssueDate: this.selectedApplication.dependentStartDate || new Date(),
+                insuranceCardReturnDate: '',
+                insuranceCardStatus: '準備中',
+                insuranceCardStatusHistory: [{
+                  status: '準備中',
+                  changedAt: new Date(),
+                  changedBy: this.hrName
+                }]
+              };
+              
+              dependents.push(newDependent);
+              isNewDependent = true;
+            }
+            
+            // 社員データを更新（扶養者情報と保険証情報を含む）
+            await this.firestoreService.saveEmployeeData(employeeNumber, {
+              ...employeeData,
+              dependents: dependents,
+              updatedAt: new Date()
+            });
+            
+            console.log('扶養家族情報と保険証情報を追加しました:', employeeNumber, isNewDependent ? '新しい扶養者を追加' : '既存の扶養者を更新');
             
             // 社員情報編集モーダルが開いている場合、扶養家族情報を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
               await this.loadEmployeeData(employeeNumber);
             }
+            
+            // 保険証一覧を再読み込み
+            await this.loadInsuranceCards();
           }
         } catch (error) {
           console.error('扶養家族情報の追加に失敗しました:', error);
@@ -1295,9 +1416,12 @@ export class HrDashboardComponent {
       }
       
       // 承認済みの場合、チェックが入った文書をダウンロード
+      // 一旦コメントアウト
+      /*
       if (status === '承認済み' && this.availableDocuments.length > 0) {
         await this.downloadSelectedDocuments();
       }
+      */
       
       // ローカルのステータスを更新
       this.selectedApplication.status = status;
@@ -3083,17 +3207,53 @@ export class HrDashboardComponent {
   // 保険証一覧を読み込む
   async loadInsuranceCards() {
     try {
-      const allEmployees = await this.firestoreService.getAllEmployees();
+      // まず社員情報管理表の社員を読み込む（新入社員を除外した社員のみ）
+      await this.loadEmployees();
       
-      this.insuranceCards = allEmployees
-        .filter(emp => emp.employeeNumber && emp.name && (emp.insuranceSymbol || emp.insuranceNumber))
+      // 社員情報管理表に表示されている社員の社員番号セットを作成
+      const employeeNumbers = new Set(this.employees.map(emp => emp.employeeNumber));
+      
+      // 社員情報管理表に表示されている社員の詳細情報を取得
+      const employeeDetails = await Promise.all(
+        Array.from(employeeNumbers).map(async (employeeNumber) => {
+          try {
+            return await this.firestoreService.getEmployeeData(employeeNumber);
+          } catch (error) {
+            console.error(`Error loading employee data for ${employeeNumber}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // 被保険者（社員本人）の保険証情報を取得
+      // 保険証情報が十分 = insuranceSymbol と insuranceNumber の両方が存在する
+      this.insuranceCards = employeeDetails
+        .filter(emp => 
+          emp && 
+          emp.employeeNumber && 
+          emp.name && 
+          emp.insuranceSymbol && 
+          emp.insuranceNumber &&
+          emp.insuranceSymbol.trim() !== '' &&
+          emp.insuranceNumber.trim() !== ''
+        )
         .map(emp => {
           // insuranceCardStatusが存在する場合はそれを使用、存在しない場合はデフォルト値
-          // nullや空文字列の場合はデフォルト値を使用
           let status = '配布済み';
           if (emp.insuranceCardStatus && emp.insuranceCardStatus !== null && emp.insuranceCardStatus !== '') {
             status = emp.insuranceCardStatus;
           }
+          
+          // ステータス変更履歴を正しく処理（FirestoreのTimestamp型をDate型に変換）
+          const statusHistory = (emp.insuranceCardStatusHistory || []).map((history: any) => {
+            if (history.changedAt && typeof history.changedAt.toDate === 'function') {
+              return {
+                ...history,
+                changedAt: history.changedAt.toDate()
+              };
+            }
+            return history;
+          });
           
           return {
             employeeNumber: emp.employeeNumber,
@@ -3102,9 +3262,56 @@ export class HrDashboardComponent {
             insuranceNumber: emp.insuranceNumber || '',
             issueDate: emp.insuranceCardIssueDate || emp.insuranceIssueDate || '',
             returnDate: emp.insuranceCardReturnDate || '',
-            status: status
+            status: status,
+            statusHistory: statusHistory,
+            dependents: emp.dependents || [] // 扶養者情報も含める
           };
         });
+      
+      // 被扶養者の保険証情報を取得
+      // 保険証情報が設定されている扶養者（insuranceCardStatusが存在する扶養者）を表示
+      this.dependentInsuranceCards = [];
+      for (const emp of employeeDetails) {
+        if (emp && emp.dependents && Array.isArray(emp.dependents)) {
+          for (const dependent of emp.dependents) {
+            // 保険証情報が設定されている扶養者を表示（insuranceCardStatusが存在する場合）
+            if (dependent && dependent.insuranceCardStatus) {
+              let status = '準備中';
+              if (dependent.insuranceCardStatus && dependent.insuranceCardStatus !== null && dependent.insuranceCardStatus !== '') {
+                status = dependent.insuranceCardStatus;
+              }
+              
+              // 発行日は扶養者になった日（dependentStartDate）を参照
+              // insuranceCardIssueDateが存在する場合はそれを使用、なければdependentStartDateを使用
+              const issueDate = dependent.insuranceCardIssueDate || dependent.dependentStartDate || '';
+              
+              // ステータス変更履歴を正しく処理（FirestoreのTimestamp型をDate型に変換）
+              const statusHistory = (dependent.insuranceCardStatusHistory || []).map((history: any) => {
+                if (history.changedAt && typeof history.changedAt.toDate === 'function') {
+                  return {
+                    ...history,
+                    changedAt: history.changedAt.toDate()
+                  };
+                }
+                return history;
+              });
+              
+              this.dependentInsuranceCards.push({
+                employeeNumber: emp.employeeNumber,
+                insuredName: emp.name || '',
+                dependentName: dependent.name || `${dependent.lastName || ''} ${dependent.firstName || ''}`.trim(),
+                relationship: dependent.relationship || '',
+                insuranceSymbol: dependent.insuranceSymbol || '',
+                insuranceNumber: dependent.insuranceNumber || '',
+                issueDate: issueDate,
+                returnDate: dependent.insuranceCardReturnDate || '',
+                status: status,
+                statusHistory: statusHistory
+              });
+            }
+          }
+        }
+      }
       
       this.filterAndSortInsuranceCards();
     } catch (error) {
@@ -3116,15 +3323,16 @@ export class HrDashboardComponent {
   
   // 保険証管理表のフィルターとソート
   filterAndSortInsuranceCards() {
-    // ステータスの優先度順（準備中→再発行中→配布済み→回収済み）
+    // ステータスの優先度順（準備中→再発行中→配布済み→回収待ち→回収済み）
     const statusPriority: { [key: string]: number } = {
       '準備中': 1,
       '再発行中': 2,
       '配布済み': 3,
-      '回収済み': 4
+      '回収待ち': 4,
+      '回収済み': 5
     };
     
-    // フィルター適用
+    // 被保険者表のフィルター適用
     let filtered = this.insuranceCards;
     if (this.insuranceCardStatusFilter !== 'すべて') {
       filtered = this.insuranceCards.filter(card => card.status === this.insuranceCardStatusFilter);
@@ -3136,11 +3344,113 @@ export class HrDashboardComponent {
       const priorityB = statusPriority[b.status] || 999;
       return priorityA - priorityB;
     });
+    
+    // 被扶養者表のフィルター適用
+    let filteredDependents = this.dependentInsuranceCards;
+    if (this.insuranceCardStatusFilter !== 'すべて') {
+      filteredDependents = this.dependentInsuranceCards.filter(card => card.status === this.insuranceCardStatusFilter);
+    }
+    
+    // 優先度順にソート
+    this.filteredDependentInsuranceCards = filteredDependents.sort((a, b) => {
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      return priorityA - priorityB;
+    });
   }
   
   // 保険証管理表のステータスフィルター変更
   onInsuranceCardStatusFilterChange() {
     this.filterAndSortInsuranceCards();
+  }
+  
+  // 保険証管理表の表示タイプ切り替え
+  switchInsuranceCardViewType(type: 'insured' | 'dependent') {
+    this.insuranceCardViewType = type;
+  }
+  
+  // 保険証行をクリックした時の処理
+  openInsuranceCardStatusModal(card: any, type: 'insured' | 'dependent') {
+    this.selectedInsuranceCard = card;
+    this.selectedInsuranceCardType = type;
+    this.newInsuranceCardStatus = card.status;
+    this.insuranceCardStatusHistory = card.statusHistory || [];
+    this.showInsuranceCardStatusModal = true;
+  }
+  
+  // 保険証ステータス変更モーダルを閉じる
+  closeInsuranceCardStatusModal() {
+    this.showInsuranceCardStatusModal = false;
+    this.selectedInsuranceCard = null;
+    this.newInsuranceCardStatus = '';
+    this.insuranceCardStatusHistory = [];
+  }
+  
+  // 保険証ステータスを更新
+  async updateInsuranceCardStatus() {
+    if (!this.selectedInsuranceCard || !this.newInsuranceCardStatus) return;
+    
+    try {
+      const employeeNumber = this.selectedInsuranceCard.employeeNumber;
+      const currentDate = new Date();
+      
+      // ステータス履歴に追加
+      const statusHistoryEntry = {
+        status: this.newInsuranceCardStatus,
+        changedAt: currentDate,
+        changedBy: this.hrName
+      };
+      
+      if (this.selectedInsuranceCardType === 'insured') {
+        // 被保険者のステータスを更新
+        const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+        if (!employeeData) {
+          throw new Error('Employee data not found');
+        }
+        const currentHistory = employeeData.insuranceCardStatusHistory || [];
+        await this.firestoreService.saveEmployeeData(employeeNumber, {
+          ...employeeData,
+          insuranceCardStatus: this.newInsuranceCardStatus,
+          insuranceCardStatusHistory: [...currentHistory, statusHistoryEntry],
+          updatedAt: new Date()
+        });
+      } else {
+        // 被扶養者のステータスを更新
+        const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+        if (!employeeData) {
+          throw new Error('Employee data not found');
+        }
+        const dependents = employeeData.dependents || [];
+        const dependentIndex = dependents.findIndex((dep: any) => 
+          dep.insuranceSymbol === this.selectedInsuranceCard.insuranceSymbol &&
+          dep.insuranceNumber === this.selectedInsuranceCard.insuranceNumber
+        );
+        
+        if (dependentIndex >= 0) {
+          const currentHistory = dependents[dependentIndex].insuranceCardStatusHistory || [];
+          dependents[dependentIndex] = {
+            ...dependents[dependentIndex],
+            insuranceCardStatus: this.newInsuranceCardStatus,
+            insuranceCardStatusHistory: [...currentHistory, statusHistoryEntry]
+          };
+          
+          await this.firestoreService.saveEmployeeData(employeeNumber, {
+            ...employeeData,
+            dependents: dependents,
+            updatedAt: new Date()
+          });
+        }
+      }
+      
+      // 保険証一覧を再読み込み
+      await this.loadInsuranceCards();
+      
+      this.closeInsuranceCardStatusModal();
+      alert('ステータスを更新しました');
+    } catch (error) {
+      console.error('Error updating insurance card status:', error);
+      alert('ステータスの更新に失敗しました');
+    }
   }
 
 
@@ -4153,6 +4463,48 @@ export class HrDashboardComponent {
   }
 
   // 日付をフォーマット（YYYY-MM-DD → YYYY/MM/DD）
+  // ステータス変更履歴用の日付フォーマット（FirestoreのTimestamp型に対応）
+  formatDateForHistory(date: any): string {
+    if (!date) return '-';
+    
+    try {
+      let dateObj: Date;
+      
+      // FirestoreのTimestamp型の場合
+      if (date && typeof date.toDate === 'function') {
+        dateObj = date.toDate();
+      }
+      // Date型の場合
+      else if (date instanceof Date) {
+        dateObj = date;
+      }
+      // 文字列の場合
+      else if (typeof date === 'string') {
+        dateObj = new Date(date);
+      }
+      // タイムスタンプ（数値）の場合
+      else if (typeof date === 'number') {
+        dateObj = new Date(date);
+      }
+      else {
+        return '-';
+      }
+      
+      // 無効な日付の場合
+      if (isNaN(dateObj.getTime())) {
+        return '-';
+      }
+      
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    } catch (error) {
+      console.error('Error formatting date for history:', error);
+      return '-';
+    }
+  }
+
   formatDate(dateString: string | null | undefined): string {
     if (!dateString) return '-';
     try {
@@ -4178,7 +4530,10 @@ export class HrDashboardComponent {
 
   // 保険証管理票のステータス件数を取得
   getInsuranceCardStatusCount(status: string): number {
-    return this.insuranceCards.filter(card => card.status === status).length;
+    // 被保険者と被扶養者の両方をカウント
+    const insuredCount = this.insuranceCards.filter(card => card.status === status).length;
+    const dependentCount = this.dependentInsuranceCards.filter(card => card.status === status).length;
+    return insuredCount + dependentCount;
   }
 }
 

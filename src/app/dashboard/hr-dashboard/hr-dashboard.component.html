@@ -39,7 +39,7 @@
             
               <!-- 申請管理票のステータス一覧 -->
               <section class="dashboard-section">
-                <h3 class="section-title">申請管理票</h3>
+                <h3 class="section-title">申請管理表</h3>
                 <div class="status-cards">
                   <div class="status-card">
                     <div class="status-label">承認待ち</div>
@@ -161,6 +161,15 @@
                          [class.count-red]="false"
                          [class.count-green]="getInsuranceCardStatusCount('配布済み') > 0">
                       {{ getInsuranceCardStatusCount('配布済み') }}
+                    </div>
+                  </div>
+                  <div class="status-card">
+                    <div class="status-label">回収待ち</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getInsuranceCardStatusCount('回収待ち') === 0"
+                         [class.count-red]="getInsuranceCardStatusCount('回収待ち') > 0"
+                         [class.count-green]="false">
+                      {{ getInsuranceCardStatusCount('回収待ち') }}
                     </div>
                   </div>
                   <div class="status-card">
@@ -628,20 +637,42 @@
           <div class="insurance-card-management-page">
             <h2 class="page-title">保険証管理</h2>
             
-            <div class="filter-section">
-              <label for="insuranceCardStatusFilter">ステータスフィルター:</label>
-              <select 
-                id="insuranceCardStatusFilter" 
-                [(ngModel)]="insuranceCardStatusFilter" 
-                (change)="onInsuranceCardStatusFilterChange()"
-                class="status-filter-select"
-              >
-                <option value="すべて">すべて</option>
-                <option *ngFor="let status of insuranceCardStatuses" [value]="status">{{ status }}</option>
-              </select>
+            <div class="insurance-card-controls">
+              <div class="view-type-toggle">
+                <button 
+                  type="button"
+                  class="toggle-button"
+                  [class.active]="insuranceCardViewType === 'insured'"
+                  (click)="switchInsuranceCardViewType('insured')"
+                >
+                  被保険者
+                </button>
+                <button 
+                  type="button"
+                  class="toggle-button"
+                  [class.active]="insuranceCardViewType === 'dependent'"
+                  (click)="switchInsuranceCardViewType('dependent')"
+                >
+                  被扶養者
+                </button>
+              </div>
+              
+              <div class="filter-section">
+                <label for="insuranceCardStatusFilter">ステータスフィルター:</label>
+                <select 
+                  id="insuranceCardStatusFilter" 
+                  [(ngModel)]="insuranceCardStatusFilter" 
+                  (change)="onInsuranceCardStatusFilterChange()"
+                  class="status-filter-select"
+                >
+                  <option value="すべて">すべて</option>
+                  <option *ngFor="let status of insuranceCardStatuses" [value]="status">{{ status }}</option>
+                </select>
+              </div>
             </div>
             
-            <div class="table-container">
+            <!-- 被保険者表 -->
+            <div class="table-container" *ngIf="insuranceCardViewType === 'insured'">
               <table class="insurance-card-table">
                 <thead>
                   <tr>
@@ -655,7 +686,11 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let card of filteredInsuranceCards">
+                  <tr 
+                    *ngFor="let card of filteredInsuranceCards" 
+                    class="insurance-card-row"
+                    (click)="openInsuranceCardStatusModal(card, 'insured')"
+                  >
                     <td>{{ card.employeeNumber }}</td>
                     <td>{{ card.name }}</td>
                     <td>{{ card.insuranceSymbol || '-' }}</td>
@@ -667,6 +702,7 @@
                             [class.status-preparing]="card.status === '準備中'"
                             [class.status-distributed]="card.status === '配布済み'"
                             [class.status-reissuing]="card.status === '再発行中'"
+                            [class.status-pending-return]="card.status === '回収待ち'"
                             [class.status-returned]="card.status === '回収済み'">
                         {{ card.status || '-' }}
                       </span>
@@ -678,8 +714,106 @@
                 </tbody>
               </table>
             </div>
+            
+            <!-- 被扶養者表 -->
+            <div class="table-container" *ngIf="insuranceCardViewType === 'dependent'">
+              <table class="insurance-card-table">
+                <thead>
+                  <tr>
+                    <th>保険者名</th>
+                    <th>扶養者名</th>
+                    <th>続柄</th>
+                    <th>発行日</th>
+                    <th>回収日</th>
+                    <th>ステータス</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    *ngFor="let card of filteredDependentInsuranceCards" 
+                    class="insurance-card-row"
+                    (click)="openInsuranceCardStatusModal(card, 'dependent')"
+                  >
+                    <td>{{ card.insuredName }}</td>
+                    <td>{{ card.dependentName }}</td>
+                    <td>{{ card.relationship || '-' }}</td>
+                    <td>{{ formatDate(card.issueDate) }}</td>
+                    <td>{{ formatDate(card.returnDate) }}</td>
+                    <td>
+                      <span class="status-badge" 
+                            [class.status-preparing]="card.status === '準備中'"
+                            [class.status-distributed]="card.status === '配布済み'"
+                            [class.status-reissuing]="card.status === '再発行中'"
+                            [class.status-pending-return]="card.status === '回収待ち'"
+                            [class.status-returned]="card.status === '回収済み'">
+                        {{ card.status || '-' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredDependentInsuranceCards.length === 0">
+                    <td colspan="6" class="empty-message">保険証データがありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </ng-container>
+        
+        <!-- 保険証ステータス変更モーダル -->
+        <div *ngIf="showInsuranceCardStatusModal" class="modal-overlay">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3 class="modal-title">保険証ステータス変更</h3>
+              <button class="modal-close" (click)="closeInsuranceCardStatusModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+              <div class="form-group">
+                <label>保険者名:</label>
+                <div class="readonly-field">{{ selectedInsuranceCardType === 'insured' ? selectedInsuranceCard?.name : selectedInsuranceCard?.insuredName }}</div>
+              </div>
+              
+              <div class="form-group" *ngIf="selectedInsuranceCardType === 'dependent'">
+                <label>扶養者名:</label>
+                <div class="readonly-field">{{ selectedInsuranceCard?.dependentName }}</div>
+              </div>
+              
+              <div class="form-group">
+                <label>ステータス:</label>
+                <select 
+                  [(ngModel)]="newInsuranceCardStatus" 
+                  class="form-input"
+                  [ngModelOptions]="{standalone: true}"
+                >
+                  <option *ngFor="let status of insuranceCardStatuses" [value]="status">{{ status }}</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <button 
+                  type="button" 
+                  class="submit-button" 
+                  (click)="updateInsuranceCardStatus()"
+                >
+                  ステータスを更新
+                </button>
+              </div>
+              
+              <div class="status-history-section" *ngIf="insuranceCardStatusHistory.length > 0">
+                <h4>ステータス変更履歴</h4>
+                <div class="status-history-list">
+                  <div 
+                    *ngFor="let history of insuranceCardStatusHistory" 
+                    class="status-history-item"
+                  >
+                    <div class="history-status">{{ history.status }}</div>
+                    <div class="history-date">{{ formatDateForHistory(history.changedAt) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- 社員情報管理ページ -->
         <ng-container *ngIf="currentTab === '社員情報管理'">
@@ -2078,6 +2212,7 @@
                 id="statusSelect" 
                 formControlName="status" 
                 class="form-input status-select"
+                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認'"
                 (change)="onStatusChange()"
               >
                 <option value="承認待ち">承認待ち</option>
@@ -2086,6 +2221,9 @@
                 <option value="差し戻し">差し戻し</option>
                 <option value="再申請">再申請</option>
               </select>
+              <div *ngIf="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認'" class="info-message" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+                承認済みの申請のステータスは変更できません
+              </div>
             </div>
             <div class="form-group" *ngIf="statusChangeForm.get('status')?.value === '差し戻し'">
               <label for="statusComment">コメント <span class="required">*</span></label>
@@ -2121,7 +2259,13 @@
             </div>
             
             <div class="status-change-actions">
-              <button type="submit" class="status-update-button">ステータスを更新</button>
+              <button 
+                type="submit" 
+                class="status-update-button"
+                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認'"
+              >
+                ステータスを更新
+              </button>
             </div>
           </div>
         </form>
