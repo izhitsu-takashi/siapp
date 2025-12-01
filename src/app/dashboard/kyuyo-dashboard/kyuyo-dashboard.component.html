@@ -591,16 +591,16 @@
           <h3 class="section-title">被保険者種別</h3>
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">健康保険:</span>
-              <span class="info-value">加入</span>
+              <span class="info-label">健康保険者種別:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.healthInsuranceType || '-' }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">厚生年金保険:</span>
-              <span class="info-value">加入</span>
+              <span class="info-label">介護保険者種別:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.nursingInsuranceType || '-' }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">介護保険:</span>
-              <span class="info-value">{{ selectedEmployeeInfo.age && selectedEmployeeInfo.age >= 40 ? '加入' : '対象外' }}</span>
+              <span class="info-label">厚生年金保険者種別:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.pensionInsuranceType || '-' }}</span>
             </div>
           </div>
         </div>
