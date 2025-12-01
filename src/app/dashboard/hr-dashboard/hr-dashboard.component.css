@@ -276,6 +276,38 @@
   margin-bottom: 2rem;
 }
 
+.filter-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.filter-section label {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.status-filter-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.status-filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 .application-management-table {
   width: 100%;
   border-collapse: collapse;
@@ -629,7 +661,8 @@
   margin-top: 0.5rem;
 }
 
-.status-update-button {
+.status-update-button,
+.status-button.status-update {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
@@ -641,14 +674,23 @@
   transition: all 0.2s;
 }
 
-.status-update-button:hover {
+.status-update-button:hover:not(:disabled),
+.status-button.status-update:hover:not(:disabled) {
   opacity: 0.9;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.status-update-button:active {
+.status-update-button:active:not(:disabled),
+.status-button.status-update:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.status-update-button:disabled,
+.status-button.status-update:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #ccc;
 }
 
 /* 文書自動作成セクション */

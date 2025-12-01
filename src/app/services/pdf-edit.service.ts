@@ -666,7 +666,7 @@ export class PdfEditService {
       // 女性の場合も坑内員の場合はy座標を調整
       let femaleY = y(227);
       if (isMiner) {
-        femaleY = y(230);
+        femaleY = y(234);
       }
       this.drawCircle(page, genderX, femaleY, 2, font);
     }

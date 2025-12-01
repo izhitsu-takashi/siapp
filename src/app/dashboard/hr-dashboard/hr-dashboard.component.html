@@ -350,7 +350,18 @@
         <ng-container *ngIf="currentTab === '申請管理'">
           <div class="application-management-page">
             <h2 class="page-title">申請管理</h2>
-            <p class="page-description">従業員からの申請を確認・承認・却下できます。</p>
+            
+            <div class="filter-section">
+              <label for="applicationStatusFilter">ステータスフィルター:</label>
+              <select 
+                id="applicationStatusFilter" 
+                [(ngModel)]="applicationStatusFilter" 
+                (change)="onApplicationStatusFilterChange()"
+                class="status-filter-select"
+              >
+                <option *ngFor="let status of applicationStatuses" [value]="status">{{ status }}</option>
+              </select>
+            </div>
             
             <div class="table-container">
               <table class="application-management-table">
@@ -365,7 +376,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let application of allApplications" class="application-row" (click)="openApplicationDetail(application)">
+                  <tr *ngFor="let application of filteredApplications" class="application-row" (click)="openApplicationDetail(application)">
                     <td>{{ application.applicationId }}</td>
                     <td>{{ application.applicationType }}</td>
                     <td>{{ application.employeeName || '-' }}</td>
@@ -382,7 +393,7 @@
                     </td>
                     <td>{{ getApplicationDate(application) | date:'yyyy/MM/dd' }}</td>
                   </tr>
-                  <tr *ngIf="allApplications.length === 0">
+                  <tr *ngIf="filteredApplications.length === 0">
                     <td colspan="6" class="empty-message">申請がありません</td>
                   </tr>
                 </tbody>
@@ -406,6 +417,18 @@
               <button class="add-employee-button" (click)="openAddModal()">
                 社員を追加
               </button>
+            </div>
+
+            <div class="filter-section">
+              <label for="onboardingStatusFilter">ステータスフィルター:</label>
+              <select 
+                id="onboardingStatusFilter" 
+                [(ngModel)]="onboardingStatusFilter" 
+                (change)="onOnboardingStatusFilterChange()"
+                class="status-filter-select"
+              >
+                <option *ngFor="let status of onboardingStatuses" [value]="status">{{ status }}</option>
+              </select>
             </div>
 
             <!-- 新入社員一覧表 -->
@@ -605,6 +628,19 @@
           <div class="insurance-card-management-page">
             <h2 class="page-title">保険証管理</h2>
             
+            <div class="filter-section">
+              <label for="insuranceCardStatusFilter">ステータスフィルター:</label>
+              <select 
+                id="insuranceCardStatusFilter" 
+                [(ngModel)]="insuranceCardStatusFilter" 
+                (change)="onInsuranceCardStatusFilterChange()"
+                class="status-filter-select"
+              >
+                <option value="すべて">すべて</option>
+                <option *ngFor="let status of insuranceCardStatuses" [value]="status">{{ status }}</option>
+              </select>
+            </div>
+            
             <div class="table-container">
               <table class="insurance-card-table">
                 <thead>
@@ -619,7 +655,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let card of insuranceCards">
+                  <tr *ngFor="let card of filteredInsuranceCards">
                     <td>{{ card.employeeNumber }}</td>
                     <td>{{ card.name }}</td>
                     <td>{{ card.insuranceSymbol || '-' }}</td>
@@ -636,7 +672,7 @@
                       </span>
                     </td>
                   </tr>
-                  <tr *ngIf="insuranceCards.length === 0">
+                  <tr *ngIf="filteredInsuranceCards.length === 0">
                     <td colspan="7" class="empty-message">保険証データがありません</td>
                   </tr>
                 </tbody>
@@ -1543,7 +1579,7 @@
           <h3 class="section-title">その他資格情報（人事専用）</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label>二以上事業所勤務者の取得か</label>
+              <label>二以上事業所勤務者の取得か <span class="required">*</span></label>
               <div class="radio-group">
                 <label class="radio-label">
                   <input 
@@ -1566,7 +1602,7 @@
               </div>
             </div>
             <div class="form-group">
-              <label>退職後の継続再雇用者の取得か</label>
+              <label>退職後の継続再雇用者の取得か <span class="required">*</span></label>
               <div class="radio-group">
                 <label class="radio-label">
                   <input 
@@ -1589,7 +1625,7 @@
               </div>
             </div>
             <div class="form-group">
-              <label>その他</label>
+              <label>その他 <span class="required">*</span></label>
               <div class="radio-group">
                 <label class="radio-label">
                   <input 
@@ -1611,6 +1647,19 @@
                   >
                   いいえ
                 </label>
+              </div>
+              <div *ngIf="employeeEditForm.get('multipleWorkplaceAcquisition')?.invalid && employeeEditForm.get('multipleWorkplaceAcquisition')?.touched" class="error-message">
+                二以上事業所勤務者の取得かを選択してください
+              </div>
+            </div>
+            <div class="form-group">
+              <div *ngIf="employeeEditForm.get('reemploymentAfterRetirement')?.invalid && employeeEditForm.get('reemploymentAfterRetirement')?.touched" class="error-message">
+                退職後の継続再雇用者の取得かを選択してください
+              </div>
+            </div>
+            <div class="form-group">
+              <div *ngIf="employeeEditForm.get('otherQualificationAcquisition')?.invalid && employeeEditForm.get('otherQualificationAcquisition')?.touched" class="error-message">
+                その他を選択してください
               </div>
             </div>
             <div class="form-group full-width" *ngIf="employeeEditForm.get('otherQualificationAcquisition')?.value === 'はい'">
@@ -1655,39 +1704,12 @@
                   いいえ
                 </label>
               </div>
-            </div>
-        </div>
-      </section>
-
-      <!-- 坑内員欄（人事専用） -->
-      <section class="form-section hr-only-section">
-        <h3 class="section-title">坑内員（人事専用）</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>坑内員であるか</label>
-            <div class="radio-group">
-              <label class="radio-label">
-                <input 
-                  type="radio" 
-                  formControlName="isMiner" 
-                  value="はい"
-                  name="onboarding-isMiner"
-                >
-                はい
-              </label>
-              <label class="radio-label">
-                <input 
-                  type="radio" 
-                  formControlName="isMiner" 
-                  value="いいえ"
-                  name="onboarding-isMiner"
-                >
-                いいえ
-              </label>
+              <div *ngIf="onboardingEmployeeEditForm.get('isMiner')?.invalid && onboardingEmployeeEditForm.get('isMiner')?.touched" class="error-message">
+                坑内員であるかを選択してください
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       <!-- 扶養者情報欄（人事専用） -->
         <section class="form-section hr-only-section">
@@ -2672,6 +2694,9 @@
               <option value="差し戻し">差し戻し</option>
               <option value="準備完了">準備完了</option>
             </select>
+            <div *ngIf="selectedOnboardingEmployee?.status === '準備完了' && onboardingEmployeeEditForm.invalid" class="error-message" style="margin-top: 0.5rem;">
+              必須項目を入力してください
+            </div>
           </div>
           <div class="form-group full-width" *ngIf="selectedOnboardingEmployee?.status === '差し戻し'">
             <label for="onboarding-statusComment">コメント（差し戻しの場合）</label>
@@ -2689,6 +2714,7 @@
           <button 
             type="button" 
             class="status-button status-update"
+            [disabled]="(selectedOnboardingEmployee?.status === '準備完了' && (onboardingEmployeeEditForm.invalid || onboardingIsSaving)) || onboardingIsSaving"
             (click)="updateOnboardingEmployeeStatus(selectedOnboardingEmployee.status)"
           >
             ステータスを更新
@@ -3531,7 +3557,7 @@
         <h3 class="section-title">その他資格情報（人事専用）</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label>二以上事業所勤務者の取得か</label>
+            <label>二以上事業所勤務者の取得か <span class="required">*</span></label>
             <div class="radio-group">
               <label class="radio-label">
                 <input 
@@ -3552,9 +3578,12 @@
                 いいえ
               </label>
             </div>
+            <div *ngIf="onboardingEmployeeEditForm.get('multipleWorkplaceAcquisition')?.invalid && onboardingEmployeeEditForm.get('multipleWorkplaceAcquisition')?.touched" class="error-message">
+              二以上事業所勤務者の取得かを選択してください
+            </div>
           </div>
           <div class="form-group">
-            <label>退職後の継続再雇用者の取得か</label>
+            <label>退職後の継続再雇用者の取得か <span class="required">*</span></label>
             <div class="radio-group">
               <label class="radio-label">
                 <input 
@@ -3575,9 +3604,12 @@
                 いいえ
               </label>
             </div>
+            <div *ngIf="onboardingEmployeeEditForm.get('reemploymentAfterRetirement')?.invalid && onboardingEmployeeEditForm.get('reemploymentAfterRetirement')?.touched" class="error-message">
+              退職後の継続再雇用者の取得かを選択してください
+            </div>
           </div>
           <div class="form-group">
-            <label>その他</label>
+            <label>その他 <span class="required">*</span></label>
             <div class="radio-group">
               <label class="radio-label">
                 <input 
@@ -3599,6 +3631,9 @@
                 >
                 いいえ
               </label>
+            </div>
+            <div *ngIf="onboardingEmployeeEditForm.get('otherQualificationAcquisition')?.invalid && onboardingEmployeeEditForm.get('otherQualificationAcquisition')?.touched" class="error-message">
+              その他を選択してください
             </div>
           </div>
           <div class="form-group full-width" *ngIf="onboardingEmployeeEditForm.get('otherQualificationAcquisition')?.value === 'はい'">
@@ -3622,7 +3657,7 @@
         <h3 class="section-title">資格確認書発行要否</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label for="onboarding-qualificationCertificateRequired">資格確認書発行要否</label>
+            <label for="onboarding-qualificationCertificateRequired">資格確認書発行要否 <span class="required">*</span></label>
             <div class="radio-group">
               <label class="radio-label">
                 <input 
@@ -3643,6 +3678,9 @@
                 <span>不要</span>
               </label>
             </div>
+            <div *ngIf="onboardingEmployeeEditForm.get('qualificationCertificateRequired')?.invalid && onboardingEmployeeEditForm.get('qualificationCertificateRequired')?.touched" class="error-message">
+              資格確認書発行要否を選択してください
+            </div>
           </div>
         </div>
       </section>
@@ -3652,7 +3690,7 @@
         <h3 class="section-title">被扶養者情報</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label for="onboarding-dependentStatus">被扶養者（有/無）</label>
+            <label for="onboarding-dependentStatus">被扶養者（有/無） <span class="required">*</span></label>
             <select 
               id="onboarding-dependentStatus" 
               formControlName="dependentStatus" 
@@ -3662,6 +3700,9 @@
               <option value="有">有</option>
               <option value="無">無</option>
             </select>
+            <div *ngIf="onboardingEmployeeEditForm.get('dependentStatus')?.invalid && onboardingEmployeeEditForm.get('dependentStatus')?.touched" class="error-message">
+              被扶養者（有/無）を選択してください
+            </div>
           </div>
         </div>
       </section>

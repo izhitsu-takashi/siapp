@@ -285,10 +285,19 @@ export class HrDashboardComponent {
   
   // 申請一覧データ
   allApplications: any[] = [];
+  filteredApplications: any[] = [];
+  applicationStatusFilter: string = 'すべて';
+  applicationStatuses = ['すべて', '承認待ち', '確認中', '差し戻し', '再申請', '承認済み'];
   
   // 保険証管理用データ
   insuranceCards: any[] = [];
+  filteredInsuranceCards: any[] = [];
+  insuranceCardStatusFilter: string = 'すべて';
   insuranceCardStatuses = ['準備中', '配布済み', '再発行中', '回収済み'];
+  
+  // 入社手続き用フィルター
+  onboardingStatusFilter: string = 'すべて';
+  onboardingStatuses = ['すべて', '申請待ち', '申請済み', '差し戻し', '準備完了'];
   
   // 申請詳細モーダル用
   showApplicationDetailModal = false;
@@ -898,10 +907,50 @@ export class HrDashboardComponent {
       } catch (error) {
         console.error('Error checking onboarding applications:', error);
       }
+      
+      // 元のデータをリセット
+      this.allOnboardingEmployees = [];
+      this.filterAndSortOnboardingEmployees();
     } catch (error) {
       console.error('Error loading onboarding employees:', error);
       this.onboardingEmployees = [];
     }
+  }
+  
+  // 入社手続き表のフィルターとソート（元のデータを保持）
+  private allOnboardingEmployees: any[] = [];
+  
+  filterAndSortOnboardingEmployees() {
+    // 元のデータを保持
+    if (this.allOnboardingEmployees.length === 0) {
+      this.allOnboardingEmployees = [...this.onboardingEmployees];
+    }
+    
+    // ステータスの優先度順（申請待ち→申請済み→差し戻し→準備完了）
+    const statusPriority: { [key: string]: number } = {
+      '申請待ち': 1,
+      '申請済み': 2,
+      '差し戻し': 3,
+      '準備完了': 4
+    };
+    
+    // フィルター適用
+    let filtered = this.allOnboardingEmployees;
+    if (this.onboardingStatusFilter !== 'すべて') {
+      filtered = this.allOnboardingEmployees.filter(emp => emp.status === this.onboardingStatusFilter);
+    }
+    
+    // 優先度順にソート
+    this.onboardingEmployees = filtered.sort((a, b) => {
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      return priorityA - priorityB;
+    });
+  }
+  
+  // 入社手続き表のステータスフィルター変更
+  onOnboardingStatusFilterChange() {
+    this.filterAndSortOnboardingEmployees();
   }
 
   // 申請一覧を読み込む
@@ -946,10 +995,49 @@ export class HrDashboardComponent {
       
       // すべての申請者情報を取得してから一度に表示
       this.allApplications = applicationsWithNames;
+      this.filterAndSortApplications();
     } catch (error) {
       console.error('Error loading all applications:', error);
       this.allApplications = [];
+      this.filteredApplications = [];
     }
+  }
+  
+  // 申請管理表のフィルターとソート
+  filterAndSortApplications() {
+    // ステータスの優先度順（承認待ち→確認中→差し戻し→再申請→承認済み）
+    const statusPriority: { [key: string]: number } = {
+      '承認待ち': 1,
+      '確認中': 2,
+      '差し戻し': 3,
+      '再申請': 4,
+      '承認済み': 5,
+      '承認': 5, // 承認済みと同じ優先度
+      '却下': 3, // 差し戻しと同じ優先度
+      '再提出': 4 // 再申請と同じ優先度
+    };
+    
+    // フィルター適用
+    let filtered = this.allApplications;
+    if (this.applicationStatusFilter !== 'すべて') {
+      filtered = this.allApplications.filter(app => {
+        const status = app.status || '';
+        return status === this.applicationStatusFilter || 
+               (this.applicationStatusFilter === '承認済み' && (status === '承認済み' || status === '承認'));
+      });
+    }
+    
+    // 優先度順にソート
+    this.filteredApplications = filtered.sort((a, b) => {
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      return priorityA - priorityB;
+    });
+  }
+  
+  // 申請管理表のステータスフィルター変更
+  onApplicationStatusFilterChange() {
+    this.filterAndSortApplications();
   }
   
   // 申請日を取得（Date型に変換）
@@ -1572,8 +1660,8 @@ export class HrDashboardComponent {
       expectedMonthlySalary: ['', Validators.required], // 見込み月給額（給与）
       expectedMonthlySalaryInKind: ['', Validators.required], // 見込み月給額（現物）
       hasDependents: [''], // 被扶養者（有/無）
-      dependentStatus: [''], // 被扶養者ステータス
-      qualificationCertificateRequired: [''], // 資格確認書発行要否
+      dependentStatus: ['', Validators.required], // 被扶養者ステータス（必須）
+      qualificationCertificateRequired: ['', Validators.required], // 資格確認書発行要否（必須）
       
       // 人事専用情報（給与）
       fixedSalary: [''],
@@ -3017,10 +3105,42 @@ export class HrDashboardComponent {
             status: status
           };
         });
+      
+      this.filterAndSortInsuranceCards();
     } catch (error) {
       console.error('Error loading insurance cards:', error);
       this.insuranceCards = [];
+      this.filteredInsuranceCards = [];
     }
+  }
+  
+  // 保険証管理表のフィルターとソート
+  filterAndSortInsuranceCards() {
+    // ステータスの優先度順（準備中→再発行中→配布済み→回収済み）
+    const statusPriority: { [key: string]: number } = {
+      '準備中': 1,
+      '再発行中': 2,
+      '配布済み': 3,
+      '回収済み': 4
+    };
+    
+    // フィルター適用
+    let filtered = this.insuranceCards;
+    if (this.insuranceCardStatusFilter !== 'すべて') {
+      filtered = this.insuranceCards.filter(card => card.status === this.insuranceCardStatusFilter);
+    }
+    
+    // 優先度順にソート
+    this.filteredInsuranceCards = filtered.sort((a, b) => {
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      return priorityA - priorityB;
+    });
+  }
+  
+  // 保険証管理表のステータスフィルター変更
+  onInsuranceCardStatusFilterChange() {
+    this.filterAndSortInsuranceCards();
   }
 
 
@@ -3770,7 +3890,14 @@ export class HrDashboardComponent {
           formData.insuranceSymbol &&
           formData.insuranceNumber &&
           formData.insuranceCardIssueDate &&
-          formData.insuranceCardDistributionStatus;
+          formData.insuranceCardDistributionStatus &&
+          formData.isMiner && // 坑内員（必須）
+          formData.qualificationCertificateRequired && // 資格確認書発行要否（必須）
+          formData.dependentStatus && // 被扶養者情報（必須）
+          formData.multipleWorkplaceAcquisition && // 二以上事業所勤務者の取得か（必須）
+          formData.reemploymentAfterRetirement && // 退職後の継続再雇用者の取得か（必須）
+          formData.otherQualificationAcquisition && // その他（必須）
+          (formData.otherQualificationAcquisition !== 'はい' || formData.otherQualificationReason); // その他が「はい」の場合は理由も必須
         
         if (requiredFieldsFilled && this.selectedOnboardingEmployee.status !== '準備完了') {
           await this.firestoreService.updateOnboardingEmployeeStatus(
@@ -3877,30 +4004,7 @@ export class HrDashboardComponent {
   // 新入社員のステータス変更時の処理
   onOnboardingStatusChange(newStatus: string) {
     if (!this.selectedOnboardingEmployee) return;
-    
-    const oldStatus = this.selectedOnboardingEmployee.status;
-    
-    // 準備完了に変更する場合、必須項目をチェック
-    if (newStatus === '準備完了') {
-      const validation = this.checkRequiredFieldsForReadyStatus();
-      if (!validation.isValid) {
-        alert(`ステータスを「準備完了」に変更するには、以下の必須項目を入力してください：\n${validation.missingFields.join('\n')}`);
-        // ステータスを元に戻す
-        this.selectedOnboardingEmployee.status = oldStatus;
-        // プルダウンの値を直接元に戻す（次の変更検知サイクルで確実に反映されるようにする）
-        setTimeout(() => {
-          const selectElement = document.getElementById('onboarding-status') as HTMLSelectElement;
-          if (selectElement) {
-            selectElement.value = oldStatus;
-          }
-          // 変更検知を強制的に実行してプルダウンを更新
-          this.cdr.detectChanges();
-        }, 0);
-        return;
-      }
-    }
-    
-    // バリデーションが通った場合のみステータスを更新
+    // プルダウンの値のみ更新（実際のステータス変更は「ステータスを更新」ボタンで行う）
     this.selectedOnboardingEmployee.status = newStatus;
   }
 
