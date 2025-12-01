@@ -507,9 +507,10 @@
   width: 100%;
   max-width: 1000px;
   max-height: 90vh;
-  overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  padding:2rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -559,6 +560,9 @@
 
 .application-detail-content {
   padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .detail-section {
@@ -616,6 +620,7 @@
   border-top: 1px solid #e0e0e0;
   display: flex;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 /* ステータス変更セクション（モーダル上部） */
