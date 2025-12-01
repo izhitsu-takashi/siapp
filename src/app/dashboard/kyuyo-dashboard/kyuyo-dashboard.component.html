@@ -57,23 +57,21 @@
               </div>
               <div class="filter-group">
                 <label>年月:</label>
-                <input 
-                  type="number" 
+                <select 
                   [(ngModel)]="insuranceListYear" 
                   (change)="onInsuranceListDateChange()"
-                  min="2025"
-                  max="2099"
-                  class="year-input"
+                  class="year-select"
                 >
+                  <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
+                </select>
                 <span>年</span>
-                <input 
-                  type="number" 
+                <select 
                   [(ngModel)]="insuranceListMonth" 
                   (change)="onInsuranceListDateChange()"
-                  min="1"
-                  max="12"
-                  class="month-input"
+                  class="month-select"
                 >
+                  <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
+                </select>
                 <span>月</span>
               </div>
             </div>
@@ -119,16 +117,12 @@
                   </tr>
                 </tbody>
                 <tfoot>
-                  <tr>
+                  <tr class="total-row">
                     <td colspan="5" class="total-label">合計</td>
-                    <td>{{ getTotalHealthInsurance() | number:'1.2-2' }}</td>
-                    <td>{{ getTotalNursingInsurance() | number:'1.2-2' }}</td>
-                    <td>{{ getTotalPensionInsurance() | number:'1.2-2' }}</td>
-                    <td>{{ getTotalEmployeeBurden() | number:'1.0-0' }}</td>
-                  </tr>
-                  <tr>
-                    <td colspan="8" class="total-label">事業主負担額</td>
-                    <td>{{ getTotalEmployerBurden() | number:'1.0-0' }}</td>
+                    <td class="total-value number-cell">{{ getTotalHealthInsurance() | number:'1.2-2' }}</td>
+                    <td class="total-value number-cell">{{ getTotalNursingInsurance() | number:'1.2-2' }}</td>
+                    <td class="total-value number-cell">{{ getTotalPensionInsurance() | number:'1.2-2' }}</td>
+                    <td class="total-value number-cell">{{ getTotalEmployeeBurden() | number:'1.0-0' }}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -165,16 +159,12 @@
                   </tr>
                 </tbody>
                 <tfoot>
-                  <tr>
+                  <tr class="total-row">
                     <td colspan="4" class="total-label">合計</td>
-                    <td>{{ getTotalHealthInsurance() | number:'1.2-2' }}</td>
-                    <td>{{ getTotalNursingInsurance() | number:'1.2-2' }}</td>
-                    <td>{{ getTotalPensionInsurance() | number:'1.2-2' }}</td>
-                    <td>{{ getTotalEmployeeBurden() | number:'1.0-0' }}</td>
-                  </tr>
-                  <tr>
-                    <td colspan="7" class="total-label">事業主負担額</td>
-                    <td>{{ getTotalEmployerBurden() | number:'1.0-0' }}</td>
+                    <td class="total-value number-cell">{{ getTotalHealthInsurance() | number:'1.2-2' }}</td>
+                    <td class="total-value number-cell">{{ getTotalNursingInsurance() | number:'1.2-2' }}</td>
+                    <td class="total-value number-cell">{{ getTotalPensionInsurance() | number:'1.2-2' }}</td>
+                    <td class="total-value number-cell">{{ getTotalEmployeeBurden() | number:'1.0-0' }}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -409,6 +399,78 @@
                 <div class="section-actions">
                   <button type="button" class="save-section-button" (click)="saveInsuranceRates()">
                     保険料率設定を保存
+                  </button>
+                </div>
+              </section>
+
+              <!-- 協会けんぽ保険料率管理 -->
+              <section class="settings-section">
+                <h3 class="section-title">協会けんぽ保険料率管理</h3>
+                <div class="form-description">
+                  <p>現在設定されている協会けんぽの保険料率データをダウンロードしたり、JSONファイルをアップロードして保険料率を更新できます。</p>
+                </div>
+                <div class="file-management-actions">
+                  <button type="button" class="download-button" (click)="downloadKenpoRates()">
+                    kenpo-rates.jsonをダウンロード
+                  </button>
+                  <div class="upload-group">
+                    <label for="kenpoRatesFile" class="upload-label">
+                      <input 
+                        type="file" 
+                        id="kenpoRatesFile" 
+                        accept=".json"
+                        (change)="onKenpoRatesFileSelected($event)"
+                        style="display: none;"
+                      >
+                      <span class="upload-button">JSONファイルをアップロード</span>
+                    </label>
+                    <span *ngIf="selectedKenpoRatesFileName" class="selected-file-name">
+                      {{ selectedKenpoRatesFileName }}
+                    </span>
+                  </div>
+                  <button 
+                    *ngIf="selectedKenpoRatesFile" 
+                    type="button" 
+                    class="apply-button" 
+                    (click)="applyKenpoRates()"
+                  >
+                    保険料率を適用
+                  </button>
+                </div>
+              </section>
+
+              <!-- 等級表管理 -->
+              <section class="settings-section">
+                <h3 class="section-title">等級表管理</h3>
+                <div class="form-description">
+                  <p>現在設定されている標準報酬月額等級表データをダウンロードしたり、JSONファイルをアップロードして等級表を更新できます。</p>
+                </div>
+                <div class="file-management-actions">
+                  <button type="button" class="download-button" (click)="downloadGradeTable()">
+                    等級.jsonをダウンロード
+                  </button>
+                  <div class="upload-group">
+                    <label for="gradeTableFile" class="upload-label">
+                      <input 
+                        type="file" 
+                        id="gradeTableFile" 
+                        accept=".json"
+                        (change)="onGradeTableFileSelected($event)"
+                        style="display: none;"
+                      >
+                      <span class="upload-button">JSONファイルをアップロード</span>
+                    </label>
+                    <span *ngIf="selectedGradeTableFileName" class="selected-file-name">
+                      {{ selectedGradeTableFileName }}
+                    </span>
+                  </div>
+                  <button 
+                    *ngIf="selectedGradeTableFile" 
+                    type="button" 
+                    class="apply-button" 
+                    (click)="applyGradeTable()"
+                  >
+                    等級表を適用
                   </button>
                 </div>
               </section>

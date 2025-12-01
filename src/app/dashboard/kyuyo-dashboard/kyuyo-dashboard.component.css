@@ -165,6 +165,95 @@
   border-bottom: 2px solid #e0e0e0;
 }
 
+/* フィルターと切り替えコントロール */
+.insurance-list-controls {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+/* 表示タイプボタン */
+.toggle-button {
+  padding: 0.6rem 1.5rem;
+  background: white;
+  border: 2px solid #56ab2f;
+  border-radius: 6px;
+  color: #56ab2f;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.toggle-button:hover {
+  background: rgba(86, 171, 47, 0.1);
+  border-color: #4a9a2a;
+}
+
+.toggle-button.active {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  color: white;
+  border-color: #56ab2f;
+  box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+}
+
+.toggle-button.active:hover {
+  background: linear-gradient(135deg, #4a9a2a 0%, #96d055 100%);
+  box-shadow: 0 4px 8px rgba(86, 171, 47, 0.4);
+}
+
+/* 年月フィルター（プルダウン） */
+.year-select,
+.month-select {
+  padding: 0.6rem 1rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+.year-select:focus,
+.month-select:focus {
+  outline: none;
+  border-color: #56ab2f;
+  box-shadow: 0 0 0 3px rgba(86, 171, 47, 0.1);
+}
+
+.year-select:hover,
+.month-select:hover {
+  border-color: #56ab2f;
+}
+
+.filter-group span {
+  font-weight: 500;
+  color: #666;
+  font-size: 0.95rem;
+}
+
 .employer-burden-summary {
   margin-bottom: 2rem;
 }
@@ -247,6 +336,32 @@
   font-weight: 600;
   color: #56ab2f;
   font-size: 1rem;
+}
+
+/* 合計行のスタイル */
+.insurance-table tfoot .total-row {
+  background: linear-gradient(135deg, #f0f8f0 0%, #e8f5e8 100%);
+  border-top: 2px solid #56ab2f;
+}
+
+.insurance-table tfoot .total-row:hover {
+  background: linear-gradient(135deg, #e8f5e8 0%, #e0f0e0 100%);
+}
+
+.insurance-table tfoot .total-label {
+  font-weight: 700;
+  color: #333;
+  font-size: 1rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.insurance-table tfoot .total-value {
+  font-weight: 700;
+  color: #56ab2f;
+  font-size: 1rem;
+  text-align: right;
+  padding: 1rem;
 }
 
 .empty-message {
@@ -355,6 +470,143 @@
 
 .save-section-button:active {
   transform: translateY(0);
+}
+
+/* 協会けんぽ保険料率管理 */
+.form-description {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #56ab2f;
+}
+
+.form-description p {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.file-management-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.download-button,
+.upload-button,
+.apply-button {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+  width: fit-content;
+}
+
+.download-button:hover,
+.upload-button:hover,
+.apply-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(86, 171, 47, 0.4);
+  background: linear-gradient(135deg, #4a9a2a 0%, #96d055 100%);
+}
+
+.download-button:active,
+.upload-button:active,
+.apply-button:active {
+  transform: translateY(0);
+}
+
+.upload-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.upload-label {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.upload-button {
+  display: inline-block;
+}
+
+.selected-file-name {
+  color: #56ab2f;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* 給与・賞与ページ */
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.salary-form-container,
+.bonus-form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.salary-form,
+.bonus-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.submit-button {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  color: white;
+  border: none;
+  padding: 0.875rem 3rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+  min-width: 200px;
+}
+
+.submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(86, 171, 47, 0.4);
+  background: linear-gradient(135deg, #4a9a2a 0%, #96d055 100%);
+}
+
+.submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+}
+
+.submit-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* レスポンシブ対応 */

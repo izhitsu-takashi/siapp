@@ -31,6 +31,10 @@ export class KyuyoDashboardComponent {
   insuranceListMonth: number = 4; // 保険料一覧の月（2025年4月以降）
   insuranceListType: 'salary' | 'bonus' = 'salary'; // 給与または賞与の切り替え
   
+  // 年月フィルター用の選択肢
+  availableYears: number[] = [];
+  availableMonths: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  
   // 社員一覧（社員情報管理票の社員のみ）
   employees: any[] = [];
   
@@ -51,6 +55,14 @@ export class KyuyoDashboardComponent {
   
   // 健康保険料率データ
   kenpoRates: any[] = [];
+  
+  // 協会けんぽ保険料率ファイル管理
+  selectedKenpoRatesFile: File | null = null;
+  selectedKenpoRatesFileName: string = '';
+  
+  // 等級表ファイル管理
+  selectedGradeTableFile: File | null = null;
+  selectedGradeTableFileName: string = '';
   
   // 給与ページ用データ
   salaryEmployees: any[] = []; // 給与設定対象の社員一覧
@@ -77,6 +89,13 @@ export class KyuyoDashboardComponent {
     private fb: FormBuilder
   ) {
     this.settingsForm = this.createSettingsForm();
+    
+    // 年月フィルター用の選択肢を初期化（2025年から2099年まで）
+    const currentYear = new Date().getFullYear();
+    for (let year = 2025; year <= 2099; year++) {
+      this.availableYears.push(year);
+    }
+    
     if (isPlatformBrowser(this.platformId)) {
       const storedName = sessionStorage.getItem('userName');
       if (storedName) {
@@ -123,6 +142,14 @@ export class KyuyoDashboardComponent {
     }
 
     try {
+      // まずFirestoreから設定を読み込んで、kenpoRatesが保存されているか確認
+      const settings = await this.firestoreService.getSettings();
+      if (settings && settings.kenpoRates && Array.isArray(settings.kenpoRates) && settings.kenpoRates.length > 0) {
+        this.kenpoRates = settings.kenpoRates;
+        return;
+      }
+      
+      // Firestoreに保存されていない場合は、assetsから読み込む
       const data = await this.http.get<any[]>('/assets/kenpo-rates.json').toPromise();
       if (data) {
         this.kenpoRates = data;
@@ -155,6 +182,16 @@ export class KyuyoDashboardComponent {
             nursingInsurance: settings.insuranceRates.nursingInsurance || 0,
             pensionInsurance: settings.insuranceRates.pensionInsurance || 0
           };
+        }
+        
+        // kenpoRatesを読み込む（Firestoreに保存されている場合）
+        if (settings.kenpoRates && Array.isArray(settings.kenpoRates)) {
+          this.kenpoRates = settings.kenpoRates;
+        }
+        
+        // gradeTableを読み込む（Firestoreに保存されている場合）
+        if (settings.gradeTable && settings.gradeTable.hyouzyungetugakuReiwa7) {
+          this.gradeTable = settings.gradeTable;
         }
         
         // フォームに値を設定
@@ -269,6 +306,236 @@ export class KyuyoDashboardComponent {
       alert('保険料率設定の保存中にエラーが発生しました');
     }
   }
+  
+  // kenpo-rates.jsonをダウンロード
+  downloadKenpoRates() {
+    try {
+      const jsonData = JSON.stringify(this.kenpoRates, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'kenpo-rates.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading kenpo rates:', error);
+      alert('ダウンロード中にエラーが発生しました');
+    }
+  }
+  
+  // kenpo-rates.jsonファイルを選択
+  onKenpoRatesFileSelected(event: any) {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        alert('JSONファイルを選択してください');
+        return;
+      }
+      this.selectedKenpoRatesFile = file;
+      this.selectedKenpoRatesFileName = file.name;
+    }
+  }
+  
+  // アップロードしたkenpo-rates.jsonを適用
+  async applyKenpoRates() {
+    if (!this.selectedKenpoRatesFile) {
+      alert('ファイルを選択してください');
+      return;
+    }
+    
+    try {
+      const fileContent = await this.readFileAsText(this.selectedKenpoRatesFile);
+      const parsedData = JSON.parse(fileContent);
+      
+      // データの形式を検証
+      if (!Array.isArray(parsedData)) {
+        alert('JSONファイルの形式が正しくありません。配列形式である必要があります。');
+        return;
+      }
+      
+      // 各要素の形式を検証
+      for (const item of parsedData) {
+        if (!item.prefecture || typeof item.healthRate !== 'number' || typeof item.careRate !== 'number') {
+          alert('JSONファイルの形式が正しくありません。各要素にprefecture、healthRate、careRateが必要です。');
+          return;
+        }
+      }
+      
+      // kenpoRatesを更新
+      this.kenpoRates = parsedData;
+      
+      // Firestoreに保存（kenpoRatesをsettingsに保存）
+      const currentSettings = await this.firestoreService.getSettings() || {};
+      await this.firestoreService.saveSettings({
+        ...currentSettings,
+        kenpoRates: this.kenpoRates
+      });
+      
+      // 現在選択されている都道府県の保険料率を再適用
+      const selectedPrefecture = this.settingsForm.get('prefecture')?.value;
+      if (selectedPrefecture && this.kenpoRates.length > 0) {
+        const rateData = this.kenpoRates.find((rate: any) => rate.prefecture === selectedPrefecture);
+        if (rateData) {
+          this.settingsForm.patchValue({
+            healthInsuranceRate: rateData.healthRate,
+            nursingInsuranceRate: rateData.careRate
+          });
+          this.insuranceRates.healthInsurance = rateData.healthRate;
+          this.insuranceRates.nursingInsurance = rateData.careRate;
+        }
+      }
+      
+      alert('保険料率を適用しました');
+      
+      // ファイル選択をリセット
+      this.selectedKenpoRatesFile = null;
+      this.selectedKenpoRatesFileName = '';
+      
+      // ファイル入力もリセット
+      const fileInput = document.getElementById('kenpoRatesFile') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      // 社会保険料一覧を再読み込み
+      await this.loadInsuranceList();
+    } catch (error) {
+      console.error('Error applying kenpo rates:', error);
+      alert('ファイルの適用中にエラーが発生しました。JSONファイルの形式を確認してください。');
+    }
+  }
+  
+  // ファイルをテキストとして読み込む
+  private readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve(e.target?.result as string);
+      };
+      reader.onerror = (e) => {
+        reject(e);
+      };
+      reader.readAsText(file);
+    });
+  }
+  
+  // 等級.jsonをダウンロード
+  downloadGradeTable() {
+    try {
+      const jsonData = JSON.stringify(this.gradeTable, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = '等級.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading grade table:', error);
+      alert('ダウンロード中にエラーが発生しました');
+    }
+  }
+  
+  // 等級.jsonファイルを選択
+  onGradeTableFileSelected(event: any) {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        alert('JSONファイルを選択してください');
+        return;
+      }
+      this.selectedGradeTableFile = file;
+      this.selectedGradeTableFileName = file.name;
+    }
+  }
+  
+  // アップロードした等級.jsonを適用
+  async applyGradeTable() {
+    if (!this.selectedGradeTableFile) {
+      alert('ファイルを選択してください');
+      return;
+    }
+    
+    try {
+      const fileContent = await this.readFileAsText(this.selectedGradeTableFile);
+      const parsedData = JSON.parse(fileContent);
+      
+      // データの形式を検証
+      if (!parsedData || typeof parsedData !== 'object') {
+        alert('JSONファイルの形式が正しくありません。オブジェクト形式である必要があります。');
+        return;
+      }
+      
+      // hyouzyungetugakuReiwa7が存在するか確認
+      if (!parsedData.hyouzyungetugakuReiwa7 || !Array.isArray(parsedData.hyouzyungetugakuReiwa7)) {
+        alert('JSONファイルの形式が正しくありません。hyouzyungetugakuReiwa7プロパティが必要です。');
+        return;
+      }
+      
+      // 各要素の形式を検証（hyouzyungetugakuReiwa7）
+      for (const item of parsedData.hyouzyungetugakuReiwa7) {
+        if (typeof item.grade !== 'number' || 
+            typeof item.monthlyStandard !== 'number' || 
+            typeof item.from !== 'number' || 
+            typeof item.to !== 'number') {
+          alert('JSONファイルの形式が正しくありません。各要素にgrade、monthlyStandard、from、toが必要です。');
+          return;
+        }
+      }
+      
+      // kouseinenkinReiwa7が存在するか確認（オプション、存在しない場合は警告のみ）
+      if (parsedData.kouseinenkinReiwa7) {
+        if (!Array.isArray(parsedData.kouseinenkinReiwa7)) {
+          alert('JSONファイルの形式が正しくありません。kouseinenkinReiwa7は配列である必要があります。');
+          return;
+        }
+        
+        // 各要素の形式を検証（kouseinenkinReiwa7）
+        for (const item of parsedData.kouseinenkinReiwa7) {
+          if (typeof item.grade !== 'number' || 
+              typeof item.monthlyStandard !== 'number' || 
+              typeof item.from !== 'number' || 
+              typeof item.to !== 'number') {
+            alert('JSONファイルの形式が正しくありません。kouseinenkinReiwa7の各要素にgrade、monthlyStandard、from、toが必要です。');
+            return;
+          }
+        }
+      }
+      
+      // gradeTableを更新
+      this.gradeTable = parsedData;
+      
+      // Firestoreに保存（gradeTableをsettingsに保存）
+      const currentSettings = await this.firestoreService.getSettings() || {};
+      await this.firestoreService.saveSettings({
+        ...currentSettings,
+        gradeTable: this.gradeTable
+      });
+      
+      alert('等級表を適用しました');
+      
+      // ファイル選択をリセット
+      this.selectedGradeTableFile = null;
+      this.selectedGradeTableFileName = '';
+      
+      // ファイル入力もリセット
+      const fileInput = document.getElementById('gradeTableFile') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      // 社会保険料一覧を再読み込み
+      await this.loadInsuranceList();
+    } catch (error) {
+      console.error('Error applying grade table:', error);
+      alert('ファイルの適用中にエラーが発生しました。JSONファイルの形式を確認してください。');
+    }
+  }
 
   // 等級表を読み込む
   async loadGradeTable() {
@@ -277,6 +544,14 @@ export class KyuyoDashboardComponent {
         return;
       }
       
+      // まずFirestoreから設定を読み込んで、gradeTableが保存されているか確認
+      const settings = await this.firestoreService.getSettings();
+      if (settings && settings.gradeTable && settings.gradeTable.hyouzyungetugakuReiwa7) {
+        this.gradeTable = settings.gradeTable;
+        return;
+      }
+      
+      // Firestoreに保存されていない場合は、assetsから読み込む
       const response = await this.http.get<any>('/assets/grade-table.json').toPromise();
       if (response) {
         this.gradeTable = response;
@@ -315,6 +590,10 @@ export class KyuyoDashboardComponent {
     const salary = Number(fixedSalary) || 0;
     const gradeList = this.gradeTable.hyouzyungetugakuReiwa7;
     
+    if (gradeList.length === 0) {
+      return null;
+    }
+    
     // from ~ to の範囲内に当てはまる等級を検索
     for (const gradeItem of gradeList) {
       if (salary >= gradeItem.from && salary <= gradeItem.to) {
@@ -325,16 +604,97 @@ export class KyuyoDashboardComponent {
       }
     }
     
-    return null;
+    // 範囲外の場合：リストの最大値（最後の要素）または最小値（最初の要素）を使用
+    if (salary < gradeList[0].from) {
+      // 最小値未満の場合は最初の等級を使用
+      return {
+        grade: gradeList[0].grade,
+        monthlyStandard: gradeList[0].monthlyStandard
+      };
+    } else {
+      // 最大値を超える場合は最後の等級を使用
+      const lastGrade = gradeList[gradeList.length - 1];
+      return {
+        grade: lastGrade.grade,
+        monthlyStandard: lastGrade.monthlyStandard
+      };
+    }
+  }
+  
+  // 固定的賃金から厚生年金保険料計算用の標準報酬月額を計算
+  calculatePensionStandardMonthlySalary(fixedSalary: number): number {
+    if (!this.gradeTable || !this.gradeTable.kouseinenkinReiwa7) {
+      // kouseinenkinReiwa7が存在しない場合は、従来のロジック（88000円未満の場合は88000円）を使用
+      const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
+      const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
+      return standardMonthlySalary < 88000 ? 88000 : standardMonthlySalary;
+    }
+    
+    const salary = Number(fixedSalary) || 0;
+    const pensionGradeList = this.gradeTable.kouseinenkinReiwa7;
+    
+    // from ~ to の範囲内に当てはまる等級を検索
+    for (const gradeItem of pensionGradeList) {
+      if (salary >= gradeItem.from && salary <= gradeItem.to) {
+        return gradeItem.monthlyStandard;
+      }
+    }
+    
+    // 範囲外の場合は、最小値（最初の要素のmonthlyStandard）または最大値（最後の要素のmonthlyStandard）を返す
+    if (pensionGradeList.length > 0) {
+      if (salary < pensionGradeList[0].from) {
+        return pensionGradeList[0].monthlyStandard;
+      }
+      if (salary > pensionGradeList[pensionGradeList.length - 1].to) {
+        return pensionGradeList[pensionGradeList.length - 1].monthlyStandard;
+      }
+    }
+    
+    // フォールバック: 従来のロジック
+    const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
+    const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
+    return standardMonthlySalary < 88000 ? 88000 : standardMonthlySalary;
   }
 
-  // 50円単位で切り上げ/切り捨て
+  // 50円単位で切り上げ/切り捨て（旧方式、賞与計算で使用）
   roundToFifty(amount: number): number {
     const remainder = amount % 100;
     if (remainder <= 50) {
       return Math.floor(amount / 100) * 100;
     } else {
       return Math.ceil(amount / 100) * 100;
+    }
+  }
+  
+  // 端数が0.50以下なら切り捨て、0.51以上なら切り上げ（1円単位）
+  roundHalf(amount: number): number {
+    const decimal = amount % 1;
+    if (decimal <= 0.50) {
+      return Math.floor(amount);
+    } else {
+      return Math.ceil(amount);
+    }
+  }
+  
+  // 年齢を計算（生年月日から）
+  calculateAge(birthDate: string | Date | null | undefined): number | null {
+    if (!birthDate) return null;
+    
+    try {
+      const birth = typeof birthDate === 'string' ? new Date(birthDate) : birthDate;
+      if (isNaN(birth.getTime())) return null;
+      
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      
+      return age;
+    } catch (error) {
+      return null;
     }
   }
   
@@ -430,23 +790,32 @@ export class KyuyoDashboardComponent {
             const finalFixedSalary = setFixedSalary > 0 ? setFixedSalary : fixedSalary;
             // 標準報酬月額を計算
             const standardSalaryInfo = this.calculateStandardMonthlySalary(finalFixedSalary);
-            const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
+            let standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
             const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+            
+            // 年齢を計算
+            const age = this.calculateAge(emp.birthDate);
+            
+            // 40歳以上の従業員は介護保険料を0円にする
+            const isOver40 = age !== null && age >= 40;
+            
+            // 厚生年金保険料計算用の標準報酬月額（kouseinenkinReiwa7リストを参照）
+            const pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalary(finalFixedSalary);
             
             // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
             // 小数第2位まで保持（表示用）
             const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
-            const nursingInsuranceRaw = standardMonthlySalary * (nursingInsuranceRate / 100);
-            const pensionInsuranceRaw = standardMonthlySalary * (pensionInsuranceRate / 100);
+            const nursingInsuranceRaw = isOver40 ? 0 : standardMonthlySalary * (nursingInsuranceRate / 100);
+            const pensionInsuranceRaw = pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
             
             // 社員負担額を計算
-            // (健康保険料 + 介護保険料) ÷ 2 を50円単位で切り上げ/切り捨て
+            // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
             const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-            const healthNursingBurden = this.roundToFifty(healthNursingHalf);
+            const healthNursingBurden = this.roundHalf(healthNursingHalf);
             
-            // 厚生年金保険料 ÷ 2 を50円単位で切り上げ/切り捨て
+            // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
             const pensionHalf = pensionInsuranceRaw / 2;
-            const pensionBurden = this.roundToFifty(pensionHalf);
+            const pensionBurden = this.roundHalf(pensionHalf);
             
             // 社員負担額（合計）
             const employeeBurden = healthNursingBurden + pensionBurden;
@@ -460,7 +829,8 @@ export class KyuyoDashboardComponent {
               healthInsurance: healthInsuranceRaw, // 小数第2位まで
               nursingInsurance: nursingInsuranceRaw, // 小数第2位まで
               pensionInsurance: pensionInsuranceRaw, // 小数第2位まで
-              employeeBurden: employeeBurden // 社員負担額
+              employeeBurden: employeeBurden, // 社員負担額
+              birthDate: emp.birthDate || null // 生年月日（年齢計算用）
             };
           });
       } else {
@@ -481,24 +851,31 @@ export class KyuyoDashboardComponent {
   
   // 事業主負担額合計を計算
   getTotalEmployerBurden(): number {
-    let totalInsurance = 0;
+    let totalHealthInsurance = 0;
+    let totalNursingInsurance = 0;
+    let totalPensionInsurance = 0;
     let totalEmployeeBurden = 0;
     
     const listToUse = this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList;
     
     listToUse.forEach((item: any) => {
-      // 保険料の合計（小数点以下切り捨て）
-      const healthInsurance = Math.floor(item.healthInsurance);
-      const nursingInsurance = Math.floor(item.nursingInsurance);
-      const pensionInsurance = Math.floor(item.pensionInsurance);
-      totalInsurance += healthInsurance + nursingInsurance + pensionInsurance;
+      // 全体の健康保険料（端数を切り落とした額）
+      totalHealthInsurance += Math.floor(item.healthInsurance);
+      
+      // 全体の介護保険料（端数を切り落とした額）
+      totalNursingInsurance += Math.floor(item.nursingInsurance);
+      
+      // 全体の厚生年金保険料（端数を切り落とした額）
+      totalPensionInsurance += Math.floor(item.pensionInsurance);
       
       // 社員負担額の合計
       totalEmployeeBurden += item.employeeBurden || 0;
     });
     
-    // 事業主負担額 = 保険料合計 - 社員負担額合計
-    return totalInsurance - totalEmployeeBurden;
+    // 事業主負担額 = （全体の健康保険料＋全体の介護保険料）の端数を切り落とした額
+    //                ＋全体の厚生年金保険料の端数を切り落とした額
+    //                －社員負担額の合計
+    return (totalHealthInsurance + totalNursingInsurance) + totalPensionInsurance - totalEmployeeBurden;
   }
   
   // 健康保険料合計を計算
@@ -611,19 +988,33 @@ export class KyuyoDashboardComponent {
           
           // 標準報酬月額を再計算
           const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
-          const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
+          let standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
           const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+          
+          // 年齢を計算
+          const age = this.calculateAge(item.birthDate);
+          
+          // 40歳以上の従業員は介護保険料を0円にする
+          const isOver40 = age !== null && age >= 40;
+          
+          // 厚生年金保険料計算用の標準報酬月額（kouseinenkinReiwa7リストを参照）
+          const pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalary(fixedSalary);
           
           // 各保険料を計算
           const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
-          const nursingInsuranceRaw = standardMonthlySalary * (nursingInsuranceRate / 100);
-          const pensionInsuranceRaw = standardMonthlySalary * (pensionInsuranceRate / 100);
+          const nursingInsuranceRaw = isOver40 ? 0 : standardMonthlySalary * (nursingInsuranceRate / 100);
+          const pensionInsuranceRaw = pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
           
           // 社員負担額を計算
+          // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
           const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-          const healthNursingBurden = this.roundToFifty(healthNursingHalf);
+          const healthNursingBurden = this.roundHalf(healthNursingHalf);
+          
+          // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
           const pensionHalf = pensionInsuranceRaw / 2;
-          const pensionBurden = this.roundToFifty(pensionHalf);
+          const pensionBurden = this.roundHalf(pensionHalf);
+          
+          // 社員負担額（合計）
           const employeeBurden = healthNursingBurden + pensionBurden;
           
           return {
@@ -639,38 +1030,55 @@ export class KyuyoDashboardComponent {
         });
       } else {
         // 賞与の場合：選択された年月の賞与で計算
-        this.filteredInsuranceList = this.bonusList
-          .filter((bonus: any) => 
-            bonus['year'] === this.insuranceListYear &&
-            bonus['month'] === this.insuranceListMonth
-          )
-          .map((bonus: any) => {
-            // 標準賞与額 = 賞与の1000円未満の値を切り捨てた額
-            const standardBonusAmount = Math.floor(bonus['amount'] / 1000) * 1000;
-            
-            // 各保険料を計算（標準賞与額 × 各保険料率）
-            const healthInsuranceRaw = standardBonusAmount * (healthInsuranceRate / 100);
-            const nursingInsuranceRaw = standardBonusAmount * (nursingInsuranceRate / 100);
-            const pensionInsuranceRaw = standardBonusAmount * (pensionInsuranceRate / 100);
-            
-            // 社員負担額を計算
-            const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-            const healthNursingBurden = this.roundToFifty(healthNursingHalf);
-            const pensionHalf = pensionInsuranceRaw / 2;
-            const pensionBurden = this.roundToFifty(pensionHalf);
-            const employeeBurden = healthNursingBurden + pensionBurden;
-            
-            return {
-              employeeNumber: bonus['employeeNumber'],
-              name: bonus.name,
-              bonusAmount: bonus['amount'],
-              standardBonusAmount: standardBonusAmount,
-              healthInsurance: healthInsuranceRaw,
-              nursingInsurance: nursingInsuranceRaw,
-              pensionInsurance: pensionInsuranceRaw,
-              employeeBurden: employeeBurden
-            };
-          });
+        this.filteredInsuranceList = await Promise.all(
+          this.bonusList
+            .filter((bonus: any) => 
+              bonus['year'] === this.insuranceListYear &&
+              bonus['month'] === this.insuranceListMonth
+            )
+            .map(async (bonus: any) => {
+              // 標準賞与額 = 賞与の1000円未満の値を切り捨てた額
+              let standardBonusAmount = Math.floor(bonus['amount'] / 1000) * 1000;
+              
+              // 社員情報を取得して年齢を計算
+              const employeeData = await this.firestoreService.getEmployeeData(bonus['employeeNumber']);
+              const age = this.calculateAge(employeeData?.birthDate);
+              
+              // 40歳以上の従業員は介護保険料を0円にする
+              const isOver40 = age !== null && age >= 40;
+              
+              // 厚生年金保険料計算用の標準賞与額（kouseinenkinReiwa7リストを参照）
+              const pensionStandardBonusAmount = this.calculatePensionStandardMonthlySalary(bonus['amount']);
+              
+              // 各保険料を計算（標準賞与額 × 各保険料率）
+              const healthInsuranceRaw = standardBonusAmount * (healthInsuranceRate / 100);
+              const nursingInsuranceRaw = isOver40 ? 0 : standardBonusAmount * (nursingInsuranceRate / 100);
+              const pensionInsuranceRaw = pensionStandardBonusAmount * (pensionInsuranceRate / 100);
+              
+              // 社員負担額を計算
+              // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+              const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
+              const healthNursingBurden = this.roundHalf(healthNursingHalf);
+              
+              // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+              const pensionHalf = pensionInsuranceRaw / 2;
+              const pensionBurden = this.roundHalf(pensionHalf);
+              
+              // 社員負担額（合計）
+              const employeeBurden = healthNursingBurden + pensionBurden;
+              
+              return {
+                employeeNumber: bonus['employeeNumber'],
+                name: bonus.name,
+                bonusAmount: bonus['amount'],
+                standardBonusAmount: standardBonusAmount,
+                healthInsurance: healthInsuranceRaw,
+                nursingInsurance: nursingInsuranceRaw,
+                pensionInsurance: pensionInsuranceRaw,
+                employeeBurden: employeeBurden
+              };
+            })
+        );
       }
     } catch (error) {
       console.error('Error filtering insurance list:', error);

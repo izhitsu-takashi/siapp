@@ -298,43 +298,7 @@
       "grade": 50,
       "monthlyStandard": 1390000,
       "from": 1355000,
-      "to": 1389999
-    },
-    {
-      "grade": 51,
-      "monthlyStandard": 1500000,
-      "from": 1390000,
-      "to": 1499999
-    },
-    {
-      "grade": 52,
-      "monthlyStandard": 1600000,
-      "from": 1500000,
-      "to": 1599999
-    },
-    {
-      "grade": 53,
-      "monthlyStandard": 1700000,
-      "from": 1600000,
-      "to": 1699999
-    },
-    {
-      "grade": 54,
-      "monthlyStandard": 1800000,
-      "from": 1700000,
-      "to": 1799999
-    },
-    {
-      "grade": 55,
-      "monthlyStandard": 1900000,
-      "from": 1800000,
-      "to": 1899999
-    },
-    {
-      "grade": 56,
-      "monthlyStandard": 2000000,
-      "from": 1900000,
-      "to": 9999999
+      "to": 99999999
     }
   ],
 
@@ -531,7 +495,7 @@
     "grade": 32,
       "monthlyStandard": 650000,
       "from": 635000,
-      "to": 9999999
+      "to": 99999999
     }
   ]
 }
