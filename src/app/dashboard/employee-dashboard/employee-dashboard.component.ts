@@ -3,11 +3,13 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { FirestoreService } from '../../services/firestore.service';
+import { ChatService, ChatMessage } from '../../services/chat.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-employee-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
   templateUrl: './employee-dashboard.component.html',
   styleUrl: './employee-dashboard.component.css'
 })
@@ -125,10 +127,16 @@ export class EmployeeDashboardComponent {
   workContents = ['営業', '開発', '事務', '管理', 'その他'];
   spouseOptions = ['有', '無'];
 
+  // チャット機能用
+  chatMessages: ChatMessage[] = [];
+  chatInputMessage: string = '';
+  isChatLoading: boolean = false;
+
   constructor(
     private router: Router, 
     private fb: FormBuilder,
     private firestoreService: FirestoreService,
+    private chatService: ChatService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     // settingsFormを初期化（必須）
@@ -3256,6 +3264,57 @@ export class EmployeeDashboardComponent {
     const control = this.onboardingApplicationForm.get('spousePhoneNumber');
     if (control) {
       control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // チャット機能のメソッド
+  async sendChatMessage() {
+    if (!this.chatInputMessage.trim() || this.isChatLoading) {
+      return;
+    }
+
+    const userMessage = this.chatInputMessage.trim();
+    this.chatInputMessage = '';
+    
+    // ユーザーメッセージを表示
+    this.chatMessages.push({
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date()
+    });
+
+    this.isChatLoading = true;
+
+    try {
+      const response = await this.chatService.sendMessage(userMessage);
+      
+      // アシスタントの応答を表示
+      this.chatMessages.push({
+        role: 'assistant',
+        content: response,
+        timestamp: new Date()
+      });
+    } catch (error: any) {
+      console.error('Error sending chat message:', error);
+      this.chatMessages.push({
+        role: 'assistant',
+        content: '申し訳ございません。エラーが発生しました。もう一度お試しください。',
+        timestamp: new Date()
+      });
+    } finally {
+      this.isChatLoading = false;
+    }
+  }
+
+  clearChat() {
+    this.chatMessages = [];
+    this.chatService.clearConversationHistory();
+  }
+
+  onChatInputKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendChatMessage();
     }
   }
 }

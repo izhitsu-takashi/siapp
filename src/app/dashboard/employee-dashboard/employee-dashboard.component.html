@@ -1119,8 +1119,78 @@
           </div>
         </ng-container>
 
-        <!-- ナレッジページ（その他のページ） -->
-        <ng-container *ngIf="currentTab !== '情報照会' && currentTab !== '各種申請' && currentTab !== 'メインページ' && currentTab !== '保険・扶養' && currentTab !== 'パスワード変更'">
+        <!-- ナレッジページ -->
+        <ng-container *ngIf="currentTab === 'ナレッジ'">
+          <div class="knowledge-page">
+            <h2 class="page-title">ナレッジ - AIアシスタント</h2>
+            <p class="knowledge-description">
+              人事・給与システムに関するご質問にお答えします。わからないことがあれば、お気軽にお尋ねください。
+            </p>
+            
+            <!-- チャットエリア -->
+            <div class="chat-container">
+              <div class="chat-messages" #chatMessagesContainer>
+                <div *ngIf="chatMessages.length === 0" class="chat-welcome">
+                  <p>こんにちは！人事・給与システムに関するご質問にお答えします。</p>
+                  <p>どのようなことでお困りでしょうか？</p>
+                </div>
+                <div *ngFor="let message of chatMessages" class="chat-message" [class.user-message]="message.role === 'user'" [class.assistant-message]="message.role === 'assistant'">
+                  <div class="message-content">
+                    <div class="message-role" *ngIf="message.role === 'user'">あなた</div>
+                    <div class="message-role" *ngIf="message.role === 'assistant'">AIアシスタント</div>
+                    <div class="message-text">{{ message.content }}</div>
+                    <div class="message-time" *ngIf="message.timestamp">
+                      {{ message.timestamp | date:'HH:mm' }}
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="isChatLoading" class="chat-message assistant-message">
+                  <div class="message-content">
+                    <div class="message-role">AIアシスタント</div>
+                    <div class="message-text loading">
+                      <span class="loading-dot"></span>
+                      <span class="loading-dot"></span>
+                      <span class="loading-dot"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- チャット入力エリア -->
+              <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                  <textarea
+                    [(ngModel)]="chatInputMessage"
+                    (keydown)="onChatInputKeydown($event)"
+                    placeholder="メッセージを入力してください（Enterで送信、Shift+Enterで改行）"
+                    class="chat-input"
+                    rows="2"
+                    [disabled]="isChatLoading"
+                  ></textarea>
+                  <div class="chat-actions">
+                    <button
+                      (click)="sendChatMessage()"
+                      [disabled]="!chatInputMessage.trim() || isChatLoading"
+                      class="chat-send-button"
+                    >
+                      送信
+                    </button>
+                    <button
+                      (click)="clearChat()"
+                      [disabled]="chatMessages.length === 0"
+                      class="chat-clear-button"
+                    >
+                      クリア
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- その他のページ -->
+        <ng-container *ngIf="currentTab !== '情報照会' && currentTab !== '各種申請' && currentTab !== 'メインページ' && currentTab !== '保険・扶養' && currentTab !== 'パスワード変更' && currentTab !== 'ナレッジ'">
           <h2 class="page-title">{{ currentTab }}のページです</h2>
         </ng-container>
       </div>

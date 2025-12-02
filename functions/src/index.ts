@@ -12,6 +12,7 @@ import {onRequest} from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 import * as nodemailer from "nodemailer";
+import {GoogleGenerativeAI} from "@google/generative-ai";
 
 admin.initializeApp();
 
@@ -147,3 +148,120 @@ export const sendOnboardingEmail = onRequest(async (request, response) => {
     response.status(500).send({success: false, error: "Failed to send email"});
   }
 });
+
+// Gemini AIチャット関数
+export const chatWithGemini = onRequest(
+  {
+    secrets: ["GEMINI_API_KEY"],
+  },
+  async (request, response) => {
+  // CORS設定
+    response.set("Access-Control-Allow-Origin", "*");
+    response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    response.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (request.method === "OPTIONS") {
+      response.status(204).send("");
+      return;
+    }
+
+    if (request.method !== "POST") {
+      response.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const {message, conversationHistory = []} = request.body;
+
+      if (!message) {
+        response.status(400).send({
+          success: false,
+          error: "Message is required",
+        });
+        return;
+      }
+
+      // Gemini APIキーを環境変数から取得
+      // Firebase Functions v2では、環境変数は自動的に読み込まれます
+      // 本番環境では、Firebase Secretsまたは環境変数として設定
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        logger.error("GEMINI_API_KEY is not set");
+        response.status(500).send({
+          success: false,
+          error: "Gemini API key is not configured. " +
+          "Please set GEMINI_API_KEY environment variable.",
+        });
+        return;
+      }
+
+      // Google Generative AIを初期化
+      const genAI = new GoogleGenerativeAI(apiKey);
+      // gemini-2.0-flashを使用
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+      });
+
+      // システムプロンプトを設定（ナレッジベースとしての役割を定義）
+      const systemPrompt = `あなたは社内の人事・給与システムに関する質問に答えるAIアシスタントです。
+以下の点に注意して回答してください：
+- 健康保険、厚生年金、雇用保険などの社会保険に関する質問に答える
+- 各種申請手続きについて説明する
+- 給与計算や賞与に関する質問に答える
+- 不明な点については、人事部門に確認するよう促す
+- 丁寧で分かりやすい日本語で回答する
+- 個人情報や機密情報については回答しない`;
+
+    // 会話履歴を構築
+    interface ChatMessage {
+      role: string;
+      content: string;
+    }
+    const chatHistory = conversationHistory.map((msg: ChatMessage) => ({
+      role: msg.role === "user" ? "user" : "model",
+      parts: [{text: msg.content}],
+    }));
+
+    // チャットを開始
+    const initialResponse =
+      "了解しました。社内の人事・給与システムに関するご質問に" +
+      "お答えします。どのようなことでお困りでしょうか？";
+    const chat = model.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [{text: systemPrompt}],
+        },
+        {
+          role: "model",
+          parts: [{text: initialResponse}],
+        },
+        ...chatHistory,
+      ],
+    });
+
+    // メッセージを送信して応答を取得
+    const result = await chat.sendMessage(message);
+    const responseText = result.response.text();
+
+    logger.info("Gemini chat response generated", {
+      messageLength: message.length,
+      responseLength: responseText.length,
+    });
+
+    response.status(200).send({
+      success: true,
+      response: responseText,
+    });
+    } catch (error: unknown) {
+      logger.error("Error in chatWithGemini:", error);
+      const errorMessage = error instanceof Error ?
+        error.message :
+        "Failed to get response from Gemini";
+      response.status(500).send({
+        success: false,
+        error: errorMessage,
+      });
+    }
+  },
+);
