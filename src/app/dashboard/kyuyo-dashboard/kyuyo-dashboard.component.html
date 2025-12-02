@@ -254,7 +254,24 @@
 
           <!-- 給与履歴表 -->
           <div class="history-container">
-            <h3 class="form-section-title">給与設定履歴</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 class="form-section-title" style="margin: 0;">給与設定履歴</h3>
+              <div class="form-group" style="margin: 0; min-width: 200px;">
+                <label for="salaryHistoryFilter" style="margin-right: 0.5rem;">社員でフィルター:</label>
+                <select 
+                  id="salaryHistoryFilter" 
+                  [(ngModel)]="selectedSalaryHistoryFilter" 
+                  (change)="filterSalaryHistory()"
+                  class="form-input"
+                  style="min-width: 150px;"
+                >
+                  <option value="">全て</option>
+                  <option *ngFor="let emp of salaryEmployees" [value]="emp.employeeNumber">
+                    {{ emp.employeeNumber }} - {{ emp.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
             <div class="table-container">
               <table class="history-table">
                 <thead>
@@ -268,7 +285,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let record of salaryHistory">
+                  <tr *ngFor="let record of filteredSalaryHistory">
                     <td>{{ record.employeeNumber }}</td>
                     <td>{{ getEmployeeName(record.employeeNumber) }}</td>
                     <td>{{ record.year }}</td>
@@ -276,7 +293,7 @@
                     <td>{{ record.amount | number:'1.0-0' }}円</td>
                     <td>{{ formatDateTime(record.createdAt) }}</td>
                   </tr>
-                  <tr *ngIf="salaryHistory.length === 0">
+                  <tr *ngIf="filteredSalaryHistory.length === 0">
                     <td colspan="6" class="empty-message">履歴がありません</td>
                   </tr>
                 </tbody>
@@ -358,7 +375,24 @@
 
           <!-- 賞与履歴表 -->
           <div class="history-container">
-            <h3 class="form-section-title">賞与設定履歴</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 class="form-section-title" style="margin: 0;">賞与設定履歴</h3>
+              <div class="form-group" style="margin: 0; min-width: 200px;">
+                <label for="bonusHistoryFilter" style="margin-right: 0.5rem;">社員でフィルター:</label>
+                <select 
+                  id="bonusHistoryFilter" 
+                  [(ngModel)]="selectedBonusHistoryFilter" 
+                  (change)="filterBonusHistory()"
+                  class="form-input"
+                  style="min-width: 150px;"
+                >
+                  <option value="">全て</option>
+                  <option *ngFor="let emp of bonusEmployees" [value]="emp.employeeNumber">
+                    {{ emp.employeeNumber }} - {{ emp.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
             <div class="table-container">
               <table class="history-table">
                 <thead>
@@ -372,7 +406,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let record of bonusHistory">
+                  <tr *ngFor="let record of filteredBonusHistory">
                     <td>{{ record.employeeNumber }}</td>
                     <td>{{ getEmployeeName(record.employeeNumber) }}</td>
                     <td>{{ record.year }}</td>
@@ -380,7 +414,7 @@
                     <td>{{ record.amount | number:'1.0-0' }}円</td>
                     <td>{{ formatDateTime(record.createdAt) }}</td>
                   </tr>
-                  <tr *ngIf="bonusHistory.length === 0">
+                  <tr *ngIf="filteredBonusHistory.length === 0">
                     <td colspan="6" class="empty-message">履歴がありません</td>
                   </tr>
                 </tbody>

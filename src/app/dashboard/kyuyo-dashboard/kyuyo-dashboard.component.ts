@@ -72,6 +72,8 @@ export class KyuyoDashboardComponent {
   salaryMonth: number = new Date().getMonth() + 1; // 給与設定の月
   salaryAmount: number = 0; // 給与額（固定的賃金）
   salaryHistory: any[] = []; // 給与設定履歴
+  filteredSalaryHistory: any[] = []; // フィルタリング後の給与設定履歴
+  selectedSalaryHistoryFilter: string = ''; // 給与設定履歴のフィルター用社員番号
   
   // 賞与ページ用データ
   bonusEmployees: any[] = []; // 賞与設定対象の社員一覧
@@ -80,6 +82,8 @@ export class KyuyoDashboardComponent {
   bonusMonth: number = new Date().getMonth() + 1; // 賞与設定の月
   bonusAmount: number = 0; // 賞与額
   bonusHistory: any[] = []; // 賞与設定履歴
+  filteredBonusHistory: any[] = []; // フィルタリング後の賞与設定履歴
+  selectedBonusHistoryFilter: string = ''; // 賞与設定履歴のフィルター用社員番号
   bonusList: any[] = []; // 賞与一覧（保険料計算用）
 
   // 社員情報モーダル
@@ -133,8 +137,19 @@ export class KyuyoDashboardComponent {
       return dateB.getTime() - dateA.getTime();
     });
     
+    // 社員名を追加
+    for (const salary of this.salaryHistory) {
+      const employee = this.employees.find((e: any) => e.employeeNumber === salary['employeeNumber']);
+      if (employee) {
+        salary.name = employee.name;
+      }
+    }
+    
     // 全社員について、2030年までの給与設定履歴を確認して定時改定と随時改定を計算
     await this.calculateStandardMonthlySalaryChangesForAllEmployees();
+    
+    // フィルターを適用
+    this.filterSalaryHistory();
     
     // 社会保険料一覧を読み込む
     await this.loadInsuranceList();
@@ -763,6 +778,25 @@ export class KyuyoDashboardComponent {
       this.salaryHistory = await this.firestoreService.getSalaryHistory();
       const bonuses = await this.firestoreService.getBonusHistory();
       this.bonusHistory = bonuses;
+      
+      // 社員名を追加
+      for (const salary of this.salaryHistory) {
+        const employee = this.employees.find((e: any) => e.employeeNumber === salary['employeeNumber']);
+        if (employee) {
+          salary.name = employee.name;
+        }
+      }
+      
+      for (const bonus of this.bonusHistory) {
+        const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
+        if (employee) {
+          bonus.name = employee.name;
+        }
+      }
+      
+      // フィルターを適用
+      this.filterSalaryHistory();
+      this.filterBonusHistory();
       this.bonusList = bonuses.map((bonus: any) => {
         const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
         return {
@@ -1530,6 +1564,9 @@ export class KyuyoDashboardComponent {
           salary.name = employee.name;
         }
       }
+      
+      // フィルターを適用
+      this.filterSalaryHistory();
     } catch (error) {
       console.error('Error loading salary data:', error);
     }
@@ -1777,6 +1814,9 @@ export class KyuyoDashboardComponent {
           }
         }
       }
+      
+      // フィルターを適用
+      this.filterSalaryHistory();
       
       // 保険料一覧を再読み込み
       await this.loadInsuranceList();
@@ -2160,6 +2200,28 @@ export class KyuyoDashboardComponent {
     }
   }
   
+  // 給与設定履歴をフィルタリング
+  filterSalaryHistory() {
+    if (!this.selectedSalaryHistoryFilter) {
+      this.filteredSalaryHistory = this.salaryHistory;
+    } else {
+      this.filteredSalaryHistory = this.salaryHistory.filter(
+        (record: any) => record['employeeNumber'] === this.selectedSalaryHistoryFilter
+      );
+    }
+  }
+
+  // 賞与設定履歴をフィルタリング
+  filterBonusHistory() {
+    if (!this.selectedBonusHistoryFilter) {
+      this.filteredBonusHistory = this.bonusHistory;
+    } else {
+      this.filteredBonusHistory = this.bonusHistory.filter(
+        (record: any) => record['employeeNumber'] === this.selectedBonusHistoryFilter
+      );
+    }
+  }
+  
   // 賞与を保存
   async saveBonus() {
     if (!this.selectedBonusEmployee || !this.bonusAmount || this.bonusAmount <= 0) {
@@ -2189,6 +2251,17 @@ export class KyuyoDashboardComponent {
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
         return dateB.getTime() - dateA.getTime();
       });
+      
+      // 社員名を追加
+      for (const bonus of this.bonusHistory) {
+        const employee = this.employees.find((e: any) => e.employeeNumber === bonus['employeeNumber']);
+        if (employee) {
+          bonus.name = employee.name;
+        }
+      }
+      
+      // フィルターを適用
+      this.filterBonusHistory();
       
       // 社員名を追加してbonusListに設定
       this.bonusList = bonuses.map((bonus: any) => {
