@@ -1419,11 +1419,58 @@ export class KyuyoDashboardComponent {
         this.filteredInsuranceList = filteredItems;
       } else {
         // 賞与の場合：選択された年月の賞与で計算
+        // その年の7月から翌年6月までの間に、賞与が4回以上支給された場合、4回目以降の賞与は表示しない
         const bonusListFiltered = this.bonusList.filter((bonus: any) => {
           // 年月を数値型に変換して比較（Firestoreから取得したデータが文字列型の場合があるため）
           const bonusYear = Number(bonus['year']);
           const bonusMonth = Number(bonus['month']);
-          return bonusYear === filterYear && bonusMonth === filterMonth;
+          
+          // 選択された年月の賞与かどうかをチェック
+          if (bonusYear !== filterYear || bonusMonth !== filterMonth) {
+            return false;
+          }
+          
+          // 年度を判定（7月～翌年6月が1年度）
+          let bonusFiscalYear: number;
+          if (bonusMonth >= 7) {
+            bonusFiscalYear = bonusYear;
+          } else {
+            bonusFiscalYear = bonusYear - 1;
+          }
+          
+          // 該当年度の7月から選択された年月までの賞与を取得
+          const fiscalYearBonuses = this.bonusList.filter((b: any) => {
+            const bYear = Number(b['year']);
+            const bMonth = Number(b['month']);
+            if (b['employeeNumber'] !== bonus['employeeNumber']) return false;
+            
+            // 年度を判定
+            let bFiscalYear: number;
+            if (bMonth >= 7) {
+              bFiscalYear = bYear;
+            } else {
+              bFiscalYear = bYear - 1;
+            }
+            
+            // 同じ年度で、選択された年月以前の賞与を取得
+            if (bFiscalYear !== bonusFiscalYear) return false;
+            if (bYear < bonusYear) return true;
+            if (bYear === bonusYear && bMonth <= bonusMonth) return true;
+            return false;
+          }).sort((a: any, b: any) => {
+            const aYear = Number(a['year']);
+            const bYear = Number(b['year']);
+            const aMonth = Number(a['month']);
+            const bMonth = Number(b['month']);
+            if (aYear !== bYear) return aYear - bYear;
+            return aMonth - bMonth;
+          });
+          
+          // 4回目以降の賞与は表示しない
+          const bonusIndex = fiscalYearBonuses.findIndex((b: any) => 
+            Number(b['year']) === bonusYear && Number(b['month']) === bonusMonth
+          );
+          return bonusIndex < 3; // 0, 1, 2の3回まで表示（4回目以降は表示しない）
         });
         
         this.filteredInsuranceList = await Promise.all(
@@ -2534,10 +2581,58 @@ export class KyuyoDashboardComponent {
           grade = standardSalaryInfo ? standardSalaryInfo.grade : null;
         }
         
+        // 年度報酬加算額を計算（その年の7月から翌年6月までの賞与合計額を12で割った額）
+        // フィルターで選択されている年月に基づいて年度を判定
+        const filterYear = Number(this.insuranceListYear);
+        const filterMonth = Number(this.insuranceListMonth);
+        
+        // フィルターで選択されている年月の年度を判定（7月～翌年6月が1年度）
+        let currentFiscalYear: number;
+        if (filterMonth >= 7) {
+          currentFiscalYear = filterYear;
+        } else {
+          currentFiscalYear = filterYear - 1;
+        }
+        
+        // 該当年度の7月から6月までの賞与を取得
+        const fiscalYearBonuses = this.bonusList.filter((b: any) => {
+          const bYear = Number(b['year']);
+          const bMonth = Number(b['month']);
+          if (b['employeeNumber'] !== employeeNumber) return false;
+          
+          // 年度を判定
+          let bFiscalYear: number;
+          if (bMonth >= 7) {
+            bFiscalYear = bYear;
+          } else {
+            bFiscalYear = bYear - 1;
+          }
+          
+          return bFiscalYear === currentFiscalYear;
+        });
+        
+        // 年度賞与支給回数
+        const fiscalYearBonusCount = fiscalYearBonuses.length;
+        
+        // 年度報酬加算額（賞与支給回数が4回以上の場合のみ算出）
+        let annualRewardAddition = 0;
+        if (fiscalYearBonusCount >= 4) {
+          // 年度内の賞与合計額を計算
+          const fiscalYearTotalBonus = fiscalYearBonuses.reduce((sum: number, b: any) => {
+            return sum + Number(b['amount']);
+          }, 0);
+          
+          // 年度報酬加算額（賞与合計額を12で割った額）
+          annualRewardAddition = fiscalYearTotalBonus / 12;
+        }
+        
         this.selectedEmployeeInfo = {
           ...employeeData,
           age: age,
-          grade: grade
+          grade: grade,
+          annualRewardAddition: annualRewardAddition,
+          fiscalYear: currentFiscalYear,
+          fiscalYearBonusCount: fiscalYearBonusCount
         };
       } else {
         alert('社員情報が見つかりませんでした。');

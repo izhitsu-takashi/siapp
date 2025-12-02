@@ -682,6 +682,21 @@
             </div>
           </div>
         </div>
+
+        <!-- 年度報酬加算額 -->
+        <div class="info-section" *ngIf="selectedEmployeeInfo.annualRewardAddition !== undefined">
+          <h3 class="section-title">年度報酬加算額</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">{{ selectedEmployeeInfo.fiscalYear }}年度報酬加算額:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.annualRewardAddition | number:'1.0-0' }}円</span>
+            </div>
+            <div class="info-item" *ngIf="selectedEmployeeInfo.fiscalYearBonusCount !== undefined">
+              <span class="info-label">{{ selectedEmployeeInfo.fiscalYear }}年度賞与支給回数:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.fiscalYearBonusCount }}回</span>
+            </div>
+          </div>
+        </div>
       </div>
       <div *ngIf="!selectedEmployeeInfo" class="loading-message">
         情報を読み込み中...
