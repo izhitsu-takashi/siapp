@@ -1151,7 +1151,7 @@ export class KyuyoDashboardComponent {
       
       if (this.insuranceListType === 'salary') {
         // 給与の場合：選択された年月の固定的賃金で計算
-        this.filteredInsuranceList = this.insuranceList
+        const filteredItems = await Promise.all(this.insuranceList
           .filter((item: any) => {
             // 退職済み社員の表示条件をチェック
             const shouldShow = this.shouldShowResignedEmployee(
@@ -1190,7 +1190,7 @@ export class KyuyoDashboardComponent {
             
             return true;
           })
-          .map((item: any) => {
+          .map(async (item: any) => {
             // 給与設定履歴から該当年月以前の最新の固定的賃金を取得
             const relevantSalaries = this.salaryHistory
               .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
@@ -1268,7 +1268,31 @@ export class KyuyoDashboardComponent {
             let standardMonthlySalary = 0;
             let grade = 0;
             
-            if (isVoluntaryContinuation) {
+            // 標準報酬月額変更情報を取得（該当年月以前の最新の変更情報）
+            const standardChange = await this.firestoreService.getStandardMonthlySalaryChange(
+              item.employeeNumber,
+              filterYear,
+              filterMonth
+            );
+            
+            // 標準報酬月額変更が適用されているかチェック（適用月以降の場合のみ）
+            let useStandardChange = false;
+            if (standardChange) {
+              const effectiveYear = Number(standardChange.effectiveYear);
+              const effectiveMonth = Number(standardChange.effectiveMonth);
+              
+              // 選択された年月が適用月以降の場合のみ変更を適用
+              if (filterYear > effectiveYear || 
+                  (filterYear === effectiveYear && filterMonth >= effectiveMonth)) {
+                useStandardChange = true;
+              }
+            }
+            
+            if (useStandardChange) {
+              // 標準報酬月額変更が適用されている場合
+              standardMonthlySalary = standardChange.monthlyStandard;
+              grade = standardChange.grade;
+            } else if (isVoluntaryContinuation) {
               // 任意継続被保険者の場合、退職時の標準報酬月額を使用（最大32万円）
               // 退職時の固定的賃金を再取得
               const relevantSalariesForResignation = this.salaryHistory
@@ -1345,7 +1369,9 @@ export class KyuyoDashboardComponent {
             pensionInsurance: pensionInsuranceRaw,
             employeeBurden: employeeBurden
           };
-          });
+          }));
+        
+        this.filteredInsuranceList = filteredItems;
       } else {
         // 賞与の場合：選択された年月の賞与で計算
         const bonusListFiltered = this.bonusList.filter((bonus: any) => {
@@ -1629,6 +1655,31 @@ export class KyuyoDashboardComponent {
     }
   }
 
+  // 日付をフォーマット（YYYY/MM/DD形式）
+  formatDate(date: any): string {
+    if (!date) return '-';
+    try {
+      let dateObj: Date;
+      if (date.toDate && typeof date.toDate === 'function') {
+        dateObj = date.toDate();
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else {
+        return '-';
+      }
+      
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      
+      return `${year}/${month}/${day}`;
+    } catch (error) {
+      return '-';
+    }
+  }
+
   // 入社月をフォーマット（YYYY年MM月形式）
   formatJoinDate(date: any): string {
     if (!date) return '-';
@@ -1673,15 +1724,27 @@ export class KyuyoDashboardComponent {
         this.salaryAmount
       );
       
-      // 給与設定履歴を再読み込み
+      // 給与設定履歴を再読み込み（標準報酬月額変更チェックの前に必要）
       const history = await this.firestoreService.getSalaryHistory();
       
       // 日時順にソート（新しいものから）
-      this.salaryHistory = history.sort((a: any, b: any) => {
+      const sortedHistory = history.sort((a: any, b: any) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
         return dateB.getTime() - dateA.getTime();
       });
+      
+      // 標準報酬月額の変更を検出して処理
+      await this.checkAndUpdateStandardMonthlySalary(
+        this.selectedSalaryEmployee,
+        this.salaryYear,
+        this.salaryMonth,
+        this.salaryAmount,
+        sortedHistory
+      );
+      
+      // 給与設定履歴を設定
+      this.salaryHistory = sortedHistory;
       
       // 社員名を追加
       for (const salary of this.salaryHistory) {
@@ -1705,6 +1768,102 @@ export class KyuyoDashboardComponent {
     } catch (error) {
       console.error('Error saving salary:', error);
       alert('給与の設定に失敗しました');
+    }
+  }
+
+  // 標準報酬月額の変更を検出して処理
+  async checkAndUpdateStandardMonthlySalary(
+    employeeNumber: string, 
+    changeYear: number, 
+    changeMonth: number, 
+    newSalary: number,
+    salaryHistory: any[]
+  ) {
+    try {
+      // 変更前の標準報酬月額を取得（変更月以前の最新の給与設定から）
+      const previousSalaries = salaryHistory
+        .filter((s: any) => s['employeeNumber'] === employeeNumber)
+        .filter((s: any) => {
+          const salaryYear = Number(s['year']);
+          const salaryMonth = Number(s['month']);
+          if (salaryYear < changeYear) return true;
+          if (salaryYear === changeYear && salaryMonth < changeMonth) return true;
+          return false;
+        })
+        .sort((a: any, b: any) => {
+          if (a['year'] !== b['year']) return b['year'] - a['year'];
+          return b['month'] - a['month'];
+        });
+      
+      const previousSalary = previousSalaries.length > 0 ? previousSalaries[0]['amount'] : null;
+      const previousStandardInfo = previousSalary ? this.calculateStandardMonthlySalary(previousSalary) : null;
+      const previousGrade = previousStandardInfo ? previousStandardInfo.grade : null;
+      
+      // 3か月の固定的賃金の平均を計算（変更月、変更月+1、変更月+2の3か月）
+      const salariesForAverage: number[] = [];
+      
+      for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
+        let targetYear = changeYear;
+        let targetMonth = changeMonth + monthOffset;
+        
+        // 月が12を超える場合の処理
+        while (targetMonth > 12) {
+          targetMonth -= 12;
+          targetYear += 1;
+        }
+        
+        // 該当月以前の最新の給与設定を取得（変更月を含む）
+        const allSalaries = salaryHistory.filter((s: any) => s['employeeNumber'] === employeeNumber);
+        const relevantSalaries = allSalaries
+          .filter((s: any) => {
+            const salaryYear = Number(s['year']);
+            const salaryMonth = Number(s['month']);
+            if (salaryYear < targetYear) return true;
+            if (salaryYear === targetYear && salaryMonth <= targetMonth) return true;
+            return false;
+          })
+          .sort((a: any, b: any) => {
+            if (a['year'] !== b['year']) return b['year'] - a['year'];
+            return b['month'] - a['month'];
+          });
+        
+        const salaryForMonth = relevantSalaries.length > 0 
+          ? relevantSalaries[0]['amount'] 
+          : (previousSalary || newSalary);
+        salariesForAverage.push(salaryForMonth);
+      }
+      
+      // 平均を計算
+      const averageSalary = salariesForAverage.reduce((sum, val) => sum + val, 0) / salariesForAverage.length;
+      
+      // 新しい標準報酬月額を計算
+      const newStandardInfo = this.calculateStandardMonthlySalary(averageSalary);
+      if (!newStandardInfo) return;
+      
+      const newGrade = newStandardInfo.grade;
+      
+      // 等級差が2以上の場合、3か月後から新等級を適用
+      if (previousGrade !== null && Math.abs(newGrade - previousGrade) >= 2) {
+        // 3か月後の年月を計算
+        let effectiveYear = changeYear;
+        let effectiveMonth = changeMonth + 3;
+        while (effectiveMonth > 12) {
+          effectiveMonth -= 12;
+          effectiveYear += 1;
+        }
+        
+        // 標準報酬月額変更情報を保存
+        await this.firestoreService.saveStandardMonthlySalaryChange(
+          employeeNumber,
+          effectiveYear,
+          effectiveMonth,
+          newGrade,
+          newStandardInfo.monthlyStandard
+        );
+      }
+    } catch (error) {
+      console.error('Error checking standard monthly salary change:', error);
+      // エラーが発生しても給与設定は保存されているので、処理を続行
     }
   }
   

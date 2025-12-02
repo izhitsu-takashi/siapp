@@ -914,6 +914,51 @@ export class FirestoreService {
   /**
    * 給与設定履歴を取得
    */
+  async saveStandardMonthlySalaryChange(
+    employeeNumber: string,
+    effectiveYear: number,
+    effectiveMonth: number,
+    grade: number,
+    monthlyStandard: number
+  ): Promise<void> {
+    const changeRef = doc(this.db, 'standardMonthlySalaryChanges', `${employeeNumber}_${effectiveYear}_${effectiveMonth}`);
+    await setDoc(changeRef, {
+      employeeNumber,
+      effectiveYear,
+      effectiveMonth,
+      grade,
+      monthlyStandard,
+      createdAt: new Date()
+    }, { merge: true });
+  }
+
+  async getStandardMonthlySalaryChange(employeeNumber: string, year: number, month: number): Promise<any | null> {
+    // 該当年月以前の最新の変更情報を取得
+    const changesRef = collection(this.db, 'standardMonthlySalaryChanges');
+    const snapshot = await getDocs(changesRef);
+    
+    const changes = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter((change: any) => {
+        if (change.employeeNumber !== employeeNumber) return false;
+        const changeYear = Number(change.effectiveYear);
+        const changeMonth = Number(change.effectiveMonth);
+        if (changeYear < year) return true;
+        if (changeYear === year && changeMonth <= month) return true;
+        return false;
+      })
+      .sort((a: any, b: any) => {
+        const aYear = Number(a.effectiveYear);
+        const bYear = Number(b.effectiveYear);
+        const aMonth = Number(a.effectiveMonth);
+        const bMonth = Number(b.effectiveMonth);
+        if (aYear !== bYear) return bYear - aYear;
+        return bMonth - aMonth;
+      });
+    
+    return changes.length > 0 ? changes[0] : null;
+  }
+
   async getSalaryHistory(employeeNumber?: string): Promise<any[]> {
     try {
       const salariesRef = collection(this.db, 'salaries');
