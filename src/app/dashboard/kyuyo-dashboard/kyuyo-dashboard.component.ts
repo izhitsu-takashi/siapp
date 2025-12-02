@@ -1306,16 +1306,16 @@ export class KyuyoDashboardComponent {
               }
             }
             
-            return {
-              ...item,
-              fixedSalary: fixedSalary,
-              grade: grade,
-              standardMonthlySalary: standardMonthlySalary,
-              healthInsurance: healthInsuranceRaw,
-              nursingInsurance: nursingInsuranceRaw,
-              pensionInsurance: pensionInsuranceRaw,
-              employeeBurden: employeeBurden
-            };
+          return {
+            ...item,
+            fixedSalary: fixedSalary,
+            grade: grade,
+            standardMonthlySalary: standardMonthlySalary,
+            healthInsurance: healthInsuranceRaw,
+            nursingInsurance: nursingInsuranceRaw,
+            pensionInsurance: pensionInsuranceRaw,
+            employeeBurden: employeeBurden
+          };
           });
       } else {
         // 賞与の場合：選択された年月の賞与で計算
@@ -1765,9 +1765,38 @@ export class KyuyoDashboardComponent {
           }
         }
         
+        // 保険料一覧から等級を取得
+        let grade: number | null = null;
+        const insuranceItem = this.filteredInsuranceList.find((item: any) => item.employeeNumber === employeeNumber);
+        if (insuranceItem && insuranceItem.grade) {
+          grade = insuranceItem.grade;
+        } else {
+          // 保険料一覧にない場合は、固定的賃金から計算
+          const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
+          const expectedAnnualBonus = Number(employeeData.expectedAnnualBonus) || 
+                                     Number(employeeData.applicationData?.expectedAnnualBonus) || 0;
+          const expectedMonthlyBonus = expectedAnnualBonus / 12;
+          const fixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
+          
+          // 給与設定履歴から最新の給与を取得
+          const relevantSalaries = this.salaryHistory
+            .filter((s: any) => s['employeeNumber'] === employeeNumber)
+            .sort((a: any, b: any) => {
+              if (a['year'] !== b['year']) return b['year'] - a['year'];
+              return b['month'] - a['month'];
+            });
+          
+          const latestSalary = relevantSalaries.length > 0 ? relevantSalaries[0] : null;
+          const finalFixedSalary = latestSalary ? latestSalary['amount'] : fixedSalary;
+          
+          const standardSalaryInfo = this.calculateStandardMonthlySalary(finalFixedSalary);
+          grade = standardSalaryInfo ? standardSalaryInfo.grade : null;
+        }
+        
         this.selectedEmployeeInfo = {
           ...employeeData,
-          age: age
+          age: age,
+          grade: grade
         };
       } else {
         alert('社員情報が見つかりませんでした。');

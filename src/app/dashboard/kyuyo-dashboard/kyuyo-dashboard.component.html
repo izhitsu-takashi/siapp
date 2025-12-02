@@ -92,9 +92,9 @@
               <table class="insurance-table" *ngIf="!isLoadingInsuranceList">
                 <thead>
                   <tr>
+                    <th>社員番号</th>
                     <th class="name-column">氏名</th>
                     <th>固定的賃金</th>
-                    <th>等級</th>
                     <th>標準報酬月額</th>
                     <th>健康保険料</th>
                     <th>介護保険料</th>
@@ -106,9 +106,9 @@
                   <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber" 
                       (click)="openEmployeeInfoModal(item.employeeNumber)"
                       class="clickable-row">
+                    <td>{{ item.employeeNumber }}</td>
                     <td class="name-column">{{ item.name }}</td>
                     <td class="number-cell">{{ item.fixedSalary | number:'1.0-0' }}円</td>
-                    <td>{{ item.grade }}</td>
                     <td class="number-cell">{{ item.standardMonthlySalary | number:'1.0-0' }}円</td>
                     <td class="number-cell">{{ formatInsuranceAmount(item.healthInsurance) }}円</td>
                     <td class="number-cell">{{ formatInsuranceAmount(item.nursingInsurance) }}円</td>
@@ -121,7 +121,8 @@
                 </tbody>
                 <tfoot>
                   <tr class="total-row">
-                    <td colspan="4" class="total-label">合計</td>
+                    <td colspan="3" class="total-label">合計</td>
+                    <td></td>
                     <td class="total-value number-cell">{{ getTotalHealthInsurance() | number:'1.2-2' }}</td>
                     <td class="total-value number-cell">{{ getTotalNursingInsurance() | number:'1.2-2' }}</td>
                     <td class="total-value number-cell">{{ getTotalPensionInsurance() | number:'1.2-2' }}</td>
@@ -139,6 +140,7 @@
               <table class="insurance-table" *ngIf="!isLoadingInsuranceList">
                 <thead>
                   <tr>
+                    <th>社員番号</th>
                     <th class="name-column">氏名</th>
                     <th>賞与額</th>
                     <th>標準賞与額</th>
@@ -152,6 +154,7 @@
                   <tr *ngFor="let item of filteredInsuranceList; trackBy: trackByEmployeeNumber" 
                       (click)="openEmployeeInfoModal(item.employeeNumber)"
                       class="clickable-row">
+                    <td>{{ item.employeeNumber }}</td>
                     <td class="name-column">{{ item.name }}</td>
                     <td class="number-cell">{{ item.bonusAmount | number:'1.0-0' }}円</td>
                     <td class="number-cell">{{ item.standardBonusAmount | number:'1.0-0' }}円</td>
@@ -161,7 +164,7 @@
                     <td class="number-cell total-cell">{{ item.employeeBurden | number:'1.0-0' }}円</td>
                   </tr>
                   <tr *ngIf="filteredInsuranceList.length === 0">
-                    <td colspan="7" class="empty-message">データがありません</td>
+                    <td colspan="8" class="empty-message">データがありません</td>
                   </tr>
                 </tbody>
                 <tfoot>
@@ -584,6 +587,10 @@
             <div class="info-item">
               <span class="info-label">雇用形態:</span>
               <span class="info-value">{{ selectedEmployeeInfo.employmentType || '-' }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedEmployeeInfo.grade">
+              <span class="info-label">等級:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.grade }}</span>
             </div>
           </div>
         </div>
