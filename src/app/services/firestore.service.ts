@@ -1020,12 +1020,15 @@ export class FirestoreService {
   }
 
   /**
-   * 賞与設定を保存
+   * 賞与設定を保存（同じ年月の賞与も別々に保存される）
    */
   async saveBonus(employeeNumber: string, year: number, month: number, amount: number): Promise<void> {
     try {
-      const docId = `${employeeNumber}_${year}_${month}_bonus`;
+      // タイムスタンプを追加して一意のドキュメントIDを生成（同じ年月でも別々に保存）
+      const timestamp = Date.now();
+      const docId = `${employeeNumber}_${year}_${month}_${timestamp}_bonus`;
       const docRef = doc(this.db, 'bonuses', docId);
+      
       await setDoc(docRef, {
         employeeNumber: employeeNumber,
         year: year,
@@ -1033,7 +1036,7 @@ export class FirestoreService {
         amount: amount,
         createdAt: new Date(),
         updatedAt: new Date()
-      }, { merge: true });
+      });
     } catch (error) {
       console.error('Error saving bonus:', error);
       throw error;

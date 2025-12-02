@@ -1456,6 +1456,51 @@ export class KyuyoDashboardComponent {
                 standardBonusAmount = 0;
               }
               
+              // 健康保険料・介護保険料計算用の標準賞与額（年度間上限573万円を考慮）
+              // 年度を判定（4月～3月が1年度）
+              let fiscalYear: number;
+              if (filterMonth >= 4) {
+                fiscalYear = filterYear;
+              } else {
+                fiscalYear = filterYear - 1;
+              }
+              
+              // 該当年度の4月から選択された年月までの賞与の合計を計算
+              const fiscalYearBonuses = this.bonusList.filter((b: any) => {
+                const bYear = Number(b['year']);
+                const bMonth = Number(b['month']);
+                if (b['employeeNumber'] !== bonus['employeeNumber']) return false;
+                
+                // 年度を判定
+                let bFiscalYear: number;
+                if (bMonth >= 4) {
+                  bFiscalYear = bYear;
+                } else {
+                  bFiscalYear = bYear - 1;
+                }
+                
+                // 同じ年度で、選択された年月以前の賞与を取得
+                if (bFiscalYear !== fiscalYear) return false;
+                if (bYear < filterYear) return true;
+                if (bYear === filterYear && bMonth <= filterMonth) return true;
+                return false;
+              });
+              
+              // 年度内の標準賞与額の合計を計算
+              const fiscalYearTotalStandardBonus = fiscalYearBonuses.reduce((sum: number, b: any) => {
+                const amount = Math.floor(Number(b['amount']) / 1000) * 1000;
+                return sum + amount;
+              }, 0);
+              
+              // 健康保険料・介護保険料計算用の標準賞与額（年度間上限573万円）
+              const healthNursingStandardBonusAmount = isVoluntaryContinuation ? 0 : 
+                Math.min(standardBonusAmount, Math.max(0, 5730000 - (fiscalYearTotalStandardBonus - standardBonusAmount)));
+              
+              // 厚生年金保険料計算用の標準賞与額（月上限150万円、任意継続被保険者の場合は0）
+              // 賞与の場合は等級を関係なく、賞与額をそのまま使用（1000円未満切り捨て）
+              const pensionStandardBonusAmount = isVoluntaryContinuation ? 0 : 
+                Math.min(1500000, standardBonusAmount);
+              
               const age = this.calculateAge(employeeData?.birthDate);
               
               // 産前産後休業期間内かどうかを判定
@@ -1469,12 +1514,9 @@ export class KyuyoDashboardComponent {
               // 40歳以上の従業員は介護保険料を0円にする
               const isOver40 = age !== null && age >= 40;
               
-              // 厚生年金保険料計算用の標準賞与額（任意継続被保険者の場合は0）
-              const pensionStandardBonusAmount = isVoluntaryContinuation ? 0 : this.calculatePensionStandardMonthlySalary(bonus['amount']);
-              
               // 各保険料を計算（産前産後休業期間内の場合は0円）
-              const healthInsuranceRaw = isInMaternityLeave ? 0 : standardBonusAmount * (healthInsuranceRate / 100);
-              const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isOver40 ? 0 : standardBonusAmount * (nursingInsuranceRate / 100));
+              const healthInsuranceRaw = isInMaternityLeave ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
+              const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isOver40 ? 0 : healthNursingStandardBonusAmount * (nursingInsuranceRate / 100));
               const pensionInsuranceRaw = isInMaternityLeave ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100));
               
               // 社員負担額を計算
@@ -2335,23 +2377,37 @@ export class KyuyoDashboardComponent {
   // 給与設定履歴をフィルタリング
   filterSalaryHistory() {
     if (!this.selectedSalaryHistoryFilter) {
-      this.filteredSalaryHistory = this.salaryHistory;
+      this.filteredSalaryHistory = [...this.salaryHistory];
     } else {
       this.filteredSalaryHistory = this.salaryHistory.filter(
         (record: any) => record['employeeNumber'] === this.selectedSalaryHistoryFilter
       );
     }
+    
+    // 常に追加された順番（新しいものが上）でソート
+    this.filteredSalaryHistory.sort((a: any, b: any) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
   }
 
   // 賞与設定履歴をフィルタリング
   filterBonusHistory() {
     if (!this.selectedBonusHistoryFilter) {
-      this.filteredBonusHistory = this.bonusHistory;
+      this.filteredBonusHistory = [...this.bonusHistory];
     } else {
       this.filteredBonusHistory = this.bonusHistory.filter(
         (record: any) => record['employeeNumber'] === this.selectedBonusHistoryFilter
       );
     }
+    
+    // 常に追加された順番（新しいものが上）でソート
+    this.filteredBonusHistory.sort((a: any, b: any) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
   }
   
   // 賞与を保存
