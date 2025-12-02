@@ -638,6 +638,10 @@
               <span class="info-label">在籍状況:</span>
               <span class="info-value">{{ selectedEmployeeInfo.employmentStatus || '在籍' }}</span>
             </div>
+            <div class="info-item" *ngIf="selectedEmployeeInfo.employmentStatus === '在籍' && selectedEmployeeInfo.joinDate">
+              <span class="info-label">入社月:</span>
+              <span class="info-value">{{ formatJoinDate(selectedEmployeeInfo.joinDate) }}</span>
+            </div>
             <div class="info-item" *ngIf="selectedEmployeeInfo.resignationDate">
               <span class="info-label">退職日:</span>
               <span class="info-value">{{ formatDate(selectedEmployeeInfo.resignationDate) }}</span>

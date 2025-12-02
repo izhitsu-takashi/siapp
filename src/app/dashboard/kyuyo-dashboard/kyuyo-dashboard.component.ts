@@ -866,7 +866,8 @@ export class KyuyoDashboardComponent {
               maternityLeaveEndDate: emp.maternityLeaveEndDate || null, // 産前産後休業終了日
               employmentStatus: emp.employmentStatus || '在籍', // 在籍状況
               resignationDate: emp.resignationDate || null, // 退職日
-              healthInsuranceType: emp.healthInsuranceType || '' // 健康保険者種別
+              healthInsuranceType: emp.healthInsuranceType || '', // 健康保険者種別
+              joinDate: emp.joinDate || null // 入社年月日
             };
           });
       } else {
@@ -1153,13 +1154,41 @@ export class KyuyoDashboardComponent {
         this.filteredInsuranceList = this.insuranceList
           .filter((item: any) => {
             // 退職済み社員の表示条件をチェック
-            return this.shouldShowResignedEmployee(
+            const shouldShow = this.shouldShowResignedEmployee(
               item.employmentStatus || '在籍',
               item.resignationDate,
               item.healthInsuranceType || '',
               filterYear,
               filterMonth
             );
+            
+            if (!shouldShow) return false;
+            
+            // 入社月以降の分のみ表示
+            if (item.joinDate) {
+              let joinDate: Date;
+              if (item.joinDate instanceof Date) {
+                joinDate = item.joinDate;
+              } else if (item.joinDate && typeof item.joinDate.toDate === 'function') {
+                joinDate = item.joinDate.toDate();
+              } else if (typeof item.joinDate === 'string') {
+                joinDate = new Date(item.joinDate);
+              } else {
+                return true; // 入社日が取得できない場合は表示
+              }
+              
+              if (!isNaN(joinDate.getTime())) {
+                const joinYear = joinDate.getFullYear();
+                const joinMonth = joinDate.getMonth() + 1;
+                
+                // 選択された年月が入社月より前の場合は表示しない
+                if (filterYear < joinYear || (filterYear === joinYear && filterMonth < joinMonth)) {
+                  return false;
+                }
+              }
+            }
+            
+            return true;
           })
           .map((item: any) => {
             // 給与設定履歴から該当年月以前の最新の固定的賃金を取得
@@ -1600,6 +1629,30 @@ export class KyuyoDashboardComponent {
     }
   }
 
+  // 入社月をフォーマット（YYYY年MM月形式）
+  formatJoinDate(date: any): string {
+    if (!date) return '-';
+    try {
+      let dateObj: Date;
+      if (date.toDate && typeof date.toDate === 'function') {
+        dateObj = date.toDate();
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else {
+        return '-';
+      }
+      
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      
+      return `${year}年${month}月`;
+    } catch (error) {
+      return '-';
+    }
+  }
+
   // 給与を保存
   async saveSalary() {
     if (!this.selectedSalaryEmployee || !this.salaryAmount || this.salaryAmount <= 0) {
@@ -1715,31 +1768,6 @@ export class KyuyoDashboardComponent {
       sessionStorage.clear();
     }
     this.router.navigate(['/login']);
-  }
-
-  formatDate(dateValue: any): string {
-    if (!dateValue) return '-';
-    
-    let date: Date;
-    if (dateValue instanceof Date) {
-      date = dateValue;
-    } else if (dateValue && dateValue.toDate) {
-      date = dateValue.toDate();
-    } else if (typeof dateValue === 'string') {
-      date = new Date(dateValue);
-    } else {
-      return '-';
-    }
-    
-    if (isNaN(date.getTime())) {
-      return '-';
-    }
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
-    return `${year}/${month}/${day}`;
   }
 
   async openEmployeeInfoModal(employeeNumber: string): Promise<void> {
