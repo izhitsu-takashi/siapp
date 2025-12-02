@@ -1812,25 +1812,39 @@ export class KyuyoDashboardComponent {
           targetYear += 1;
         }
         
-        // 該当月以前の最新の給与設定を取得（変更月を含む）
+        // 該当月の給与設定を取得（該当月に設定がある場合はそれを使用、ない場合は該当月以前の最新の給与設定を使用）
         const allSalaries = salaryHistory.filter((s: any) => s['employeeNumber'] === employeeNumber);
-        const relevantSalaries = allSalaries
-          .filter((s: any) => {
-            const salaryYear = Number(s['year']);
-            const salaryMonth = Number(s['month']);
-            if (salaryYear < targetYear) return true;
-            if (salaryYear === targetYear && salaryMonth <= targetMonth) return true;
-            return false;
-          })
-          .sort((a: any, b: any) => {
-            if (a['year'] !== b['year']) return b['year'] - a['year'];
-            return b['month'] - a['month'];
-          });
         
-        const salaryForMonth = relevantSalaries.length > 0 
-          ? relevantSalaries[0]['amount'] 
-          : (previousSalary || newSalary);
-        salariesForAverage.push(salaryForMonth);
+        // まず、該当月の給与設定を探す
+        const exactMonthSalary = allSalaries.find((s: any) => {
+          const salaryYear = Number(s['year']);
+          const salaryMonth = Number(s['month']);
+          return salaryYear === targetYear && salaryMonth === targetMonth;
+        });
+        
+        if (exactMonthSalary) {
+          // 該当月に給与設定がある場合はそれを使用
+          salariesForAverage.push(Number(exactMonthSalary['amount']));
+        } else {
+          // 該当月に給与設定がない場合は、該当月以前の最新の給与設定を取得
+          const relevantSalaries = allSalaries
+            .filter((s: any) => {
+              const salaryYear = Number(s['year']);
+              const salaryMonth = Number(s['month']);
+              if (salaryYear < targetYear) return true;
+              if (salaryYear === targetYear && salaryMonth < targetMonth) return true;
+              return false;
+            })
+            .sort((a: any, b: any) => {
+              if (a['year'] !== b['year']) return b['year'] - a['year'];
+              return b['month'] - a['month'];
+            });
+          
+          const salaryForMonth = relevantSalaries.length > 0 
+            ? relevantSalaries[0]['amount'] 
+            : (previousSalary || newSalary);
+          salariesForAverage.push(Number(salaryForMonth));
+        }
       }
       
       // 平均を計算
