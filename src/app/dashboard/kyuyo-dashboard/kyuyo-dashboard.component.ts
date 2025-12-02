@@ -145,9 +145,6 @@ export class KyuyoDashboardComponent {
       }
     }
     
-    // 全社員について、2030年までの給与設定履歴を確認して定時改定と随時改定を計算
-    await this.calculateStandardMonthlySalaryChangesForAllEmployees();
-    
     // フィルターを適用
     this.filterSalaryHistory();
     
@@ -2151,6 +2148,20 @@ export class KyuyoDashboardComponent {
         }
       }
       
+      // 7月、8月、9月に随時改定が適用されたかチェック
+      // 随時改定は、給与変更月から3か月後に適用されるため、
+      // 7,8,9月に適用される随時改定は、4,5,6月の給与変更によるもの
+      const hasZujijiKaiteiInJulyToSeptember = await this.hasZujijiKaiteiInJulyToSeptember(
+        employeeNumber,
+        fiscalYear,
+        salaryHistory
+      );
+      
+      // 随時改定が適用されている場合は、定時改定をスキップ
+      if (hasZujijiKaiteiInJulyToSeptember) {
+        return;
+      }
+      
       // 等級に変更がある場合、9月から新等級を適用
       if (currentGrade !== null && newGrade !== currentGrade) {
         // 既に9月からの標準報酬月額変更情報が保存されているかチェック
@@ -2181,6 +2192,63 @@ export class KyuyoDashboardComponent {
     } catch (error) {
       console.error('Error checking standard monthly salary change by fiscal year:', error);
       // エラーが発生しても給与設定は保存されているので、処理を続行
+    }
+  }
+
+  // 7月、8月、9月に随時改定が適用されたかチェック
+  // 随時改定は、給与変更月から3か月後に適用されるため、
+  // 7,8,9月に適用される随時改定は、4,5,6月の給与変更によるもの
+  async hasZujijiKaiteiInJulyToSeptember(
+    employeeNumber: string,
+    fiscalYear: number,
+    salaryHistory: any[]
+  ): Promise<boolean> {
+    try {
+      // 標準報酬月額変更情報を取得（該当年度の7,8,9月に適用された変更）
+      const changes = await this.firestoreService.getStandardMonthlySalaryChangesInPeriod(
+        employeeNumber,
+        fiscalYear,
+        7,
+        fiscalYear,
+        9
+      );
+      
+      // 7,8,9月に適用された変更がある場合、それが随時改定かどうかを判定
+      // 随時改定は、給与変更月から3か月後に適用されるため、
+      // 7月に適用される随時改定は、4月の給与変更によるもの
+      // 8月に適用される随時改定は、5月の給与変更によるもの
+      // 9月に適用される随時改定は、6月の給与変更によるもの
+      for (const change of changes) {
+        const effectiveMonth = Number(change.effectiveMonth);
+        // 随時改定の給与変更月を計算（適用月の3か月前）
+        let changeYear = fiscalYear;
+        let changeMonth = effectiveMonth - 3;
+        while (changeMonth < 1) {
+          changeMonth += 12;
+          changeYear -= 1;
+        }
+        
+        // 該当年度の4,5,6月の給与変更があるかチェック
+        if (changeMonth >= 4 && changeMonth <= 6 && changeYear === fiscalYear) {
+          const hasSalaryChange = salaryHistory.some((s: any) => {
+            const salaryYear = Number(s['year']);
+            const salaryMonth = Number(s['month']);
+            return s['employeeNumber'] === employeeNumber &&
+                   salaryYear === changeYear && 
+                   salaryMonth === changeMonth;
+          });
+          
+          // 給与変更がある場合、これは随時改定の可能性が高い
+          if (hasSalaryChange) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking zujiji kaitei in July to September:', error);
+      return false;
     }
   }
 
