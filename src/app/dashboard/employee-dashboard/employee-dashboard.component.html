@@ -1122,27 +1122,10 @@
         <!-- ナレッジページ -->
         <ng-container *ngIf="currentTab === 'ナレッジ'">
           <div class="knowledge-page">
-            <div class="knowledge-header">
-              <div>
-                <h2 class="page-title">ナレッジ - AIアシスタント</h2>
-                <p class="knowledge-description">
-                  人事・給与システムに関するご質問にお答えします。わからないことがあれば、お気軽にお尋ねください。
-                </p>
-              </div>
-              <div class="language-selector">
-                <label for="languageSelect" class="language-label">言語:</label>
-                <select 
-                  id="languageSelect" 
-                  [(ngModel)]="selectedLanguage" 
-                  class="language-select"
-                  [disabled]="isChatLoading"
-                >
-                  <option *ngFor="let lang of availableLanguages" [value]="lang.code">
-                    {{ lang.name }}
-                  </option>
-                </select>
-              </div>
-            </div>
+            <h2 class="page-title">ナレッジ - AIアシスタント</h2>
+            <p class="knowledge-description">
+              人事・給与システムに関するご質問にお答えします。わからないことがあれば、お気軽にお尋ねください。
+            </p>
             
             <!-- チャットエリア -->
             <div class="chat-container">

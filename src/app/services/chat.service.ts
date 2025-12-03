@@ -16,7 +16,7 @@ export class ChatService {
   /**
    * Gemini APIとチャットする
    */
-  async sendMessage(message: string, language: string = 'ja'): Promise<string> {
+  async sendMessage(message: string): Promise<string> {
     try {
       // 会話履歴にユーザーメッセージを追加
       this.conversationHistory.push({
@@ -35,8 +35,7 @@ export class ChatService {
         },
         body: JSON.stringify({
           message: message,
-          conversationHistory: this.conversationHistory.slice(0, -1), // 現在のメッセージを除く
-          language: language
+          conversationHistory: this.conversationHistory.slice(0, -1) // 現在のメッセージを除く
         })
       });
 

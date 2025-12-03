@@ -132,12 +132,6 @@ export class EmployeeDashboardComponent {
   chatMessages: ChatMessage[] = [];
   chatInputMessage: string = '';
   isChatLoading: boolean = false;
-  selectedLanguage: string = 'ja'; // デフォルトは日本語
-  availableLanguages = [
-    { code: 'ja', name: '日本語' },
-    { code: 'en', name: 'English' },
-    { code: 'zh', name: '中文' }
-  ];
   
   // テンプレート質問
   templateQuestions = [
@@ -3399,7 +3393,7 @@ export class EmployeeDashboardComponent {
     this.isChatLoading = true;
 
     try {
-      const response = await this.chatService.sendMessage(userMessage, this.selectedLanguage);
+      const response = await this.chatService.sendMessage(userMessage);
       
       // 応答から申請タイプを抽出
       const applicationType = this.extractApplicationType(userMessage, response);
