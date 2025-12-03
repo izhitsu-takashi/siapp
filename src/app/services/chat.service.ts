@@ -4,6 +4,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: Date;
+  applicationType?: string; // 対応する申請タイプ（オプショナル）
 }
 
 @Injectable({

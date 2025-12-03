@@ -1133,12 +1133,40 @@
                 <div *ngIf="chatMessages.length === 0" class="chat-welcome">
                   <p>こんにちは！人事・給与システムに関するご質問にお答えします。</p>
                   <p>どのようなことでお困りでしょうか？</p>
+                  
+                  <!-- テンプレート質問 -->
+                  <div class="template-questions">
+                    <p class="template-questions-title">よくある質問から選ぶ：</p>
+                    <div class="template-questions-grid">
+                      <button
+                        *ngFor="let template of templateQuestions"
+                        class="template-question-button"
+                        (click)="sendTemplateQuestion(template.question)"
+                        [disabled]="isChatLoading"
+                      >
+                        <span class="template-question-icon">{{ template.icon }}</span>
+                        <span class="template-question-text">{{ template.text }}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div *ngFor="let message of chatMessages" class="chat-message" [class.user-message]="message.role === 'user'" [class.assistant-message]="message.role === 'assistant'">
                   <div class="message-content">
                     <div class="message-role" *ngIf="message.role === 'user'">あなた</div>
                     <div class="message-role" *ngIf="message.role === 'assistant'">AIアシスタント</div>
                     <div class="message-text">{{ message.content }}</div>
+                    <!-- 申請ボタン（アシスタントの応答で申請タイプがある場合） -->
+                    <div *ngIf="message.role === 'assistant' && message.applicationType" class="application-button-container">
+                      <button
+                        class="application-action-button"
+                        (click)="openApplicationFromChat(message.applicationType!)"
+                        [disabled]="!hasOnboardingApplication && message.applicationType !== '入社時申請'"
+                        [title]="!hasOnboardingApplication && message.applicationType !== '入社時申請' ? '入社時申請を先に提出してください' : ''"
+                      >
+                        <span class="application-action-icon">📝</span>
+                        <span class="application-action-text">{{ message.applicationType }}を開く</span>
+                      </button>
+                    </div>
                     <div class="message-time" *ngIf="message.timestamp">
                       {{ message.timestamp | date:'HH:mm' }}
                     </div>

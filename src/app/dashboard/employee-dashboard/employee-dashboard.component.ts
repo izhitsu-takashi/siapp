@@ -131,6 +131,50 @@ export class EmployeeDashboardComponent {
   chatMessages: ChatMessage[] = [];
   chatInputMessage: string = '';
   isChatLoading: boolean = false;
+  
+  // テンプレート質問
+  templateQuestions = [
+    { 
+      icon: '💍', 
+      text: '結婚した', 
+      question: '結婚したので、配偶者を扶養家族として追加したいです。手続きを教えてください。' 
+    },
+    { 
+      icon: '🏠', 
+      text: '引越した', 
+      question: '引越しをしたので、住所変更の手続きをしたいです。どのように申請すればよいですか？' 
+    },
+    { 
+      icon: '✏️', 
+      text: '改名した', 
+      question: '氏名を変更したので、氏名変更の手続きをしたいです。申請方法を教えてください。' 
+    },
+    { 
+      icon: '👶', 
+      text: '子供が生まれた', 
+      question: '子供が生まれたので、扶養家族として追加したいです。手続きを教えてください。' 
+    },
+    { 
+      icon: '🤰', 
+      text: '産休・育休を取得する', 
+      question: '産前産後休業を取得したいです。申請手続きについて教えてください。' 
+    },
+    { 
+      icon: '🚪', 
+      text: '退職する', 
+      question: '退職することになりました。退職申請の手続きについて教えてください。' 
+    },
+    { 
+      icon: '👨‍👩‍👧', 
+      text: '扶養家族を追加したい', 
+      question: '扶養家族を追加したいです。申請手続きについて教えてください。' 
+    },
+    { 
+      icon: '❌', 
+      text: '扶養家族を削除したい', 
+      question: '扶養家族を削除したいです。申請手続きについて教えてください。' 
+    }
+  ];
 
   constructor(
     private router: Router, 
@@ -3288,11 +3332,15 @@ export class EmployeeDashboardComponent {
     try {
       const response = await this.chatService.sendMessage(userMessage);
       
+      // 応答から申請タイプを抽出
+      const applicationType = this.extractApplicationType(userMessage, response);
+      
       // アシスタントの応答を表示
       this.chatMessages.push({
         role: 'assistant',
         content: response,
-        timestamp: new Date()
+        timestamp: new Date(),
+        applicationType: applicationType
       });
     } catch (error: any) {
       console.error('Error sending chat message:', error);
@@ -3316,6 +3364,49 @@ export class EmployeeDashboardComponent {
       event.preventDefault();
       this.sendChatMessage();
     }
+  }
+
+  // テンプレート質問を送信
+  sendTemplateQuestion(question: string) {
+    this.chatInputMessage = question;
+    this.sendChatMessage();
+  }
+
+  // メッセージから申請タイプを抽出
+  extractApplicationType(userMessage: string, assistantResponse: string): string | undefined {
+    const message = (userMessage + ' ' + assistantResponse).toLowerCase();
+    
+    // 申請タイプのマッピング
+    if (message.includes('結婚') || message.includes('配偶者') || 
+        (message.includes('扶養') && message.includes('追加')) ||
+        message.includes('子供が生まれた') || message.includes('子どもが生まれた')) {
+      return '扶養家族追加';
+    }
+    if (message.includes('引越') || message.includes('引っ越し') || 
+        message.includes('住所変更') || message.includes('転居')) {
+      return '住所変更申請';
+    }
+    if (message.includes('改名') || message.includes('氏名変更') || 
+        message.includes('名前を変更')) {
+      return '氏名変更申請';
+    }
+    if (message.includes('産休') || message.includes('育休') || 
+        message.includes('産前産後') || message.includes('産前産後休業')) {
+      return '産前産後休業申請';
+    }
+    if (message.includes('退職')) {
+      return '退職申請';
+    }
+    if (message.includes('扶養') && message.includes('削除')) {
+      return '扶養削除申請';
+    }
+    
+    return undefined;
+  }
+
+  // 申請モーダルを開く（チャットから）
+  openApplicationFromChat(applicationType: string) {
+    this.openApplicationModal(applicationType);
   }
 }
 
