@@ -199,6 +199,7 @@
                     [(ngModel)]="selectedSalaryEmployee" 
                     name="salaryEmployee"
                     class="form-input"
+                    [disabled]="isSavingSalary"
                     required
                   >
                     <option value="">選択してください</option>
@@ -214,6 +215,7 @@
                     [(ngModel)]="salaryYear" 
                     name="salaryYear"
                     class="form-input"
+                    [disabled]="isSavingSalary"
                     required
                   >
                     <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
@@ -226,6 +228,7 @@
                     [(ngModel)]="salaryMonth" 
                     name="salaryMonth"
                     class="form-input"
+                    [disabled]="isSavingSalary"
                     required
                   >
                     <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
@@ -239,6 +242,7 @@
                     [(ngModel)]="salaryAmount" 
                     name="salaryAmount"
                     class="form-input"
+                    [disabled]="isSavingSalary"
                     min="1"
                     step="1"
                     (input)="onSalaryAmountInput($event)"
@@ -246,7 +250,9 @@
                   >
                 </div>
                 <div class="form-group form-group-button">
-                  <button type="submit" class="submit-button">給与を設定</button>
+                  <button type="submit" class="submit-button" [disabled]="isSavingSalary">
+                    {{ isSavingSalary ? '設定中...' : '給与を設定' }}
+                  </button>
                 </div>
               </div>
             </form>
@@ -320,6 +326,7 @@
                     [(ngModel)]="selectedBonusEmployee" 
                     name="bonusEmployee"
                     class="form-input"
+                    [disabled]="isSavingBonus"
                     required
                   >
                     <option value="">選択してください</option>
@@ -335,6 +342,7 @@
                     [(ngModel)]="bonusYear" 
                     name="bonusYear"
                     class="form-input"
+                    [disabled]="isSavingBonus"
                     required
                   >
                     <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
@@ -347,6 +355,7 @@
                     [(ngModel)]="bonusMonth" 
                     name="bonusMonth"
                     class="form-input"
+                    [disabled]="isSavingBonus"
                     required
                   >
                     <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
@@ -360,6 +369,7 @@
                     [(ngModel)]="bonusAmount" 
                     name="bonusAmount"
                     class="form-input"
+                    [disabled]="isSavingBonus"
                     min="1"
                     step="1"
                     (input)="onBonusAmountInput($event)"
@@ -367,7 +377,9 @@
                   >
                 </div>
                 <div class="form-group form-group-button">
-                  <button type="submit" class="submit-button">賞与を設定</button>
+                  <button type="submit" class="submit-button" [disabled]="isSavingBonus">
+                    {{ isSavingBonus ? '設定中...' : '賞与を設定' }}
+                  </button>
                 </div>
               </div>
             </form>

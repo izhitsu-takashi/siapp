@@ -12,6 +12,7 @@ interface Employee {
   name: string;
   email: string;
   employmentType: string;
+  employmentStatus?: string;
 }
 
 @Component({
@@ -368,6 +369,7 @@ export class HrDashboardComponent {
   showMyNumber = false;
   hasPensionHistory = false;
   isSaving = false;
+  isUpdatingStatus = false;
   sameAsCurrentAddress = false;
   sameAsCurrentAddressForEmergency = false;
   hasSpouse = false;
@@ -1126,6 +1128,10 @@ export class HrDashboardComponent {
       });
     }
     
+    // ダッシュボードから遷移した場合の特別なフィルタリング
+    // 現在のタブが申請管理で、特定のステータスカードから遷移した場合の処理は
+    // navigateToApplicationManagementでapplicationStatusFilterを設定済み
+    
     // 優先度順にソート
     this.filteredApplications = filtered.sort((a, b) => {
       const priorityA = statusPriority[a.status] || 999;
@@ -1281,6 +1287,7 @@ export class HrDashboardComponent {
       return;
     }
     
+    this.isUpdatingStatus = true;
     try {
       await this.firestoreService.updateApplicationStatus(
         this.selectedApplication.id, 
@@ -1565,6 +1572,8 @@ export class HrDashboardComponent {
     } catch (error) {
       console.error('Error updating application status:', error);
       alert('ステータスの変更に失敗しました');
+    } finally {
+      this.isUpdatingStatus = false;
     }
   }
 
@@ -1731,14 +1740,40 @@ export class HrDashboardComponent {
         emp => emp.employeeNumber && !onboardingEmployeeNumbers.has(emp.employeeNumber)
       );
       
-      this.employees = completedEmployees
+      // 社員データを抽出（在籍状況も含める）
+      const mappedEmployees = completedEmployees
         .filter(emp => emp.employeeNumber && emp.name && emp.email && emp.employmentType)
         .map(emp => ({
           employeeNumber: emp.employeeNumber,
           name: emp.name,
           email: emp.email,
-          employmentType: emp.employmentType
+          employmentType: emp.employmentType,
+          employmentStatus: emp.employmentStatus || '在籍'
         }));
+      
+      // ソート処理：在籍中の社員を上に、退職済みの社員を下に、それぞれ社員番号順
+      this.employees = mappedEmployees.sort((a, b) => {
+        const aIsResigned = a.employmentStatus === '退職' || a.employmentStatus === '退職済み';
+        const bIsResigned = b.employmentStatus === '退職' || b.employmentStatus === '退職済み';
+        
+        // 退職済みの社員は下に表示
+        if (aIsResigned && !bIsResigned) {
+          return 1; // aを後ろに
+        }
+        if (!aIsResigned && bIsResigned) {
+          return -1; // bを後ろに
+        }
+        
+        // どちらも在籍中、またはどちらも退職済みの場合は、社員番号でソート
+        // 社員番号を数値として比較（数値部分のみ）
+        const numA = parseInt(a.employeeNumber.replace(/\D/g, '')) || 0;
+        const numB = parseInt(b.employeeNumber.replace(/\D/g, '')) || 0;
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        // 数値部分が同じ場合は文字列として比較
+        return a.employeeNumber.localeCompare(b.employeeNumber);
+      });
       
       // 文書作成用の全従業員データも読み込む（新入社員を除外）
       this.allEmployeesForDocument = completedEmployees;
@@ -4663,8 +4698,62 @@ export class HrDashboardComponent {
   }
 
   // 入社手続き表のステータス件数を取得
+  // 在籍状況の表示を「在籍中/退職済み」に変換
+  getEmploymentStatusDisplay(status?: string): string {
+    if (!status || status === '在籍') {
+      return '在籍中';
+    }
+    if (status === '退職' || status === '退職済み') {
+      return '退職済み';
+    }
+    return status;
+  }
+
+  // 申請管理ページに遷移してフィルターを適用
+  navigateToApplicationManagement(status: string) {
+    this.currentTab = '申請管理';
+    // ステータスに応じてフィルターを設定
+    if (status === '却下・差し戻し') {
+      // 却下・差し戻しの場合は「すべて」に設定（フィルター処理で対応）
+      this.applicationStatusFilter = 'すべて';
+    } else if (status === '再申請') {
+      // 再申請の場合は「すべて」に設定（再申請と再提出を考慮）
+      this.applicationStatusFilter = 'すべて';
+    } else if (status === '承認済み') {
+      // 承認済みの場合は「承認済み」に設定（承認済みと承認を表示）
+      this.applicationStatusFilter = '承認済み';
+    } else {
+      this.applicationStatusFilter = status;
+    }
+    // 申請一覧を読み込む
+    this.loadAllApplications().then(() => {
+      // フィルターを適用
+      this.filterAndSortApplications();
+    }).catch(err => {
+      console.error('Error in loadAllApplications:', err);
+    });
+  }
+
+  // 入社手続きページに遷移してフィルターを適用
+  navigateToOnboarding(status: string) {
+    this.currentTab = '入社手続き';
+    // ステータスに応じてフィルターを設定
+    this.onboardingStatusFilter = status;
+    // 入社手続き一覧を読み込む
+    this.loadOnboardingEmployees().then(() => {
+      // フィルターを適用
+      this.filterAndSortOnboardingEmployees();
+    }).catch(err => {
+      console.error('Error in loadOnboardingEmployees:', err);
+    });
+  }
+
   getOnboardingStatusCount(status: string): number {
-    return this.onboardingEmployees.filter(emp => emp.status === status).length;
+    // フィルターが設定されていても、全データからカウントを取得するためallOnboardingEmployeesを使用
+    const sourceData = this.allOnboardingEmployees.length > 0 ? 
+      this.allOnboardingEmployees : 
+      this.onboardingEmployees;
+    return sourceData.filter(emp => emp.status === status).length;
   }
 
   // 保険証管理票のステータス件数を取得

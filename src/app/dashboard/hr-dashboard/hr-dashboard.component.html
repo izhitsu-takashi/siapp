@@ -36,12 +36,32 @@
         <!-- ダッシュボードページ -->
         <ng-container *ngIf="currentTab === 'ダッシュボード'">
           <div class="dashboard-page">
+            <!-- ページヘッダー -->
+            <div class="dashboard-header-section">
+              <h1 class="dashboard-main-title">
+                <span class="dashboard-icon">📊</span>
+                ダッシュボード
+              </h1>
+              <p class="dashboard-description">
+                申請管理と入社手続きの状況を一目で確認できます。
+              </p>
+            </div>
             
               <!-- 申請管理票のステータス一覧 -->
               <section class="dashboard-section">
-                <h3 class="section-title">申請管理表</h3>
+                <div class="section-header">
+                  <div class="section-header-left">
+                    <h3 class="section-title">
+                      <span class="section-icon">📋</span>
+                      申請管理表
+                    </h3>
+                    <p class="section-description">
+                      従業員から提出された各種申請のステータスを確認できます。承認待ちや確認中の申請を優先的に処理してください。
+                    </p>
+                  </div>
+                </div>
                 <div class="status-cards">
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToApplicationManagement('承認待ち')">
                     <div class="status-label">承認待ち</div>
                     <div class="status-count" 
                          [class.count-zero]="getApplicationStatusCount('承認待ち') === 0"
@@ -50,7 +70,7 @@
                       {{ getApplicationStatusCount('承認待ち') }}
                     </div>
                   </div>
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToApplicationManagement('確認中')">
                     <div class="status-label">確認中</div>
                     <div class="status-count" 
                          [class.count-zero]="getApplicationStatusCount('確認中') === 0"
@@ -59,7 +79,7 @@
                       {{ getApplicationStatusCount('確認中') }}
                     </div>
                   </div>
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToApplicationManagement('却下・差し戻し')">
                     <div class="status-label">却下・差し戻し</div>
                     <div class="status-count" 
                          [class.count-zero]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) === 0"
@@ -68,7 +88,7 @@
                       {{ getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し') }}
                     </div>
                   </div>
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToApplicationManagement('再申請')">
                     <div class="status-label">再申請</div>
                     <div class="status-count" 
                          [class.count-zero]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) === 0"
@@ -77,7 +97,7 @@
                       {{ getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出') }}
                     </div>
                   </div>
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToApplicationManagement('承認済み')">
                     <div class="status-label">承認済み</div>
                     <div class="status-count" 
                          [class.count-zero]="(getApplicationStatusCount('承認済み') + getApplicationStatusCount('承認')) === 0"
@@ -91,9 +111,19 @@
             
               <!-- 入社手続き表のステータス一覧 -->
               <section class="dashboard-section">
-                <h3 class="section-title">入社手続き表</h3>
+                <div class="section-header">
+                  <div class="section-header-left">
+                    <h3 class="section-title">
+                      <span class="section-icon">👔</span>
+                      入社手続き表
+                    </h3>
+                    <p class="section-description">
+                      新入社員の入社手続きの進捗状況を確認できます。準備完了になった社員は入社処理を実行してください。
+                    </p>
+                  </div>
+                </div>
                 <div class="status-cards">
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToOnboarding('申請待ち')">
                     <div class="status-label">申請待ち</div>
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('申請待ち') === 0"
@@ -102,7 +132,7 @@
                       {{ getOnboardingStatusCount('申請待ち') }}
                     </div>
                   </div>
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToOnboarding('申請済み')">
                     <div class="status-label">申請済み</div>
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('申請済み') === 0"
@@ -111,7 +141,7 @@
                       {{ getOnboardingStatusCount('申請済み') }}
                     </div>
                   </div>
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToOnboarding('差し戻し')">
                     <div class="status-label">差し戻し</div>
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('差し戻し') === 0"
@@ -120,7 +150,7 @@
                       {{ getOnboardingStatusCount('差し戻し') }}
                     </div>
                   </div>
-                  <div class="status-card">
+                  <div class="status-card" (click)="navigateToOnboarding('準備完了')">
                     <div class="status-label">準備完了</div>
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('準備完了') === 0"
@@ -897,6 +927,7 @@
                   <th>氏名</th>
                   <th>メールアドレス</th>
                   <th>雇用形態</th>
+                  <th>在籍状況</th>
                 </tr>
               </thead>
               <tbody>
@@ -905,9 +936,10 @@
                   <td>{{ employee.name }}</td>
                   <td>{{ employee.email }}</td>
                   <td>{{ employee.employmentType }}</td>
+                  <td>{{ getEmploymentStatusDisplay(employee.employmentStatus) }}</td>
                 </tr>
                 <tr *ngIf="employees.length === 0">
-                  <td colspan="4" class="empty-message">社員データがありません</td>
+                  <td colspan="5" class="empty-message">社員データがありません</td>
                 </tr>
               </tbody>
               </table>
@@ -1106,7 +1138,7 @@
         <button class="modal-close" (click)="closeEmployeeEditModal()">×</button>
       </div>
       
-      <form [formGroup]="employeeEditForm" (ngSubmit)="saveEmployeeData()" class="employee-edit-form">
+      <form [formGroup]="employeeEditForm" (ngSubmit)="saveEmployeeData()" class="employee-edit-form" [class.form-disabled]="isSaving">
         <!-- 基本情報欄 -->
         <section class="form-section">
           <h3 class="section-title">基本情報</h3>
@@ -2236,7 +2268,7 @@
                 id="statusSelect" 
                 formControlName="status" 
                 class="form-input status-select"
-                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認'"
+                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認' || isUpdatingStatus"
                 (change)="onStatusChange()"
               >
                 <option value="承認待ち">承認待ち</option>
@@ -2255,6 +2287,7 @@
                 id="statusComment" 
                 formControlName="comment" 
                 class="form-input status-comment"
+                [disabled]="isUpdatingStatus"
                 rows="4"
                 placeholder="差し戻し理由を入力してください"
               ></textarea>
@@ -2286,9 +2319,9 @@
               <button 
                 type="submit" 
                 class="status-update-button"
-                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認'"
+                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認' || isUpdatingStatus"
               >
-                ステータスを更新
+                {{ isUpdatingStatus ? '更新中...' : 'ステータスを更新' }}
               </button>
             </div>
           </div>

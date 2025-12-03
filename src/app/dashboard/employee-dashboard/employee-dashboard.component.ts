@@ -1693,8 +1693,8 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
-        // 該当する申請要求のステータスを「対応済み」に更新
-        await this.updateApplicationRequestStatus('扶養家族追加');
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('扶養家族追加');
         
         // 申請一覧を再読み込み
         await this.loadApplications();
@@ -1751,8 +1751,8 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
-        // 該当する申請要求のステータスを「対応済み」に更新
-        await this.updateApplicationRequestStatus('扶養削除申請');
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('扶養削除申請');
         
         // 申請一覧を再読み込み
         await this.loadApplications();
@@ -1835,8 +1835,8 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
-        // 該当する申請要求のステータスを「対応済み」に更新
-        await this.updateApplicationRequestStatus('扶養家族追加');
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('住所変更申請');
         
         // 申請一覧を再読み込み
         await this.loadApplications();
@@ -1880,8 +1880,8 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
-        // 該当する申請要求のステータスを「対応済み」に更新
-        await this.updateApplicationRequestStatus('扶養家族追加');
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('氏名変更申請');
         
         // 申請一覧を再読み込み
         await this.loadApplications();
@@ -1923,8 +1923,8 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
-        // 該当する申請要求のステータスを「対応済み」に更新
-        await this.updateApplicationRequestStatus('産前産後休業申請');
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('産前産後休業申請');
         
         // 申請一覧を再読み込み
         await this.loadApplications();
@@ -2034,8 +2034,8 @@ export class EmployeeDashboardComponent {
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
         
-        // 該当する申請要求のステータスを「対応済み」に更新
-        await this.updateApplicationRequestStatus('退職申請');
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('退職申請');
         
         // 申請一覧を再読み込み
         await this.loadApplications();
@@ -2143,6 +2143,9 @@ export class EmployeeDashboardComponent {
 
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
+        
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('入社時申請');
         
         // 入社時申請の情報を新入社員詳細情報に反映
         await this.updateOnboardingEmployeeDataFromApplication(applicationData);
@@ -2346,7 +2349,7 @@ export class EmployeeDashboardComponent {
     }
   }
   
-  // 申請要求のステータスを更新するヘルパーメソッド
+  // 申請要求のステータスを更新するヘルパーメソッド（後方互換性のため残す）
   async updateApplicationRequestStatus(applicationType: string) {
     try {
       const pendingRequests = this.hrRequests.filter(req => 
@@ -2366,15 +2369,54 @@ export class EmployeeDashboardComponent {
     }
   }
 
+  // 申請要求を削除するヘルパーメソッド
+  async deleteApplicationRequest(applicationType: string) {
+    try {
+      const pendingRequests = this.hrRequests.filter(req => 
+        req.applicationType === applicationType && req.id
+      );
+      for (const request of pendingRequests) {
+        if (request.id) {
+          try {
+            await this.firestoreService.deleteApplicationRequest(request.id);
+          } catch (error) {
+            console.error('Error deleting application request:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting application request:', error);
+    }
+  }
+
   async loadApplications() {
     try {
       const applications = await this.firestoreService.getEmployeeApplications(this.employeeNumber);
       // FirestoreのTimestampをDateに変換
-      this.applications = applications.map((app: any) => {
+      const mappedApplications = applications.map((app: any) => {
         if (app.createdAt && typeof app.createdAt.toDate === 'function') {
           app.createdAt = app.createdAt.toDate();
         }
         return app;
+      });
+      
+      // 承認済みステータスの申請を下に表示するようにソート
+      this.applications = mappedApplications.sort((a: any, b: any) => {
+        const aIsApproved = a.status === '承認済み' || a.status === '承認';
+        const bIsApproved = b.status === '承認済み' || b.status === '承認';
+        
+        // 承認済みの申請は下に表示
+        if (aIsApproved && !bIsApproved) {
+          return 1; // aを後ろに
+        }
+        if (!aIsApproved && bIsApproved) {
+          return -1; // bを後ろに
+        }
+        
+        // どちらも承認済み、またはどちらも承認済みでない場合は、申請IDでソート（古い順）
+        const idA = a.applicationId || 0;
+        const idB = b.applicationId || 0;
+        return idA - idB;
       });
     } catch (error) {
       console.error('Error loading applications:', error);

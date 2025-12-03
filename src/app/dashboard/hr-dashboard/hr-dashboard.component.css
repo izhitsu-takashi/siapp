@@ -190,57 +190,152 @@
 
 /* ダッシュボードページ */
 .dashboard-page {
-  padding: 2rem;
+  padding: 2rem 0rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ダッシュボードページヘッダー */
+.dashboard-header-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 2.5rem;
+  color: white;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  margin-bottom: 1rem;
+}
+
+.dashboard-main-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.dashboard-description {
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0;
+  opacity: 0.95;
+  max-width: 800px;
 }
 
 .dashboard-section {
   background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.dashboard-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* セクションヘッダー */
+.section-header {
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .dashboard-section .section-title {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   color: #333;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #f093fb;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.section-icon {
+  font-size: 1.75rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.section-description {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+  margin-top: 0.5rem;
 }
 
 .status-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .status-card {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 8px;
-  padding: 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
   text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  border: 2px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.status-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
 }
 
 .status-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  border-color: #f093fb;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.status-card:hover::before {
+  transform: scaleX(1);
 }
 
 .status-label {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #666;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .status-count {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
+  line-height: 1;
+  margin-top: 0.5rem;
 }
 
 .status-count.count-zero {
@@ -504,6 +599,7 @@
 .modal-content {
   background: white;
   border-radius: 8px;
+  padding: 1rem;
   width: 100%;
   max-width: 1000px;
   max-height: 90vh;
@@ -1227,6 +1323,18 @@
   margin-bottom: 0;
 }
 
+.employee-edit-form.form-disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.employee-edit-form.form-disabled input,
+.employee-edit-form.form-disabled select,
+.employee-edit-form.form-disabled textarea {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
 .employee-edit-modal .modal-actions {
   padding: 1.5rem;
   margin-top: 0;
@@ -1886,6 +1994,57 @@
 
   .insurance-list-page {
     padding: 1rem;
+  }
+
+  /* ダッシュボードページのレスポンシブ対応 */
+  .dashboard-page {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+
+  .dashboard-header-section {
+    padding: 1.5rem;
+  }
+
+  .dashboard-main-title {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-icon {
+    font-size: 2rem;
+  }
+
+  .dashboard-description {
+    font-size: 0.9rem;
+  }
+
+  .dashboard-section {
+    padding: 1.5rem;
+  }
+
+  .dashboard-section .section-title {
+    font-size: 1.4rem;
+  }
+
+  .section-icon {
+    font-size: 1.4rem;
+  }
+
+  .section-description {
+    font-size: 0.85rem;
+  }
+
+  .status-cards {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .status-card {
+    padding: 1.25rem;
+  }
+
+  .status-count {
+    font-size: 2rem;
   }
 
   .insurance-table {

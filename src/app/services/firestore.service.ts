@@ -165,6 +165,19 @@ export class FirestoreService {
     }
   }
 
+  /**
+   * 申請要求を削除する
+   */
+  async deleteApplicationRequest(requestId: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'applicationRequests', requestId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('Error deleting application request:', error);
+      throw error;
+    }
+  }
+
   async getAllEmployees(): Promise<any[]> {
     try {
       const employeesCollection = collection(this.db, 'employees');
@@ -810,11 +823,17 @@ export class FirestoreService {
       const newName = `${nameData.lastName || ''} ${nameData.firstName || ''}`.trim();
       const newNameKana = `${nameData.lastNameKana || ''} ${nameData.firstNameKana || ''}`.trim();
 
-      // 氏名情報を更新
+      // 氏名情報を更新（姓・名の個別フィールドも更新）
       const updatedData: any = {
         ...employeeData,
+        // 結合された氏名（後方互換性のため）
         name: newName || employeeData.name || '',
         nameKana: newNameKana || employeeData.nameKana || '',
+        // 姓・名の個別フィールド
+        lastName: nameData.lastName || employeeData.lastName || '',
+        firstName: nameData.firstName || employeeData.firstName || '',
+        lastNameKana: nameData.lastNameKana || employeeData.lastNameKana || '',
+        firstNameKana: nameData.firstNameKana || employeeData.firstNameKana || '',
         updatedAt: new Date()
       };
 

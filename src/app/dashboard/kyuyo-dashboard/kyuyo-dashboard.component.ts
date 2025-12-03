@@ -86,6 +86,10 @@ export class KyuyoDashboardComponent {
   selectedBonusHistoryFilter: string = ''; // 賞与設定履歴のフィルター用社員番号
   bonusList: any[] = []; // 賞与一覧（保険料計算用）
 
+  // ローディング状態
+  isSavingSalary = false;
+  isSavingBonus = false;
+
   // 社員情報モーダル
   showEmployeeInfoModal = false;
   selectedEmployeeInfo: any = null;
@@ -1852,6 +1856,7 @@ export class KyuyoDashboardComponent {
     this.salaryYear = Number(this.salaryYear);
     this.salaryMonth = Number(this.salaryMonth);
     
+    this.isSavingSalary = true;
     try {
       // 給与設定をFirestoreに保存（指定年月以降の給与を設定）
       await this.firestoreService.saveSalary(
@@ -1916,6 +1921,8 @@ export class KyuyoDashboardComponent {
     } catch (error) {
       console.error('Error saving salary:', error);
       alert('給与の設定に失敗しました');
+    } finally {
+      this.isSavingSalary = false;
     }
   }
 
@@ -2468,6 +2475,7 @@ export class KyuyoDashboardComponent {
     this.bonusYear = Number(this.bonusYear);
     this.bonusMonth = Number(this.bonusMonth);
     
+    this.isSavingBonus = true;
     try {
       // 賞与設定をFirestoreに保存
       await this.firestoreService.saveBonus(
@@ -2520,6 +2528,8 @@ export class KyuyoDashboardComponent {
     } catch (error) {
       console.error('Error saving bonus:', error);
       alert('賞与の設定に失敗しました');
+    } finally {
+      this.isSavingBonus = false;
     }
   }
 
