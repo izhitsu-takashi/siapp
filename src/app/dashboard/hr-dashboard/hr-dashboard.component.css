@@ -581,6 +581,26 @@
   color: white;
 }
 
+.employee-table .status-badge.status-incomplete {
+  background: #f44336;
+  color: white;
+}
+
+.employee-table .status-badge.status-dependent-incomplete {
+  background: #ff9800;
+  color: white;
+}
+
+.employee-table .status-badge.status-complete {
+  background: #4caf50;
+  color: white;
+}
+
+.employee-table .status-hyphen {
+  color: #999;
+  font-size: 0.9rem;
+}
+
 /* 申請詳細モーダル（人事側） */
 .modal-overlay {
   position: fixed;

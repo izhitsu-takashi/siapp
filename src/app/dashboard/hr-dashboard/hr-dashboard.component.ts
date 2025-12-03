@@ -13,6 +13,7 @@ interface Employee {
   email: string;
   employmentType: string;
   employmentStatus?: string;
+  status?: string;
 }
 
 @Component({
@@ -483,7 +484,8 @@ export class HrDashboardComponent {
       await Promise.all([
         this.loadAllApplications(),
         this.loadOnboardingEmployees(),
-        this.loadInsuranceCards()
+        this.loadInsuranceCards(),
+        this.loadEmployees()
       ]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -1740,7 +1742,7 @@ export class HrDashboardComponent {
         emp => emp.employeeNumber && !onboardingEmployeeNumbers.has(emp.employeeNumber)
       );
       
-      // 社員データを抽出（在籍状況も含める）
+      // 社員データを抽出（在籍状況とステータスも含める）
       const mappedEmployees = completedEmployees
         .filter(emp => emp.employeeNumber && emp.name && emp.email && emp.employmentType)
         .map(emp => ({
@@ -1748,7 +1750,8 @@ export class HrDashboardComponent {
           name: emp.name,
           email: emp.email,
           employmentType: emp.employmentType,
-          employmentStatus: emp.employmentStatus || '在籍'
+          employmentStatus: emp.employmentStatus || '在籍',
+          status: this.calculateEmployeeStatus(emp)
         }));
       
       // ソート処理：在籍中の社員を上に、退職済みの社員を下に、それぞれ社員番号順
@@ -4709,6 +4712,58 @@ export class HrDashboardComponent {
     return status;
   }
 
+  // 社員のステータスを計算
+  calculateEmployeeStatus(employeeData: any): string {
+    // 必須項目のチェック（フォーム定義に基づく）
+    const requiredFields = {
+      lastName: employeeData.lastName,
+      firstName: employeeData.firstName,
+      birthDate: employeeData.birthDate,
+      gender: employeeData.gender,
+      email: employeeData.email,
+      employeeNumber: employeeData.employeeNumber,
+      insuranceSymbol: employeeData.insuranceSymbol,
+      insuranceNumber: employeeData.insuranceNumber
+    };
+
+    // 必須項目が不足しているかチェック
+    const missingRequiredFields = Object.entries(requiredFields).some(([key, value]) => {
+      if (key === 'email') {
+        // メールアドレスの形式チェックも含める
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return !value || !emailRegex.test(value as string);
+      }
+      if (key === 'insuranceSymbol') {
+        // 保険証記号は8桁の数字
+        const pattern = /^\d{8}$/;
+        return !value || !pattern.test(value as string);
+      }
+      if (key === 'insuranceNumber') {
+        // 保険証番号は3桁の数字
+        const pattern = /^\d{3}$/;
+        return !value || !pattern.test(value as string);
+      }
+      return !value || value === '';
+    });
+
+    // 必須情報不足を優先
+    if (missingRequiredFields) {
+      return '必須情報不足';
+    }
+
+    // 扶養者情報のチェック
+    const dependentStatus = employeeData.dependentStatus;
+    const dependents = employeeData.dependents || [];
+    
+    // 扶養者情報が「有」なのに扶養者情報が登録されていない場合
+    if (dependentStatus === '有' && (!dependents || dependents.length === 0)) {
+      return '扶養者情報不足';
+    }
+
+    // 全ての条件を満たしている場合
+    return '入力完了';
+  }
+
   // 申請管理ページに遷移してフィルターを適用
   navigateToApplicationManagement(status: string) {
     this.currentTab = '申請管理';
@@ -4754,6 +4809,24 @@ export class HrDashboardComponent {
       this.allOnboardingEmployees : 
       this.onboardingEmployees;
     return sourceData.filter(emp => emp.status === status).length;
+  }
+
+  // 社員情報管理表のステータス件数を取得
+  getEmployeeStatusCount(status: string): number {
+    // 在籍中の社員のみをカウント（退職済みは除外）
+    return this.employees.filter(emp => {
+      const employmentStatus = this.getEmploymentStatusDisplay(emp.employmentStatus);
+      return employmentStatus === '在籍中' && emp.status === status;
+    }).length;
+  }
+
+  // 社員情報管理ページに遷移
+  navigateToEmployeeManagement() {
+    this.currentTab = '社員情報管理';
+    // 社員一覧を再読み込み
+    this.loadEmployees().catch(err => {
+      console.error('Error in loadEmployees:', err);
+    });
   }
 
   // 保険証管理票のステータス件数を取得

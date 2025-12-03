@@ -47,6 +47,50 @@
               </p>
             </div>
             
+              <!-- 社員情報管理表のステータス一覧 -->
+              <section class="dashboard-section">
+                <div class="section-header">
+                  <div class="section-header-left">
+                    <h3 class="section-title">
+                      <span class="section-icon">👥</span>
+                      社員情報管理表
+                    </h3>
+                    <p class="section-description">
+                      社員情報の入力状況を確認できます。必須情報不足や扶養者情報不足の社員を優先的に対応してください。
+                    </p>
+                  </div>
+                </div>
+                <div class="status-cards">
+                  <div class="status-card" (click)="navigateToEmployeeManagement()">
+                    <div class="status-label">必須情報不足</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getEmployeeStatusCount('必須情報不足') === 0"
+                         [class.count-red]="getEmployeeStatusCount('必須情報不足') > 0"
+                         [class.count-green]="false">
+                      {{ getEmployeeStatusCount('必須情報不足') }}
+                    </div>
+                  </div>
+                  <div class="status-card" (click)="navigateToEmployeeManagement()">
+                    <div class="status-label">扶養者情報不足</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getEmployeeStatusCount('扶養者情報不足') === 0"
+                         [class.count-red]="getEmployeeStatusCount('扶養者情報不足') > 0"
+                         [class.count-green]="false">
+                      {{ getEmployeeStatusCount('扶養者情報不足') }}
+                    </div>
+                  </div>
+                  <div class="status-card" (click)="navigateToEmployeeManagement()">
+                    <div class="status-label">入力完了</div>
+                    <div class="status-count" 
+                         [class.count-zero]="getEmployeeStatusCount('入力完了') === 0"
+                         [class.count-red]="false"
+                         [class.count-green]="getEmployeeStatusCount('入力完了') > 0">
+                      {{ getEmployeeStatusCount('入力完了') }}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            
               <!-- 申請管理票のステータス一覧 -->
               <section class="dashboard-section">
                 <div class="section-header">
@@ -928,6 +972,7 @@
                   <th>メールアドレス</th>
                   <th>雇用形態</th>
                   <th>在籍状況</th>
+                  <th>ステータス</th>
                 </tr>
               </thead>
               <tbody>
@@ -937,9 +982,19 @@
                   <td>{{ employee.email }}</td>
                   <td>{{ employee.employmentType }}</td>
                   <td>{{ getEmploymentStatusDisplay(employee.employmentStatus) }}</td>
+                  <td>
+                    <span *ngIf="getEmploymentStatusDisplay(employee.employmentStatus) === '退職済み'" class="status-hyphen">-</span>
+                    <span *ngIf="getEmploymentStatusDisplay(employee.employmentStatus) !== '退職済み'" 
+                          class="status-badge" 
+                          [class.status-incomplete]="employee.status === '必須情報不足'"
+                          [class.status-dependent-incomplete]="employee.status === '扶養者情報不足'"
+                          [class.status-complete]="employee.status === '入力完了'">
+                      {{ employee.status }}
+                    </span>
+                  </td>
                 </tr>
                 <tr *ngIf="employees.length === 0">
-                  <td colspan="5" class="empty-message">社員データがありません</td>
+                  <td colspan="6" class="empty-message">社員データがありません</td>
                 </tr>
               </tbody>
               </table>
