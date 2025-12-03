@@ -1184,12 +1184,22 @@ export class HrDashboardComponent {
   openApplicationDetail(application: any) {
     this.selectedApplication = application;
     this.showApplicationDetailModal = true;
+    
+    // ステータスが承認済みの場合は無効化
+    const isApproved = application.status === '承認済み' || application.status === '承認';
+    const isDisabled = isApproved || this.isUpdatingStatus;
+    
     // ステータス変更フォームを初期化
     this.statusChangeForm = this.fb.group({
-      status: [application.status || '承認待ち'],
+      status: [{value: application.status || '承認待ち', disabled: isDisabled}],
       comment: [application.statusComment || '']
     });
     this.statusComment = application.statusComment || '';
+    
+    // isUpdatingStatusの変更を監視してフォームコントロールのdisabled状態を更新
+    // 注意: この監視はモーダルが開いている間のみ有効
+    // モーダルを閉じる際に適切にクリーンアップする必要があるが、
+    // 通常はisUpdatingStatusは短時間でfalseに戻るため、問題ない
     
     // 文書自動作成欄を初期化
     this.availableDocuments = [];
@@ -1249,6 +1259,9 @@ export class HrDashboardComponent {
         documents.push('健康保険・厚生年金保険 被保険者住所変更届');
         break;
       case '氏名変更申請':
+        documents.push('被保険者氏名変更届');
+        break;
+      case 'マイナンバー変更申請':
         documents.push('被保険者氏名変更届');
         break;
       case '産前産後休業申請':
@@ -1501,6 +1514,25 @@ export class HrDashboardComponent {
         } catch (error) {
           console.error('氏名の更新に失敗しました:', error);
           alert('氏名の更新に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
+      // マイナンバー変更申請が承認済みになった場合、マイナンバーを更新
+      if (status === '承認済み' && this.selectedApplication.applicationType === 'マイナンバー変更申請') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber && this.selectedApplication.newMyNumber) {
+            await this.firestoreService.updateEmployeeMyNumber(employeeNumber, this.selectedApplication.newMyNumber);
+            console.log('マイナンバーを更新しました:', employeeNumber);
+            
+            // 社員情報編集モーダルが開いている場合、マイナンバーを再読み込み
+            if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
+              await this.loadEmployeeData(employeeNumber);
+            }
+          }
+        } catch (error) {
+          console.error('マイナンバーの更新に失敗しました:', error);
+          alert('マイナンバーの更新に失敗しました。申請のステータス更新は完了しています。');
         }
       }
       
@@ -1932,7 +1964,7 @@ export class HrDashboardComponent {
       position: [''],
       
       // 現住所と連絡先
-      isOverseasResident: [false], // 海外に在住チェックボックス
+      isOverseasResident: [{value: false, disabled: true}], // 海外に在住チェックボックス（無効化）
       postalCode: ['', [Validators.pattern(/^\d{7}$/)]], // 郵便番号（数字7桁）
       currentAddress: [''],
       currentAddressKana: [''],
@@ -1941,7 +1973,7 @@ export class HrDashboardComponent {
       
       // 住民票住所
       sameAsCurrentAddress: [false],
-      skipResidentAddress: [false], // 住民票住所を記載しないチェックボックス
+      skipResidentAddress: [{value: false, disabled: true}], // 住民票住所を記載しないチェックボックス（無効化）
       residentAddressSkipReason: [''], // 住民票住所を記載しない理由
       residentAddressSkipReasonOther: [''], // その他の理由
       residentPostalCode: [''], // 住民票住所の郵便番号

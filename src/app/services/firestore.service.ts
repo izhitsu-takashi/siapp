@@ -810,6 +810,36 @@ export class FirestoreService {
   /**
    * 社員の氏名を更新する
    */
+  async updateEmployeeMyNumber(employeeNumber: string, myNumberData: any): Promise<void> {
+    try {
+      // 既存の社員データを取得
+      const employeeData = await this.getEmployeeData(employeeNumber);
+      
+      if (!employeeData) {
+        throw new Error(`Employee with number ${employeeNumber} not found`);
+      }
+
+      // マイナンバー情報を更新
+      const updatedData: any = {
+        ...employeeData,
+        myNumberPart1: myNumberData.part1 || '',
+        myNumberPart2: myNumberData.part2 || '',
+        myNumberPart3: myNumberData.part3 || '',
+        myNumber: `${myNumberData.part1 || ''}${myNumberData.part2 || ''}${myNumberData.part3 || ''}`,
+        updatedAt: new Date()
+      };
+
+      // undefinedの値を削除
+      const cleanedData = this.removeUndefinedValues(updatedData);
+
+      // 社員データを更新
+      await this.saveEmployeeData(employeeNumber, cleanedData);
+    } catch (error) {
+      console.error('Error updating employee my number:', error);
+      throw error;
+    }
+  }
+
   async updateEmployeeName(employeeNumber: string, nameData: any): Promise<void> {
     try {
       // 既存の社員データを取得

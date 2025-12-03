@@ -44,6 +44,7 @@ export class EmployeeDashboardComponent {
   dependentRemovalForm!: FormGroup;
   addressChangeForm!: FormGroup;
   nameChangeForm!: FormGroup;
+  myNumberChangeForm!: FormGroup;
   maternityLeaveForm!: FormGroup;
   resignationForm!: FormGroup;
   sameAsOldAddress = false; // 変更前住所と同じ
@@ -1138,6 +1139,9 @@ export class EmployeeDashboardComponent {
     } else if (applicationType === '氏名変更申請') {
       this.nameChangeForm = this.createNameChangeForm();
       this.showApplicationModal = true;
+    } else if (applicationType === 'マイナンバー変更申請') {
+      this.myNumberChangeForm = this.createMyNumberChangeForm();
+      this.showApplicationModal = true;
     } else if (applicationType === '産前産後休業申請') {
       this.maternityLeaveForm = this.createMaternityLeaveForm();
       this.showApplicationModal = true;
@@ -1165,6 +1169,7 @@ export class EmployeeDashboardComponent {
     this.dependentRemovalForm = this.createDependentRemovalForm();
     this.addressChangeForm = this.createAddressChangeForm();
     this.nameChangeForm = this.createNameChangeForm();
+    this.myNumberChangeForm = this.createMyNumberChangeForm();
     this.maternityLeaveForm = this.createMaternityLeaveForm();
     this.resignationForm = this.createResignationForm();
     this.sameAsOldAddress = false;
@@ -1334,6 +1339,15 @@ export class EmployeeDashboardComponent {
       newFirstName: ['', Validators.required],
       newLastNameKana: ['', Validators.required],
       newFirstNameKana: ['', Validators.required]
+    });
+  }
+  
+  createMyNumberChangeForm(): FormGroup {
+    return this.fb.group({
+      changeDate: ['', Validators.required],
+      newMyNumberPart1: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      newMyNumberPart2: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      newMyNumberPart3: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
     });
   }
   
@@ -1904,6 +1918,49 @@ export class EmployeeDashboardComponent {
     } else {
       // フォームのエラーを表示
       this.nameChangeForm.markAllAsTouched();
+      alert('必須項目を入力してください');
+    }
+  }
+  
+  async submitMyNumberChangeApplication() {
+    if (this.myNumberChangeForm.valid) {
+      try {
+        const formValue = this.myNumberChangeForm.value;
+        
+        const applicationData: any = {
+          employeeNumber: this.employeeNumber,
+          applicationType: 'マイナンバー変更申請',
+          changeDate: formValue.changeDate,
+          newMyNumber: {
+            part1: formValue.newMyNumberPart1,
+            part2: formValue.newMyNumberPart2,
+            part3: formValue.newMyNumberPart3
+          }
+        };
+        
+        // 申請を保存
+        await this.firestoreService.saveApplication(applicationData);
+        
+        // 該当する申請要求を削除
+        await this.deleteApplicationRequest('マイナンバー変更申請');
+        
+        // 申請一覧を再読み込み
+        await this.loadApplications();
+        
+        // 人事からの依頼を再読み込み
+        await this.loadHrRequests();
+        
+        // モーダルを閉じる
+        this.closeApplicationModal();
+        
+        alert('申請しました');
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('申請中にエラーが発生しました');
+      }
+    } else {
+      // フォームのエラーを表示
+      this.myNumberChangeForm.markAllAsTouched();
       alert('必須項目を入力してください');
     }
   }

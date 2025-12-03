@@ -798,6 +798,16 @@
             
             <button 
               class="application-button" 
+              (click)="openApplicationModal('マイナンバー変更申請')"
+              [disabled]="!isOnboardingCompleted"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
+            >
+              <span class="application-icon">🔢</span>
+              <span class="application-label">マイナンバー変更申請</span>
+            </button>
+            
+            <button 
+              class="application-button" 
               (click)="openApplicationModal('産前産後休業申請')"
               [disabled]="!isOnboardingCompleted"
               [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
@@ -2608,6 +2618,94 @@
   </div>
 </div>
 
+<!-- マイナンバー変更申請モーダル -->
+<div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === 'マイナンバー変更申請'">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">マイナンバー変更申請</h2>
+      <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
+    </div>
+    
+    <form [formGroup]="myNumberChangeForm" (ngSubmit)="submitMyNumberChangeApplication()" class="application-form">
+      <!-- マイナンバー変更した日 -->
+      <section class="form-section">
+        <h3 class="section-title">マイナンバー変更した日</h3>
+        <div class="form-group">
+          <label for="changeDate">マイナンバー変更した日 <span class="required">*</span></label>
+          <input 
+            type="date" 
+            id="changeDate" 
+            formControlName="changeDate" 
+            class="form-input"
+          >
+          <div *ngIf="myNumberChangeForm.get('changeDate')?.invalid && myNumberChangeForm.get('changeDate')?.touched" class="error-message">
+            マイナンバー変更した日を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 新しいマイナンバー欄 -->
+      <section class="form-section">
+        <h3 class="section-title">新しいマイナンバー</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="newMyNumberPart1">1-4桁目 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="newMyNumberPart1" 
+              formControlName="newMyNumberPart1" 
+              class="form-input"
+              maxlength="4"
+              pattern="[0-9]*"
+              inputmode="numeric"
+            >
+            <div *ngIf="myNumberChangeForm.get('newMyNumberPart1')?.invalid && myNumberChangeForm.get('newMyNumberPart1')?.touched" class="error-message">
+              4桁の数字を入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="newMyNumberPart2">5-8桁目 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="newMyNumberPart2" 
+              formControlName="newMyNumberPart2" 
+              class="form-input"
+              maxlength="4"
+              pattern="[0-9]*"
+              inputmode="numeric"
+            >
+            <div *ngIf="myNumberChangeForm.get('newMyNumberPart2')?.invalid && myNumberChangeForm.get('newMyNumberPart2')?.touched" class="error-message">
+              4桁の数字を入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="newMyNumberPart3">9-12桁目 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="newMyNumberPart3" 
+              formControlName="newMyNumberPart3" 
+              class="form-input"
+              maxlength="4"
+              pattern="[0-9]*"
+              inputmode="numeric"
+            >
+            <div *ngIf="myNumberChangeForm.get('newMyNumberPart3')?.invalid && myNumberChangeForm.get('newMyNumberPart3')?.touched" class="error-message">
+              4桁の数字を入力してください
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <div class="form-actions">
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="myNumberChangeForm.invalid">
+          申請
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- 産前産後休業申請モーダル -->
 <div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '産前産後休業申請'">
   <div class="modal-content">
@@ -3657,6 +3755,39 @@
             <div class="detail-item">
               <span class="detail-label">電話番号:</span>
               <span class="detail-value">{{ selectedApplication.emergencyContact.phone || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- マイナンバー変更申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === 'マイナンバー変更申請'">
+        <!-- マイナンバー変更した日 -->
+        <section class="detail-section">
+          <h3 class="section-title">マイナンバー変更した日</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">マイナンバー変更した日:</span>
+              <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 新しいマイナンバー -->
+        <section class="detail-section" *ngIf="selectedApplication.newMyNumber">
+          <h3 class="section-title">新しいマイナンバー</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">1-4桁目:</span>
+              <span class="detail-value">{{ selectedApplication.newMyNumber.part1 || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">5-8桁目:</span>
+              <span class="detail-value">{{ selectedApplication.newMyNumber.part2 || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">9-12桁目:</span>
+              <span class="detail-value">{{ selectedApplication.newMyNumber.part3 || '-' }}</span>
             </div>
           </div>
         </section>

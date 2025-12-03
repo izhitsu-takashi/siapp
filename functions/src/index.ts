@@ -215,6 +215,7 @@ export const chatWithGemini = onRequest(
    - 扶養削除申請
    - 住所変更申請
    - 氏名変更申請
+   - マイナンバー変更申請
    - 産前産後休業申請
    - 退職申請
 

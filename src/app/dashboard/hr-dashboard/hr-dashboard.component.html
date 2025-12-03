@@ -2312,7 +2312,6 @@
                 id="statusSelect" 
                 formControlName="status" 
                 class="form-input status-select"
-                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認' || isUpdatingStatus"
                 (change)="onStatusChange()"
               >
                 <option value="承認待ち">承認待ち</option>
@@ -2707,6 +2706,39 @@
             <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
               <span class="detail-label">世帯主氏名:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.householdHeadName || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- マイナンバー変更申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === 'マイナンバー変更申請'">
+        <!-- マイナンバー変更した日 -->
+        <section class="detail-section">
+          <h3 class="section-title">マイナンバー変更した日</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">マイナンバー変更した日:</span>
+              <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 新しいマイナンバー -->
+        <section class="detail-section" *ngIf="selectedApplication.newMyNumber">
+          <h3 class="section-title">新しいマイナンバー</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">1-4桁目:</span>
+              <span class="detail-value">{{ selectedApplication.newMyNumber.part1 || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">5-8桁目:</span>
+              <span class="detail-value">{{ selectedApplication.newMyNumber.part2 || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">9-12桁目:</span>
+              <span class="detail-value">{{ selectedApplication.newMyNumber.part3 || '-' }}</span>
             </div>
           </div>
         </section>
@@ -3208,7 +3240,6 @@
                 type="checkbox" 
                 formControlName="isOverseasResident"
                 [checked]="onboardingEmployeeEditForm.get('isOverseasResident')?.value"
-                [disabled]="true"
               >
               海外に在住
             </label>
@@ -3278,7 +3309,6 @@
                 type="checkbox" 
                 formControlName="skipResidentAddress"
                 [checked]="onboardingEmployeeEditForm.get('skipResidentAddress')?.value"
-                [disabled]="true"
               >
               住民票住所を記載しない
             </label>
