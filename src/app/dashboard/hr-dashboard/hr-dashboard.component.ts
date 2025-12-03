@@ -254,6 +254,24 @@ export class HrDashboardComponent {
             // 新入社員コレクションから削除
             await this.firestoreService.deleteOnboardingEmployee(employeeNumber);
             
+            // 扶養者情報欄が「有」になっている場合、扶養家族追加申請の依頼を作成
+            if (employeeData.dependentStatus === '有') {
+              try {
+                await this.firestoreService.saveApplicationRequest({
+                  employeeNumber: employeeNumber,
+                  applicationType: '扶養家族追加',
+                  requestedAt: new Date(),
+                  requestedBy: this.hrName,
+                  status: '未対応',
+                  message: '扶養家族追加申請を行ってください'
+                });
+                console.log(`扶養家族追加申請の依頼を作成しました: ${employeeNumber}`);
+              } catch (requestError) {
+                console.error(`Error creating application request for ${employeeNumber}:`, requestError);
+                // 申請要求の作成エラーは警告のみ（処理は続行）
+              }
+            }
+            
             successCount++;
             console.log(`Successfully processed employee ${employeeNumber}`);
           } catch (error) {

@@ -759,8 +759,8 @@
             <button 
               class="application-button" 
               (click)="openApplicationModal('扶養家族追加')"
-              [disabled]="!hasOnboardingApplication"
-              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+              [disabled]="!isOnboardingCompleted"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
             >
               <span class="application-icon">👨‍👩‍👧</span>
               <span class="application-label">扶養家族追加</span>
@@ -769,8 +769,8 @@
             <button 
               class="application-button" 
               (click)="openApplicationModal('扶養削除申請')"
-              [disabled]="!hasOnboardingApplication"
-              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+              [disabled]="!isOnboardingCompleted"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
             >
               <span class="application-icon">❌</span>
               <span class="application-label">扶養削除申請</span>
@@ -779,8 +779,8 @@
             <button 
               class="application-button" 
               (click)="openApplicationModal('住所変更申請')"
-              [disabled]="!hasOnboardingApplication"
-              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+              [disabled]="!isOnboardingCompleted"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
             >
               <span class="application-icon">🏠</span>
               <span class="application-label">住所変更申請</span>
@@ -789,8 +789,8 @@
             <button 
               class="application-button" 
               (click)="openApplicationModal('氏名変更申請')"
-              [disabled]="!hasOnboardingApplication"
-              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+              [disabled]="!isOnboardingCompleted"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
             >
               <span class="application-icon">✏️</span>
               <span class="application-label">氏名変更申請</span>
@@ -799,8 +799,8 @@
             <button 
               class="application-button" 
               (click)="openApplicationModal('産前産後休業申請')"
-              [disabled]="!hasOnboardingApplication"
-              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+              [disabled]="!isOnboardingCompleted"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
             >
               <span class="application-icon">🤰</span>
               <span class="application-label">産前産後休業申請</span>
@@ -809,8 +809,8 @@
             <button 
               class="application-button" 
               (click)="openApplicationModal('退職申請')"
-              [disabled]="!hasOnboardingApplication"
-              [title]="!hasOnboardingApplication ? '入社時申請を先に提出してください' : ''"
+              [disabled]="!isOnboardingCompleted"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
             >
               <span class="application-icon">🚪</span>
               <span class="application-label">退職申請</span>
@@ -1122,10 +1122,27 @@
         <!-- ナレッジページ -->
         <ng-container *ngIf="currentTab === 'ナレッジ'">
           <div class="knowledge-page">
-            <h2 class="page-title">ナレッジ - AIアシスタント</h2>
-            <p class="knowledge-description">
-              人事・給与システムに関するご質問にお答えします。わからないことがあれば、お気軽にお尋ねください。
-            </p>
+            <div class="knowledge-header">
+              <div>
+                <h2 class="page-title">ナレッジ - AIアシスタント</h2>
+                <p class="knowledge-description">
+                  人事・給与システムに関するご質問にお答えします。わからないことがあれば、お気軽にお尋ねください。
+                </p>
+              </div>
+              <div class="language-selector">
+                <label for="languageSelect" class="language-label">言語:</label>
+                <select 
+                  id="languageSelect" 
+                  [(ngModel)]="selectedLanguage" 
+                  class="language-select"
+                  [disabled]="isChatLoading"
+                >
+                  <option *ngFor="let lang of availableLanguages" [value]="lang.code">
+                    {{ lang.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
             
             <!-- チャットエリア -->
             <div class="chat-container">
@@ -1160,8 +1177,8 @@
                       <button
                         class="application-action-button"
                         (click)="openApplicationFromChat(message.applicationType!)"
-                        [disabled]="!hasOnboardingApplication && message.applicationType !== '入社時申請'"
-                        [title]="!hasOnboardingApplication && message.applicationType !== '入社時申請' ? '入社時申請を先に提出してください' : ''"
+                        [disabled]="!isOnboardingCompleted && message.applicationType !== '入社時申請'"
+                        [title]="!isOnboardingCompleted && message.applicationType !== '入社時申請' ? '入社処理が完了するまで利用できません' : ''"
                       >
                         <span class="application-action-icon">📝</span>
                         <span class="application-action-text">{{ message.applicationType }}を開く</span>

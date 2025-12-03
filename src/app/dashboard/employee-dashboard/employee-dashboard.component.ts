@@ -34,6 +34,7 @@ export class EmployeeDashboardComponent {
   hrRequests: any[] = [];
   applications: any[] = [];
   hasOnboardingApplication: boolean = false; // 入社時申請が提出されているか
+  isOnboardingCompleted: boolean = false; // 入社処理が完了しているか（新入社員コレクションに存在しない）
   
   // 申請モーダル用
   showApplicationModal = false;
@@ -131,6 +132,12 @@ export class EmployeeDashboardComponent {
   chatMessages: ChatMessage[] = [];
   chatInputMessage: string = '';
   isChatLoading: boolean = false;
+  selectedLanguage: string = 'ja'; // デフォルトは日本語
+  availableLanguages = [
+    { code: 'ja', name: '日本語' },
+    { code: 'en', name: 'English' },
+    { code: 'zh', name: '中文' }
+  ];
   
   // テンプレート質問
   templateQuestions = [
@@ -914,6 +921,9 @@ export class EmployeeDashboardComponent {
     
     // 各種申請ページに切り替えた場合、申請一覧を読み込む
     if (tabName === '各種申請') {
+      // 入社処理が完了しているかチェック
+      this.checkOnboardingCompletion();
+      
       this.loadApplications().then(() => {
         // 申請一覧を読み込んだ後、入社時申請の状態を更新
         this.hasOnboardingApplication = this.applications.some(
@@ -2292,6 +2302,9 @@ export class EmployeeDashboardComponent {
         this.employeeData = data;
       }
 
+      // 入社処理が完了しているかチェック（新入社員コレクションに存在しないか）
+      await this.checkOnboardingCompletion();
+
       // 申請一覧を読み込む
       await this.loadApplications();
 
@@ -2299,6 +2312,20 @@ export class EmployeeDashboardComponent {
       await this.loadHrRequests();
     } catch (error) {
       console.error('Error loading main page data:', error);
+    }
+  }
+
+  // 入社処理が完了しているかチェック
+  async checkOnboardingCompletion() {
+    try {
+      // 新入社員コレクションから自分のデータを取得
+      const onboardingEmployee = await this.firestoreService.getOnboardingEmployee(this.employeeNumber);
+      // 新入社員コレクションに存在しない場合、入社処理が完了している
+      this.isOnboardingCompleted = !onboardingEmployee;
+    } catch (error) {
+      // エラーの場合も入社処理が完了しているとみなす（既に通常の社員データとして存在する可能性がある）
+      console.error('Error checking onboarding completion:', error);
+      this.isOnboardingCompleted = true;
     }
   }
 
@@ -3372,7 +3399,7 @@ export class EmployeeDashboardComponent {
     this.isChatLoading = true;
 
     try {
-      const response = await this.chatService.sendMessage(userMessage);
+      const response = await this.chatService.sendMessage(userMessage, this.selectedLanguage);
       
       // 応答から申請タイプを抽出
       const applicationType = this.extractApplicationType(userMessage, response);
