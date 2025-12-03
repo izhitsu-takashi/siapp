@@ -1986,11 +1986,11 @@ export class HrDashboardComponent {
       fixedSalary: [''],
       
       // 保険証情報（人事専用）
-      insuranceSymbol: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
-      insuranceNumber: ['', [Validators.required, Validators.pattern(/^\d{3}$/)]],
-      insuranceCardIssueDate: ['', Validators.required],
+      insuranceSymbol: [''],
+      insuranceNumber: [''],
+      insuranceCardIssueDate: [''],
       insuranceCardReturnDate: [''],
-      insuranceCardDistributionStatus: ['', Validators.required],
+      insuranceCardDistributionStatus: [''],
       bonusAmount: [''], // 賞与額
       bonusYear: [''], // 賞与年月（年）
       bonusMonth: [''], // 賞与年月（月）
@@ -2016,12 +2016,12 @@ export class HrDashboardComponent {
 
   // 社員情報編集フォームを作成
   createEmployeeEditForm(): FormGroup {
-    return this.fb.group({
+    const form = this.fb.group({
       // 基本情報
       lastName: ['', Validators.required],
       firstName: ['', Validators.required],
-      lastNameKana: [''],
-      firstNameKana: [''],
+      lastNameKana: ['', Validators.required],
+      firstNameKana: ['', Validators.required],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -2032,8 +2032,8 @@ export class HrDashboardComponent {
       myNumberPart3: [''],
       
       // 入退社情報
-      employmentStatus: [''],
-      joinDate: [''],
+      employmentStatus: ['', Validators.required],
+      joinDate: ['', Validators.required],
       resignationDate: [''],
       resignationReason: [''],
       
@@ -2041,7 +2041,7 @@ export class HrDashboardComponent {
       employeeNumber: ['', Validators.required],
       office: [''],
       workContent: [''],
-      employmentType: [''],
+      employmentType: ['', Validators.required],
       paymentType: [''],
       
       // 部署・役職情報
@@ -2049,16 +2049,16 @@ export class HrDashboardComponent {
       position: [''],
       
       // 現住所と連絡先
-      currentAddress: [''],
-      currentAddressKana: [''],
-      phoneNumber: [''],
+      currentAddress: ['', Validators.required],
+      currentAddressKana: ['', Validators.required],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^\d{1,11}$/)]],
       currentHouseholdHead: [''],
       
       // 住民票住所
       sameAsCurrentAddress: [false],
-      residentAddress: [''],
-      residentAddressKana: [''],
-      residentHouseholdHead: [''],
+      residentAddress: ['', Validators.required],
+      residentAddressKana: ['', Validators.required],
+      residentHouseholdHead: ['', Validators.required],
       
       // 緊急連絡先
       emergencyContact: this.fb.group({
@@ -2080,13 +2080,13 @@ export class HrDashboardComponent {
       }),
       
       // 社会保険
-      healthInsuranceNumber: [''],
-      pensionInsuranceNumber: [''],
-      basicPensionNumberPart1: [''],
-      basicPensionNumberPart2: [''],
+      healthInsuranceNumber: ['', Validators.required],
+      pensionInsuranceNumber: ['', Validators.required],
+      basicPensionNumberPart1: ['', Validators.required],
+      basicPensionNumberPart2: ['', Validators.required],
       pensionHistoryStatus: [''],
       pensionHistory: [''],
-      socialInsuranceAcquisitionDate: [''],
+      socialInsuranceAcquisitionDate: ['', Validators.required],
       socialInsuranceLossDate: [''],
       
       // 配偶者情報
@@ -2112,8 +2112,8 @@ export class HrDashboardComponent {
       fixedSalary: [''],
       
       // 保険証情報（人事専用）
-      insuranceSymbol: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
-      insuranceNumber: ['', [Validators.required, Validators.pattern(/^\d{3}$/)]],
+      insuranceSymbol: [''],
+      insuranceNumber: [''],
       insuranceCardIssueDate: [''],
       insuranceCardReturnDate: [''],
       insuranceCardStatus: [''], // 固定的賃金
@@ -2122,19 +2122,38 @@ export class HrDashboardComponent {
       bonusMonth: [''], // 賞与年月（月）
       
       // 人事専用情報（保険者種別）
-      healthInsuranceType: [''], // 健康保険者種別
-      nursingInsuranceType: [''], // 介護保険者種別
-      pensionInsuranceType: [''], // 厚生年金保険者種別
+      healthInsuranceType: ['', Validators.required], // 健康保険者種別
+      nursingInsuranceType: ['', Validators.required], // 介護保険者種別
+      pensionInsuranceType: ['', Validators.required], // 厚生年金保険者種別
       
       // 坑内員（人事専用）
-      isMiner: [''], // はい/いいえ
+      isMiner: ['', Validators.required], // はい/いいえ
       
       // その他資格情報（人事専用）
-      multipleWorkplaceAcquisition: [''], // 二以上事業所勤務者の取得か（はい/いいえ）
-      reemploymentAfterRetirement: [''], // 退職後の継続再雇用者の取得か（はい/いいえ）
+      multipleWorkplaceAcquisition: ['', Validators.required], // 二以上事業所勤務者の取得か（はい/いいえ）
+      reemploymentAfterRetirement: ['', Validators.required], // 退職後の継続再雇用者の取得か（はい/いいえ）
       otherQualificationAcquisition: [''], // その他（はい/いいえ）
       otherQualificationReason: [''] // その他の理由（バリデーションは動的に変更）
     });
+
+    // 在籍状況が変更されたときに、退職年月日と社会保険の資格喪失年月日のバリデーションを更新
+    form.get('employmentStatus')?.valueChanges.subscribe(status => {
+      const resignationDateControl = form.get('resignationDate');
+      const socialInsuranceLossDateControl = form.get('socialInsuranceLossDate');
+      
+      if (status === '退職' || status === '退職済み') {
+        resignationDateControl?.setValidators([Validators.required]);
+        socialInsuranceLossDateControl?.setValidators([Validators.required]);
+      } else {
+        resignationDateControl?.clearValidators();
+        socialInsuranceLossDateControl?.clearValidators();
+      }
+      
+      resignationDateControl?.updateValueAndValidity();
+      socialInsuranceLossDateControl?.updateValueAndValidity();
+    });
+
+    return form;
   }
 
   // 社員データを読み込む
@@ -2247,12 +2266,20 @@ export class HrDashboardComponent {
           residentAddressKana: data.residentAddressKana || data.currentAddressKana || '',
           residentHouseholdHead: data.residentHouseholdHead || data.currentHouseholdHead || ''
         });
+        // コントロールを無効化
+        this.employeeEditForm.get('residentAddress')?.disable();
+        this.employeeEditForm.get('residentAddressKana')?.disable();
+        this.employeeEditForm.get('residentHouseholdHead')?.disable();
       } else if (data.residentAddress) {
         this.employeeEditForm.patchValue({
           residentAddress: data.residentAddress,
           residentAddressKana: data.residentAddressKana || '',
           residentHouseholdHead: data.residentHouseholdHead || ''
         });
+        // コントロールを有効化
+        this.employeeEditForm.get('residentAddress')?.enable();
+        this.employeeEditForm.get('residentAddressKana')?.enable();
+        this.employeeEditForm.get('residentHouseholdHead')?.enable();
       }
     }
 
@@ -2483,25 +2510,38 @@ export class HrDashboardComponent {
   }
 
   onSameAddressChange(event: any) {
-    this.sameAsCurrentAddress = event.target.checked;
-    if (this.sameAsCurrentAddress) {
+    const isChecked = event.target.checked;
+    this.sameAsCurrentAddress = isChecked;
+    
+    // フォームコントロールのdisable/enableを使用（[disabled]属性の警告を回避）
+    const residentAddressControl = this.employeeEditForm.get('residentAddress');
+    const residentAddressKanaControl = this.employeeEditForm.get('residentAddressKana');
+    const residentHouseholdHeadControl = this.employeeEditForm.get('residentHouseholdHead');
+    
+    if (isChecked) {
+      // 現住所の値を住民票住所にコピー
       const currentAddress = this.employeeEditForm.get('currentAddress')?.value || '';
       const currentAddressKana = this.employeeEditForm.get('currentAddressKana')?.value || '';
       const currentHouseholdHead = this.employeeEditForm.get('currentHouseholdHead')?.value || '';
+      
       this.employeeEditForm.patchValue({
         residentAddress: currentAddress,
         residentAddressKana: currentAddressKana,
         residentHouseholdHead: currentHouseholdHead
       });
-      this.employeeEditForm.get('residentAddress')?.disable();
-      this.employeeEditForm.get('residentAddressKana')?.disable();
-      this.employeeEditForm.get('residentHouseholdHead')?.disable();
+      
+      // コントロールを無効化
+      residentAddressControl?.disable();
+      residentAddressKanaControl?.disable();
+      residentHouseholdHeadControl?.disable();
     } else {
-      this.employeeEditForm.get('residentAddress')?.enable();
-      this.employeeEditForm.get('residentAddressKana')?.enable();
-      this.employeeEditForm.get('residentHouseholdHead')?.enable();
+      // コントロールを有効化
+      residentAddressControl?.enable();
+      residentAddressKanaControl?.enable();
+      residentHouseholdHeadControl?.enable();
     }
   }
+
 
   onSameAddressForEmergencyChange(event: any) {
     this.sameAsCurrentAddressForEmergency = event.target.checked;
@@ -2778,6 +2818,14 @@ export class HrDashboardComponent {
           formData.residentHouseholdHead = currentHouseholdHead;
         }
 
+        // sameAsCurrentAddressがtrueの場合、住民票住所を現住所と同じにする
+        if (this.sameAsCurrentAddress) {
+          const currentAddress = this.employeeEditForm.get('currentAddress')?.value || '';
+          const currentAddressKana = this.employeeEditForm.get('currentAddressKana')?.value || '';
+          formData.residentAddress = currentAddress;
+          formData.residentAddressKana = currentAddressKana;
+        }
+
         // sameAsCurrentAddressForEmergencyがtrueの場合、現住所の値を緊急連絡先住所にコピー
         if (this.sameAsCurrentAddressForEmergency) {
           const currentAddress = this.employeeEditForm.get('currentAddress')?.value || '';
@@ -2789,11 +2837,10 @@ export class HrDashboardComponent {
         }
 
         // 一時的な入力フィールドを削除（サービス側で正規化されるが、明示的に削除）
+        // ただし、basicPensionNumberPart1とbasicPensionNumberPart2は必須項目なので削除しない
         delete formData.myNumberPart1;
         delete formData.myNumberPart2;
         delete formData.myNumberPart3;
-        delete formData.basicPensionNumberPart1;
-        delete formData.basicPensionNumberPart2;
 
         // 扶養者一覧を追加（深いコピーを作成）
         formData.dependents = this.dependents.map(dep => ({
@@ -4733,35 +4780,76 @@ export class HrDashboardComponent {
   // 社員のステータスを計算
   calculateEmployeeStatus(employeeData: any): string {
     // 必須項目のチェック（フォーム定義に基づく）
-    const requiredFields = {
+    // 基本情報
+    const requiredFields: { [key: string]: any } = {
       lastName: employeeData.lastName,
       firstName: employeeData.firstName,
+      lastNameKana: employeeData.lastNameKana,
+      firstNameKana: employeeData.firstNameKana,
       birthDate: employeeData.birthDate,
       gender: employeeData.gender,
       email: employeeData.email,
+      // 入退社情報
+      employmentStatus: employeeData.employmentStatus,
+      joinDate: employeeData.joinDate,
+      // 業務情報
       employeeNumber: employeeData.employeeNumber,
-      insuranceSymbol: employeeData.insuranceSymbol,
-      insuranceNumber: employeeData.insuranceNumber
+      employmentType: employeeData.employmentType,
+      // 現住所と連絡先
+      currentAddress: employeeData.currentAddress,
+      currentAddressKana: employeeData.currentAddressKana,
+      phoneNumber: employeeData.phoneNumber,
+      // 住民票住所（現住所と同じの場合は現住所を使用）
+      residentAddress: employeeData.sameAsCurrentAddress ? employeeData.currentAddress : employeeData.residentAddress,
+      residentAddressKana: employeeData.sameAsCurrentAddress ? employeeData.currentAddressKana : employeeData.residentAddressKana,
+      residentHouseholdHead: employeeData.residentHouseholdHead,
+      // 社会保険
+      healthInsuranceNumber: employeeData.healthInsuranceNumber,
+      pensionInsuranceNumber: employeeData.pensionInsuranceNumber,
+      // 基礎年金番号は結合されている場合と分割されている場合があるため、両方をチェック
+      basicPensionNumberPart1: employeeData.basicPensionNumberPart1 || (employeeData.basicPensionNumber ? employeeData.basicPensionNumber.toString().substring(0, 4) : ''),
+      basicPensionNumberPart2: employeeData.basicPensionNumberPart2 || (employeeData.basicPensionNumber ? employeeData.basicPensionNumber.toString().substring(4, 10) : ''),
+      socialInsuranceAcquisitionDate: employeeData.socialInsuranceAcquisitionDate,
+      // 保険者種別
+      healthInsuranceType: employeeData.healthInsuranceType,
+      nursingInsuranceType: employeeData.nursingInsuranceType,
+      pensionInsuranceType: employeeData.pensionInsuranceType,
+      // 坑内員
+      isMiner: employeeData.isMiner,
+      // その他資格情報
+      multipleWorkplaceAcquisition: employeeData.multipleWorkplaceAcquisition,
+      reemploymentAfterRetirement: employeeData.reemploymentAfterRetirement
     };
+
+    // 条件付き必須項目のチェック
+    const employmentStatus = employeeData.employmentStatus;
+    if (employmentStatus === '退職' || employmentStatus === '退職済み') {
+      requiredFields['resignationDate'] = employeeData.resignationDate;
+      requiredFields['socialInsuranceLossDate'] = employeeData.socialInsuranceLossDate;
+    }
 
     // 必須項目が不足しているかチェック
     const missingRequiredFields = Object.entries(requiredFields).some(([key, value]) => {
       if (key === 'email') {
-        // メールアドレスの形式チェックも含める
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return !value || !emailRegex.test(value as string);
-      }
-      if (key === 'insuranceSymbol') {
-        // 保険証記号は8桁の数字
-        const pattern = /^\d{8}$/;
+        // メールアドレスは@が含まれていれば入力されていると判断（ステータス計算用）
+        // 厳密な形式チェックはフォームバリデーションで行う
+        return !value || !value.toString().includes('@');
+      } else if (key === 'phoneNumber') {
+        // 電話番号はハイフンなし最大11桁の数字
+        const pattern = /^\d{1,11}$/;
         return !value || !pattern.test(value as string);
-      }
-      if (key === 'insuranceNumber') {
-        // 保険証番号は3桁の数字
-        const pattern = /^\d{3}$/;
+      } else if (key === 'basicPensionNumberPart1') {
+        // 基礎年金番号前半は4桁の数字
+        const pattern = /^\d{4}$/;
         return !value || !pattern.test(value as string);
+      } else if (key === 'basicPensionNumberPart2') {
+        // 基礎年金番号後半は6桁の数字
+        const pattern = /^\d{6}$/;
+        return !value || !pattern.test(value as string);
+      } else {
+        // その他の必須項目は空でないかチェック
+        return !value || value === '';
       }
-      return !value || value === '';
     });
 
     // 必須情報不足を優先
@@ -4778,7 +4866,7 @@ export class HrDashboardComponent {
       return '扶養者情報不足';
     }
 
-    // 全ての条件を満たしている場合
+    // 全ての必須項目が入力されている場合（空欄のフォームがあっても必須項目が入力されていれば入力完了）
     return '入力完了';
   }
 

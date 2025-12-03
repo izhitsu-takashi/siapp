@@ -1217,7 +1217,7 @@
               >
             </div>
             <div class="form-group">
-              <label for="hr-lastNameKana">姓（ヨミガナ）</label>
+              <label for="hr-lastNameKana">姓（ヨミガナ） <span class="required">*</span></label>
               <input 
                 type="text" 
                 id="hr-lastNameKana" 
@@ -1226,7 +1226,7 @@
               >
             </div>
             <div class="form-group">
-              <label for="hr-firstNameKana">名（ヨミガナ）</label>
+              <label for="hr-firstNameKana">名（ヨミガナ） <span class="required">*</span></label>
               <input 
                 type="text" 
                 id="hr-firstNameKana" 
@@ -1342,7 +1342,7 @@
           <h3 class="section-title">入退社情報</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label for="hr-employmentStatus">在籍状況</label>
+              <label for="hr-employmentStatus">在籍状況 <span class="required">*</span></label>
               <select 
                 id="hr-employmentStatus" 
                 formControlName="employmentStatus" 
@@ -1353,7 +1353,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="hr-joinDate">入社年月日</label>
+              <label for="hr-joinDate">入社年月日 <span class="required">*</span></label>
               <input 
                 type="date" 
                 id="hr-joinDate" 
@@ -1362,7 +1362,7 @@
               >
             </div>
             <div class="form-group" *ngIf="employeeEditForm.get('employmentStatus')?.value !== '在籍'">
-              <label for="hr-resignationDate">退職年月日</label>
+              <label for="hr-resignationDate">退職年月日 <span class="required">*</span></label>
               <input 
                 type="date" 
                 id="hr-resignationDate" 
@@ -1418,7 +1418,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="hr-employmentType">雇用形態</label>
+              <label for="hr-employmentType">雇用形態 <span class="required">*</span></label>
               <select 
                 id="hr-employmentType" 
                 formControlName="employmentType" 
@@ -1465,7 +1465,7 @@
           <h3 class="section-title">現住所と連絡先</h3>
           <div class="form-grid">
             <div class="form-group full-width">
-              <label for="hr-currentAddress">現住所</label>
+              <label for="hr-currentAddress">現住所 <span class="required">*</span></label>
               <textarea 
                 id="hr-currentAddress" 
                 formControlName="currentAddress" 
@@ -1474,7 +1474,7 @@
               ></textarea>
             </div>
             <div class="form-group full-width">
-              <label for="hr-currentAddressKana">現住所（ヨミガナ）</label>
+              <label for="hr-currentAddressKana">現住所（ヨミガナ） <span class="required">*</span></label>
               <textarea 
                 id="hr-currentAddressKana" 
                 formControlName="currentAddressKana" 
@@ -1483,12 +1483,14 @@
               ></textarea>
             </div>
             <div class="form-group">
-              <label for="hr-phoneNumber">電話番号</label>
+              <label for="hr-phoneNumber">電話番号（ハイフンなし最大11桁） <span class="required">*</span></label>
               <input 
                 type="tel" 
                 id="hr-phoneNumber" 
                 formControlName="phoneNumber" 
                 class="form-input"
+                maxlength="11"
+                pattern="[0-9]*"
               >
             </div>
             <div class="form-group">
@@ -1520,7 +1522,7 @@
               </label>
             </div>
             <div class="form-group full-width">
-              <label for="hr-residentAddress">住所</label>
+              <label for="hr-residentAddress">住所 <span class="required">*</span></label>
               <textarea 
                 id="hr-residentAddress" 
                 formControlName="residentAddress" 
@@ -1530,7 +1532,7 @@
               ></textarea>
             </div>
             <div class="form-group full-width">
-              <label for="hr-residentAddressKana">住所（ヨミガナ）</label>
+              <label for="hr-residentAddressKana">住所（ヨミガナ） <span class="required">*</span></label>
               <textarea 
                 id="hr-residentAddressKana" 
                 formControlName="residentAddressKana" 
@@ -1538,6 +1540,17 @@
                 rows="2"
                 [readonly]="sameAsCurrentAddress"
               ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="hr-residentHouseholdHead">世帯主（本人/親族） <span class="required">*</span></label>
+              <select 
+                id="hr-residentHouseholdHead" 
+                formControlName="residentHouseholdHead" 
+                class="form-input"
+              >
+                <option value="">選択してください</option>
+                <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
+              </select>
             </div>
           </div>
         </section>
@@ -1710,7 +1723,7 @@
           <h3 class="section-title">社会保険</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label for="hr-healthInsuranceNumber">健康保険の被保険者整理番号</label>
+              <label for="hr-healthInsuranceNumber">健康保険の被保険者整理番号 <span class="required">*</span></label>
               <input 
                 type="text" 
                 id="hr-healthInsuranceNumber" 
@@ -1719,7 +1732,7 @@
               >
             </div>
             <div class="form-group">
-              <label for="hr-pensionInsuranceNumber">厚生年金保険の被保険者整理番号</label>
+              <label for="hr-pensionInsuranceNumber">厚生年金保険の被保険者整理番号 <span class="required">*</span></label>
               <input 
                 type="text" 
                 id="hr-pensionInsuranceNumber" 
@@ -1728,7 +1741,7 @@
               >
             </div>
             <div class="form-group">
-              <label for="hr-basicPensionNumberPart1">基礎年金番号</label>
+              <label for="hr-basicPensionNumberPart1">基礎年金番号 <span class="required">*</span></label>
               <div class="basic-pension-number-container">
                 <input 
                   type="text" 
@@ -1773,7 +1786,7 @@
               ></textarea>
             </div>
             <div class="form-group">
-              <label for="hr-socialInsuranceAcquisitionDate">社会保険の資格取得年月日</label>
+              <label for="hr-socialInsuranceAcquisitionDate">社会保険の資格取得年月日 <span class="required">*</span></label>
               <input 
                 type="date" 
                 id="hr-socialInsuranceAcquisitionDate" 
@@ -1781,8 +1794,8 @@
                 class="form-input"
               >
             </div>
-            <div class="form-group">
-              <label for="hr-socialInsuranceLossDate">社会保険の資格喪失年月日</label>
+            <div class="form-group" *ngIf="employeeEditForm.get('employmentStatus')?.value !== '在籍'">
+              <label for="hr-socialInsuranceLossDate">社会保険の資格喪失年月日 <span class="required">*</span></label>
               <input 
                 type="date" 
                 id="hr-socialInsuranceLossDate" 
@@ -1823,7 +1836,7 @@
           <h3 class="section-title">保険者種別（人事専用）</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label for="hr-healthInsuranceType">健康保険者種別</label>
+              <label for="hr-healthInsuranceType">健康保険者種別 <span class="required">*</span></label>
               <select 
                 id="hr-healthInsuranceType" 
                 formControlName="healthInsuranceType" 
@@ -1834,7 +1847,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="hr-nursingInsuranceType">介護保険者種別</label>
+              <label for="hr-nursingInsuranceType">介護保険者種別 <span class="required">*</span></label>
               <select 
                 id="hr-nursingInsuranceType" 
                 formControlName="nursingInsuranceType" 
@@ -1845,7 +1858,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="hr-pensionInsuranceType">厚生年金保険者種別</label>
+              <label for="hr-pensionInsuranceType">厚生年金保険者種別 <span class="required">*</span></label>
               <select 
                 id="hr-pensionInsuranceType" 
                 formControlName="pensionInsuranceType" 
@@ -1854,36 +1867,6 @@
                 <option value="">選択してください</option>
                 <option *ngFor="let type of pensionInsuranceTypes" [value]="type">{{ type }}</option>
               </select>
-            </div>
-          </div>
-        </section>
-
-        <!-- 坑内員欄（人事専用） -->
-        <section class="form-section hr-only-section">
-          <h3 class="section-title">坑内員（人事専用）</h3>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>坑内員であるか</label>
-              <div class="radio-group">
-                <label class="radio-label">
-                  <input 
-                    type="radio" 
-                    formControlName="isMiner" 
-                    value="はい"
-                    name="employee-isMiner"
-                  >
-                  はい
-                </label>
-                <label class="radio-label">
-                  <input 
-                    type="radio" 
-                    formControlName="isMiner" 
-                    value="いいえ"
-                    name="employee-isMiner"
-                  >
-                  いいえ
-                </label>
-              </div>
             </div>
           </div>
         </section>
@@ -1900,7 +1883,7 @@
                     type="radio" 
                     formControlName="multipleWorkplaceAcquisition" 
                     value="はい"
-                    name="employee-multipleWorkplaceAcquisition"
+                    name="multipleWorkplaceAcquisition"
                   >
                   はい
                 </label>
@@ -1909,10 +1892,13 @@
                     type="radio" 
                     formControlName="multipleWorkplaceAcquisition" 
                     value="いいえ"
-                    name="employee-multipleWorkplaceAcquisition"
+                    name="multipleWorkplaceAcquisition"
                   >
                   いいえ
                 </label>
+              </div>
+              <div *ngIf="employeeEditForm.get('multipleWorkplaceAcquisition')?.invalid && employeeEditForm.get('multipleWorkplaceAcquisition')?.touched" class="error-message">
+                二以上事業所勤務者の取得かを選択してください
               </div>
             </div>
             <div class="form-group">
@@ -1923,7 +1909,7 @@
                     type="radio" 
                     formControlName="reemploymentAfterRetirement" 
                     value="はい"
-                    name="employee-reemploymentAfterRetirement"
+                    name="reemploymentAfterRetirement"
                   >
                   はい
                 </label>
@@ -1932,10 +1918,13 @@
                     type="radio" 
                     formControlName="reemploymentAfterRetirement" 
                     value="いいえ"
-                    name="employee-reemploymentAfterRetirement"
+                    name="reemploymentAfterRetirement"
                   >
                   いいえ
                 </label>
+              </div>
+              <div *ngIf="employeeEditForm.get('reemploymentAfterRetirement')?.invalid && employeeEditForm.get('reemploymentAfterRetirement')?.touched" class="error-message">
+                退職後の継続再雇用者の取得かを選択してください
               </div>
             </div>
             <div class="form-group">
@@ -1946,7 +1935,7 @@
                     type="radio" 
                     formControlName="otherQualificationAcquisition" 
                     value="はい"
-                    name="employee-otherQualificationAcquisition"
+                    name="otherQualificationAcquisition"
                     (change)="onEmployeeOtherQualificationAcquisitionChange($event)"
                   >
                   はい
@@ -1956,14 +1945,14 @@
                     type="radio" 
                     formControlName="otherQualificationAcquisition" 
                     value="いいえ"
-                    name="employee-otherQualificationAcquisition"
+                    name="otherQualificationAcquisition"
                     (change)="onEmployeeOtherQualificationAcquisitionChange($event)"
                   >
                   いいえ
                 </label>
               </div>
-              <div *ngIf="employeeEditForm.get('multipleWorkplaceAcquisition')?.invalid && employeeEditForm.get('multipleWorkplaceAcquisition')?.touched" class="error-message">
-                二以上事業所勤務者の取得かを選択してください
+              <div *ngIf="employeeEditForm.get('otherQualificationAcquisition')?.invalid && employeeEditForm.get('otherQualificationAcquisition')?.touched" class="error-message">
+                その他を選択してください
               </div>
             </div>
             <div class="form-group">
@@ -2004,7 +1993,7 @@
                     type="radio" 
                     formControlName="isMiner" 
                     value="はい"
-                    name="onboarding-isMiner"
+                    name="isMiner"
                   >
                   はい
                 </label>
@@ -2013,12 +2002,12 @@
                     type="radio" 
                     formControlName="isMiner" 
                     value="いいえ"
-                    name="onboarding-isMiner"
+                    name="isMiner"
                   >
                   いいえ
                 </label>
               </div>
-              <div *ngIf="onboardingEmployeeEditForm.get('isMiner')?.invalid && onboardingEmployeeEditForm.get('isMiner')?.touched" class="error-message">
+              <div *ngIf="employeeEditForm.get('isMiner')?.invalid && employeeEditForm.get('isMiner')?.touched" class="error-message">
                 坑内員であるかを選択してください
               </div>
             </div>
