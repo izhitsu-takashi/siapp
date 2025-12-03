@@ -21,8 +21,8 @@ export class EmployeeDashboardComponent {
     { id: 'settings', name: '情報照会' },
     { id: 'insurance', name: '保険・扶養' },
     { id: 'application', name: '各種申請' },
-    { id: 'password-change', name: 'パスワード変更' },
-    { id: 'knowledge', name: 'ナレッジ' }
+    { id: 'knowledge', name: 'ナレッジ' },
+    { id: 'password-change', name: 'パスワード変更' }
   ];
 
   // 社員情報（セッションストレージから取得）

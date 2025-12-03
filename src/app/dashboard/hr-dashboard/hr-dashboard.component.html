@@ -66,7 +66,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getEmployeeStatusCount('必須情報不足') === 0"
                          [class.count-red]="getEmployeeStatusCount('必須情報不足') > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="getEmployeeStatusCount('必須情報不足') === 0">
                       {{ getEmployeeStatusCount('必須情報不足') }}
                     </div>
                   </div>
@@ -75,7 +75,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getEmployeeStatusCount('扶養者情報不足') === 0"
                          [class.count-red]="getEmployeeStatusCount('扶養者情報不足') > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="getEmployeeStatusCount('扶養者情報不足') === 0">
                       {{ getEmployeeStatusCount('扶養者情報不足') }}
                     </div>
                   </div>
@@ -84,7 +84,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getEmployeeStatusCount('入力完了') === 0"
                          [class.count-red]="false"
-                         [class.count-green]="getEmployeeStatusCount('入力完了') > 0">
+                         [class.count-green]="true">
                       {{ getEmployeeStatusCount('入力完了') }}
                     </div>
                   </div>
@@ -110,7 +110,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getApplicationStatusCount('承認待ち') === 0"
                          [class.count-red]="getApplicationStatusCount('承認待ち') > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="getApplicationStatusCount('承認待ち') === 0">
                       {{ getApplicationStatusCount('承認待ち') }}
                     </div>
                   </div>
@@ -119,7 +119,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getApplicationStatusCount('確認中') === 0"
                          [class.count-red]="getApplicationStatusCount('確認中') > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="getApplicationStatusCount('確認中') === 0">
                       {{ getApplicationStatusCount('確認中') }}
                     </div>
                   </div>
@@ -128,7 +128,7 @@
                     <div class="status-count" 
                          [class.count-zero]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) === 0"
                          [class.count-red]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) === 0">
                       {{ getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し') }}
                     </div>
                   </div>
@@ -137,7 +137,7 @@
                     <div class="status-count" 
                          [class.count-zero]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) === 0"
                          [class.count-red]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) === 0">
                       {{ getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出') }}
                     </div>
                   </div>
@@ -146,7 +146,7 @@
                     <div class="status-count" 
                          [class.count-zero]="(getApplicationStatusCount('承認済み') + getApplicationStatusCount('承認')) === 0"
                          [class.count-red]="false"
-                         [class.count-green]="(getApplicationStatusCount('承認済み') + getApplicationStatusCount('承認')) > 0">
+                         [class.count-green]="true">
                       {{ getApplicationStatusCount('承認済み') + getApplicationStatusCount('承認') }}
                     </div>
                   </div>
@@ -172,7 +172,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('申請待ち') === 0"
                          [class.count-red]="getOnboardingStatusCount('申請待ち') > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="getOnboardingStatusCount('申請待ち') === 0">
                       {{ getOnboardingStatusCount('申請待ち') }}
                     </div>
                   </div>
@@ -181,7 +181,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('申請済み') === 0"
                          [class.count-red]="getOnboardingStatusCount('申請済み') > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="getOnboardingStatusCount('申請済み') === 0">
                       {{ getOnboardingStatusCount('申請済み') }}
                     </div>
                   </div>
@@ -190,7 +190,7 @@
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('差し戻し') === 0"
                          [class.count-red]="getOnboardingStatusCount('差し戻し') > 0"
-                         [class.count-green]="false">
+                         [class.count-green]="getOnboardingStatusCount('差し戻し') === 0">
                       {{ getOnboardingStatusCount('差し戻し') }}
                     </div>
                   </div>
@@ -198,8 +198,8 @@
                     <div class="status-label">準備完了</div>
                     <div class="status-count" 
                          [class.count-zero]="getOnboardingStatusCount('準備完了') === 0"
-                         [class.count-red]="false"
-                         [class.count-green]="getOnboardingStatusCount('準備完了') > 0">
+                         [class.count-red]="getOnboardingStatusCount('準備完了') > 0"
+                         [class.count-green]="getOnboardingStatusCount('準備完了') === 0">
                       {{ getOnboardingStatusCount('準備完了') }}
                     </div>
                   </div>
