@@ -924,8 +924,33 @@ export class KyuyoDashboardComponent {
             // 40歳以上の従業員は介護保険料を0円にする
             const isOver40 = age !== null && age >= 40;
             
-            // 厚生年金保険料計算用の標準報酬月額（kouseinenkinReiwa7リストを参照）
-            const pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalary(finalFixedSalary);
+            // 厚生年金保険料計算用の標準報酬月額（上限・下限を考慮）
+            // 標準報酬月額を使用し、上限・下限の条件を適用
+            let pensionStandardMonthlySalary = standardMonthlySalary;
+            
+            // 上限・下限の条件を適用（calculatePensionStandardMonthlySalaryのロジックを適用）
+            if (pensionStandardMonthlySalary > 0) {
+              if (this.gradeTable && this.gradeTable.kouseinenkinReiwa7) {
+                // kouseinenkinReiwa7が存在する場合、上限・下限を確認
+                const kouseinenkinList = this.gradeTable.kouseinenkinReiwa7;
+                const minStandard = kouseinenkinList.length > 0 ? Number(kouseinenkinList[0].monthlyStandard) : 88000;
+                const maxStandard = kouseinenkinList.length > 0 ? Number(kouseinenkinList[kouseinenkinList.length - 1].monthlyStandard) : 650000;
+                
+                // 下限チェック（88000円未満の場合は88000円）
+                if (pensionStandardMonthlySalary < minStandard) {
+                  pensionStandardMonthlySalary = minStandard;
+                }
+                // 上限チェック（650000円を超える場合は650000円）
+                if (pensionStandardMonthlySalary > maxStandard) {
+                  pensionStandardMonthlySalary = maxStandard;
+                }
+              } else {
+                // kouseinenkinReiwa7が存在しない場合、88000円未満の場合は88000円
+                if (pensionStandardMonthlySalary < 88000) {
+                  pensionStandardMonthlySalary = 88000;
+                }
+              }
+            }
             
             // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
             // 小数第2位まで保持（表示用）
@@ -985,9 +1010,8 @@ export class KyuyoDashboardComponent {
   
   // 事業主負担額合計を計算
   getTotalEmployerBurden(): number {
-    let totalHealthInsurance = 0;
-    let totalNursingInsurance = 0;
-    let totalPensionInsurance = 0;
+    let totalHealthNursingInsuranceBeforeFloor = 0; // 健康保険料と介護保険料の合計（端数処理前）
+    let totalPensionInsuranceBeforeFloor = 0; // 厚生年金保険料の合計（端数処理前）
     let totalEmployeeBurden = 0;
     
     // 賞与テーブルの場合はfilteredInsuranceListのみを使用（給与テーブルのデータを参照しない）
@@ -996,23 +1020,28 @@ export class KyuyoDashboardComponent {
       : (this.filteredInsuranceList.length > 0 ? this.filteredInsuranceList : this.insuranceList);
     
     listToUse.forEach((item: any) => {
-      // 全体の健康保険料（端数を切り落とした額）
-      totalHealthInsurance += Math.floor(item.healthInsurance || 0);
+      // 健康保険料と介護保険料を足した額（端数処理は後で行う）
+      const healthInsurance = item.healthInsurance || 0;
+      const nursingInsurance = item.nursingInsurance || 0;
+      const healthNursingTotal = healthInsurance + nursingInsurance;
+      totalHealthNursingInsuranceBeforeFloor += healthNursingTotal;
       
-      // 全体の介護保険料（端数を切り落とした額）
-      totalNursingInsurance += Math.floor(item.nursingInsurance || 0);
-      
-      // 全体の厚生年金保険料（端数を切り落とした額）
-      totalPensionInsurance += Math.floor(item.pensionInsurance || 0);
+      // 厚生年金保険料（端数処理は後で行う）
+      const pensionInsurance = item.pensionInsurance || 0;
+      totalPensionInsuranceBeforeFloor += pensionInsurance;
       
       // 社員負担額の合計
       totalEmployeeBurden += item.employeeBurden || 0;
     });
     
+    // 全社員の合計を計算してから端数処理
+    const totalHealthNursingInsurance = Math.floor(totalHealthNursingInsuranceBeforeFloor);
+    const totalPensionInsurance = Math.floor(totalPensionInsuranceBeforeFloor);
+    
     // 事業主負担額 = （全体の健康保険料＋全体の介護保険料）の端数を切り落とした額
     //                ＋全体の厚生年金保険料の端数を切り落とした額
     //                －社員負担額の合計
-    return (totalHealthInsurance + totalNursingInsurance) + totalPensionInsurance - totalEmployeeBurden;
+    return totalHealthNursingInsurance + totalPensionInsurance - totalEmployeeBurden;
   }
   
   // 健康保険料合計を計算
@@ -1442,8 +1471,33 @@ export class KyuyoDashboardComponent {
             // 40歳以上の従業員は介護保険料を0円にする
             const isOver40 = age !== null && age >= 40;
             
-            // 厚生年金保険料計算用の標準報酬月額（任意継続被保険者の場合は0）
-            const pensionStandardMonthlySalary = isVoluntaryContinuation ? 0 : this.calculatePensionStandardMonthlySalary(fixedSalary);
+            // 厚生年金保険料計算用の標準報酬月額（上限・下限を考慮）
+            // 標準報酬月額を使用し、上限・下限の条件を適用
+            let pensionStandardMonthlySalary = isVoluntaryContinuation ? 0 : standardMonthlySalary;
+            
+            // 上限・下限の条件を適用（calculatePensionStandardMonthlySalaryのロジックを適用）
+            if (!isVoluntaryContinuation && pensionStandardMonthlySalary > 0) {
+              if (this.gradeTable && this.gradeTable.kouseinenkinReiwa7) {
+                // kouseinenkinReiwa7が存在する場合、上限・下限を確認
+                const kouseinenkinList = this.gradeTable.kouseinenkinReiwa7;
+                const minStandard = kouseinenkinList.length > 0 ? Number(kouseinenkinList[0].monthlyStandard) : 88000;
+                const maxStandard = kouseinenkinList.length > 0 ? Number(kouseinenkinList[kouseinenkinList.length - 1].monthlyStandard) : 650000;
+                
+                // 下限チェック（88000円未満の場合は88000円）
+                if (pensionStandardMonthlySalary < minStandard) {
+                  pensionStandardMonthlySalary = minStandard;
+                }
+                // 上限チェック（650000円を超える場合は650000円）
+                if (pensionStandardMonthlySalary > maxStandard) {
+                  pensionStandardMonthlySalary = maxStandard;
+                }
+              } else {
+                // kouseinenkinReiwa7が存在しない場合、88000円未満の場合は88000円
+                if (pensionStandardMonthlySalary < 88000) {
+                  pensionStandardMonthlySalary = 88000;
+                }
+              }
+            }
             
             // 各保険料を計算（産前産後休業期間内の場合は0円）
             const healthInsuranceRaw = isInMaternityLeave ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
