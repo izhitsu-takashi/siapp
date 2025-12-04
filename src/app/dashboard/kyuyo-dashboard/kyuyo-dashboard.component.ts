@@ -2109,6 +2109,68 @@ export class KyuyoDashboardComponent {
     }
   }
 
+  // 指定された年月の報酬加算額を計算（その年月が属する年度の7月から翌年6月までの賞与が4回以上の場合）
+  async calculateMonthlyRewardAddition(
+    employeeNumber: string,
+    year: number,
+    month: number,
+    bonusList: any[]
+  ): Promise<number> {
+    try {
+      // 設定を取得（年4回以上の賞与を報酬と扱うか）
+      const settings = await this.firestoreService.getSettings();
+      const treatBonusAsReward = settings?.treatBonusAsReward !== undefined ? settings.treatBonusAsReward : true;
+      
+      if (!treatBonusAsReward) {
+        return 0;
+      }
+      
+      // その年月が属する年度を判定（7月～翌年6月が1年度）
+      let fiscalYear: number;
+      if (month >= 7) {
+        fiscalYear = year;
+      } else {
+        fiscalYear = year - 1;
+      }
+      
+      // 該当年度の7月から翌年6月までの賞与を取得
+      const fiscalYearBonuses = bonusList.filter((b: any) => {
+        const bYear = Number(b['year']);
+        const bMonth = Number(b['month']);
+        if (b['employeeNumber'] !== employeeNumber) return false;
+        
+        // 年度を判定
+        let bFiscalYear: number;
+        if (bMonth >= 7) {
+          bFiscalYear = bYear;
+        } else {
+          bFiscalYear = bYear - 1;
+        }
+        
+        return bFiscalYear === fiscalYear;
+      });
+      
+      // 年度賞与支給回数
+      const fiscalYearBonusCount = fiscalYearBonuses.length;
+      
+      // 賞与支給回数が4回以上の場合のみ報酬加算額を計算
+      if (fiscalYearBonusCount >= 4) {
+        // 年度内の賞与合計額を計算
+        const fiscalYearTotalBonus = fiscalYearBonuses.reduce((sum: number, b: any) => {
+          return sum + Number(b['amount']);
+        }, 0);
+        
+        // 年度報酬加算額（賞与合計額を12で割った額）
+        return fiscalYearTotalBonus / 12;
+      }
+      
+      return 0;
+    } catch (error) {
+      console.error('Error calculating monthly reward addition:', error);
+      return 0;
+    }
+  }
+
   // その社員のすべての随時改定を再計算
   async recalculateAllZujijiKaitei(
     employeeNumber: string,
@@ -2218,6 +2280,15 @@ export class KyuyoDashboardComponent {
       // 3か月の固定的賃金の平均を計算（変更月、変更月+1、変更月+2の3か月）
       const salariesForAverage: number[] = [];
       
+      // 賞与一覧を取得（報酬加算額の計算に必要）
+      const allBonuses = await this.firestoreService.getBonusHistory();
+      const bonusList = allBonuses.map((bonus: any) => ({
+        ...bonus,
+        year: Number(bonus['year']),
+        month: Number(bonus['month']),
+        employeeNumber: bonus['employeeNumber']
+      }));
+      
       for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
         let targetYear = changeYear;
         let targetMonth = changeMonth + monthOffset;
@@ -2238,9 +2309,10 @@ export class KyuyoDashboardComponent {
           return salaryYear === targetYear && salaryMonth === targetMonth;
         });
         
+        let monthlySalary = 0;
         if (exactMonthSalary) {
           // 該当月に給与設定がある場合はそれを使用
-          salariesForAverage.push(Number(exactMonthSalary['amount']));
+          monthlySalary = Number(exactMonthSalary['amount']);
         } else {
           // 該当月に給与設定がない場合は、該当月以前の最新の給与設定を取得
           const relevantSalaries = allSalaries
@@ -2257,12 +2329,22 @@ export class KyuyoDashboardComponent {
             });
           
           if (relevantSalaries.length > 0) {
-            salariesForAverage.push(Number(relevantSalaries[0]['amount']));
+            monthlySalary = Number(relevantSalaries[0]['amount']);
           } else {
             // 該当月以前の給与設定がない場合、変更月の給与を使用
-            salariesForAverage.push(Number(newSalary));
+            monthlySalary = Number(newSalary);
           }
         }
+        
+        // 報酬加算額を計算して加算
+        const rewardAddition = await this.calculateMonthlyRewardAddition(
+          employeeNumber,
+          targetYear,
+          targetMonth,
+          bonusList
+        );
+        
+        salariesForAverage.push(monthlySalary + rewardAddition);
       }
       
       // 平均を計算
@@ -2363,6 +2445,15 @@ export class KyuyoDashboardComponent {
       const salariesForAverage: number[] = [];
       const salaryDetails: { month: number; amount: number; source: string }[] = [];
       
+      // 賞与一覧を取得（報酬加算額の計算に必要）
+      const allBonuses = await this.firestoreService.getBonusHistory();
+      const bonusList = allBonuses.map((bonus: any) => ({
+        ...bonus,
+        year: Number(bonus['year']),
+        month: Number(bonus['month']),
+        employeeNumber: bonus['employeeNumber']
+      }));
+      
       for (let month = 4; month <= 6; month++) {
         // 該当月の給与設定を取得
         const allSalaries = salaryHistory.filter((s: any) => s['employeeNumber'] === employeeNumber);
@@ -2374,11 +2465,11 @@ export class KyuyoDashboardComponent {
           return salaryYear === fiscalYear && salaryMonth === month;
         });
         
+        let monthlySalary = 0;
         if (exactMonthSalary) {
           // 該当月に給与設定がある場合はそれを使用
-          const amount = Number(exactMonthSalary['amount']);
-          salariesForAverage.push(amount);
-          salaryDetails.push({ month, amount, source: '該当月の給与設定' });
+          monthlySalary = Number(exactMonthSalary['amount']);
+          salaryDetails.push({ month, amount: monthlySalary, source: '該当月の給与設定' });
         } else {
           // 該当月に給与設定がない場合は、該当月以前の最新の給与設定を取得
           const relevantSalaries = allSalaries
@@ -2395,19 +2486,28 @@ export class KyuyoDashboardComponent {
             });
           
           if (relevantSalaries.length > 0) {
-            const amount = Number(relevantSalaries[0]['amount']);
+            monthlySalary = Number(relevantSalaries[0]['amount']);
             const sourceYear = Number(relevantSalaries[0]['year']);
             const sourceMonth = Number(relevantSalaries[0]['month']);
-            salariesForAverage.push(amount);
             salaryDetails.push({ 
               month, 
-              amount, 
+              amount: monthlySalary, 
               source: `該当月以前の最新の給与設定（${sourceYear}年${sourceMonth}月）` 
             });
           } else {
             salaryDetails.push({ month, amount: 0, source: '給与設定なし' });
           }
         }
+        
+        // 報酬加算額を計算して加算
+        const rewardAddition = await this.calculateMonthlyRewardAddition(
+          employeeNumber,
+          fiscalYear,
+          month,
+          bonusList
+        );
+        
+        salariesForAverage.push(monthlySalary + rewardAddition);
       }
       
       // コンソールログ出力：計算に用いられた月の給与額
@@ -2768,6 +2868,51 @@ export class KyuyoDashboardComponent {
           name: employee?.name || ''
         };
       });
+      
+      // 設定を取得（年4回以上の賞与を報酬と扱うか）
+      const settings = await this.firestoreService.getSettings();
+      const treatBonusAsReward = settings?.treatBonusAsReward !== undefined ? settings.treatBonusAsReward : true;
+      
+      // 年4回以上の賞与を報酬と扱う設定が「はい」の場合、賞与支給月を給与変更月として随時改定処理を行う
+      if (treatBonusAsReward) {
+        // その年度の賞与支給回数を確認
+        const bonusFiscalYear = this.bonusMonth >= 7 ? this.bonusYear : this.bonusYear - 1;
+        const fiscalYearBonuses = bonuses.filter((b: any) => {
+          const bYear = Number(b['year']);
+          const bMonth = Number(b['month']);
+          if (b['employeeNumber'] !== this.selectedBonusEmployee) return false;
+          
+          let bFiscalYear: number;
+          if (bMonth >= 7) {
+            bFiscalYear = bYear;
+          } else {
+            bFiscalYear = bYear - 1;
+          }
+          
+          return bFiscalYear === bonusFiscalYear;
+        });
+        
+        const fiscalYearBonusCount = fiscalYearBonuses.length;
+        
+        // 賞与支給回数が4回以上になった場合、随時改定処理を行う
+        if (fiscalYearBonusCount >= 4) {
+          console.log(`[賞与設定] 年度賞与支給回数が4回以上（${fiscalYearBonusCount}回）になったため、随時改定処理を実行します。`);
+          
+          // 給与設定履歴を取得（随時改定の計算に必要）
+          const allSalaryHistory = await this.firestoreService.getAllSalaryHistory();
+          
+          // 賞与支給月を給与変更月として随時改定処理を行う
+          // ただし、実際の給与変更ではないため、給与額は0として処理し、報酬加算額のみを考慮する
+          // 実際には、その月の給与に報酬加算額を加算した額で随時改定を計算する必要がある
+          // しかし、賞与支給月に給与設定がない場合もあるため、その月以前の最新の給与設定を使用する
+          
+          // その社員のすべての随時改定を再計算（報酬加算額が変更されたため）
+          await this.recalculateAllZujijiKaitei(
+            this.selectedBonusEmployee,
+            allSalaryHistory
+          );
+        }
+      }
       
       // 保険料一覧を再フィルタリング
       await this.filterInsuranceListByDate();
