@@ -53,6 +53,7 @@ export class KyuyoDashboardComponent {
   settingsForm!: FormGroup;
   healthInsuranceType: string = '協会けんぽ';
   selectedPrefecture: string = '';
+  treatBonusAsReward: boolean = true; // 年4回以上の賞与を報酬と扱うか（デフォルト: はい）
   
   // 健康保険料率データ
   kenpoRates: any[] = [];
@@ -165,7 +166,9 @@ export class KyuyoDashboardComponent {
       // 保険料率設定
       healthInsuranceRate: [0],
       nursingInsuranceRate: [0],
-      pensionInsuranceRate: [0]
+      pensionInsuranceRate: [0],
+      // 詳細設定
+      treatBonusAsReward: [true] // 年4回以上の賞与を報酬と扱うか
     });
   }
   
@@ -229,13 +232,19 @@ export class KyuyoDashboardComponent {
           this.gradeTable = settings.gradeTable;
         }
         
+        // 詳細設定を読み込む
+        if (settings.treatBonusAsReward !== undefined) {
+          this.treatBonusAsReward = settings.treatBonusAsReward;
+        }
+        
         // フォームに値を設定
         this.settingsForm.patchValue({
           healthInsuranceType: this.healthInsuranceType,
           prefecture: this.selectedPrefecture,
           healthInsuranceRate: this.insuranceRates.healthInsurance,
           nursingInsuranceRate: this.insuranceRates.nursingInsurance,
-          pensionInsuranceRate: this.insuranceRates.pensionInsurance
+          pensionInsuranceRate: this.insuranceRates.pensionInsurance,
+          treatBonusAsReward: this.treatBonusAsReward
         });
       }
     } catch (error) {
@@ -296,18 +305,49 @@ export class KyuyoDashboardComponent {
       // Firestoreから現在の設定を取得してマージ
       const currentSettings = await this.firestoreService.getSettings() || {};
       
+      // 詳細設定も更新
+      this.treatBonusAsReward = this.settingsForm.get('treatBonusAsReward')?.value !== false;
+      
       // Firestoreに保存
       await this.firestoreService.saveSettings({
         ...currentSettings,
         healthInsuranceType: this.healthInsuranceType,
         prefecture: this.selectedPrefecture,
-        insuranceRates: this.insuranceRates
+        insuranceRates: this.insuranceRates,
+        treatBonusAsReward: this.treatBonusAsReward
       });
       
       alert('健康保険設定を保存しました');
     } catch (error) {
       console.error('Error saving health insurance setting:', error);
       alert('健康保険設定の保存中にエラーが発生しました');
+    }
+  }
+  
+  // 詳細設定を保存
+  async saveDetailSettings() {
+    try {
+      const formValue = this.settingsForm.value;
+      
+      // 詳細設定を更新
+      this.treatBonusAsReward = formValue.treatBonusAsReward !== false; // デフォルトはtrue
+      
+      // Firestoreから現在の設定を取得してマージ
+      const currentSettings = await this.firestoreService.getSettings() || {};
+      
+      // Firestoreに保存
+      await this.firestoreService.saveSettings({
+        ...currentSettings,
+        treatBonusAsReward: this.treatBonusAsReward
+      });
+      
+      alert('詳細設定を保存しました');
+      
+      // 社会保険料一覧を再読み込み
+      await this.loadInsuranceList();
+    } catch (error) {
+      console.error('Error saving detail settings:', error);
+      alert('詳細設定の保存中にエラーが発生しました');
     }
   }
   
@@ -323,13 +363,17 @@ export class KyuyoDashboardComponent {
         pensionInsurance: Number(formValue.pensionInsuranceRate) || 0
       };
       
+      // 詳細設定も更新
+      this.treatBonusAsReward = this.settingsForm.get('treatBonusAsReward')?.value !== false;
+      
       // Firestoreから現在の設定を取得してマージ
       const currentSettings = await this.firestoreService.getSettings() || {};
       
       // Firestoreに保存
       await this.firestoreService.saveSettings({
         ...currentSettings,
-        insuranceRates: this.insuranceRates
+        insuranceRates: this.insuranceRates,
+        treatBonusAsReward: this.treatBonusAsReward
       });
       
       alert('保険料率設定を保存しました');
@@ -549,7 +593,8 @@ export class KyuyoDashboardComponent {
       const currentSettings = await this.firestoreService.getSettings() || {};
       await this.firestoreService.saveSettings({
         ...currentSettings,
-        gradeTable: this.gradeTable
+        gradeTable: this.gradeTable,
+        treatBonusAsReward: this.treatBonusAsReward
       });
       
       alert('等級表を適用しました');
@@ -1423,7 +1468,11 @@ export class KyuyoDashboardComponent {
         this.filteredInsuranceList = filteredItems;
       } else {
         // 賞与の場合：選択された年月の賞与で計算
-        // その年の7月から翌年6月までの間に、賞与が4回以上支給された場合、4回目以降の賞与は表示しない
+        // 設定を取得（年4回以上の賞与を報酬と扱うか）
+        const settings = await this.firestoreService.getSettings();
+        const treatBonusAsReward = settings?.treatBonusAsReward !== undefined ? settings.treatBonusAsReward : true;
+        
+        // その年の7月から翌年6月までの間に、賞与が4回以上支給された場合、4回目以降の賞与は表示しない（設定が「はい」の場合のみ）
         const bonusListFiltered = this.bonusList.filter((bonus: any) => {
           // 年月を数値型に変換して比較（Firestoreから取得したデータが文字列型の場合があるため）
           const bonusYear = Number(bonus['year']);
@@ -1432,6 +1481,11 @@ export class KyuyoDashboardComponent {
           // 選択された年月の賞与かどうかをチェック
           if (bonusYear !== filterYear || bonusMonth !== filterMonth) {
             return false;
+          }
+          
+          // 設定が「いいえ」の場合は、すべての賞与を表示
+          if (!treatBonusAsReward) {
+            return true;
           }
           
           // 年度を判定（7月～翌年6月が1年度）
@@ -2624,9 +2678,13 @@ export class KyuyoDashboardComponent {
         // 年度賞与支給回数
         const fiscalYearBonusCount = fiscalYearBonuses.length;
         
-        // 年度報酬加算額（賞与支給回数が4回以上の場合のみ算出）
+        // 設定を取得（年4回以上の賞与を報酬と扱うか）
+        const settings = await this.firestoreService.getSettings();
+        const treatBonusAsReward = settings?.treatBonusAsReward !== undefined ? settings.treatBonusAsReward : true;
+        
+        // 年度報酬加算額（設定が「はい」で、賞与支給回数が4回以上の場合のみ算出）
         let annualRewardAddition = 0;
-        if (fiscalYearBonusCount >= 4) {
+        if (treatBonusAsReward && fiscalYearBonusCount >= 4) {
           // 年度内の賞与合計額を計算
           const fiscalYearTotalBonus = fiscalYearBonuses.reduce((sum: number, b: any) => {
             return sum + Number(b['amount']);

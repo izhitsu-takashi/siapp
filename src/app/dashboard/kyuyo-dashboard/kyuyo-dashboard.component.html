@@ -441,166 +441,208 @@
             <h2 class="page-title">設定</h2>
             
             <form [formGroup]="settingsForm">
-              <!-- 健康保険設定 -->
-              <section class="settings-section">
-                <h3 class="section-title">健康保険設定</h3>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="healthInsuranceType">健康保険種別</label>
-                    <select 
-                      id="healthInsuranceType" 
-                      formControlName="healthInsuranceType" 
-                      class="form-input"
-                      (change)="onHealthInsuranceTypeChange()"
-                    >
-                      <option value="協会けんぽ">協会けんぽ</option>
-                      <option value="組合保険">組合保険</option>
-                    </select>
-                  </div>
-                  <div class="form-group" *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'">
-                    <label for="prefecture">都道府県 <span class="required">*</span></label>
-                    <select 
-                      id="prefecture" 
-                      formControlName="prefecture" 
-                      class="form-input"
-                      (change)="onPrefectureChange()"
-                    >
-                      <option value="">選択してください</option>
-                      <option *ngFor="let rate of kenpoRates" [value]="rate.prefecture">
-                        {{ rate.prefecture }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-                <div class="section-actions">
-                  <button type="button" class="save-section-button" (click)="saveHealthInsuranceSetting()">
-                    健康保険設定を保存
-                  </button>
-                </div>
-              </section>
-
-              <!-- 保険料率設定 -->
-              <section class="settings-section">
-                <h3 class="section-title">保険料率設定</h3>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="healthInsuranceRate">健康保険料率 (%)</label>
-                    <input 
-                      type="number" 
-                      id="healthInsuranceRate" 
-                      formControlName="healthInsuranceRate" 
-                      class="form-input"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      placeholder="例: 5.0"
-                    >
-                  </div>
-                  <div class="form-group">
-                    <label for="nursingInsuranceRate">介護保険料率 (%)</label>
-                    <input 
-                      type="number" 
-                      id="nursingInsuranceRate" 
-                      formControlName="nursingInsuranceRate" 
-                      class="form-input"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      placeholder="例: 1.0"
-                    >
-                  </div>
-                  <div class="form-group">
-                    <label for="pensionInsuranceRate">厚生年金保険料率 (%)</label>
-                    <input 
-                      type="number" 
-                      id="pensionInsuranceRate" 
-                      formControlName="pensionInsuranceRate" 
-                      class="form-input"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      placeholder="例: 9.15"
-                    >
-                  </div>
-                </div>
-                <div class="section-actions">
-                  <button type="button" class="save-section-button" (click)="saveInsuranceRates()">
-                    保険料率設定を保存
-                  </button>
-                </div>
-              </section>
-
-              <!-- 協会けんぽ保険料率管理 -->
-              <section class="settings-section">
-                <h3 class="section-title">協会けんぽ保険料率管理</h3>
-                <div class="form-description">
-                  <p>現在設定されている協会けんぽの保険料率データをダウンロードしたり、JSONファイルをアップロードして保険料率を更新できます。</p>
-                </div>
-                <div class="file-management-actions">
-                  <button type="button" class="download-button" (click)="downloadKenpoRates()">
-                    kenpo-rates.jsonをダウンロード
-                  </button>
-                  <div class="upload-group">
-                    <label for="kenpoRatesFile" class="upload-label">
-                      <input 
-                        type="file" 
-                        id="kenpoRatesFile" 
-                        accept=".json"
-                        (change)="onKenpoRatesFileSelected($event)"
-                        style="display: none;"
+              <!-- 保険料率設定欄 -->
+              <div class="settings-container">
+                <h3 class="container-title">保険料率設定欄</h3>
+                
+                <!-- 健康保険設定 -->
+                <section class="settings-section">
+                  <h4 class="section-title">健康保険設定</h4>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label for="healthInsuranceType">健康保険種別</label>
+                      <select 
+                        id="healthInsuranceType" 
+                        formControlName="healthInsuranceType" 
+                        class="form-input"
+                        (change)="onHealthInsuranceTypeChange()"
                       >
-                      <span class="upload-button">JSONファイルをアップロード</span>
-                    </label>
-                    <span *ngIf="selectedKenpoRatesFileName" class="selected-file-name">
-                      {{ selectedKenpoRatesFileName }}
-                    </span>
-                  </div>
-                  <button 
-                    *ngIf="selectedKenpoRatesFile" 
-                    type="button" 
-                    class="apply-button" 
-                    (click)="applyKenpoRates()"
-                  >
-                    保険料率を適用
-                  </button>
-                </div>
-              </section>
-
-              <!-- 等級表管理 -->
-              <section class="settings-section">
-                <h3 class="section-title">等級表管理</h3>
-                <div class="form-description">
-                  <p>現在設定されている標準報酬月額等級表データをダウンロードしたり、JSONファイルをアップロードして等級表を更新できます。</p>
-                </div>
-                <div class="file-management-actions">
-                  <button type="button" class="download-button" (click)="downloadGradeTable()">
-                    等級.jsonをダウンロード
-                  </button>
-                  <div class="upload-group">
-                    <label for="gradeTableFile" class="upload-label">
-                      <input 
-                        type="file" 
-                        id="gradeTableFile" 
-                        accept=".json"
-                        (change)="onGradeTableFileSelected($event)"
-                        style="display: none;"
+                        <option value="協会けんぽ">協会けんぽ</option>
+                        <option value="組合保険">組合保険</option>
+                      </select>
+                    </div>
+                    <div class="form-group" *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'">
+                      <label for="prefecture">都道府県 <span class="required">*</span></label>
+                      <select 
+                        id="prefecture" 
+                        formControlName="prefecture" 
+                        class="form-input"
+                        (change)="onPrefectureChange()"
                       >
-                      <span class="upload-button">JSONファイルをアップロード</span>
-                    </label>
-                    <span *ngIf="selectedGradeTableFileName" class="selected-file-name">
-                      {{ selectedGradeTableFileName }}
-                    </span>
+                        <option value="">選択してください</option>
+                        <option *ngFor="let rate of kenpoRates" [value]="rate.prefecture">
+                          {{ rate.prefecture }}
+                        </option>
+                      </select>
+                    </div>
                   </div>
-                  <button 
-                    *ngIf="selectedGradeTableFile" 
-                    type="button" 
-                    class="apply-button" 
-                    (click)="applyGradeTable()"
-                  >
-                    等級表を適用
-                  </button>
-                </div>
-              </section>
+                  <div class="section-actions">
+                    <button type="button" class="save-section-button" (click)="saveHealthInsuranceSetting()">
+                      健康保険設定を保存
+                    </button>
+                  </div>
+                </section>
+
+                <!-- 保険料率設定 -->
+                <section class="settings-section">
+                  <h4 class="section-title">保険料率設定</h4>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label for="healthInsuranceRate">健康保険料率 (%)</label>
+                      <input 
+                        type="number" 
+                        id="healthInsuranceRate" 
+                        formControlName="healthInsuranceRate" 
+                        class="form-input"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="例: 5.0"
+                      >
+                    </div>
+                    <div class="form-group">
+                      <label for="nursingInsuranceRate">介護保険料率 (%)</label>
+                      <input 
+                        type="number" 
+                        id="nursingInsuranceRate" 
+                        formControlName="nursingInsuranceRate" 
+                        class="form-input"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="例: 1.0"
+                      >
+                    </div>
+                    <div class="form-group">
+                      <label for="pensionInsuranceRate">厚生年金保険料率 (%)</label>
+                      <input 
+                        type="number" 
+                        id="pensionInsuranceRate" 
+                        formControlName="pensionInsuranceRate" 
+                        class="form-input"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="例: 9.15"
+                      >
+                    </div>
+                  </div>
+                  <div class="section-actions">
+                    <button type="button" class="save-section-button" (click)="saveInsuranceRates()">
+                      保険料率設定を保存
+                    </button>
+                  </div>
+                </section>
+
+                <!-- 協会けんぽ保険料率管理 -->
+                <section class="settings-section">
+                  <h4 class="section-title">協会けんぽ保険料率管理</h4>
+                  <div class="form-description">
+                    <p>現在設定されている協会けんぽの保険料率データをダウンロードしたり、JSONファイルをアップロードして保険料率を更新できます。</p>
+                  </div>
+                  <div class="file-management-actions">
+                    <button type="button" class="download-button" (click)="downloadKenpoRates()">
+                      kenpo-rates.jsonをダウンロード
+                    </button>
+                    <div class="upload-group">
+                      <label for="kenpoRatesFile" class="upload-label">
+                        <input 
+                          type="file" 
+                          id="kenpoRatesFile" 
+                          accept=".json"
+                          (change)="onKenpoRatesFileSelected($event)"
+                          style="display: none;"
+                        >
+                        <span class="upload-button">JSONファイルをアップロード</span>
+                      </label>
+                      <span *ngIf="selectedKenpoRatesFileName" class="selected-file-name">
+                        {{ selectedKenpoRatesFileName }}
+                      </span>
+                    </div>
+                    <button 
+                      *ngIf="selectedKenpoRatesFile" 
+                      type="button" 
+                      class="apply-button" 
+                      (click)="applyKenpoRates()"
+                    >
+                      保険料率を適用
+                    </button>
+                  </div>
+                </section>
+
+                <!-- 等級表管理 -->
+                <section class="settings-section">
+                  <h4 class="section-title">等級表管理</h4>
+                  <div class="form-description">
+                    <p>現在設定されている標準報酬月額等級表データをダウンロードしたり、JSONファイルをアップロードして等級表を更新できます。</p>
+                  </div>
+                  <div class="file-management-actions">
+                    <button type="button" class="download-button" (click)="downloadGradeTable()">
+                      等級.jsonをダウンロード
+                    </button>
+                    <div class="upload-group">
+                      <label for="gradeTableFile" class="upload-label">
+                        <input 
+                          type="file" 
+                          id="gradeTableFile" 
+                          accept=".json"
+                          (change)="onGradeTableFileSelected($event)"
+                          style="display: none;"
+                        >
+                        <span class="upload-button">JSONファイルをアップロード</span>
+                      </label>
+                      <span *ngIf="selectedGradeTableFileName" class="selected-file-name">
+                        {{ selectedGradeTableFileName }}
+                      </span>
+                    </div>
+                    <button 
+                      *ngIf="selectedGradeTableFile" 
+                      type="button" 
+                      class="apply-button" 
+                      (click)="applyGradeTable()"
+                    >
+                      等級表を適用
+                    </button>
+                  </div>
+                </section>
+              </div>
+
+              <!-- 詳細設定 -->
+              <div class="settings-container">
+                <h3 class="container-title">詳細設定</h3>
+                
+                <section class="settings-section">
+                  <div class="form-group">
+                    <label>年4回以上の賞与を報酬と扱うか</label>
+                    <div class="radio-group">
+                      <label class="radio-label">
+                        <input 
+                          type="radio" 
+                          formControlName="treatBonusAsReward" 
+                          [value]="true"
+                        >
+                        <span>はい</span>
+                      </label>
+                      <label class="radio-label">
+                        <input 
+                          type="radio" 
+                          formControlName="treatBonusAsReward" 
+                          [value]="false"
+                        >
+                        <span>いいえ</span>
+                      </label>
+                    </div>
+                    <div class="form-description">
+                      <p>「はい」を選択した場合、7月から翌年6月までの間に賞与が4回以上支給された場合、4回目以降の賞与は賞与設定履歴表に表示されず、報酬加算額の計算が行われます。「いいえ」を選択した場合、賞与に特別な処理は行わず、毎回通常の賞与として加算されます。</p>
+                    </div>
+                  </div>
+                  <div class="section-actions">
+                    <button type="button" class="save-section-button" (click)="saveDetailSettings()">
+                      詳細設定を保存
+                    </button>
+                  </div>
+                </section>
+              </div>
             </form>
           </div>
         </ng-container>
