@@ -1001,6 +1001,15 @@ export class FirestoreService {
     }, { merge: true });
   }
 
+  async deleteStandardMonthlySalaryChange(
+    employeeNumber: string,
+    effectiveYear: number,
+    effectiveMonth: number
+  ): Promise<void> {
+    const changeRef = doc(this.db, 'standardMonthlySalaryChanges', `${employeeNumber}_${effectiveYear}_${effectiveMonth}`);
+    await deleteDoc(changeRef);
+  }
+
   async getStandardMonthlySalaryChange(employeeNumber: string, year: number, month: number): Promise<any | null> {
     // 該当年月以前の最新の変更情報を取得
     const changesRef = collection(this.db, 'standardMonthlySalaryChanges');

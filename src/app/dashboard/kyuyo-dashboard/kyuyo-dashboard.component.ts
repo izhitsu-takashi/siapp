@@ -1991,11 +1991,9 @@ export class KyuyoDashboardComponent {
       })));
       
       // 標準報酬月額の変更を検出して処理（随時改定）
-      await this.checkAndUpdateStandardMonthlySalary(
+      // 新しい給与設定を行った際、その社員のすべての随時改定を再計算
+      await this.recalculateAllZujijiKaitei(
         this.selectedSalaryEmployee,
-        this.salaryYear,
-        this.salaryMonth,
-        this.salaryAmount,
         sortedHistory
       );
       
@@ -2111,6 +2109,47 @@ export class KyuyoDashboardComponent {
     }
   }
 
+  // その社員のすべての随時改定を再計算
+  async recalculateAllZujijiKaitei(
+    employeeNumber: string,
+    salaryHistory: any[]
+  ) {
+    try {
+      // その社員の手動設定された給与（isManual = true）を時系列順に取得
+      const manualSalaries = salaryHistory
+        .filter((s: any) => s['employeeNumber'] === employeeNumber && s['isManual'] === true)
+        .sort((a: any, b: any) => {
+          const aYear = Number(a['year']);
+          const bYear = Number(b['year']);
+          const aMonth = Number(a['month']);
+          const bMonth = Number(b['month']);
+          if (aYear !== bYear) return aYear - bYear;
+          return aMonth - bMonth;
+        });
+      
+      console.log(`[随時改定再計算] 社員番号: ${employeeNumber}, 手動設定された給与数: ${manualSalaries.length}`);
+      
+      // 各給与設定月について、随時改定を再計算
+      for (const salary of manualSalaries) {
+        const changeYear = Number(salary['year']);
+        const changeMonth = Number(salary['month']);
+        const changeAmount = Number(salary['amount']);
+        
+        console.log(`[随時改定再計算] ${changeYear}年${changeMonth}月の給与設定（${changeAmount}円）について随時改定を計算`);
+        
+        await this.checkAndUpdateStandardMonthlySalary(
+          employeeNumber,
+          changeYear,
+          changeMonth,
+          changeAmount,
+          salaryHistory
+        );
+      }
+    } catch (error) {
+      console.error('Error recalculating all zujiji kaitei:', error);
+    }
+  }
+
   // 標準報酬月額の変更を検出して処理
   async checkAndUpdateStandardMonthlySalary(
     employeeNumber: string, 
@@ -2132,10 +2171,10 @@ export class KyuyoDashboardComponent {
       
       // 変更月以前に標準報酬月額変更情報がある場合、その等級を使用
       if (standardChangeBeforeChange) {
-        const effectiveYear = Number(standardChangeBeforeChange.effectiveYear);
-        const effectiveMonth = Number(standardChangeBeforeChange.effectiveMonth);
+        const effectiveYearBefore = Number(standardChangeBeforeChange.effectiveYear);
+        const effectiveMonthBefore = Number(standardChangeBeforeChange.effectiveMonth);
         // 変更月以前に適用された変更情報の場合、その等級を使用
-        if (effectiveYear < changeYear || (effectiveYear === changeYear && effectiveMonth < changeMonth)) {
+        if (effectiveYearBefore < changeYear || (effectiveYearBefore === changeYear && effectiveMonthBefore < changeMonth)) {
           previousGrade = standardChangeBeforeChange.grade;
         }
       }
