@@ -921,8 +921,8 @@ export class KyuyoDashboardComponent {
             // 年齢を計算
             const age = this.calculateAge(emp.birthDate);
             
-            // 40歳以上の従業員は介護保険料を0円にする
-            const isOver40 = age !== null && age >= 40;
+            // 介護保険料は40歳以上65歳以下の従業員のみ対象（40歳未満または66歳以上は0円）
+            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 65;
             
             // 厚生年金保険料計算用の標準報酬月額（上限・下限を考慮）
             // 標準報酬月額を使用し、上限・下限の条件を適用
@@ -955,7 +955,8 @@ export class KyuyoDashboardComponent {
             // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
             // 小数第2位まで保持（表示用）
             const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
-            const nursingInsuranceRaw = isOver40 ? 0 : standardMonthlySalary * (nursingInsuranceRate / 100);
+            // 介護保険料：40歳未満または66歳以上の場合は0円
+            const nursingInsuranceRaw = isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0;
             const pensionInsuranceRaw = pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
             
             // 社員負担額を計算
@@ -1333,24 +1334,43 @@ export class KyuyoDashboardComponent {
             let fixedSalary = latestSalary ? latestSalary['amount'] : item.fixedSalary;
             
             // 任意継続被保険者の場合の処理
-            const isVoluntaryContinuation = item.healthInsuranceType === '任意継続被保険者' && 
-                                           (item.employmentStatus === '退職' || item.employmentStatus === '退職済み');
+            // 任意継続被保険者の保険料徴収は退職日の次の月から開始
+            const resignationDate = item.resignationDate;
+            let resignation: Date | null = null;
+            let isVoluntaryContinuation = false;
+            
+            if (item.healthInsuranceType === '任意継続被保険者' && 
+                (item.employmentStatus === '退職' || item.employmentStatus === '退職済み') &&
+                resignationDate) {
+              if (resignationDate instanceof Date) {
+                resignation = resignationDate;
+              } else if (resignationDate && typeof resignationDate.toDate === 'function') {
+                resignation = resignationDate.toDate();
+              } else if (typeof resignationDate === 'string') {
+                resignation = new Date(resignationDate);
+              }
+              
+              if (resignation && !isNaN(resignation.getTime())) {
+                const resignationYear = resignation.getFullYear();
+                const resignationMonth = resignation.getMonth() + 1;
+                
+                // 退職月の翌月を計算
+                let nextMonthYear = resignationYear;
+                let nextMonth = resignationMonth + 1;
+                if (nextMonth > 12) {
+                  nextMonth = 1;
+                  nextMonthYear++;
+                }
+                
+                // 選択された年月が退職月の翌月以降の場合のみ任意継続被保険者として扱う
+                if (filterYear > nextMonthYear || (filterYear === nextMonthYear && filterMonth >= nextMonth)) {
+                  isVoluntaryContinuation = true;
+                }
+              }
+            }
             
             if (isVoluntaryContinuation) {
               // 退職時の固定的賃金を取得（退職月以前の最新の給与設定）
-              const resignationDate = item.resignationDate;
-              let resignation: Date | null = null;
-              
-              if (resignationDate) {
-                if (resignationDate instanceof Date) {
-                  resignation = resignationDate;
-                } else if (resignationDate && typeof resignationDate.toDate === 'function') {
-                  resignation = resignationDate.toDate();
-                } else if (typeof resignationDate === 'string') {
-                  resignation = new Date(resignationDate);
-                }
-              }
-              
               if (resignation && !isNaN(resignation.getTime())) {
                 const resignationYear = resignation.getFullYear();
                 const resignationMonth = resignation.getMonth() + 1;
@@ -1468,8 +1488,8 @@ export class KyuyoDashboardComponent {
             // 年齢を計算
             const age = this.calculateAge(item.birthDate);
             
-            // 40歳以上の従業員は介護保険料を0円にする
-            const isOver40 = age !== null && age >= 40;
+            // 介護保険料は40歳以上65歳以下の従業員のみ対象（40歳未満または66歳以上は0円）
+            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 65;
             
             // 厚生年金保険料計算用の標準報酬月額（上限・下限を考慮）
             // 標準報酬月額を使用し、上限・下限の条件を適用
@@ -1501,7 +1521,8 @@ export class KyuyoDashboardComponent {
             
             // 各保険料を計算（産前産後休業期間内の場合は0円）
             const healthInsuranceRaw = isInMaternityLeave ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
-            const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isOver40 ? 0 : standardMonthlySalary * (nursingInsuranceRate / 100));
+            // 介護保険料：40歳未満または66歳以上または任意継続被保険者で40歳未満の場合は0円
+            const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isNursingInsuranceTarget && !isVoluntaryContinuation ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
             const pensionInsuranceRaw = isInMaternityLeave ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardMonthlySalary * (pensionInsuranceRate / 100));
             
             // 社員負担額を計算
@@ -1509,7 +1530,9 @@ export class KyuyoDashboardComponent {
             if (!isInMaternityLeave) {
               if (isVoluntaryContinuation) {
                 // 任意継続被保険者の場合、健康保険料と介護保険料は全額社員負担
-                employeeBurden = healthInsuranceRaw + nursingInsuranceRaw;
+                // 端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                const healthNursingTotal = healthInsuranceRaw + nursingInsuranceRaw;
+                employeeBurden = this.roundHalf(healthNursingTotal);
               } else {
                 // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
                 const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
@@ -1649,8 +1672,40 @@ export class KyuyoDashboardComponent {
               let standardBonusAmount = Math.floor(bonusGroup.totalAmount / 1000) * 1000;
               
               // 任意継続被保険者の場合、賞与は0円にする
-              const isVoluntaryContinuation = employeeData?.healthInsuranceType === '任意継続被保険者' && 
-                                             (employeeData?.employmentStatus === '退職' || employeeData?.employmentStatus === '退職済み');
+              // 任意継続被保険者の保険料徴収は退職日の次の月から開始
+              const resignationDate = employeeData?.resignationDate;
+              let resignation: Date | null = null;
+              let isVoluntaryContinuation = false;
+              
+              if (employeeData?.healthInsuranceType === '任意継続被保険者' && 
+                  (employeeData?.employmentStatus === '退職' || employeeData?.employmentStatus === '退職済み') &&
+                  resignationDate) {
+                if (resignationDate instanceof Date) {
+                  resignation = resignationDate;
+                } else if (resignationDate && typeof resignationDate.toDate === 'function') {
+                  resignation = resignationDate.toDate();
+                } else if (typeof resignationDate === 'string') {
+                  resignation = new Date(resignationDate);
+                }
+                
+                if (resignation && !isNaN(resignation.getTime())) {
+                  const resignationYear = resignation.getFullYear();
+                  const resignationMonth = resignation.getMonth() + 1;
+                  
+                  // 退職月の翌月を計算
+                  let nextMonthYear = resignationYear;
+                  let nextMonth = resignationMonth + 1;
+                  if (nextMonth > 12) {
+                    nextMonth = 1;
+                    nextMonthYear++;
+                  }
+                  
+                  // 選択された年月が退職月の翌月以降の場合のみ任意継続被保険者として扱う
+                  if (filterYear > nextMonthYear || (filterYear === nextMonthYear && filterMonth >= nextMonth)) {
+                    isVoluntaryContinuation = true;
+                  }
+                }
+              }
               
               if (isVoluntaryContinuation) {
                 standardBonusAmount = 0;
@@ -1711,12 +1766,13 @@ export class KyuyoDashboardComponent {
                 filterMonth
               );
               
-              // 40歳以上の従業員は介護保険料を0円にする
-              const isOver40 = age !== null && age >= 40;
+              // 介護保険料は40歳以上65歳以下の従業員のみ対象（40歳未満または66歳以上は0円）
+              const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 65;
               
               // 各保険料を計算（産前産後休業期間内の場合は0円）
               const healthInsuranceRaw = isInMaternityLeave ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
-              const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isOver40 ? 0 : healthNursingStandardBonusAmount * (nursingInsuranceRate / 100));
+              // 介護保険料：40歳未満または66歳以上または任意継続被保険者で40歳未満の場合は0円
+              const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isNursingInsuranceTarget && !isVoluntaryContinuation ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
               const pensionInsuranceRaw = isInMaternityLeave ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100));
               
               // 社員負担額を計算
@@ -1724,7 +1780,9 @@ export class KyuyoDashboardComponent {
               if (!isInMaternityLeave) {
                 if (isVoluntaryContinuation) {
                   // 任意継続被保険者の場合、健康保険料と介護保険料は全額社員負担
-                  employeeBurden = healthInsuranceRaw + nursingInsuranceRaw;
+                  // 端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                  const healthNursingTotal = healthInsuranceRaw + nursingInsuranceRaw;
+                  employeeBurden = this.roundHalf(healthNursingTotal);
                 } else {
                   // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
                   const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
