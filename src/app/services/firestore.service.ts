@@ -942,18 +942,38 @@ export class FirestoreService {
   /**
    * 給与設定を保存
    */
-  async saveSalary(employeeNumber: string, year: number, month: number, amount: number): Promise<void> {
+  async saveSalary(employeeNumber: string, year: number, month: number, amount: number, isManual: boolean = false): Promise<void> {
     try {
       const docId = `${employeeNumber}_${year}_${month}`;
       const docRef = doc(this.db, 'salaries', docId);
-      await setDoc(docRef, {
+      const data: any = {
         employeeNumber: employeeNumber,
         year: year,
         month: month,
         amount: amount,
-        createdAt: new Date(),
         updatedAt: new Date()
-      }, { merge: true });
+      };
+      
+      // 手動設定の場合のみ、isManualフラグとcreatedAtを設定
+      if (isManual) {
+        data.isManual = true;
+        data.createdAt = new Date();
+      } else {
+        // 自動設定の場合は、既存のcreatedAtを保持（なければ現在時刻）
+        const existingDoc = await getDoc(docRef);
+        if (existingDoc.exists()) {
+          const existingData = existingDoc.data();
+          if (existingData?.['createdAt']) {
+            data.createdAt = existingData['createdAt'];
+          } else {
+            data.createdAt = new Date();
+          }
+        } else {
+          data.createdAt = new Date();
+        }
+      }
+      
+      await setDoc(docRef, data, { merge: true });
     } catch (error) {
       console.error('Error saving salary:', error);
       throw error;
@@ -1054,6 +1074,35 @@ export class FirestoreService {
       snapshot.forEach((doc) => {
         const data = doc.data();
         if (!employeeNumber || data['employeeNumber'] === employeeNumber) {
+          // isManual === true のもののみを取得（手動設定された給与のみ）
+          if (data['isManual'] === true) {
+            salaries.push({
+              id: doc.id,
+              ...data
+            });
+          }
+        }
+      });
+      
+      return salaries;
+    } catch (error) {
+      console.error('Error getting salary history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * すべての給与設定履歴を取得（isManualに関係なく、定時改定・随時改定の計算用）
+   */
+  async getAllSalaryHistory(employeeNumber?: string): Promise<any[]> {
+    try {
+      const salariesRef = collection(this.db, 'salaries');
+      const snapshot = await getDocs(salariesRef);
+      const salaries: any[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (!employeeNumber || data['employeeNumber'] === employeeNumber) {
           salaries.push({
             id: doc.id,
             ...data
@@ -1063,7 +1112,7 @@ export class FirestoreService {
       
       return salaries;
     } catch (error) {
-      console.error('Error getting salary history:', error);
+      console.error('Error getting all salary history:', error);
       return [];
     }
   }

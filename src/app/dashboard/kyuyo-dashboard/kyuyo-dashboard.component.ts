@@ -1932,16 +1932,32 @@ export class KyuyoDashboardComponent {
       // 給与設定をFirestoreに保存（指定年月以降の2030年12月までの給与を設定）
       console.log(`[給与設定] 給与設定開始。社員番号: ${this.selectedSalaryEmployee}, 年: ${this.salaryYear}, 月: ${this.salaryMonth}, 金額: ${this.salaryAmount}`);
       
-      // 設定年月から2030年12月までのすべての月に給与を設定
+      // 最初に設定した年月のみを手動設定として記録
+      await this.firestoreService.saveSalary(
+        this.selectedSalaryEmployee,
+        this.salaryYear,
+        this.salaryMonth,
+        this.salaryAmount,
+        true // isManual = true（手動設定）
+      );
+      
+      // 設定年月から2030年12月までの残りの月に給与を自動設定
       let currentYear = this.salaryYear;
-      let currentMonth = this.salaryMonth;
+      let currentMonth = this.salaryMonth + 1; // 次の月から開始
+      
+      // 月が12を超える場合の処理
+      if (currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+      }
       
       while (currentYear < 2030 || (currentYear === 2030 && currentMonth <= 12)) {
         await this.firestoreService.saveSalary(
           this.selectedSalaryEmployee,
           currentYear,
           currentMonth,
-          this.salaryAmount
+          this.salaryAmount,
+          false // isManual = false（自動設定）
         );
         
         // 次の月に進む
@@ -1955,7 +1971,8 @@ export class KyuyoDashboardComponent {
       console.log(`[給与設定] 給与設定完了。${this.salaryYear}年${this.salaryMonth}月から2030年12月まで設定しました。`);
       
       // 給与設定履歴を再読み込み（標準報酬月額変更チェックの前に必要）
-      const history = await this.firestoreService.getSalaryHistory();
+      // 定時改定・随時改定の計算には、すべての給与（自動設定含む）が必要なため、getAllSalaryHistoryを使用
+      const history = await this.firestoreService.getAllSalaryHistory();
       
       // 日時順にソート（新しいものから）
       const sortedHistory = history.sort((a: any, b: any) => {
@@ -2459,30 +2476,73 @@ export class KyuyoDashboardComponent {
       // 7月に適用される随時改定は、4月の給与変更によるもの
       // 8月に適用される随時改定は、5月の給与変更によるもの
       // 9月に適用される随時改定は、6月の給与変更によるもの
+      // 9月に適用される変更は、定時改定の可能性もあるが、随時改定を優先する
       for (const change of changes) {
         const effectiveMonth = Number(change.effectiveMonth);
+        const effectiveYear = Number(change.effectiveYear);
+        
+        console.log(`[随時改定チェック] ${fiscalYear}年度 - 変更情報: 適用年月=${effectiveYear}年${effectiveMonth}月, 等級=${change.grade}`);
+        
         // 随時改定の給与変更月を計算（適用月の3か月前）
-        let changeYear = fiscalYear;
+        let changeYear = effectiveYear;
         let changeMonth = effectiveMonth - 3;
         while (changeMonth < 1) {
           changeMonth += 12;
           changeYear -= 1;
         }
         
+        console.log(`[随時改定チェック] ${fiscalYear}年度 - 適用月${effectiveMonth}月の変更は、${changeYear}年${changeMonth}月の給与変更によるものと判定`);
+        
         // 該当年度の4,5,6月の給与変更があるかチェック
+        // 7月に適用される随時改定は、4月の給与変更によるもの
+        // 8月に適用される随時改定は、5月の給与変更によるもの
+        // 9月に適用される随時改定は、6月の給与変更によるもの
         if (changeMonth >= 4 && changeMonth <= 6 && changeYear === fiscalYear) {
-          const hasSalaryChange = salaryHistory.some((s: any) => {
+          // 手動設定された給与（isManual = true）のみをチェック
+          // また、前月の給与と異なる場合のみ「給与変更」とみなす
+          const targetSalary = salaryHistory.find((s: any) => {
             const salaryYear = Number(s['year']);
             const salaryMonth = Number(s['month']);
             return s['employeeNumber'] === employeeNumber &&
                    salaryYear === changeYear && 
-                   salaryMonth === changeMonth;
+                   salaryMonth === changeMonth &&
+                   s['isManual'] === true; // 手動設定された給与のみ
           });
           
-          // 給与変更がある場合、これは随時改定の可能性が高い
-          if (hasSalaryChange) {
-            return true;
+          if (targetSalary) {
+            // 前月の給与を取得
+            let previousMonth = changeMonth - 1;
+            let previousYear = changeYear;
+            if (previousMonth < 1) {
+              previousMonth = 12;
+              previousYear -= 1;
+            }
+            
+            const previousSalary = salaryHistory.find((s: any) => {
+              const salaryYear = Number(s['year']);
+              const salaryMonth = Number(s['month']);
+              return s['employeeNumber'] === employeeNumber &&
+                     salaryYear === previousYear && 
+                     salaryMonth === previousMonth;
+            });
+            
+            const targetAmount = Number(targetSalary['amount']);
+            const previousAmount = previousSalary ? Number(previousSalary['amount']) : null;
+            
+            // 前月の給与と異なる場合のみ「給与変更」とみなす
+            const isSalaryChange = previousAmount === null || targetAmount !== previousAmount;
+            
+            console.log(`[随時改定チェック] ${fiscalYear}年度 - ${changeYear}年${changeMonth}月の給与: ${targetAmount}円, 前月(${previousYear}年${previousMonth}月)の給与: ${previousAmount !== null ? previousAmount + '円' : 'なし'}, 給与変更: ${isSalaryChange ? 'あり' : 'なし'}`);
+            
+            if (isSalaryChange) {
+              console.log(`[随時改定チェック] ${fiscalYear}年度 - 随時改定が検出されました（${effectiveMonth}月適用、${changeYear}年${changeMonth}月の給与変更による）`);
+              return true;
+            }
+          } else {
+            console.log(`[随時改定チェック] ${fiscalYear}年度 - ${changeYear}年${changeMonth}月の手動設定された給与: なし`);
           }
+        } else {
+          console.log(`[随時改定チェック] ${fiscalYear}年度 - ${changeYear}年${changeMonth}月は該当年度の4,5,6月ではないため、スキップ`);
         }
       }
       
@@ -2496,8 +2556,11 @@ export class KyuyoDashboardComponent {
   // 全社員について、2030年までの給与設定履歴を確認して定時改定と随時改定を計算
   async calculateStandardMonthlySalaryChangesForAllEmployees() {
     try {
+      // 定時改定・随時改定の計算には、すべての給与（自動設定含む）が必要なため、getAllSalaryHistoryを使用
+      const allHistory = await this.firestoreService.getAllSalaryHistory();
+      
       // 2030年までの給与設定履歴をフィルタリング
-      const filteredHistory = this.salaryHistory.filter((s: any) => {
+      const filteredHistory = allHistory.filter((s: any) => {
         const salaryYear = Number(s['year']);
         return salaryYear <= 2030;
       });
@@ -2575,13 +2638,18 @@ export class KyuyoDashboardComponent {
   
   // 給与設定履歴をフィルタリング
   filterSalaryHistory() {
-    if (!this.selectedSalaryHistoryFilter) {
-      this.filteredSalaryHistory = [...this.salaryHistory];
-    } else {
-      this.filteredSalaryHistory = this.salaryHistory.filter(
+    // isManual === true のもののみを表示（手動設定された給与のみ）
+    let filtered = this.salaryHistory.filter((record: any) => {
+      return record['isManual'] === true;
+    });
+    
+    if (this.selectedSalaryHistoryFilter) {
+      filtered = filtered.filter(
         (record: any) => record['employeeNumber'] === this.selectedSalaryHistoryFilter
       );
     }
+    
+    this.filteredSalaryHistory = filtered;
     
     // 常に追加された順番（新しいものが上）でソート
     this.filteredSalaryHistory.sort((a: any, b: any) => {
