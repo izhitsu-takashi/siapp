@@ -1414,9 +1414,26 @@ export class KyuyoDashboardComponent {
                 }
               }
             } else {
-              const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
-              standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
-              grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+              // 標準報酬月額変更情報が適用されていない場合、入社時の見込み給与から等級を計算
+              // （入社時決定による等級を使用）
+              // 社員情報から入社時の見込み給与を取得
+              const employeeData = await this.firestoreService.getEmployeeData(item.employeeNumber);
+              if (employeeData) {
+                const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
+                const expectedAnnualBonus = Number(employeeData.expectedAnnualBonus) || 
+                                           Number(employeeData.applicationData?.expectedAnnualBonus) || 0;
+                const expectedMonthlyBonus = expectedAnnualBonus / 12;
+                const initialFixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
+                
+                const initialStandardInfo = this.calculateStandardMonthlySalary(initialFixedSalary);
+                standardMonthlySalary = initialStandardInfo ? initialStandardInfo.monthlyStandard : 0;
+                grade = initialStandardInfo ? initialStandardInfo.grade : 0;
+              } else {
+                // 社員情報が取得できない場合、保険料一覧の初期値を使用
+                const standardSalaryInfo = this.calculateStandardMonthlySalary(item.fixedSalary);
+                standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
+                grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+              }
             }
             
             // 年齢を計算
@@ -1912,13 +1929,30 @@ export class KyuyoDashboardComponent {
     
     this.isSavingSalary = true;
     try {
-      // 給与設定をFirestoreに保存（指定年月以降の給与を設定）
-      await this.firestoreService.saveSalary(
-        this.selectedSalaryEmployee,
-        this.salaryYear,
-        this.salaryMonth,
-        this.salaryAmount
-      );
+      // 給与設定をFirestoreに保存（指定年月以降の2030年12月までの給与を設定）
+      console.log(`[給与設定] 給与設定開始。社員番号: ${this.selectedSalaryEmployee}, 年: ${this.salaryYear}, 月: ${this.salaryMonth}, 金額: ${this.salaryAmount}`);
+      
+      // 設定年月から2030年12月までのすべての月に給与を設定
+      let currentYear = this.salaryYear;
+      let currentMonth = this.salaryMonth;
+      
+      while (currentYear < 2030 || (currentYear === 2030 && currentMonth <= 12)) {
+        await this.firestoreService.saveSalary(
+          this.selectedSalaryEmployee,
+          currentYear,
+          currentMonth,
+          this.salaryAmount
+        );
+        
+        // 次の月に進む
+        currentMonth++;
+        if (currentMonth > 12) {
+          currentMonth = 1;
+          currentYear++;
+        }
+      }
+      
+      console.log(`[給与設定] 給与設定完了。${this.salaryYear}年${this.salaryMonth}月から2030年12月まで設定しました。`);
       
       // 給与設定履歴を再読み込み（標準報酬月額変更チェックの前に必要）
       const history = await this.firestoreService.getSalaryHistory();
@@ -1930,6 +1964,15 @@ export class KyuyoDashboardComponent {
         return dateB.getTime() - dateA.getTime();
       });
       
+      // デバッグ用：該当社員の給与設定履歴をログ出力
+      const employeeSalaries = sortedHistory.filter((s: any) => s['employeeNumber'] === this.selectedSalaryEmployee);
+      console.log(`[定時改定] 該当社員（${this.selectedSalaryEmployee}）の給与設定履歴:`, employeeSalaries.map((s: any) => ({
+        year: s['year'],
+        month: s['month'],
+        amount: s['amount'],
+        employeeNumber: s['employeeNumber']
+      })));
+      
       // 標準報酬月額の変更を検出して処理（随時改定）
       await this.checkAndUpdateStandardMonthlySalary(
         this.selectedSalaryEmployee,
@@ -1939,13 +1982,84 @@ export class KyuyoDashboardComponent {
         sortedHistory
       );
       
-      // 定時改定の処理（4~6月の平均による等級変更）
-      await this.checkAndUpdateStandardMonthlySalaryByFiscalYear(
-        this.selectedSalaryEmployee,
-        this.salaryYear,
-        this.salaryMonth,
-        sortedHistory
-      );
+      // 定時改定の処理（2030年12月までのすべての年度で定時改定をチェック）
+      // 2025年度から2030年度まで、すべての年度について定時改定をチェック
+      console.log(`[定時改定] 給与設定後の定時改定チェック開始。社員番号: ${this.selectedSalaryEmployee}`);
+      
+      for (let fiscalYear = 2025; fiscalYear <= 2030; fiscalYear++) {
+        console.log(`[定時改定] ${fiscalYear}年度（${fiscalYear}年4月～${fiscalYear + 1}年3月）のチェック開始`);
+        
+        // 該当年度の4月、5月、6月の給与を取得できるかチェック
+        // 給与設定は「その年月以降の給与を設定する」という意味なので、
+        // 該当月の給与設定がない場合は、該当月以前の最新の給与設定を使用する
+        let canCalculate = false;
+        
+        // 4月、5月、6月の各月について、給与設定が取得できるかチェック
+        for (let month = 4; month <= 6; month++) {
+          // 該当月の給与設定を探す
+          const exactMonthSalary = sortedHistory.find((s: any) => {
+            const salaryYear = Number(s['year']);
+            const salaryMonth = Number(s['month']);
+            return s['employeeNumber'] === this.selectedSalaryEmployee &&
+                   salaryYear === fiscalYear &&
+                   salaryMonth === month;
+          });
+          
+          if (exactMonthSalary) {
+            canCalculate = true;
+            break;
+          }
+          
+          // 該当月以前の最新の給与設定を探す
+          const relevantSalaries = sortedHistory
+            .filter((s: any) => {
+              const salaryYear = Number(s['year']);
+              const salaryMonth = Number(s['month']);
+              // 該当年度の該当月以前、または前年度の給与設定
+              if (salaryYear < fiscalYear) return true;
+              if (salaryYear === fiscalYear && salaryMonth < month) return true;
+              return false;
+            })
+            .filter((s: any) => s['employeeNumber'] === this.selectedSalaryEmployee)
+            .sort((a: any, b: any) => {
+              const aYear = Number(a['year']);
+              const bYear = Number(b['year']);
+              const aMonth = Number(a['month']);
+              const bMonth = Number(b['month']);
+              if (aYear !== bYear) return bYear - aYear;
+              return bMonth - aMonth;
+            });
+          
+          if (relevantSalaries.length > 0) {
+            canCalculate = true;
+            break;
+          }
+        }
+        
+        if (canCalculate) {
+          // 6月の給与設定があるかチェック（6月の給与設定がある場合は6月として、ない場合は7月として処理）
+          const hasJuneSalary = sortedHistory.some((s: any) => {
+            const salaryYear = Number(s['year']);
+            const salaryMonth = Number(s['month']);
+            return s['employeeNumber'] === this.selectedSalaryEmployee &&
+                   salaryYear === fiscalYear &&
+                   salaryMonth === 6;
+          });
+          
+          const checkMonth = hasJuneSalary ? 6 : 7;
+          console.log(`[定時改定] ${fiscalYear}年度の定時改定処理を実行します。checkMonth: ${checkMonth}`);
+          await this.checkAndUpdateStandardMonthlySalaryByFiscalYear(
+            this.selectedSalaryEmployee,
+            fiscalYear,
+            checkMonth,
+            sortedHistory
+          );
+        } else {
+          console.log(`[定時改定] ${fiscalYear}年度 - 4月、5月、6月の給与が取得できないため、スキップします。`);
+        }
+      }
+      
+      console.log(`[定時改定] 給与設定後の定時改定チェック完了`);
       
       // 給与設定履歴を設定
       this.salaryHistory = sortedHistory;
@@ -2136,6 +2250,8 @@ export class KyuyoDashboardComponent {
     changeMonth: number,
     salaryHistory: any[]
   ) {
+    console.log(`[定時改定] メソッドが呼び出されました。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}`);
+    
     try {
       // 年度を判定（4月～3月が1年度）
       let fiscalYear: number;
@@ -2144,6 +2260,8 @@ export class KyuyoDashboardComponent {
       } else {
         fiscalYear = changeYear - 1;
       }
+      
+      console.log(`[定時改定] 判定された年度: ${fiscalYear}年度`);
       
       // 6月の給与設定が完了しているかチェック（6月の給与設定があるか、または6月以降の給与設定があるか）
       // ただし、6月の給与設定がなくても、4月、5月の給与設定があれば処理を続行
@@ -2178,12 +2296,17 @@ export class KyuyoDashboardComponent {
         });
         
         if (!hasAprilOrMaySalary) {
+          console.log(`[定時改定] 6月の給与設定がなく、4月・5月の給与設定もないため、処理をスキップします。`);
           return;
         }
       }
       
+      console.log(`[定時改定] 処理を続行します。6月の給与設定: ${hasJuneSalary}, 6月以降の給与設定: ${hasAfterJuneSalary}`);
+      
       // 4月、5月、6月の各月の給与を取得
       const salariesForAverage: number[] = [];
+      const salaryDetails: { month: number; amount: number; source: string }[] = [];
+      
       for (let month = 4; month <= 6; month++) {
         // 該当月の給与設定を取得
         const allSalaries = salaryHistory.filter((s: any) => s['employeeNumber'] === employeeNumber);
@@ -2197,7 +2320,9 @@ export class KyuyoDashboardComponent {
         
         if (exactMonthSalary) {
           // 該当月に給与設定がある場合はそれを使用
-          salariesForAverage.push(Number(exactMonthSalary['amount']));
+          const amount = Number(exactMonthSalary['amount']);
+          salariesForAverage.push(amount);
+          salaryDetails.push({ month, amount, source: '該当月の給与設定' });
         } else {
           // 該当月に給与設定がない場合は、該当月以前の最新の給与設定を取得
           const relevantSalaries = allSalaries
@@ -2214,89 +2339,52 @@ export class KyuyoDashboardComponent {
             });
           
           if (relevantSalaries.length > 0) {
-            salariesForAverage.push(Number(relevantSalaries[0]['amount']));
+            const amount = Number(relevantSalaries[0]['amount']);
+            const sourceYear = Number(relevantSalaries[0]['year']);
+            const sourceMonth = Number(relevantSalaries[0]['month']);
+            salariesForAverage.push(amount);
+            salaryDetails.push({ 
+              month, 
+              amount, 
+              source: `該当月以前の最新の給与設定（${sourceYear}年${sourceMonth}月）` 
+            });
+          } else {
+            salaryDetails.push({ month, amount: 0, source: '給与設定なし' });
           }
         }
       }
       
+      // コンソールログ出力：計算に用いられた月の給与額
+      console.log(`[定時改定] 社員番号: ${employeeNumber}, 年度: ${fiscalYear}年度`);
+      console.log(`[定時改定] 計算に用いられた月の給与額:`, salaryDetails);
+      
       // 4月～6月の給与が全て取得できたかチェック
       if (salariesForAverage.length < 3) {
+        console.log(`[定時改定] 4月～6月の給与が全て取得できませんでした。取得できた給与数: ${salariesForAverage.length}`);
         return; // 4月～6月の給与が全て取得できない場合は処理しない
       }
       
       // 平均を計算
       const averageSalary = salariesForAverage.reduce((sum, val) => sum + val, 0) / salariesForAverage.length;
       
+      // コンソールログ出力：計算された平均給与
+      console.log(`[定時改定] 計算された平均給与: ${averageSalary}円`);
+      
       // 平均が有効な数値でない場合は処理しない
       if (isNaN(averageSalary) || averageSalary <= 0) {
+        console.log(`[定時改定] 平均給与が無効な値です: ${averageSalary}`);
         return;
       }
       
       // 新しい標準報酬月額を計算
       const newStandardInfo = this.calculateStandardMonthlySalary(averageSalary);
-      if (!newStandardInfo) return;
+      if (!newStandardInfo) {
+        console.log(`[定時改定] 標準報酬月額の計算に失敗しました。平均給与: ${averageSalary}円`);
+        return;
+      }
       
       const newGrade = newStandardInfo.grade;
-      
-      // 6月時点での等級を取得（6月以前の最新の給与設定から、または標準報酬月額変更情報から）
-      // まず、6月以前の最新の給与設定から等級を取得
-      const juneSalaries = salaryHistory
-        .filter((s: any) => s['employeeNumber'] === employeeNumber)
-        .filter((s: any) => {
-          const salaryYear = Number(s['year']);
-          const salaryMonth = Number(s['month']);
-          if (salaryYear < fiscalYear) return true;
-          if (salaryYear === fiscalYear && salaryMonth <= 6) return true;
-          return false;
-        })
-        .sort((a: any, b: any) => {
-          if (a['year'] !== b['year']) return b['year'] - a['year'];
-          return b['month'] - a['month'];
-        });
-      
-      const juneSalary = juneSalaries.length > 0 ? juneSalaries[0]['amount'] : null;
-      
-      // 6月時点での等級を取得
-      // まず、6月以前の最新の標準報酬月額変更情報を取得（6月以前に適用された変更情報）
-      const standardChangeBeforeJune = await this.firestoreService.getStandardMonthlySalaryChange(
-        employeeNumber,
-        fiscalYear,
-        6
-      );
-      
-      let currentGrade: number | null = null;
-      
-      // 6月以前に標準報酬月額変更情報がある場合、その等級を使用
-      if (standardChangeBeforeJune) {
-        const effectiveYear = Number(standardChangeBeforeJune.effectiveYear);
-        const effectiveMonth = Number(standardChangeBeforeJune.effectiveMonth);
-        // 6月以前に適用された変更情報の場合、その等級を使用
-        if (effectiveYear < fiscalYear || (effectiveYear === fiscalYear && effectiveMonth <= 6)) {
-          currentGrade = standardChangeBeforeJune.grade;
-        }
-      }
-      
-      // 標準報酬月額変更情報がない場合、6月以前の最新の給与設定から等級を計算
-      if (currentGrade === null) {
-        if (juneSalary) {
-          const currentStandardInfo = this.calculateStandardMonthlySalary(Number(juneSalary));
-          currentGrade = currentStandardInfo ? currentStandardInfo.grade : null;
-        } else {
-          // 6月以前の給与設定がない場合、入社時の給与見込み額から等級を計算
-          // 社員情報を取得
-          const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
-          if (employeeData) {
-            const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
-            const expectedAnnualBonus = Number(employeeData.expectedAnnualBonus) || 
-                                       Number(employeeData.applicationData?.expectedAnnualBonus) || 0;
-            const expectedMonthlyBonus = expectedAnnualBonus / 12;
-            const initialFixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
-            
-            const initialStandardInfo = this.calculateStandardMonthlySalary(initialFixedSalary);
-            currentGrade = initialStandardInfo ? initialStandardInfo.grade : null;
-          }
-        }
-      }
+      console.log(`[定時改定] 算出された等級: ${newGrade}, 標準報酬月額: ${newStandardInfo.monthlyStandard}円`);
       
       // 7月、8月、9月に随時改定が適用されたかチェック
       // 随時改定は、給与変更月から3か月後に適用されるため、
@@ -2309,36 +2397,39 @@ export class KyuyoDashboardComponent {
       
       // 随時改定が適用されている場合は、定時改定をスキップ
       if (hasZujijiKaiteiInJulyToSeptember) {
+        console.log(`[定時改定] 7月、8月、9月に随時改定が適用されているため、定時改定をスキップします。`);
         return;
       }
       
-      // 等級に変更がある場合、9月から新等級を適用
-      if (currentGrade !== null && newGrade !== currentGrade) {
-        // 既に9月からの標準報酬月額変更情報が保存されているかチェック
-        const existingChange = await this.firestoreService.getStandardMonthlySalaryChange(
-          employeeNumber,
-          fiscalYear,
-          9
-        );
-        
-        // 既に9月からの変更情報がある場合、等級が異なる場合のみ更新
-        if (existingChange && existingChange.grade === newGrade) {
-          return; // 既に同じ等級が設定されている場合は処理しない
-        }
-        
-        // 9月から新等級を適用
-        const effectiveYear = fiscalYear;
-        const effectiveMonth = 9;
-        
-        // 標準報酬月額変更情報を保存
-        await this.firestoreService.saveStandardMonthlySalaryChange(
-          employeeNumber,
-          effectiveYear,
-          effectiveMonth,
-          newGrade,
-          newStandardInfo.monthlyStandard
-        );
+      // 既に9月からの標準報酬月額変更情報が保存されているかチェック
+      const existingChange = await this.firestoreService.getStandardMonthlySalaryChange(
+        employeeNumber,
+        fiscalYear,
+        9
+      );
+      
+      // 既に9月からの変更情報がある場合、等級が異なる場合のみ更新
+      if (existingChange && existingChange.grade === newGrade) {
+        console.log(`[定時改定] 既に同じ等級（${newGrade}）が設定されているため、処理をスキップします。`);
+        return; // 既に同じ等級が設定されている場合は処理しない
       }
+      
+      // 9月から新等級を適用（4.5.6月の平均給与から算出した等級）
+      const effectiveYear = fiscalYear;
+      const effectiveMonth = 9;
+      
+      console.log(`[定時改定] 9月から等級${newGrade}を適用します。標準報酬月額: ${newStandardInfo.monthlyStandard}円`);
+      
+      // 標準報酬月額変更情報を保存
+      await this.firestoreService.saveStandardMonthlySalaryChange(
+        employeeNumber,
+        effectiveYear,
+        effectiveMonth,
+        newGrade,
+        newStandardInfo.monthlyStandard
+      );
+      
+      console.log(`[定時改定] 標準報酬月額変更情報を保存しました。`);
     } catch (error) {
       console.error('Error checking standard monthly salary change by fiscal year:', error);
       // エラーが発生しても給与設定は保存されているので、処理を続行
