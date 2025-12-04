@@ -1548,11 +1548,35 @@ export class KyuyoDashboardComponent {
           return bonusIndex < 3; // 0, 1, 2の3回まで表示（4回目以降は表示しない）
         });
         
+        // 同じ社員・同じ年月の賞与を合計してグループ化
+        const bonusMap = new Map<string, any>();
+        
+        bonusListFiltered.forEach((bonus: any) => {
+          const key = `${bonus['employeeNumber']}_${bonus['year']}_${bonus['month']}`;
+          if (bonusMap.has(key)) {
+            // 既に存在する場合は賞与額を合計
+            const existing = bonusMap.get(key);
+            existing.totalAmount += Number(bonus['amount']);
+            existing.bonuses.push(bonus);
+          } else {
+            // 新規の場合は初期化
+            bonusMap.set(key, {
+              employeeNumber: bonus['employeeNumber'],
+              year: bonus['year'],
+              month: bonus['month'],
+              name: bonus.name,
+              totalAmount: Number(bonus['amount']),
+              bonuses: [bonus]
+            });
+          }
+        });
+        
+        // グループ化した賞与で保険料を計算
         this.filteredInsuranceList = await Promise.all(
-          bonusListFiltered
-            .map(async (bonus: any) => {
+          Array.from(bonusMap.values())
+            .map(async (bonusGroup: any) => {
               // 社員情報を取得
-              const employeeData = await this.firestoreService.getEmployeeData(bonus['employeeNumber']);
+              const employeeData = await this.firestoreService.getEmployeeData(bonusGroup.employeeNumber);
               
               // 退職済み社員の表示条件をチェック
               const shouldShow = this.shouldShowResignedEmployee(
@@ -1567,8 +1591,8 @@ export class KyuyoDashboardComponent {
                 return null;
               }
               
-              // 標準賞与額 = 賞与の1000円未満の値を切り捨てた額
-              let standardBonusAmount = Math.floor(bonus['amount'] / 1000) * 1000;
+              // 標準賞与額 = 合計賞与額の1000円未満の値を切り捨てた額
+              let standardBonusAmount = Math.floor(bonusGroup.totalAmount / 1000) * 1000;
               
               // 任意継続被保険者の場合、賞与は0円にする
               const isVoluntaryContinuation = employeeData?.healthInsuranceType === '任意継続被保険者' && 
@@ -1591,7 +1615,7 @@ export class KyuyoDashboardComponent {
               const fiscalYearBonuses = this.bonusList.filter((b: any) => {
                 const bYear = Number(b['year']);
                 const bMonth = Number(b['month']);
-                if (b['employeeNumber'] !== bonus['employeeNumber']) return false;
+                if (b['employeeNumber'] !== bonusGroup.employeeNumber) return false;
                 
                 // 年度を判定（7月～翌年6月が1年度）
                 let bFiscalYear: number;
@@ -1662,9 +1686,9 @@ export class KyuyoDashboardComponent {
               }
               
               return {
-                employeeNumber: bonus['employeeNumber'],
-                name: bonus.name,
-                bonusAmount: bonus['amount'],
+                employeeNumber: bonusGroup.employeeNumber,
+                name: bonusGroup.name,
+                bonusAmount: bonusGroup.totalAmount,
                 standardBonusAmount: standardBonusAmount,
                 healthInsurance: healthInsuranceRaw,
                 nursingInsurance: nursingInsuranceRaw,
@@ -1926,6 +1950,32 @@ export class KyuyoDashboardComponent {
     // 年月を数値型に変換（selectから文字列型で来る可能性があるため）
     this.salaryYear = Number(this.salaryYear);
     this.salaryMonth = Number(this.salaryMonth);
+    
+    // その社員の最新の給与設定年月を取得（手動設定された給与のみ）
+    const employeeSalaries = this.salaryHistory.filter((s: any) => 
+      s['employeeNumber'] === this.selectedSalaryEmployee && s['isManual'] === true
+    );
+    
+    if (employeeSalaries.length > 0) {
+      // 最新の給与設定年月を取得
+      const latestSalary = employeeSalaries.sort((a: any, b: any) => {
+        const aYear = Number(a['year']);
+        const bYear = Number(b['year']);
+        const aMonth = Number(a['month']);
+        const bMonth = Number(b['month']);
+        if (aYear !== bYear) return bYear - aYear;
+        return bMonth - aMonth;
+      })[0];
+      
+      const latestYear = Number(latestSalary['year']);
+      const latestMonth = Number(latestSalary['month']);
+      
+      // 新しい設定年月が最新の設定年月より過去の場合はエラー
+      if (this.salaryYear < latestYear || (this.salaryYear === latestYear && this.salaryMonth < latestMonth)) {
+        alert(`最新の情報より過去の年月の給与は設定できません。\n最新の給与設定: ${latestYear}年${latestMonth}月`);
+        return;
+      }
+    }
     
     this.isSavingSalary = true;
     try {
@@ -2902,6 +2952,32 @@ export class KyuyoDashboardComponent {
     // 年月を数値型に変換（selectから文字列型で来る可能性があるため）
     this.bonusYear = Number(this.bonusYear);
     this.bonusMonth = Number(this.bonusMonth);
+    
+    // その社員の最新の賞与設定年月を取得
+    const employeeBonuses = this.bonusHistory.filter((b: any) => 
+      b['employeeNumber'] === this.selectedBonusEmployee
+    );
+    
+    if (employeeBonuses.length > 0) {
+      // 最新の賞与設定年月を取得
+      const latestBonus = employeeBonuses.sort((a: any, b: any) => {
+        const aYear = Number(a['year']);
+        const bYear = Number(b['year']);
+        const aMonth = Number(a['month']);
+        const bMonth = Number(b['month']);
+        if (aYear !== bYear) return bYear - aYear;
+        return bMonth - aMonth;
+      })[0];
+      
+      const latestYear = Number(latestBonus['year']);
+      const latestMonth = Number(latestBonus['month']);
+      
+      // 新しい設定年月が最新の設定年月より過去の場合はエラー
+      if (this.bonusYear < latestYear || (this.bonusYear === latestYear && this.bonusMonth < latestMonth)) {
+        alert(`最新の情報より過去の年月の賞与は設定できません。\n最新の賞与設定: ${latestYear}年${latestMonth}月`);
+        return;
+      }
+    }
     
     this.isSavingBonus = true;
     try {
