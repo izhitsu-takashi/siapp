@@ -601,7 +601,6 @@
                         min="0"
                         max="100"
                         placeholder="例: 5.0"
-                        [disabled]="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'"
                       >
                       <div *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'" class="form-hint">
                         協会けんぽ選択時は都道府県の設定から自動で取得されます
@@ -618,7 +617,6 @@
                         min="0"
                         max="100"
                         placeholder="例: 1.0"
-                        [disabled]="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'"
                       >
                       <div *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'" class="form-hint">
                         協会けんぽ選択時は都道府県の設定から自動で取得されます
@@ -758,7 +756,7 @@
                 <section class="settings-section">
                   <h4 class="section-title">保険料を現金で徴収する社員を設定</h4>
                   <div class="form-group">
-                    <label>現金徴収する社員を選択</label>
+
                     <div class="cash-collection-employees">
                       <div class="employee-select-container">
                         <select 

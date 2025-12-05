@@ -665,6 +665,7 @@
 .form-description {
   margin-bottom: 1.5rem;
   padding: 1rem;
+  margin: 1rem 0;
   background: #f8f9fa;
   border-radius: 6px;
   border-left: 4px solid #56ab2f;

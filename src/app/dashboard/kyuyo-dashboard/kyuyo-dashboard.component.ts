@@ -177,7 +177,7 @@ export class KyuyoDashboardComponent {
   
   // 設定フォームを作成
   createSettingsForm(): FormGroup {
-    return this.fb.group({
+    const form = this.fb.group({
       // 健康保険設定
       healthInsuranceType: ['協会けんぽ'],
       prefecture: [''], // 都道府県（協会けんぽ選択時のみ）
@@ -188,6 +188,12 @@ export class KyuyoDashboardComponent {
       // 詳細設定
       treatBonusAsReward: [true] // 年4回以上の賞与を報酬と扱うか
     });
+    
+    // 初期状態で協会けんぽが選択されているため、健康保険料率と介護保険料率を無効化
+    form.get('healthInsuranceRate')?.disable();
+    form.get('nursingInsuranceRate')?.disable();
+    
+    return form;
   }
   
   // 任意継続終了設定フォームを作成
@@ -381,6 +387,16 @@ export class KyuyoDashboardComponent {
           pensionInsuranceRate: this.insuranceRates.pensionInsurance,
           treatBonusAsReward: this.treatBonusAsReward
         });
+        
+        // 健康保険種別に応じて保険料率フィールドを無効化/有効化
+        const currentHealthInsuranceType = this.settingsForm.get('healthInsuranceType')?.value || '協会けんぽ';
+        if (currentHealthInsuranceType === '協会けんぽ') {
+          this.settingsForm.get('healthInsuranceRate')?.disable();
+          this.settingsForm.get('nursingInsuranceRate')?.disable();
+        } else {
+          this.settingsForm.get('healthInsuranceRate')?.enable();
+          this.settingsForm.get('nursingInsuranceRate')?.enable();
+        }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -390,10 +406,17 @@ export class KyuyoDashboardComponent {
   // 健康保険種別が変更されたときの処理
   onHealthInsuranceTypeChange() {
     const type = this.settingsForm.get('healthInsuranceType')?.value;
-    if (type !== '協会けんぽ') {
+    if (type === '協会けんぽ') {
+      // 協会けんぽ選択時は健康保険料率と介護保険料率を無効化
+      this.settingsForm.get('healthInsuranceRate')?.disable();
+      this.settingsForm.get('nursingInsuranceRate')?.disable();
+    } else {
       // 組合保険を選択した場合、都道府県をリセット
       this.settingsForm.patchValue({ prefecture: '' });
       this.selectedPrefecture = '';
+      // 健康保険料率と介護保険料率を有効化
+      this.settingsForm.get('healthInsuranceRate')?.enable();
+      this.settingsForm.get('nursingInsuranceRate')?.enable();
     }
   }
   
@@ -1680,31 +1703,6 @@ export class KyuyoDashboardComponent {
                 // 選択された年月が退職日の翌日が属する月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
                 if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
                   isVoluntaryContinuation = true;
-                  console.log('[任意継続判定] 任意継続被保険者として判定', {
-                    employeeNumber: item.employeeNumber,
-                    resignationDate: resignation.toISOString(),
-                    nextDay: nextDay.toISOString(),
-                    voluntaryStartMonth: voluntaryStartMonth.toISOString(),
-                    selectedDate: selectedDate.toISOString(),
-                    endDate: endDate.toISOString(),
-                    endDateMonth: endDateMonth.toISOString(),
-                    filterYear,
-                    filterMonth,
-                    isVoluntaryContinuation
-                  });
-                } else {
-                  console.log('[任意継続判定] 任意継続被保険者ではない', {
-                    employeeNumber: item.employeeNumber,
-                    resignationDate: resignation.toISOString(),
-                    nextDay: nextDay.toISOString(),
-                    voluntaryStartMonth: voluntaryStartMonth.toISOString(),
-                    selectedDate: selectedDate.toISOString(),
-                    endDate: endDate.toISOString(),
-                    endDateMonth: endDateMonth.toISOString(),
-                    filterYear,
-                    filterMonth,
-                    isVoluntaryContinuation
-                  });
                 }
               }
             }
