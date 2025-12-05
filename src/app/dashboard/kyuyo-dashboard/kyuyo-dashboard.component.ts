@@ -19,6 +19,7 @@ export class KyuyoDashboardComponent {
     { id: 'social-insurance', name: '社会保険料' },
     { id: 'salary', name: '給与' },
     { id: 'bonus', name: '賞与' },
+    { id: 'leave-voluntary', name: '休業・任意保険者' },
     { id: 'settings', name: '設定' }
   ];
 
@@ -94,6 +95,18 @@ export class KyuyoDashboardComponent {
   // 社員情報モーダル
   showEmployeeInfoModal = false;
   selectedEmployeeInfo: any = null;
+  
+  // 休業・任意保険者ページ用データ
+  leaveVoluntaryListType: 'maternity' | 'voluntary' = 'maternity'; // 産前産後休業中または任意継続被保険者の切り替え
+  leaveVoluntaryList: any[] = []; // 休業・任意保険者一覧
+  filteredLeaveVoluntaryList: any[] = []; // フィルタリング後の一覧
+  isLoadingLeaveVoluntaryList: boolean = false; // 読み込み中フラグ
+  
+  // 任意継続終了設定モーダル
+  showVoluntaryEndModal = false;
+  selectedVoluntaryEmployee: any = null;
+  voluntaryEndForm!: FormGroup;
+  isSavingVoluntaryEnd = false;
 
   constructor(
     private router: Router,
@@ -103,6 +116,7 @@ export class KyuyoDashboardComponent {
     private fb: FormBuilder
   ) {
     this.settingsForm = this.createSettingsForm();
+    this.voluntaryEndForm = this.createVoluntaryEndForm();
     
     // 年月フィルター用の選択肢を初期化（2025年から2030年まで）
     const currentYear = new Date().getFullYear();
@@ -170,6 +184,97 @@ export class KyuyoDashboardComponent {
       // 詳細設定
       treatBonusAsReward: [true] // 年4回以上の賞与を報酬と扱うか
     });
+  }
+  
+  // 任意継続終了設定フォームを作成
+  createVoluntaryEndForm(): FormGroup {
+    return this.fb.group({
+      voluntaryEndDate: ['', Validators.required]
+    });
+  }
+  
+  // 任意継続終了設定モーダルを開く
+  openVoluntaryEndModal(employee: any) {
+    this.selectedVoluntaryEmployee = employee;
+    
+    // 退職日の翌月から2年後の月をデフォルト値として設定
+    if (employee.resignationDate) {
+      const resignationDate = new Date(employee.resignationDate);
+      let defaultEndYear = resignationDate.getFullYear();
+      let defaultEndMonth = resignationDate.getMonth() + 1 + 1; // 翌月
+      
+      // 2年後を計算
+      defaultEndYear += 2;
+      
+      // 月が12を超える場合の処理
+      if (defaultEndMonth > 12) {
+        defaultEndMonth -= 12;
+        defaultEndYear += 1;
+      }
+      
+      // その月の最終日を設定
+      const defaultEndDate = new Date(defaultEndYear, defaultEndMonth, 0);
+      const year = defaultEndDate.getFullYear();
+      const month = String(defaultEndDate.getMonth() + 1).padStart(2, '0');
+      const day = String(defaultEndDate.getDate()).padStart(2, '0');
+      const defaultDateString = `${year}-${month}-${day}`;
+      
+      this.voluntaryEndForm.patchValue({
+        voluntaryEndDate: defaultDateString
+      });
+    }
+    
+    this.showVoluntaryEndModal = true;
+  }
+  
+  // 任意継続終了設定モーダルを閉じる
+  closeVoluntaryEndModal() {
+    this.showVoluntaryEndModal = false;
+    this.selectedVoluntaryEmployee = null;
+    this.voluntaryEndForm.reset();
+  }
+  
+  // 任意継続終了日を保存
+  async saveVoluntaryEndDate() {
+    if (this.voluntaryEndForm.invalid || !this.selectedVoluntaryEmployee) {
+      return;
+    }
+    
+    this.isSavingVoluntaryEnd = true;
+    try {
+      const voluntaryEndDate = this.voluntaryEndForm.get('voluntaryEndDate')?.value;
+      
+      // 社員データを取得
+      const employeeData = await this.firestoreService.getEmployeeData(this.selectedVoluntaryEmployee.employeeNumber);
+      
+      if (!employeeData) {
+        alert('社員データが見つかりませんでした');
+        return;
+      }
+      
+      // 任意継続終了日を設定
+      const updatedData = {
+        ...employeeData,
+        voluntaryInsuranceEndDate: voluntaryEndDate,
+        updatedAt: new Date()
+      };
+      
+      // 社員データを更新
+      await this.firestoreService.saveEmployeeData(this.selectedVoluntaryEmployee.employeeNumber, updatedData);
+      
+      alert('任意継続終了日を設定しました');
+      
+      // モーダルを閉じる
+      this.closeVoluntaryEndModal();
+      
+      // 一覧を再読み込み
+      await this.loadLeaveVoluntaryList();
+    } catch (error) {
+      console.error('Error saving voluntary end date:', error);
+      alert('任意継続終了日の設定に失敗しました');
+    } finally {
+      this.isSavingVoluntaryEnd = false;
+    }
   }
   
   // 健康保険料率データを読み込む
@@ -1129,6 +1234,13 @@ export class KyuyoDashboardComponent {
       });
     }
     
+    // 休業・任意保険者タブが選択された場合、休業・任意保険者一覧を読み込む
+    if (tabName === '休業・任意保険者') {
+      this.loadLeaveVoluntaryList().catch(err => {
+        console.error('Error in loadLeaveVoluntaryList:', err);
+      });
+    }
+    
     // 設定タブが選択された場合、設定を読み込む
     if (tabName === '設定') {
       this.loadSettings().catch(err => {
@@ -1830,6 +1942,65 @@ export class KyuyoDashboardComponent {
     await this.filterInsuranceListByDate();
   }
   
+  // 休業・任意保険者一覧のタイプを切り替え
+  switchLeaveVoluntaryListType(type: 'maternity' | 'voluntary') {
+    this.leaveVoluntaryListType = type;
+    this.filterLeaveVoluntaryList();
+  }
+  
+  // 休業・任意保険者一覧を読み込む
+  async loadLeaveVoluntaryList() {
+    this.isLoadingLeaveVoluntaryList = true;
+    try {
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      // 新入社員コレクションに存在する社員を除外（入社手続きが完了した社員のみ）
+      const onboardingEmployees = await this.firestoreService.getAllOnboardingEmployees();
+      const onboardingEmployeeNumbers = new Set(
+        onboardingEmployees.map((emp: any) => emp.employeeNumber).filter((num: any) => num)
+      );
+      
+      const completedEmployees = allEmployees.filter(
+        (emp: any) => emp.employeeNumber && !onboardingEmployeeNumbers.has(emp.employeeNumber)
+      );
+      
+      // 産前産後休業中または任意継続被保険者の社員をフィルタリング
+      this.leaveVoluntaryList = completedEmployees.filter((emp: any) => {
+        // 産前産後休業中かどうか
+        const hasMaternityLeave = emp.maternityLeaveStartDate && emp.maternityLeaveEndDate;
+        
+        // 任意継続被保険者かどうか
+        const isVoluntaryContinuation = emp.healthInsuranceType === '任意継続被保険者' && 
+                                       (emp.employmentStatus === '退職' || emp.employmentStatus === '退職済み');
+        
+        return hasMaternityLeave || isVoluntaryContinuation;
+      });
+      
+      this.filterLeaveVoluntaryList();
+    } catch (error) {
+      console.error('Error loading leave/voluntary list:', error);
+      this.leaveVoluntaryList = [];
+      this.filteredLeaveVoluntaryList = [];
+    } finally {
+      this.isLoadingLeaveVoluntaryList = false;
+    }
+  }
+  
+  // 休業・任意保険者一覧をフィルタリング
+  filterLeaveVoluntaryList() {
+    if (this.leaveVoluntaryListType === 'maternity') {
+      // 産前産後休業中の社員のみ
+      this.filteredLeaveVoluntaryList = this.leaveVoluntaryList.filter((emp: any) => {
+        return emp.maternityLeaveStartDate && emp.maternityLeaveEndDate;
+      });
+    } else {
+      // 任意継続被保険者のみ
+      this.filteredLeaveVoluntaryList = this.leaveVoluntaryList.filter((emp: any) => {
+        return emp.healthInsuranceType === '任意継続被保険者' && 
+               (emp.employmentStatus === '退職' || emp.employmentStatus === '退職済み');
+      });
+    }
+  }
+  
   // 保険料一覧の年月を変更
   async onInsuranceListDateChange() {
     // 年月を数値型に変換（HTMLのselectから文字列型で来る可能性があるため）
@@ -1842,7 +2013,28 @@ export class KyuyoDashboardComponent {
   async loadSalaryData() {
     try {
       await this.loadEmployees();
-      this.salaryEmployees = this.employees;
+      // 退職者を除外（給与設定は在籍者のみ）
+      this.salaryEmployees = this.employees.filter((emp: any) => {
+        // 社員データを取得して退職者かどうかを確認
+        // employeesにはemploymentStatusが含まれていない可能性があるため、
+        // 全社員データから取得する必要がある
+        return true; // 一旦全員を含める（後でフィルタリング）
+      });
+      
+      // 全社員データを取得して退職者を除外
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      const employeeStatusMap = new Map<string, string>();
+      allEmployees.forEach((emp: any) => {
+        if (emp.employeeNumber && emp.employmentStatus) {
+          employeeStatusMap.set(emp.employeeNumber, emp.employmentStatus);
+        }
+      });
+      
+      // 退職者を除外
+      this.salaryEmployees = this.salaryEmployees.filter((emp: any) => {
+        const status = employeeStatusMap.get(emp.employeeNumber);
+        return status !== '退職' && status !== '退職済み';
+      });
       
       // 給与設定履歴を読み込む（Firestoreから）
       const history = await this.firestoreService.getSalaryHistory();
@@ -2439,6 +2631,7 @@ export class KyuyoDashboardComponent {
   ) {
     try {
       console.log(`[随時改定] 処理開始。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}, 給与額: ${newSalary}円, asOfYear: ${asOfYear}, asOfMonth: ${asOfMonth}`);
+      
       // 変更前の標準報酬月額を取得（変更月の時点での等級）
       // まず、変更月以前の最新の標準報酬月額変更情報を取得
       const standardChangeBeforeChange = await this.firestoreService.getStandardMonthlySalaryChange(

@@ -8,7 +8,7 @@
       <span class="user-info">
         <span class="user-name">{{ userName }}</span>
       </span>
-      <button class="logout-button" (click)="logout()">ログアウト</button>
+      <button class="logout-button" (click)="logout()" [disabled]="isSavingSalary">ログアウト</button>
     </div>
   </header>
 
@@ -21,6 +21,7 @@
           *ngFor="let tab of tabs"
           class="sidebar-item"
           [class.active]="currentTab === tab.name"
+          [disabled]="isSavingSalary"
           (click)="switchTab(tab.name)"
         >
           {{ tab.name }}
@@ -435,6 +436,108 @@
           </div>
         </ng-container>
 
+        <!-- 休業・任意保険者ページ -->
+        <ng-container *ngIf="currentTab === '休業・任意保険者'">
+          <div class="leave-voluntary-page">
+            <h2 class="page-title">休業・任意保険者一覧</h2>
+            
+            <!-- フィルター -->
+            <div class="filter-controls">
+              <div class="filter-group">
+                <label>表示タイプ:</label>
+                <button 
+                  class="toggle-button" 
+                  [class.active]="leaveVoluntaryListType === 'maternity'"
+                  (click)="switchLeaveVoluntaryListType('maternity')"
+                >
+                  産前産後休業中
+                </button>
+                <button 
+                  class="toggle-button" 
+                  [class.active]="leaveVoluntaryListType === 'voluntary'"
+                  (click)="switchLeaveVoluntaryListType('voluntary')"
+                >
+                  任意継続被保険者
+                </button>
+              </div>
+            </div>
+            
+            <!-- 産前産後休業中テーブル -->
+            <div class="table-container" *ngIf="leaveVoluntaryListType === 'maternity'">
+              <div *ngIf="isLoadingLeaveVoluntaryList" class="loading-message">
+                データを読み込み中です...
+              </div>
+              <table class="insurance-table" *ngIf="!isLoadingLeaveVoluntaryList">
+                <thead>
+                  <tr>
+                    <th>社員番号</th>
+                    <th class="name-column">氏名</th>
+                    <th>産前産後休業開始日</th>
+                    <th>産前産後休業終了日</th>
+                    <th>在籍状況</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of filteredLeaveVoluntaryList; trackBy: trackByEmployeeNumber" 
+                      (click)="openEmployeeInfoModal(item.employeeNumber)"
+                      class="clickable-row">
+                    <td>{{ item.employeeNumber }}</td>
+                    <td class="name-column">{{ item.name }}</td>
+                    <td>{{ item.maternityLeaveStartDate ? formatDate(item.maternityLeaveStartDate) : '-' }}</td>
+                    <td>{{ item.maternityLeaveEndDate ? formatDate(item.maternityLeaveEndDate) : '-' }}</td>
+                    <td>{{ item.employmentStatus || '在籍' }}</td>
+                  </tr>
+                  <tr *ngIf="filteredLeaveVoluntaryList.length === 0">
+                    <td colspan="5" class="empty-message">データがありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 任意継続被保険者テーブル -->
+            <div class="table-container" *ngIf="leaveVoluntaryListType === 'voluntary'">
+              <div *ngIf="isLoadingLeaveVoluntaryList" class="loading-message">
+                データを読み込み中です...
+              </div>
+              <table class="insurance-table" *ngIf="!isLoadingLeaveVoluntaryList">
+                <thead>
+                  <tr>
+                    <th>社員番号</th>
+                    <th class="name-column">氏名</th>
+                    <th>退職日</th>
+                    <th>健康保険者種別</th>
+                    <th>介護保険者種別</th>
+                    <th>在籍状況</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of filteredLeaveVoluntaryList; trackBy: trackByEmployeeNumber" 
+                      class="clickable-row">
+                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.employeeNumber }}</td>
+                    <td class="name-column" (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.name }}</td>
+                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.resignationDate ? formatDate(item.resignationDate) : '-' }}</td>
+                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.healthInsuranceType || '-' }}</td>
+                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.nursingInsuranceType || '-' }}</td>
+                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.employmentStatus || '在籍' }}</td>
+                    <td>
+                      <button 
+                        class="end-voluntary-button" 
+                        (click)="openVoluntaryEndModal(item); $event.stopPropagation()"
+                      >
+                        任意継続終了設定
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredLeaveVoluntaryList.length === 0">
+                    <td colspan="7" class="empty-message">データがありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ng-container>
+
         <!-- 設定ページ -->
         <ng-container *ngIf="currentTab === '設定'">
           <div class="settings-page">
@@ -758,6 +861,62 @@
     </div>
     <div class="modal-footer">
       <button class="modal-button" (click)="closeEmployeeInfoModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 任意継続終了設定モーダル -->
+<div class="modal-overlay" *ngIf="showVoluntaryEndModal" (click)="closeVoluntaryEndModal()">
+  <div class="modal-content voluntary-end-modal" (click)=" $event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">任意継続終了設定</h2>
+      <button class="modal-close-button" (click)="closeVoluntaryEndModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="selectedVoluntaryEmployee" class="voluntary-end-container">
+        <div class="info-section">
+          <div class="info-item">
+            <span class="info-label">社員番号:</span>
+            <span class="info-value">{{ selectedVoluntaryEmployee.employeeNumber }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">氏名:</span>
+            <span class="info-value">{{ selectedVoluntaryEmployee.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">退職日:</span>
+            <span class="info-value">{{ selectedVoluntaryEmployee.resignationDate ? formatDate(selectedVoluntaryEmployee.resignationDate) : '-' }}</span>
+          </div>
+        </div>
+        
+        <form [formGroup]="voluntaryEndForm" class="voluntary-end-form">
+          <div class="form-group">
+            <label for="voluntaryEndDate">任意継続終了日 <span class="required">*</span></label>
+            <input 
+              type="date" 
+              id="voluntaryEndDate" 
+              formControlName="voluntaryEndDate" 
+              class="form-input"
+            >
+            <div *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.invalid && voluntaryEndForm.get('voluntaryEndDate')?.touched" class="error-message">
+              任意継続終了日を入力してください
+            </div>
+            <div class="form-hint">
+              退職日の翌月から2年間が標準的な任意継続期間です。
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-button cancel-button" (click)="closeVoluntaryEndModal()">キャンセル</button>
+      <button 
+        class="modal-button submit-button" 
+        (click)="saveVoluntaryEndDate()"
+        [disabled]="voluntaryEndForm.invalid || isSavingVoluntaryEnd"
+      >
+        {{ isSavingVoluntaryEnd ? '保存中...' : '保存' }}
+      </button>
     </div>
   </div>
 </div>
