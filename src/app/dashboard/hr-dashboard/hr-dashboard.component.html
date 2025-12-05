@@ -3188,7 +3188,7 @@
             >
           </div>
           <div class="form-group">
-            <label for="onboarding-employmentType">雇用形態</label>
+            <label for="onboarding-employmentType">雇用形態 <span class="required">*</span></label>
             <select 
               id="onboarding-employmentType" 
               formControlName="employmentType" 
@@ -3197,6 +3197,9 @@
               <option value="">選択してください</option>
               <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
             </select>
+            <div *ngIf="onboardingEmployeeEditForm.get('employmentType')?.invalid && onboardingEmployeeEditForm.get('employmentType')?.touched" class="error-message">
+              雇用形態を選択してください
+            </div>
           </div>
         </div>
       </section>
@@ -3567,7 +3570,7 @@
             >
           </div>
           <div class="form-group">
-            <label for="onboarding-basicPensionNumberPart1">基礎年金番号</label>
+            <label for="onboarding-basicPensionNumberPart1">基礎年金番号 <span class="required">*</span></label>
             <div class="basic-pension-number-container">
               <input 
                 type="text" 
@@ -3588,6 +3591,9 @@
                 (input)="formatBasicPensionNumberInput($event, 2)"
                 placeholder="000000"
               >
+            </div>
+            <div *ngIf="(onboardingEmployeeEditForm.get('basicPensionNumberPart1')?.invalid || onboardingEmployeeEditForm.get('basicPensionNumberPart2')?.invalid) && (onboardingEmployeeEditForm.get('basicPensionNumberPart1')?.touched || onboardingEmployeeEditForm.get('basicPensionNumberPart2')?.touched)" class="error-message">
+              基礎年金番号を入力してください
             </div>
           </div>
           <div class="form-group">
@@ -3677,7 +3683,7 @@
         <h3 class="section-title">年金基金加入</h3>
         <div class="form-grid">
           <div class="form-group">
-            <label>年金基金に加入しているか</label>
+            <label>年金基金に加入しているか <span class="required">*</span></label>
             <div class="radio-group">
               <label class="radio-label">
                 <input 
@@ -3697,6 +3703,9 @@
                 >
                 いいえ
               </label>
+            </div>
+            <div *ngIf="onboardingEmployeeEditForm.get('pensionFundMembership')?.invalid && onboardingEmployeeEditForm.get('pensionFundMembership')?.touched" class="error-message">
+              年金基金に加入しているかを選択してください
             </div>
           </div>
         </div>

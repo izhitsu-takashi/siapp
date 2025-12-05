@@ -1956,7 +1956,7 @@ export class HrDashboardComponent {
       
       // 業務情報
       employeeNumber: ['', Validators.required],
-      employmentType: [''],
+      employmentType: ['', Validators.required], // 必須
       paymentType: [''],
       
       // 部署・役職情報
@@ -2002,8 +2002,8 @@ export class HrDashboardComponent {
       // 社会保険
       healthInsuranceNumber: [''],
       pensionInsuranceNumber: [''],
-      basicPensionNumberPart1: [''],
-      basicPensionNumberPart2: [''],
+      basicPensionNumberPart1: ['', Validators.required], // 必須
+      basicPensionNumberPart2: ['', Validators.required], // 必須
       pensionHistoryStatus: [''],
       pensionHistory: [''],
       socialInsuranceAcquisitionDate: ['', Validators.required], // 必須
@@ -2036,12 +2036,12 @@ export class HrDashboardComponent {
       isMiner: ['', Validators.required], // はい/いいえ（必須）
       
       // 入社時申請の情報
-      pensionFundMembership: [''], // 年金基金加入
+      pensionFundMembership: ['', Validators.required], // 年金基金加入（必須）
       
       // その他資格情報（人事専用）
-      multipleWorkplaceAcquisition: [''], // 二以上事業所勤務者の取得か（はい/いいえ）
-      reemploymentAfterRetirement: [''], // 退職後の継続再雇用者の取得か（はい/いいえ）
-      otherQualificationAcquisition: [''], // その他（はい/いいえ）
+      multipleWorkplaceAcquisition: ['', Validators.required], // 二以上事業所勤務者の取得か（はい/いいえ、必須）
+      reemploymentAfterRetirement: ['', Validators.required], // 退職後の継続再雇用者の取得か（はい/いいえ、必須）
+      otherQualificationAcquisition: ['', Validators.required], // その他（はい/いいえ、必須）
       otherQualificationReason: [''] // その他の理由（バリデーションは動的に変更）
     });
   }

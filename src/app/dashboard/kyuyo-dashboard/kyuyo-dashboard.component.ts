@@ -921,8 +921,8 @@ export class KyuyoDashboardComponent {
             // 年齢を計算
             const age = this.calculateAge(emp.birthDate);
             
-            // 介護保険料は40歳以上65歳以下の従業員のみ対象（40歳未満または66歳以上は0円）
-            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 65;
+            // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
+            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
             
             // 厚生年金保険料計算用の標準報酬月額（上限・下限を考慮）
             // 標準報酬月額を使用し、上限・下限の条件を適用
@@ -955,7 +955,7 @@ export class KyuyoDashboardComponent {
             // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
             // 小数第2位まで保持（表示用）
             const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
-            // 介護保険料：40歳未満または66歳以上の場合は0円
+            // 介護保険料：40歳未満または65歳以上の場合は0円
             const nursingInsuranceRaw = isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0;
             const pensionInsuranceRaw = pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
             
@@ -1488,8 +1488,8 @@ export class KyuyoDashboardComponent {
             // 年齢を計算
             const age = this.calculateAge(item.birthDate);
             
-            // 介護保険料は40歳以上65歳以下の従業員のみ対象（40歳未満または66歳以上は0円）
-            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 65;
+            // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
+            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
             
             // 厚生年金保険料計算用の標準報酬月額（上限・下限を考慮）
             // 標準報酬月額を使用し、上限・下限の条件を適用
@@ -1521,7 +1521,7 @@ export class KyuyoDashboardComponent {
             
             // 各保険料を計算（産前産後休業期間内の場合は0円）
             const healthInsuranceRaw = isInMaternityLeave ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
-            // 介護保険料：40歳未満または66歳以上または任意継続被保険者で40歳未満の場合は0円
+            // 介護保険料：40歳未満または65歳以上または任意継続被保険者の場合は0円
             const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isNursingInsuranceTarget && !isVoluntaryContinuation ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
             const pensionInsuranceRaw = isInMaternityLeave ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardMonthlySalary * (pensionInsuranceRate / 100));
             
@@ -1766,12 +1766,12 @@ export class KyuyoDashboardComponent {
                 filterMonth
               );
               
-              // 介護保険料は40歳以上65歳以下の従業員のみ対象（40歳未満または66歳以上は0円）
-              const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 65;
+              // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
+              const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
               
               // 各保険料を計算（産前産後休業期間内の場合は0円）
               const healthInsuranceRaw = isInMaternityLeave ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
-              // 介護保険料：40歳未満または66歳以上または任意継続被保険者で40歳未満の場合は0円
+              // 介護保険料：40歳未満または65歳以上または任意継続被保険者の場合は0円
               const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isNursingInsuranceTarget && !isVoluntaryContinuation ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
               const pensionInsuranceRaw = isInMaternityLeave ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100));
               
