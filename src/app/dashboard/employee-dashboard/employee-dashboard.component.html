@@ -1504,6 +1504,7 @@
               <input 
                 type="checkbox" 
                 formControlName="skipResidentAddress"
+                [disabled]="onboardingApplicationForm.get('isOverseasResident')?.value"
                 (change)="onSkipResidentAddressChange($event)"
               >
               住民票住所を記載しない
@@ -1705,7 +1706,7 @@
                 [disabled]="onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value"
               ></textarea>
             </div>
-            <div class="form-group full-width">
+            <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value || !onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value">
               <label for="onboarding-emergencyAddressKana">住所（ヨミガナ）</label>
               <textarea 
                 id="onboarding-emergencyAddressKana" 
@@ -1781,6 +1782,7 @@
                 id="onboarding-accountNumber" 
                 formControlName="accountNumber" 
                 class="form-input"
+                (input)="formatAccountNumber($event)"
               >
             </div>
           </div>
@@ -1824,7 +1826,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="onboarding-pensionHistoryStatus">厚生年金加入履歴</label>
+            <label for="onboarding-pensionHistoryStatus">厚生年金加入履歴 <span class="required">*</span></label>
             <select 
               id="onboarding-pensionHistoryStatus" 
               formControlName="pensionHistoryStatus" 
@@ -1834,6 +1836,9 @@
               <option value="">選択してください</option>
               <option *ngFor="let option of pensionHistoryOptions" [value]="option">{{ option }}</option>
             </select>
+            <div *ngIf="onboardingApplicationForm.get('pensionHistoryStatus')?.invalid && onboardingApplicationForm.get('pensionHistoryStatus')?.touched" class="error-message">
+              厚生年金加入履歴を選択してください
+            </div>
           </div>
           <div class="form-group full-width" *ngIf="hasPensionHistory">
             <label for="onboarding-pensionHistory">厚生年金加入履歴（詳細）</label>
@@ -4066,18 +4071,27 @@
           <section class="detail-section">
             <h3 class="section-title">現住所と連絡先</h3>
             <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">郵便番号 <span class="required" *ngIf="isInEditMode()">*</span>:</span>
+              <div class="detail-item full-width">
+                <span class="detail-label">海外に在住:</span>
+                <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.isOverseasResident ? 'はい' : 'いいえ' }}</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="isOverseasResident" (change)="onOverseasResidentChange($event)">
+                    海外に在住
+                  </label>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)">
+                <span class="detail-label">郵便番号:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.postalCode || '-' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
                   <input type="text" formControlName="postalCode" class="form-input" maxlength="7" (input)="formatPostalCode($event)" placeholder="1234567">
                   <div *ngIf="onboardingApplicationForm.get('postalCode')?.invalid && onboardingApplicationForm.get('postalCode')?.touched" class="error-message">
-                    <span *ngIf="onboardingApplicationForm.get('postalCode')?.errors?.['required']">郵便番号を入力してください</span>
                     <span *ngIf="onboardingApplicationForm.get('postalCode')?.errors?.['pattern']">7桁の数字を入力してください</span>
                   </div>
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)">
                 <span class="detail-label">現住所 <span class="required" *ngIf="isInEditMode()">*</span>:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.currentAddress || '-' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
@@ -4085,7 +4099,7 @@
                   <div *ngIf="onboardingApplicationForm.get('currentAddress')?.invalid && onboardingApplicationForm.get('currentAddress')?.touched" class="error-message">現住所を入力してください</div>
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)">
                 <span class="detail-label">現住所（ヨミガナ） <span class="required" *ngIf="isInEditMode()">*</span>:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.currentAddressKana || '-' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
@@ -4094,6 +4108,14 @@
                     <span *ngIf="onboardingApplicationForm.get('currentAddressKana')?.errors?.['required']">現住所（ヨミガナ）を入力してください</span>
                     <span *ngIf="onboardingApplicationForm.get('currentAddressKana')?.errors?.['katakana']">カタカナで入力してください</span>
                   </div>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.isOverseasResident || (isInEditMode() && onboardingApplicationForm.get('isOverseasResident')?.value)">
+                <span class="detail-label">住所（海外） <span class="required" *ngIf="isInEditMode()">*</span>:</span>
+                <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.overseasAddress || '-' }}</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <textarea formControlName="overseasAddress" class="form-input" rows="2" placeholder="海外住所を入力してください"></textarea>
+                  <div *ngIf="onboardingApplicationForm.get('overseasAddress')?.invalid && onboardingApplicationForm.get('overseasAddress')?.touched" class="error-message">住所を入力してください</div>
                 </div>
               </div>
               <div class="detail-item">
@@ -4107,7 +4129,7 @@
                   </div>
                 </div>
               </div>
-              <div class="detail-item">
+              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)">
                 <span class="detail-label">世帯主（本人/親族）:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.currentHouseholdHead || '-' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
@@ -4124,7 +4146,7 @@
           <section class="detail-section">
             <h3 class="section-title">住民票住所</h3>
             <div class="detail-grid">
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)">
                 <span class="detail-label">住所（現住所と同じ）:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.sameAsCurrentAddress ? 'はい' : 'いいえ' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
@@ -4134,7 +4156,24 @@
                   </label>
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="selectedApplication.isOverseasResident || (isInEditMode() && onboardingApplicationForm.get('isOverseasResident')?.value)">
+                <span class="detail-label">住民票住所を記載しない:</span>
+                <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.skipResidentAddress ? 'はい' : 'いいえ' }}</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="skipResidentAddress" (change)="onSkipResidentAddressChange($event)" [disabled]="onboardingApplicationForm.get('isOverseasResident')?.value">
+                    住民票住所を記載しない
+                  </label>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="(selectedApplication.isOverseasResident || (isInEditMode() && onboardingApplicationForm.get('isOverseasResident')?.value)) && (selectedApplication.skipResidentAddress || (isInEditMode() && onboardingApplicationForm.get('skipResidentAddress')?.value))">
+                <span class="detail-label">住民票住所を記載しない理由:</span>
+                <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.residentAddressSkipReason || '-' }}</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <input type="text" formControlName="residentAddressSkipReason" class="form-input" readonly>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="(!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)) && (!selectedApplication.skipResidentAddress || (isInEditMode() && !onboardingApplicationForm.get('skipResidentAddress')?.value))">
                 <span class="detail-label">住所 <span class="required" *ngIf="isInEditMode()">*</span>:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.residentAddress || '-' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
@@ -4142,7 +4181,7 @@
                   <div *ngIf="onboardingApplicationForm.get('residentAddress')?.invalid && onboardingApplicationForm.get('residentAddress')?.touched" class="error-message">住所を入力してください</div>
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="(!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)) && (!selectedApplication.skipResidentAddress || (isInEditMode() && !onboardingApplicationForm.get('skipResidentAddress')?.value))">
                 <span class="detail-label">住所（ヨミガナ） <span class="required" *ngIf="isInEditMode()">*</span>:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.residentAddressKana || '-' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
@@ -4153,7 +4192,7 @@
                   </div>
                 </div>
               </div>
-              <div class="detail-item">
+              <div class="detail-item" *ngIf="(!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)) && (!selectedApplication.skipResidentAddress || (isInEditMode() && !onboardingApplicationForm.get('skipResidentAddress')?.value))">
                 <span class="detail-label">世帯主（本人/親族）:</span>
                 <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.residentHouseholdHead || '-' }}</span>
                 <div *ngIf="isInEditMode()" class="detail-edit-input">
@@ -4179,12 +4218,11 @@
                   </div>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">氏名（ヨミガナ） <span class="required" *ngIf="isInEditMode()">*</span>:</span>
+                  <span class="detail-label">氏名（ヨミガナ）:</span>
                   <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.emergencyContact?.nameKana || '-' }}</span>
                   <div *ngIf="isInEditMode()" class="detail-edit-input">
                     <input type="text" formControlName="nameKana" class="form-input">
                     <div *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.invalid && onboardingApplicationForm.get('emergencyContact.nameKana')?.touched" class="error-message">
-                      <span *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.errors?.['required']">氏名（ヨミガナ）を入力してください</span>
                       <span *ngIf="onboardingApplicationForm.get('emergencyContact.nameKana')?.errors?.['katakana']">カタカナで入力してください</span>
                     </div>
                   </div>
@@ -4197,12 +4235,11 @@
                   </div>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">緊急連絡先電話番号 <span class="required" *ngIf="isInEditMode()">*</span>:</span>
+                  <span class="detail-label">緊急連絡先電話番号:</span>
                   <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.emergencyContact?.phone || '-' }}</span>
                   <div *ngIf="isInEditMode()" class="detail-edit-input">
                     <input type="tel" formControlName="phone" class="form-input" (input)="formatEmergencyPhoneNumber($event)">
                     <div *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.invalid && onboardingApplicationForm.get('emergencyContact.phone')?.touched" class="error-message">
-                      <span *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.errors?.['required']">緊急連絡先電話番号を入力してください</span>
                       <span *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.errors?.['pattern']">数字のみで入力してください</span>
                     </div>
                   </div>
@@ -4215,12 +4252,11 @@
                   </div>
                 </div>
                 <div class="detail-item full-width">
-                  <span class="detail-label">住所（ヨミガナ） <span class="required" *ngIf="isInEditMode()">*</span>:</span>
+                  <span class="detail-label">住所（ヨミガナ）:</span>
                   <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.emergencyContact?.addressKana || '-' }}</span>
                   <div *ngIf="isInEditMode()" class="detail-edit-input">
                     <textarea formControlName="addressKana" class="form-input" rows="2"></textarea>
                     <div *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.invalid && onboardingApplicationForm.get('emergencyContact.addressKana')?.touched" class="error-message">
-                      <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['required']">住所（ヨミガナ）を入力してください</span>
                       <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['katakana']">カタカナで入力してください</span>
                     </div>
                   </div>
@@ -4280,12 +4316,11 @@
                   </div>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">名義（カタカナ） <span class="required" *ngIf="isInEditMode()">*</span>:</span>
+                  <span class="detail-label">名義（カタカナ）:</span>
                   <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.bankAccount?.accountHolder || '-' }}</span>
                   <div *ngIf="isInEditMode()" class="detail-edit-input">
                     <input type="text" formControlName="accountHolder" class="form-input">
                     <div *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.invalid && onboardingApplicationForm.get('bankAccount.accountHolder')?.touched" class="error-message">
-                      <span *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.errors?.['required']">名義（カタカナ）を入力してください</span>
                       <span *ngIf="onboardingApplicationForm.get('bankAccount.accountHolder')?.errors?.['katakana']">カタカナで入力してください</span>
                     </div>
                   </div>
@@ -4421,6 +4456,139 @@
               </div>
             </div>
           </section>
+          
+          <!-- 年金基金加入 -->
+          <section class="detail-section">
+            <h3 class="section-title">年金基金加入</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">年金基金に加入しているか <span class="required" *ngIf="isInEditMode()">*</span>:</span>
+                <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.pensionFundMembership || '-' }}</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <div class="radio-group">
+                    <label class="radio-label">
+                      <input 
+                        type="radio" 
+                        formControlName="pensionFundMembership" 
+                        value="はい"
+                        name="pensionFundMembership"
+                      >
+                      はい
+                    </label>
+                    <label class="radio-label">
+                      <input 
+                        type="radio" 
+                        formControlName="pensionFundMembership" 
+                        value="いいえ"
+                        name="pensionFundMembership"
+                      >
+                      いいえ
+                    </label>
+                  </div>
+                  <div *ngIf="onboardingApplicationForm.get('pensionFundMembership')?.invalid && onboardingApplicationForm.get('pensionFundMembership')?.touched" class="error-message">年金基金に加入しているかを選択してください</div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 添付資料 -->
+          <section class="detail-section">
+            <h3 class="section-title">添付資料</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.resumeFileUrl">
+                <span class="detail-label">履歴書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">履歴書を開く</a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="isInEditMode()">
+                <span class="detail-label">履歴書:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'resume')"
+                    class="form-input"
+                  >
+                  <div *ngIf="resumeFile" class="file-info">
+                    選択済み: {{ resumeFile.name }}
+                  </div>
+                  <div *ngIf="selectedApplication.resumeFileUrl && !resumeFile" class="file-info">
+                    現在のファイル: <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">履歴書を開く</a>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.careerHistoryFileUrl">
+                <span class="detail-label">職務経歴書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">職務経歴書を開く</a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="isInEditMode()">
+                <span class="detail-label">職務経歴書:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'careerHistory')"
+                    class="form-input"
+                  >
+                  <div *ngIf="careerHistoryFile" class="file-info">
+                    選択済み: {{ careerHistoryFile.name }}
+                  </div>
+                  <div *ngIf="selectedApplication.careerHistoryFileUrl && !careerHistoryFile" class="file-info">
+                    現在のファイル: <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">職務経歴書を開く</a>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.basicPensionNumberDocFileUrl">
+                <span class="detail-label">基礎年金番号がわかる書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">基礎年金番号がわかる書類を開く</a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="isInEditMode()">
+                <span class="detail-label">基礎年金番号がわかる書類:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'basicPensionNumberDoc')"
+                    class="form-input"
+                  >
+                  <div *ngIf="basicPensionNumberDocFile" class="file-info">
+                    選択済み: {{ basicPensionNumberDocFile.name }}
+                  </div>
+                  <div *ngIf="selectedApplication.basicPensionNumberDocFileUrl && !basicPensionNumberDocFile" class="file-info">
+                    現在のファイル: <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">基礎年金番号がわかる書類を開く</a>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.idDocumentFileUrl">
+                <span class="detail-label">本人確認書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="isInEditMode()">
+                <span class="detail-label">本人確認書類:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'idDocument')"
+                    class="form-input"
+                  >
+                  <div *ngIf="idDocumentFile" class="file-info">
+                    選択済み: {{ idDocumentFile.name }}
+                  </div>
+                  <div *ngIf="selectedApplication.idDocumentFileUrl && !idDocumentFile" class="file-info">
+                    現在のファイル: <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </form>
         
         <!-- 表示モード（編集モードでない場合） -->
@@ -4467,23 +4635,31 @@
           <section class="detail-section">
             <h3 class="section-title">現住所と連絡先</h3>
             <div class="detail-grid">
-              <div class="detail-item">
+              <div class="detail-item full-width">
+                <span class="detail-label">海外に在住:</span>
+                <span class="detail-value">{{ selectedApplication.isOverseasResident ? 'はい' : 'いいえ' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">郵便番号:</span>
                 <span class="detail-value">{{ selectedApplication.postalCode || '-' }}</span>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">現住所:</span>
                 <span class="detail-value">{{ selectedApplication.currentAddress || '-' }}</span>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">現住所（ヨミガナ）:</span>
                 <span class="detail-value">{{ selectedApplication.currentAddressKana || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.isOverseasResident">
+                <span class="detail-label">住所（海外）:</span>
+                <span class="detail-value">{{ selectedApplication.overseasAddress || '-' }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">電話番号:</span>
                 <span class="detail-value">{{ selectedApplication.phoneNumber || '-' }}</span>
               </div>
-              <div class="detail-item">
+              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">世帯主（本人/親族）:</span>
                 <span class="detail-value">{{ selectedApplication.currentHouseholdHead || '-' }}</span>
               </div>
@@ -4494,19 +4670,27 @@
           <section class="detail-section">
             <h3 class="section-title">住民票住所</h3>
             <div class="detail-grid">
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">住所（現住所と同じ）:</span>
                 <span class="detail-value">{{ selectedApplication.sameAsCurrentAddress ? 'はい' : 'いいえ' }}</span>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="selectedApplication.isOverseasResident">
+                <span class="detail-label">住民票住所を記載しない:</span>
+                <span class="detail-value">{{ selectedApplication.skipResidentAddress ? 'はい' : 'いいえ' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.isOverseasResident && selectedApplication.skipResidentAddress">
+                <span class="detail-label">住民票住所を記載しない理由:</span>
+                <span class="detail-value">{{ selectedApplication.residentAddressSkipReason || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident && !selectedApplication.skipResidentAddress">
                 <span class="detail-label">住所:</span>
                 <span class="detail-value">{{ selectedApplication.residentAddress || '-' }}</span>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident && !selectedApplication.skipResidentAddress">
                 <span class="detail-label">住所（ヨミガナ）:</span>
                 <span class="detail-value">{{ selectedApplication.residentAddressKana || '-' }}</span>
               </div>
-              <div class="detail-item">
+              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident && !selectedApplication.skipResidentAddress">
                 <span class="detail-label">世帯主（本人/親族）:</span>
                 <span class="detail-value">{{ selectedApplication.residentHouseholdHead || '-' }}</span>
               </div>
@@ -4608,6 +4792,37 @@
               <div class="detail-item">
                 <span class="detail-label">資格確認書発行要否:</span>
                 <span class="detail-value">{{ selectedApplication.qualificationCertificateRequired || '-' }}</span>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 添付資料 -->
+          <section class="detail-section" *ngIf="selectedApplication.resumeFileUrl || selectedApplication.careerHistoryFileUrl || selectedApplication.basicPensionNumberDocFileUrl || selectedApplication.idDocumentFileUrl">
+            <h3 class="section-title">添付資料</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width" *ngIf="selectedApplication.resumeFileUrl">
+                <span class="detail-label">履歴書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">履歴書を開く</a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.careerHistoryFileUrl">
+                <span class="detail-label">職務経歴書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">職務経歴書を開く</a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.basicPensionNumberDocFileUrl">
+                <span class="detail-label">基礎年金番号がわかる書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">基礎年金番号がわかる書類を開く</a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.idDocumentFileUrl">
+                <span class="detail-label">本人確認書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
+                </span>
               </div>
             </div>
           </section>

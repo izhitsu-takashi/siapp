@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 申請ファイルへのアクセスを許可（開発中は全員に許可）
+    match /applications/{employeeNumber}/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    // その他のファイルへのアクセス（開発中は全員に許可）
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
+

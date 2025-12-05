@@ -622,6 +622,12 @@ export class EmployeeDashboardComponent {
     const currentAddressControl = this.onboardingApplicationForm.get('currentAddress');
     const currentAddressKanaControl = this.onboardingApplicationForm.get('currentAddressKana');
     const overseasAddressControl = this.onboardingApplicationForm.get('overseasAddress');
+    const skipResidentAddressControl = this.onboardingApplicationForm.get('skipResidentAddress');
+    const residentAddressSkipReasonControl = this.onboardingApplicationForm.get('residentAddressSkipReason');
+    const residentAddressSkipReasonOtherControl = this.onboardingApplicationForm.get('residentAddressSkipReasonOther');
+    const residentPostalCodeControl = this.onboardingApplicationForm.get('residentPostalCode');
+    const residentAddressControl = this.onboardingApplicationForm.get('residentAddress');
+    const residentAddressKanaControl = this.onboardingApplicationForm.get('residentAddressKana');
 
     if (isOverseas) {
       // 海外在住の場合：郵便番号、現住所、現住所（ヨミガナ）のバリデーションを削除
@@ -634,6 +640,29 @@ export class EmployeeDashboardComponent {
       postalCodeControl?.setValue('');
       currentAddressControl?.setValue('');
       currentAddressKanaControl?.setValue('');
+      
+      // 住民票住所を記載しないチェックを自動的に入れて固定
+      skipResidentAddressControl?.setValue(true);
+      skipResidentAddressControl?.disable(); // チェックボックスを無効化して固定
+      
+      // 住民票住所のバリデーションを削除
+      residentPostalCodeControl?.clearValidators();
+      residentAddressControl?.clearValidators();
+      residentAddressKanaControl?.clearValidators();
+      
+      // 理由を「海外在住」に設定
+      residentAddressSkipReasonControl?.setValue('海外在住');
+      residentAddressSkipReasonControl?.setValidators([Validators.required]);
+      // その他の理由のバリデーションを削除
+      residentAddressSkipReasonOtherControl?.clearValidators();
+      residentAddressSkipReasonOtherControl?.setValue('');
+      
+      // バリデーションを更新
+      residentPostalCodeControl?.updateValueAndValidity();
+      residentAddressControl?.updateValueAndValidity();
+      residentAddressKanaControl?.updateValueAndValidity();
+      residentAddressSkipReasonControl?.updateValueAndValidity();
+      residentAddressSkipReasonOtherControl?.updateValueAndValidity();
     } else {
       // 国内在住の場合：郵便番号、現住所、現住所（ヨミガナ）のバリデーションを追加
       postalCodeControl?.setValidators([Validators.pattern(/^\d{7}$/)]);
@@ -643,6 +672,17 @@ export class EmployeeDashboardComponent {
       overseasAddressControl?.clearValidators();
       // 値をクリア
       overseasAddressControl?.setValue('');
+      
+      // 住民票住所を記載しないチェックを解除して有効化
+      skipResidentAddressControl?.enable();
+      skipResidentAddressControl?.setValue(false);
+      // 理由をクリア
+      residentAddressSkipReasonControl?.setValue('');
+      residentAddressSkipReasonControl?.clearValidators();
+      residentAddressSkipReasonOtherControl?.clearValidators();
+      residentAddressSkipReasonOtherControl?.setValue('');
+      residentAddressSkipReasonControl?.updateValueAndValidity();
+      residentAddressSkipReasonOtherControl?.updateValueAndValidity();
     }
     postalCodeControl?.updateValueAndValidity();
     currentAddressControl?.updateValueAndValidity();
@@ -664,6 +704,13 @@ export class EmployeeDashboardComponent {
   }
 
   onSkipResidentAddressChange(event: any) {
+    // 海外在住の場合は変更を許可しない
+    const isOverseas = this.onboardingApplicationForm.get('isOverseasResident')?.value;
+    if (isOverseas) {
+      event.target.checked = true; // 強制的にチェック状態を維持
+      return;
+    }
+    
     const skipResident = event.target.checked;
     const residentPostalCodeControl = this.onboardingApplicationForm.get('residentPostalCode');
     const residentAddressControl = this.onboardingApplicationForm.get('residentAddress');
@@ -2262,18 +2309,34 @@ export class EmployeeDashboardComponent {
           pensionFundMembership: formValue.pensionFundMembership || ''
         };
 
-        // ファイルをアップロード（履歴書、職務経歴書）
+        // ファイルをアップロード（履歴書、職務経歴書、基礎年金番号書類、本人確認書類）
         if (this.resumeFile) {
-          const resumePath = `applications/${this.employeeNumber}/resume_${Date.now()}_${this.resumeFile.name}`;
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.resumeFile.name);
+          const resumePath = `applications/${this.employeeNumber}/resume_${Date.now()}_${sanitizedFileName}`;
           const resumeUrl = await this.firestoreService.uploadFile(this.resumeFile, resumePath);
           applicationData.resumeFile = this.resumeFile.name;
           applicationData.resumeFileUrl = resumeUrl;
         }
         if (this.careerHistoryFile) {
-          const careerHistoryPath = `applications/${this.employeeNumber}/careerHistory_${Date.now()}_${this.careerHistoryFile.name}`;
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.careerHistoryFile.name);
+          const careerHistoryPath = `applications/${this.employeeNumber}/careerHistory_${Date.now()}_${sanitizedFileName}`;
           const careerHistoryUrl = await this.firestoreService.uploadFile(this.careerHistoryFile, careerHistoryPath);
           applicationData.careerHistoryFile = this.careerHistoryFile.name;
           applicationData.careerHistoryFileUrl = careerHistoryUrl;
+        }
+        if (this.basicPensionNumberDocFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.basicPensionNumberDocFile.name);
+          const basicPensionNumberDocPath = `applications/${this.employeeNumber}/basicPensionNumberDoc_${Date.now()}_${sanitizedFileName}`;
+          const basicPensionNumberDocUrl = await this.firestoreService.uploadFile(this.basicPensionNumberDocFile, basicPensionNumberDocPath);
+          applicationData.basicPensionNumberDocFile = this.basicPensionNumberDocFile.name;
+          applicationData.basicPensionNumberDocFileUrl = basicPensionNumberDocUrl;
+        }
+        if (this.idDocumentFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.idDocumentFile.name);
+          const idDocumentPath = `applications/${this.employeeNumber}/idDocument_${Date.now()}_${sanitizedFileName}`;
+          const idDocumentUrl = await this.firestoreService.uploadFile(this.idDocumentFile, idDocumentPath);
+          applicationData.idDocumentFile = this.idDocumentFile.name;
+          applicationData.idDocumentFileUrl = idDocumentUrl;
         }
 
         // 申請を保存
@@ -2648,6 +2711,10 @@ export class EmployeeDashboardComponent {
     this.showApplicationDetailModal = false;
     this.selectedApplication = null;
     this.isEditModeForReapplication = false;
+    // ファイルをリセット
+    this.resumeFile = null;
+    this.careerHistoryFile = null;
+    this.basicPensionNumberDocFile = null;
   }
   
   // 編集モードを有効にする
@@ -2675,6 +2742,10 @@ export class EmployeeDashboardComponent {
         console.log('データロード後の dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
       } else if (this.selectedApplication.applicationType === '入社時申請') {
         console.log('入社時申請のフォームを初期化します。');
+        // ファイルをリセット
+        this.resumeFile = null;
+        this.careerHistoryFile = null;
+        this.basicPensionNumberDocFile = null;
         this.onboardingApplicationForm = this.createOnboardingApplicationForm();
         this.loadApplicationDataToForm(this.selectedApplication);
       } else if (this.selectedApplication.applicationType === '扶養削除申請') {
@@ -2892,12 +2963,18 @@ export class EmployeeDashboardComponent {
         myNumberPart1: myNumberPart1,
         myNumberPart2: myNumberPart2,
         myNumberPart3: myNumberPart3,
+        isOverseasResident: application.isOverseasResident || false,
         postalCode: application.postalCode || '',
         currentAddress: application.currentAddress || '',
         currentAddressKana: application.currentAddressKana || '',
+        overseasAddress: application.overseasAddress || '',
         phoneNumber: application.phoneNumber || '',
         currentHouseholdHead: application.currentHouseholdHead || '',
         sameAsCurrentAddress: application.sameAsCurrentAddress || false,
+        skipResidentAddress: application.skipResidentAddress || false,
+        residentAddressSkipReason: application.residentAddressSkipReason || '',
+        residentAddressSkipReasonOther: application.residentAddressSkipReasonOther || '',
+        residentPostalCode: application.residentPostalCode || '',
         residentAddress: application.residentAddress || '',
         residentAddressKana: application.residentAddressKana || '',
         residentHouseholdHead: application.residentHouseholdHead || '',
@@ -2906,7 +2983,9 @@ export class EmployeeDashboardComponent {
         pensionHistoryStatus: application.pensionHistoryStatus || '',
         pensionHistory: application.pensionHistory || '',
         dependentStatus: application.dependentStatus || '',
-        qualificationCertificateRequired: application.qualificationCertificateRequired || ''
+        qualificationCertificateRequired: application.qualificationCertificateRequired || '',
+        pensionFundMembership: application.pensionFundMembership || '',
+        sameAsCurrentAddressForEmergency: application.sameAsCurrentAddressForEmergency || false
       });
       
       // ネストされたフォームグループを個別に設定
@@ -2935,6 +3014,26 @@ export class EmployeeDashboardComponent {
       
       // 厚生年金加入履歴の状態を設定
       this.hasPensionHistory = application.pensionHistoryStatus === '有';
+      
+      // 海外在住の場合の処理
+      if (application.isOverseasResident) {
+        this.onOverseasResidentChange({ target: { checked: true } });
+      }
+      
+      // 住民票住所を記載しない場合の処理
+      if (application.skipResidentAddress) {
+        this.onSkipResidentAddressChange({ target: { checked: true } });
+      }
+      
+      // 緊急連絡先が現住所と同じ場合の処理
+      if (application.sameAsCurrentAddressForEmergency) {
+        this.onSameAsCurrentAddressForEmergencyChange({ target: { checked: true } });
+      }
+      
+      // 住民票住所が現住所と同じ場合の処理
+      if (application.sameAsCurrentAddress) {
+        this.onOnboardingSameAddressChange({ target: { checked: true } });
+      }
       
       // 氏名とメールアドレスを編集不可にする
       this.onboardingApplicationForm.get('lastName')?.disable();
@@ -3239,18 +3338,28 @@ export class EmployeeDashboardComponent {
           const basicPensionNumber = basicPensionNumberParts.join('');
           
           applicationData = {
-            name: formValue.name,
-            nameKana: formValue.nameKana || '',
+            lastName: formValue.lastName,
+            firstName: formValue.firstName,
+            lastNameKana: formValue.lastNameKana,
+            firstNameKana: formValue.firstNameKana,
+            name: (formValue.lastName || '') + (formValue.firstName || ''),
+            nameKana: (formValue.lastNameKana || '') + (formValue.firstNameKana || ''),
             birthDate: formValue.birthDate,
             gender: formValue.gender,
             email: formValue.email,
             myNumber: myNumber || null,
+            isOverseasResident: formValue.isOverseasResident || false,
             postalCode: formValue.postalCode || '',
             currentAddress: formValue.currentAddress || '',
             currentAddressKana: formValue.currentAddressKana || '',
+            overseasAddress: formValue.overseasAddress || '',
             phoneNumber: formValue.phoneNumber || '',
             currentHouseholdHead: formValue.currentHouseholdHead || '',
             sameAsCurrentAddress: formValue.sameAsCurrentAddress || false,
+            skipResidentAddress: formValue.skipResidentAddress || false,
+            residentAddressSkipReason: formValue.residentAddressSkipReason || '',
+            residentAddressSkipReasonOther: formValue.residentAddressSkipReasonOther || '',
+            residentPostalCode: formValue.residentPostalCode || '',
             residentAddress: formValue.residentAddress || '',
             residentAddressKana: formValue.residentAddressKana || '',
             residentHouseholdHead: formValue.residentHouseholdHead || '',
@@ -3261,9 +3370,56 @@ export class EmployeeDashboardComponent {
             pensionHistory: formValue.pensionHistory || '',
             dependentStatus: formValue.dependentStatus || '',
             qualificationCertificateRequired: formValue.qualificationCertificateRequired || '',
+            sameAsCurrentAddressForEmergency: formValue.sameAsCurrentAddressForEmergency || false,
+            pensionFundMembership: formValue.pensionFundMembership || '',
             employeeNumber: this.employeeNumber,
             applicationType: '入社時申請'
           };
+          
+          // ファイルアップロード処理
+          if (this.resumeFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.resumeFile.name);
+            const resumePath = `applications/${this.employeeNumber}/resume_${Date.now()}_${sanitizedFileName}`;
+            const resumeUrl = await this.firestoreService.uploadFile(this.resumeFile, resumePath);
+            applicationData.resumeFile = this.resumeFile.name;
+            applicationData.resumeFileUrl = resumeUrl;
+          } else if (this.selectedApplication.resumeFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.resumeFileUrl = this.selectedApplication.resumeFileUrl;
+          }
+          
+          if (this.careerHistoryFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.careerHistoryFile.name);
+            const careerHistoryPath = `applications/${this.employeeNumber}/careerHistory_${Date.now()}_${sanitizedFileName}`;
+            const careerHistoryUrl = await this.firestoreService.uploadFile(this.careerHistoryFile, careerHistoryPath);
+            applicationData.careerHistoryFile = this.careerHistoryFile.name;
+            applicationData.careerHistoryFileUrl = careerHistoryUrl;
+          } else if (this.selectedApplication.careerHistoryFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.careerHistoryFileUrl = this.selectedApplication.careerHistoryFileUrl;
+          }
+          
+          if (this.basicPensionNumberDocFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.basicPensionNumberDocFile.name);
+            const basicPensionNumberDocPath = `applications/${this.employeeNumber}/basicPensionNumberDoc_${Date.now()}_${sanitizedFileName}`;
+            const basicPensionNumberDocUrl = await this.firestoreService.uploadFile(this.basicPensionNumberDocFile, basicPensionNumberDocPath);
+            applicationData.basicPensionNumberDocFile = this.basicPensionNumberDocFile.name;
+            applicationData.basicPensionNumberDocFileUrl = basicPensionNumberDocUrl;
+          } else if (this.selectedApplication.basicPensionNumberDocFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.basicPensionNumberDocFileUrl = this.selectedApplication.basicPensionNumberDocFileUrl;
+          }
+          
+          if (this.idDocumentFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.idDocumentFile.name);
+            const idDocumentPath = `applications/${this.employeeNumber}/idDocument_${Date.now()}_${sanitizedFileName}`;
+            const idDocumentUrl = await this.firestoreService.uploadFile(this.idDocumentFile, idDocumentPath);
+            applicationData.idDocumentFile = this.idDocumentFile.name;
+            applicationData.idDocumentFileUrl = idDocumentUrl;
+          } else if (this.selectedApplication.idDocumentFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.idDocumentFileUrl = this.selectedApplication.idDocumentFileUrl;
+          }
         }
       } else if (this.selectedApplication.applicationType === '産前産後休業申請') {
         formValid = this.maternityLeaveForm.valid && !!this.maternityLeaveDocumentFile;
@@ -3499,20 +3655,37 @@ export class EmployeeDashboardComponent {
     }
   }
 
+  // 口座番号入力時の処理（半角数字のみ許可）
+  formatAccountNumber(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    event.target.value = value;
+    const control = this.onboardingApplicationForm.get('bankAccount.accountNumber');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+  }
+
   // 緊急連絡先の現住所と同じチェック変更時の処理
   onSameAsCurrentAddressForEmergencyChange(event: any) {
     const isSame = event.target.checked;
-    const currentAddressControl = this.onboardingApplicationForm.get('currentAddress');
-    const currentAddressKanaControl = this.onboardingApplicationForm.get('currentAddressKana');
+    const isOverseas = this.onboardingApplicationForm.get('isOverseasResident')?.value;
     const emergencyAddressControl = this.onboardingApplicationForm.get('emergencyContact.address');
     const emergencyAddressKanaControl = this.onboardingApplicationForm.get('emergencyContact.addressKana');
 
     if (isSame) {
-      // 現住所と同じにチェックした場合、現住所をコピー
-      const currentAddress = currentAddressControl?.value || '';
-      const currentAddressKana = currentAddressKanaControl?.value || '';
-      emergencyAddressControl?.setValue(currentAddress);
-      emergencyAddressKanaControl?.setValue(currentAddressKana);
+      if (isOverseas) {
+        // 海外に在住の場合、海外住所をコピー
+        const overseasAddress = this.onboardingApplicationForm.get('overseasAddress')?.value || '';
+        emergencyAddressControl?.setValue(overseasAddress);
+        // 住所（ヨミガナ）は設定しない（表示しないため）
+        emergencyAddressKanaControl?.setValue('');
+      } else {
+        // 国内在住の場合、現住所をコピー
+        const currentAddress = this.onboardingApplicationForm.get('currentAddress')?.value || '';
+        const currentAddressKana = this.onboardingApplicationForm.get('currentAddressKana')?.value || '';
+        emergencyAddressControl?.setValue(currentAddress);
+        emergencyAddressKanaControl?.setValue(currentAddressKana);
+      }
     } else {
       // チェックを外した場合、値をクリア
       emergencyAddressControl?.setValue('');

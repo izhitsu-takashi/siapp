@@ -974,28 +974,6 @@ export class HrDashboardComponent {
     }
   }
 
-  // 社員番号入力時の処理（半角英数字のみ許可）
-  onEmployeeNumberInput(event: any, index: number) {
-    const input = event.target;
-    const value = input.value;
-    // 半角英数字以外を削除
-    const filteredValue = value.replace(/[^a-zA-Z0-9]/g, '');
-    const employeeNumberControl = this.employeesFormArray.at(index).get('employeeNumber');
-    
-    if (value !== filteredValue) {
-      input.value = filteredValue;
-      // 非同期でsetValueを実行して無限ループを防ぐ
-      setTimeout(() => {
-        employeeNumberControl?.setValue(filteredValue, { emitEvent: true });
-        employeeNumberControl?.updateValueAndValidity();
-      }, 0);
-    } else {
-      // 値が変更されていない場合でも、バリデーションを再実行
-      setTimeout(() => {
-        employeeNumberControl?.updateValueAndValidity({ emitEvent: true });
-      }, 0);
-    }
-  }
 
   switchTab(tabName: string) {
     this.currentTab = tabName;
@@ -1837,6 +1815,9 @@ export class HrDashboardComponent {
 
   closeAddModal() {
     this.showAddModal = false;
+    // フォームを有効化（モーダルを閉じる際に確実に有効化）
+    this.addEmployeeForm.enable();
+    this.isAddingEmployees = false;
   }
 
   async loadEmployees() {
@@ -1929,6 +1910,8 @@ export class HrDashboardComponent {
   async addEmployees() {
     if (this.addEmployeeForm.valid) {
       this.isAddingEmployees = true;
+      // フォームを無効化
+      this.addEmployeeForm.disable();
       try {
         const newEmployees = this.employeesFormArray.value;
         
@@ -1980,8 +1963,13 @@ export class HrDashboardComponent {
         await this.loadOnboardingEmployees();
         
         alert(`${newEmployees.length}名の社員を追加しました`);
+      } catch (error) {
+        console.error('Error adding employees:', error);
+        alert('社員の追加中にエラーが発生しました');
       } finally {
         this.isAddingEmployees = false;
+        // フォームを再度有効化
+        this.addEmployeeForm.enable();
       }
     } else {
       alert('必須項目を入力してください');
@@ -3777,19 +3765,24 @@ export class HrDashboardComponent {
 
   // 新入社員詳細モーダルを開く
   async openOnboardingEmployeeModal(employee: any) {
-    this.selectedOnboardingEmployee = employee;
-    this.onboardingStatusComment = employee.statusComment || '';
-    this.showOnboardingEmployeeModal = true;
-    
-    // 入社時申請データを取得
-    const applications = await this.firestoreService.getEmployeeApplicationsByType('入社時申請');
-    const onboardingApp = applications.find((app: any) => app.employeeNumber === employee.employeeNumber);
-    if (onboardingApp) {
-      this.selectedOnboardingEmployee.applicationData = onboardingApp;
+    try {
+      this.selectedOnboardingEmployee = employee;
+      this.onboardingStatusComment = employee.statusComment || '';
+      this.showOnboardingEmployeeModal = true;
+      
+      // 入社時申請データを取得
+      const applications = await this.firestoreService.getEmployeeApplicationsByType('入社時申請');
+      const onboardingApp = applications.find((app: any) => app.employeeNumber === employee.employeeNumber);
+      if (onboardingApp) {
+        this.selectedOnboardingEmployee.applicationData = onboardingApp;
+      }
+      
+      // 新入社員データを読み込む
+      await this.loadOnboardingEmployeeData(employee.employeeNumber);
+    } catch (error) {
+      console.error('Error opening onboarding employee modal:', error);
+      console.error('Employee:', employee);
     }
-    
-    // 新入社員データを読み込む
-    await this.loadOnboardingEmployeeData(employee.employeeNumber);
   }
   
   // 新入社員データを読み込む
@@ -3815,7 +3808,9 @@ export class HrDashboardComponent {
           if (appData.residentAddress) data.residentAddress = appData.residentAddress;
           if (appData.residentAddressKana) data.residentAddressKana = appData.residentAddressKana;
           // 申請データから年金基金加入情報をマージ
-          if (appData.pensionFundMembership) data.pensionFundMembership = appData.pensionFundMembership;
+          if (appData.pensionFundMembership !== undefined && appData.pensionFundMembership !== null) {
+            data.pensionFundMembership = appData.pensionFundMembership;
+          }
           // 申請データから配偶者情報をマージ
           if (appData.spouseStatus) data.spouseStatus = appData.spouseStatus;
           if (appData.spouseBasicPensionNumber) data.spouseBasicPensionNumber = appData.spouseBasicPensionNumber;
@@ -3841,7 +3836,8 @@ export class HrDashboardComponent {
   
   // 新入社員編集フォームにデータを設定
   populateOnboardingEmployeeEditForm(data: any) {
-    // 氏名を分割（既に分割されている場合はそのまま、結合されている場合は分割）
+    try {
+      // 氏名を分割（既に分割されている場合はそのまま、結合されている場合は分割）
     if (data.lastName || data.firstName) {
       // 既に分割されている場合
       this.onboardingEmployeeEditForm.patchValue({
@@ -3984,7 +3980,7 @@ export class HrDashboardComponent {
     }
     
     // 年金基金加入情報を設定
-    if (data.pensionFundMembership) {
+    if (data.pensionFundMembership !== undefined && data.pensionFundMembership !== null) {
       this.onboardingEmployeeEditForm.patchValue({
         pensionFundMembership: data.pensionFundMembership
       });
@@ -3992,7 +3988,7 @@ export class HrDashboardComponent {
     // 申請データからも取得を試みる
     if (this.selectedOnboardingEmployee?.applicationData) {
       const appData = this.selectedOnboardingEmployee.applicationData;
-      if (appData.pensionFundMembership !== undefined && !data.pensionFundMembership) {
+      if (appData.pensionFundMembership !== undefined && appData.pensionFundMembership !== null && !data.pensionFundMembership) {
         this.onboardingEmployeeEditForm.patchValue({
           pensionFundMembership: appData.pensionFundMembership || ''
         });
@@ -4155,7 +4151,7 @@ export class HrDashboardComponent {
         residentAddressSkipReasonOther: data.residentAddressSkipReasonOther
       });
     }
-    if (data.pensionFundMembership) {
+    if (data.pensionFundMembership !== undefined && data.pensionFundMembership !== null) {
       this.onboardingEmployeeEditForm.patchValue({
         pensionFundMembership: data.pensionFundMembership
       });
@@ -4165,6 +4161,10 @@ export class HrDashboardComponent {
     const birthDate = this.onboardingEmployeeEditForm.get('birthDate')?.value;
     if (birthDate) {
       this.onboardingCalculateAge(birthDate);
+    }
+    } catch (error) {
+      console.error('Error populating onboarding employee edit form:', error);
+      console.error('Data:', data);
     }
   }
   
@@ -4267,11 +4267,23 @@ export class HrDashboardComponent {
   onOnboardingSameAddressForEmergencyChange(event: any) {
     this.onboardingSameAsCurrentAddressForEmergency = event.target.checked;
     if (this.onboardingSameAsCurrentAddressForEmergency) {
-      const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
-      const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+      const isOverseasResident = this.onboardingEmployeeEditForm.get('isOverseasResident')?.value;
+      let address = '';
+      let addressKana = '';
+      
+      if (isOverseasResident) {
+        // 海外在住の場合はoverseasAddressを使用
+        address = this.onboardingEmployeeEditForm.get('overseasAddress')?.value || '';
+        addressKana = ''; // 海外住所にはヨミガナがない
+      } else {
+        // 国内在住の場合はcurrentAddressとcurrentAddressKanaを使用
+        address = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+        addressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+      }
+      
       this.onboardingEmployeeEditForm.get('emergencyContact')?.patchValue({
-        address: currentAddress,
-        addressKana: currentAddressKana
+        address: address,
+        addressKana: addressKana
       });
       this.onboardingEmployeeEditForm.get('emergencyContact.address')?.disable();
       this.onboardingEmployeeEditForm.get('emergencyContact.addressKana')?.disable();

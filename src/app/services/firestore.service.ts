@@ -4,7 +4,8 @@ import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, dele
 import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  projectId: 'kensyu10117'
+  projectId: 'kensyu10117',
+  storageBucket: 'kensyu10117.firebasestorage.app'
 };
 
 @Injectable({
@@ -17,7 +18,8 @@ export class FirestoreService {
   constructor() {
     const app = initializeApp(firebaseConfig);
     this.db = getFirestore(app);
-    this.storage = getStorage(app);
+    // Storageを初期化（バケットを明示的に指定）
+    this.storage = getStorage(app, firebaseConfig.storageBucket);
   }
 
   /**
@@ -1199,16 +1201,59 @@ export class FirestoreService {
   }
 
   /**
+   * ファイル名を安全な形式に変換（日本語や特殊文字をエンコード）
+   */
+  sanitizeFileName(fileName: string): string {
+    // ファイル名から拡張子を取得
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : '';
+    const nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+    
+    // ファイル名を安全な形式に変換
+    // タイムスタンプベースのランダムな文字列を使用して、元のファイル名の代わりにする
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 15);
+    const sanitized = `file_${timestamp}_${randomStr}`;
+    
+    return sanitized + extension;
+  }
+
+  /**
    * ファイルをFirebase StorageにアップロードしてURLを取得
    */
   async uploadFile(file: File, path: string): Promise<string> {
     try {
-      const storageRef = ref(this.storage, path);
+      // パスからファイル名を抽出してサニタイズ
+      const pathParts = path.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      const sanitizedFileName = this.sanitizeFileName(fileName);
+      pathParts[pathParts.length - 1] = sanitizedFileName;
+      const sanitizedPath = pathParts.join('/');
+      
+      console.log('Original path:', path);
+      console.log('Sanitized path:', sanitizedPath);
+      console.log('Storage bucket:', this.storage.app.options.storageBucket);
+      
+      const storageRef = ref(this.storage, sanitizedPath);
+      console.log('Uploading file to:', sanitizedPath);
+      
       await uploadBytes(storageRef, file);
+      console.log('File uploaded successfully');
+      
       const downloadURL = await getDownloadURL(storageRef);
+      console.log('Download URL:', downloadURL);
+      
       return downloadURL;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading file:', error);
+      console.error('Error code:', error?.code);
+      console.error('Error message:', error?.message);
+      
+      // CORSエラーの場合は、より詳細な情報を提供
+      if (error?.code === 'storage/unauthorized' || error?.message?.includes('CORS')) {
+        throw new Error('Firebase Storageへのアクセスが拒否されました。Storageが正しくセットアップされているか確認してください。');
+      }
+      
       throw error;
     }
   }
