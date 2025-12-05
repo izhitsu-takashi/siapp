@@ -201,26 +201,19 @@ export class KyuyoDashboardComponent {
   openVoluntaryEndModal(employee: any) {
     this.selectedVoluntaryEmployee = employee;
     
-    // 退職日の翌月から2年後の月をデフォルト値として設定
+    // 退職日の翌日から2年後の日をデフォルト値として設定
     if (employee.resignationDate) {
       const resignationDate = new Date(employee.resignationDate);
-      let defaultEndYear = resignationDate.getFullYear();
-      let defaultEndMonth = resignationDate.getMonth() + 1 + 1; // 翌月
+      const nextDay = new Date(resignationDate);
+      nextDay.setDate(nextDay.getDate() + 1);
       
       // 2年後を計算
-      defaultEndYear += 2;
+      const twoYearsLater = new Date(nextDay);
+      twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
       
-      // 月が12を超える場合の処理
-      if (defaultEndMonth > 12) {
-        defaultEndMonth -= 12;
-        defaultEndYear += 1;
-      }
-      
-      // その月の最終日を設定
-      const defaultEndDate = new Date(defaultEndYear, defaultEndMonth, 0);
-      const year = defaultEndDate.getFullYear();
-      const month = String(defaultEndDate.getMonth() + 1).padStart(2, '0');
-      const day = String(defaultEndDate.getDate()).padStart(2, '0');
+      const year = twoYearsLater.getFullYear();
+      const month = String(twoYearsLater.getMonth() + 1).padStart(2, '0');
+      const day = String(twoYearsLater.getDate()).padStart(2, '0');
       const defaultDateString = `${year}-${month}-${day}`;
       
       this.voluntaryEndForm.patchValue({
@@ -229,6 +222,26 @@ export class KyuyoDashboardComponent {
     }
     
     this.showVoluntaryEndModal = true;
+  }
+  
+  // 任意継続終了日の最大日付を取得（退職日の翌日から2年後）
+  getMaxVoluntaryEndDate(): string {
+    if (!this.selectedVoluntaryEmployee || !this.selectedVoluntaryEmployee.resignationDate) {
+      return '';
+    }
+    
+    const resignationDate = new Date(this.selectedVoluntaryEmployee.resignationDate);
+    const nextDay = new Date(resignationDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    
+    // 2年後を計算
+    const twoYearsLater = new Date(nextDay);
+    twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
+    
+    const year = twoYearsLater.getFullYear();
+    const month = String(twoYearsLater.getMonth() + 1).padStart(2, '0');
+    const day = String(twoYearsLater.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
   
   // 任意継続終了設定モーダルを閉じる
@@ -248,6 +261,11 @@ export class KyuyoDashboardComponent {
     try {
       const voluntaryEndDate = this.voluntaryEndForm.get('voluntaryEndDate')?.value;
       
+      if (!voluntaryEndDate) {
+        alert('任意継続終了日を入力してください');
+        return;
+      }
+      
       // 社員データを取得
       const employeeData = await this.firestoreService.getEmployeeData(this.selectedVoluntaryEmployee.employeeNumber);
       
@@ -256,8 +274,8 @@ export class KyuyoDashboardComponent {
         return;
       }
       
-      // 任意継続終了日を設定
-      const updatedData = {
+      // 任意継続終了日を設定（文字列として保存）
+      const updatedData: any = {
         ...employeeData,
         voluntaryInsuranceEndDate: voluntaryEndDate,
         updatedAt: new Date()
@@ -266,6 +284,7 @@ export class KyuyoDashboardComponent {
       // 社員データを更新
       await this.firestoreService.saveEmployeeData(this.selectedVoluntaryEmployee.employeeNumber, updatedData);
       
+      console.log('任意継続終了日を保存しました:', voluntaryEndDate);
       alert('任意継続終了日を設定しました');
       
       // モーダルを閉じる
@@ -1046,16 +1065,36 @@ export class KyuyoDashboardComponent {
         };
       });
       
-      // 保険料一覧データを構築（社員情報管理票の社員のみ）
-      if (this.employees.length > 0) {
-        // 社員情報管理票の社員番号を取得
-        const employeeNumbers = new Set(this.employees.map((emp: any) => emp.employeeNumber));
-        
-        // 全社員データを取得して、社員情報管理票の社員のみをフィルタリング
-        const allEmployees = await this.firestoreService.getAllEmployees();
-        const filteredEmployees = allEmployees.filter((emp: any) => 
-          emp && emp.employeeNumber && employeeNumbers.has(emp.employeeNumber)
-        );
+      // 保険料一覧データを構築（社員情報管理票の社員のみ、ただし退職済みでも任意継続被保険者は含める）
+      // 全社員データを取得
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      
+      // 新入社員コレクションに存在する社員を除外（入社手続きが完了した社員のみ）
+      const onboardingEmployees = await this.firestoreService.getAllOnboardingEmployees();
+      const onboardingEmployeeNumbers = new Set(
+        onboardingEmployees.map((emp: any) => emp.employeeNumber).filter((num: any) => num)
+      );
+      
+      // 社員情報管理票の社員番号を取得（emailとemploymentTypeがある社員）
+      const employeeNumbers = new Set(this.employees.map((emp: any) => emp.employeeNumber));
+      
+      // フィルタリング：新入社員コレクションに存在しない社員で、
+      // かつ（社員情報管理票に存在する OR 任意継続被保険者）
+      const filteredEmployees = allEmployees.filter((emp: any) => {
+        if (!emp || !emp.employeeNumber) return false;
+        // 新入社員コレクションに存在する場合は除外
+        if (onboardingEmployeeNumbers.has(emp.employeeNumber)) return false;
+        // 社員情報管理票に存在する場合は含める
+        if (employeeNumbers.has(emp.employeeNumber)) return true;
+        // 任意継続被保険者の場合は含める（退職済みでも）
+        if (emp.healthInsuranceType === '任意継続被保険者' && 
+            (emp.employmentStatus === '退職' || emp.employmentStatus === '退職済み')) {
+          return true;
+        }
+        return false;
+      });
+      
+      if (filteredEmployees.length > 0) {
         
         // 各社員の詳細データを取得
         const employeeDetails = await Promise.all(
@@ -1184,6 +1223,7 @@ export class KyuyoDashboardComponent {
               employmentStatus: emp.employmentStatus || '在籍', // 在籍状況
               resignationDate: emp.resignationDate || null, // 退職日
               healthInsuranceType: emp.healthInsuranceType || '', // 健康保険者種別
+              voluntaryInsuranceEndDate: emp.voluntaryInsuranceEndDate || null, // 任意継続終了日
               joinDate: emp.joinDate || null // 入社年月日
             };
           });
@@ -1349,7 +1389,7 @@ export class KyuyoDashboardComponent {
   }
   
   // 退職済み社員を表示すべきかどうかを判定
-  shouldShowResignedEmployee(employmentStatus: string, resignationDate: any, healthInsuranceType: string, year: number, month: number): boolean {
+  shouldShowResignedEmployee(employmentStatus: string, resignationDate: any, healthInsuranceType: string, year: number, month: number, voluntaryInsuranceEndDate?: any): boolean {
     // 在籍中の場合は表示
     if (employmentStatus !== '退職' && employmentStatus !== '退職済み') {
       return true;
@@ -1380,34 +1420,68 @@ export class KyuyoDashboardComponent {
     const resignationYear = resignation.getFullYear();
     const resignationMonth = resignation.getMonth() + 1;
     
-    // 選択された年月が退職月以前の場合は表示
+    // 選択された年月が退職月以前の場合は表示（在籍中として）
     if (year < resignationYear || (year === resignationYear && month <= resignationMonth)) {
       return true;
     }
     
-    // 任意継続被保険者の場合、退職月の翌月から2年間は表示
+    // 退職月より後の期間で、任意継続被保険者の場合のみ表示
     if (healthInsuranceType === '任意継続被保険者') {
-      // 退職月の翌月を計算
-      let nextMonthYear = resignationYear;
-      let nextMonth = resignationMonth + 1;
-      if (nextMonth > 12) {
-        nextMonth = 1;
-        nextMonthYear++;
+      // 退職日の翌日を計算
+      const nextDay = new Date(resignation);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      // 任意継続終了日を計算
+      let endDate: Date;
+      if (voluntaryInsuranceEndDate) {
+        // 任意継続終了日が設定されている場合
+        if (voluntaryInsuranceEndDate instanceof Date) {
+          endDate = voluntaryInsuranceEndDate;
+        } else if (voluntaryInsuranceEndDate && typeof voluntaryInsuranceEndDate.toDate === 'function') {
+          endDate = voluntaryInsuranceEndDate.toDate();
+        } else if (typeof voluntaryInsuranceEndDate === 'string') {
+          endDate = new Date(voluntaryInsuranceEndDate);
+        } else {
+          // フォールバック：2年後
+          endDate = new Date(nextDay);
+          endDate.setFullYear(endDate.getFullYear() + 2);
+        }
+      } else {
+        // 任意継続終了日が設定されていない場合は2年後
+        endDate = new Date(nextDay);
+        endDate.setFullYear(endDate.getFullYear() + 2);
       }
       
-      // 2年後の月を計算
-      let twoYearsLaterYear = nextMonthYear + 2;
-      let twoYearsLaterMonth = nextMonth;
+      if (isNaN(endDate.getTime())) {
+        // 終了日が無効な場合は2年後を使用
+        endDate = new Date(nextDay);
+        endDate.setFullYear(endDate.getFullYear() + 2);
+      }
       
-      // 選択された年月が退職月の翌月から2年間の範囲内かどうかを判定
-      if (year < nextMonthYear || (year === nextMonthYear && month < nextMonth)) {
-        return false; // 退職月以前は既に処理済み
+      // 選択された年月の1日を計算
+      const selectedDate = new Date(year, month - 1, 1);
+      
+      // 任意継続終了日の月の最終日を計算（その月の任意継続期間内かどうかを判定するため）
+      const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+      
+      // 選択された年月が退職日の翌日から任意継続終了日までの範囲内かどうかを判定
+      // 退職月より後の期間で、任意継続被保険者の場合のみ表示
+      // 退職日の翌日が属する月の1日を計算
+      const nextDayMonthStart = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
+      
+      // 選択年月が退職日の翌日が属する月以降で、任意継続終了日の月以前であれば表示
+      if (selectedDate < nextDayMonthStart) {
+        return false; // 退職日の翌日が属する月より前は表示しない（既に退職月以前で処理済み）
       }
-      if (year < twoYearsLaterYear || (year === twoYearsLaterYear && month <= twoYearsLaterMonth)) {
-        return true; // 2年間の範囲内
+      // 選択年月の1日が任意継続終了日の月の最終日以前であれば表示
+      if (selectedDate <= endDateMonth) {
+        return true; // 任意継続終了日までの範囲内は表示
       }
+      
+      return false; // 任意継続終了日を超える場合は表示しない
     }
     
+    // 任意継続被保険者以外の退職済み社員の場合、退職月より後は表示しない
     return false;
   }
 
@@ -1494,7 +1568,8 @@ export class KyuyoDashboardComponent {
               item.resignationDate,
               item.healthInsuranceType || '',
               filterYear,
-              filterMonth
+              filterMonth,
+              item.voluntaryInsuranceEndDate
             );
             
             if (!shouldShow) return false;
@@ -1545,8 +1620,9 @@ export class KyuyoDashboardComponent {
             let fixedSalary = latestSalary ? latestSalary['amount'] : item.fixedSalary;
             
             // 任意継続被保険者の場合の処理
-            // 任意継続被保険者の保険料徴収は退職日の次の月から開始
+            // 任意継続被保険者の保険料徴収は退職日の翌日から任意継続終了日まで
             const resignationDate = item.resignationDate;
+            const voluntaryInsuranceEndDate = item.voluntaryInsuranceEndDate;
             let resignation: Date | null = null;
             let isVoluntaryContinuation = false;
             
@@ -1562,20 +1638,73 @@ export class KyuyoDashboardComponent {
               }
               
               if (resignation && !isNaN(resignation.getTime())) {
-                const resignationYear = resignation.getFullYear();
-                const resignationMonth = resignation.getMonth() + 1;
+                // 退職日の翌日を計算
+                const nextDay = new Date(resignation);
+                nextDay.setDate(nextDay.getDate() + 1);
                 
-                // 退職月の翌月を計算
-                let nextMonthYear = resignationYear;
-                let nextMonth = resignationMonth + 1;
-                if (nextMonth > 12) {
-                  nextMonth = 1;
-                  nextMonthYear++;
+                // 退職日の翌日が属する月の1日を計算（任意継続開始月）
+                const voluntaryStartMonth = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
+                
+                // 任意継続終了日を計算
+                let endDate: Date;
+                if (voluntaryInsuranceEndDate) {
+                  if (voluntaryInsuranceEndDate instanceof Date) {
+                    endDate = voluntaryInsuranceEndDate;
+                  } else if (voluntaryInsuranceEndDate && typeof voluntaryInsuranceEndDate.toDate === 'function') {
+                    endDate = voluntaryInsuranceEndDate.toDate();
+                  } else if (typeof voluntaryInsuranceEndDate === 'string') {
+                    endDate = new Date(voluntaryInsuranceEndDate);
+                  } else {
+                    // フォールバック：2年後
+                    endDate = new Date(nextDay);
+                    endDate.setFullYear(endDate.getFullYear() + 2);
+                  }
+                } else {
+                  // 任意継続終了日が設定されていない場合は2年後
+                  endDate = new Date(nextDay);
+                  endDate.setFullYear(endDate.getFullYear() + 2);
                 }
                 
-                // 選択された年月が退職月の翌月以降の場合のみ任意継続被保険者として扱う
-                if (filterYear > nextMonthYear || (filterYear === nextMonthYear && filterMonth >= nextMonth)) {
+                if (isNaN(endDate.getTime())) {
+                  // 終了日が無効な場合は2年後を使用
+                  endDate = new Date(nextDay);
+                  endDate.setFullYear(endDate.getFullYear() + 2);
+                }
+                
+                // 選択された年月の1日を計算
+                const selectedDate = new Date(filterYear, filterMonth - 1, 1);
+                
+                // 任意継続終了日の月の最終日を計算
+                const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+                
+                // 選択された年月が退職日の翌日が属する月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
+                if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
                   isVoluntaryContinuation = true;
+                  console.log('[任意継続判定] 任意継続被保険者として判定', {
+                    employeeNumber: item.employeeNumber,
+                    resignationDate: resignation.toISOString(),
+                    nextDay: nextDay.toISOString(),
+                    voluntaryStartMonth: voluntaryStartMonth.toISOString(),
+                    selectedDate: selectedDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    endDateMonth: endDateMonth.toISOString(),
+                    filterYear,
+                    filterMonth,
+                    isVoluntaryContinuation
+                  });
+                } else {
+                  console.log('[任意継続判定] 任意継続被保険者ではない', {
+                    employeeNumber: item.employeeNumber,
+                    resignationDate: resignation.toISOString(),
+                    nextDay: nextDay.toISOString(),
+                    voluntaryStartMonth: voluntaryStartMonth.toISOString(),
+                    selectedDate: selectedDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    endDateMonth: endDateMonth.toISOString(),
+                    filterYear,
+                    filterMonth,
+                    isVoluntaryContinuation
+                  });
                 }
               }
             }
@@ -1876,7 +2005,8 @@ export class KyuyoDashboardComponent {
                 employeeData?.resignationDate,
                 employeeData?.healthInsuranceType || '',
                 filterYear,
-                filterMonth
+                filterMonth,
+                employeeData?.voluntaryInsuranceEndDate
               );
               
               if (!shouldShow) {
@@ -1887,8 +2017,9 @@ export class KyuyoDashboardComponent {
               let standardBonusAmount = Math.floor(bonusGroup.totalAmount / 1000) * 1000;
               
               // 任意継続被保険者の場合、賞与は0円にする
-              // 任意継続被保険者の保険料徴収は退職日の次の月から開始
+              // 任意継続被保険者の保険料徴収は退職日の翌日から任意継続終了日まで
               const resignationDate = employeeData?.resignationDate;
+              const voluntaryInsuranceEndDate = employeeData?.voluntaryInsuranceEndDate;
               let resignation: Date | null = null;
               let isVoluntaryContinuation = false;
               
@@ -1904,19 +2035,47 @@ export class KyuyoDashboardComponent {
                 }
                 
                 if (resignation && !isNaN(resignation.getTime())) {
-                  const resignationYear = resignation.getFullYear();
-                  const resignationMonth = resignation.getMonth() + 1;
+                  // 退職日の翌日を計算
+                  const nextDay = new Date(resignation);
+                  nextDay.setDate(nextDay.getDate() + 1);
                   
-                  // 退職月の翌月を計算
-                  let nextMonthYear = resignationYear;
-                  let nextMonth = resignationMonth + 1;
-                  if (nextMonth > 12) {
-                    nextMonth = 1;
-                    nextMonthYear++;
+                  // 退職日の翌日が属する月の1日を計算（任意継続開始月）
+                  const voluntaryStartMonth = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
+                  
+                  // 任意継続終了日を計算
+                  let endDate: Date;
+                  if (voluntaryInsuranceEndDate) {
+                    if (voluntaryInsuranceEndDate instanceof Date) {
+                      endDate = voluntaryInsuranceEndDate;
+                    } else if (voluntaryInsuranceEndDate && typeof voluntaryInsuranceEndDate.toDate === 'function') {
+                      endDate = voluntaryInsuranceEndDate.toDate();
+                    } else if (typeof voluntaryInsuranceEndDate === 'string') {
+                      endDate = new Date(voluntaryInsuranceEndDate);
+                    } else {
+                      // フォールバック：2年後
+                      endDate = new Date(nextDay);
+                      endDate.setFullYear(endDate.getFullYear() + 2);
+                    }
+                  } else {
+                    // 任意継続終了日が設定されていない場合は2年後
+                    endDate = new Date(nextDay);
+                    endDate.setFullYear(endDate.getFullYear() + 2);
                   }
                   
-                  // 選択された年月が退職月の翌月以降の場合のみ任意継続被保険者として扱う
-                  if (filterYear > nextMonthYear || (filterYear === nextMonthYear && filterMonth >= nextMonth)) {
+                  if (isNaN(endDate.getTime())) {
+                    // 終了日が無効な場合は2年後を使用
+                    endDate = new Date(nextDay);
+                    endDate.setFullYear(endDate.getFullYear() + 2);
+                  }
+                  
+                  // 選択された年月の1日を計算
+                  const selectedDate = new Date(filterYear, filterMonth - 1, 1);
+                  
+                  // 任意継続終了日の月の最終日を計算
+                  const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+                  
+                  // 選択された年月が退職日の翌日が属する月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
+                  if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
                     isVoluntaryContinuation = true;
                   }
                 }

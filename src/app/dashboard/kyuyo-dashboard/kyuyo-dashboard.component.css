@@ -227,8 +227,14 @@
 
 /* 任意継続終了設定モーダル */
 .voluntary-end-modal {
+  background: white;
+  border-radius: 8px;
   max-width: 600px;
   width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .voluntary-end-container {
@@ -664,6 +670,13 @@
   border-left: 4px solid #56ab2f;
 }
 
+.form-hint {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+  font-style: italic;
+}
+
 .form-description p {
   margin: 0;
   color: #666;
@@ -973,6 +986,7 @@
   border-top: 1px solid #e0e0e0;
   display: flex;
   justify-content: flex-end;
+  gap: 1rem;
   flex-shrink: 0;
 }
 
@@ -998,6 +1012,28 @@
 .modal-button:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+}
+
+.modal-button.cancel-button {
+  background: #6c757d;
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.modal-button.cancel-button:hover {
+  background: #5a6268;
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.4);
+}
+
+.modal-button.cancel-button:active {
+  background: #545b62;
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.modal-button.submit-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .history-table td {

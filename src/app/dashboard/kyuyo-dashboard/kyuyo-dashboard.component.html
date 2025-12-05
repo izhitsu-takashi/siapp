@@ -78,7 +78,7 @@
             </div>
             
             <!-- 事業主負担額合計 -->
-            <div class="employer-burden-summary">
+            <div class="employer-burden-summary" *ngIf="!isLoadingInsuranceList">
               <div class="summary-card">
                 <span class="summary-label">事業主負担額合計:</span>
                 <span class="summary-value">{{ getTotalEmployerBurden() | number:'1.0-0' }}円</span>
@@ -507,7 +507,7 @@
                     <th>退職日</th>
                     <th>健康保険者種別</th>
                     <th>介護保険者種別</th>
-                    <th>在籍状況</th>
+                    <th>任意継続終了日</th>
                     <th>操作</th>
                   </tr>
                 </thead>
@@ -519,7 +519,7 @@
                     <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.resignationDate ? formatDate(item.resignationDate) : '-' }}</td>
                     <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.healthInsuranceType || '-' }}</td>
                     <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.nursingInsuranceType || '-' }}</td>
-                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.employmentStatus || '在籍' }}</td>
+                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.voluntaryInsuranceEndDate ? formatDate(item.voluntaryInsuranceEndDate) : '-' }}</td>
                     <td>
                       <button 
                         class="end-voluntary-button" 
@@ -601,7 +601,11 @@
                         min="0"
                         max="100"
                         placeholder="例: 5.0"
+                        [disabled]="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'"
                       >
+                      <div *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'" class="form-hint">
+                        協会けんぽ選択時は都道府県の設定から自動で取得されます
+                      </div>
                     </div>
                     <div class="form-group">
                       <label for="nursingInsuranceRate">介護保険料率 (%)</label>
@@ -614,7 +618,11 @@
                         min="0"
                         max="100"
                         placeholder="例: 1.0"
+                        [disabled]="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'"
                       >
+                      <div *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'" class="form-hint">
+                        協会けんぽ選択時は都道府県の設定から自動で取得されます
+                      </div>
                     </div>
                     <div class="form-group">
                       <label for="pensionInsuranceRate">厚生年金保険料率 (%)</label>
@@ -951,12 +959,16 @@
               id="voluntaryEndDate" 
               formControlName="voluntaryEndDate" 
               class="form-input"
+              [max]="getMaxVoluntaryEndDate()"
             >
             <div *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.invalid && voluntaryEndForm.get('voluntaryEndDate')?.touched" class="error-message">
               任意継続終了日を入力してください
             </div>
+            <div *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.value && getMaxVoluntaryEndDate() && voluntaryEndForm.get('voluntaryEndDate')?.value > getMaxVoluntaryEndDate()" class="error-message">
+              任意継続終了日は退職日の翌日から2年以内である必要があります
+            </div>
             <div class="form-hint">
-              退職日の翌月から2年間が標準的な任意継続期間です。
+              退職日の翌日から2年間まで設定可能です。
             </div>
           </div>
         </form>
