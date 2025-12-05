@@ -2871,9 +2871,11 @@
             id="lastWorkDate" 
             formControlName="lastWorkDate" 
             class="form-input"
+            [max]="maxLastWorkDate"
           >
           <div *ngIf="resignationForm.get('lastWorkDate')?.invalid && resignationForm.get('lastWorkDate')?.touched" class="error-message">
-            最終出社日を入力してください
+            <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['required']">最終出社日を入力してください</span>
+            <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['lastWorkDateAfterResignation']">最終出社日は退職日より前の日付を入力してください</span>
           </div>
         </div>
       </section>
@@ -2998,7 +3000,7 @@
       
       <!-- 退職後の社会保険加入 -->
       <section class="form-section">
-        <h3 class="section-title">退職後の社会保険加入</h3>
+        <h3 class="section-title">退職後の社会保険加入 <span class="required">*</span></h3>
         <div class="form-group">
           <label class="radio-label">
             <input type="radio" formControlName="postResignationInsurance" value="社会保険を任意継続する">
@@ -3013,7 +3015,7 @@
             他社で社会保険に加入する
           </label>
           <div *ngIf="resignationForm.get('postResignationInsurance')?.invalid && resignationForm.get('postResignationInsurance')?.touched" class="error-message">
-            選択してください
+            退職後の社会保険加入を選択してください
           </div>
         </div>
       </section>

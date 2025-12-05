@@ -249,6 +249,37 @@ export class HrDashboardComponent {
           try {
             // ステータス関連のフィールドを除外
             const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = employeeData;
+            
+            // 年齢を計算（介護保険者種別の判定に使用）
+            let age: number | null = null;
+            if (employeeDataWithoutStatus.birthDate) {
+              const birthDate = new Date(employeeDataWithoutStatus.birthDate);
+              const today = new Date();
+              age = today.getFullYear() - birthDate.getFullYear();
+              const monthDiff = today.getMonth() - birthDate.getMonth();
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+              }
+            }
+            
+            // 保険者種別を自動設定
+            employeeDataWithoutStatus.healthInsuranceType = '健康保険被保険者';
+            employeeDataWithoutStatus.pensionInsuranceType = '国民年金第2号被保険者';
+            
+            // 介護保険者種別を年齢に応じて設定
+            if (age !== null) {
+              if (age >= 65) {
+                employeeDataWithoutStatus.nursingInsuranceType = '介護保険第1号被保険者';
+              } else if (age >= 40) {
+                employeeDataWithoutStatus.nursingInsuranceType = '介護保険第2号被保険者';
+              } else {
+                employeeDataWithoutStatus.nursingInsuranceType = '介護保険の被保険者でない者';
+              }
+            } else {
+              // 年齢が計算できない場合はデフォルト値
+              employeeDataWithoutStatus.nursingInsuranceType = '介護保険の被保険者でない者';
+            }
+            
             await this.firestoreService.saveEmployeeData(employeeNumber, employeeDataWithoutStatus);
             
             // 新入社員コレクションから削除
@@ -285,6 +316,10 @@ export class HrDashboardComponent {
       // 新入社員一覧と社員一覧を再読み込み
       await this.loadOnboardingEmployees();
       await this.loadEmployees();
+      
+      // readyEmployeesも更新（入社処理実行モーダル用）
+      this.readyEmployees = this.onboardingEmployees.filter(emp => emp.status === '準備完了');
+      this.selectedEmployeeNumbers.clear();
 
       // モーダルを閉じる
       this.closeOnboardingProcessModal();
@@ -431,9 +466,9 @@ export class HrDashboardComponent {
   spouseOptions = ['有', '無'];
   
   // 人事専用選択肢
-  healthInsuranceTypes = ['健康保険被保険者', '健康保険被扶養者', '任意継続被保険者'];
+  healthInsuranceTypes = ['健康保険被保険者', '任意継続被保険者'];
   nursingInsuranceTypes = ['介護保険第1号被保険者', '介護保険第2号被保険者', '任意継続被保険者', '介護保険の被保険者でない者', '特定被保険者'];
-  pensionInsuranceTypes = ['国民年金第1号被保険者', '国民年金第2号被保険者', '国民年金第3号被保険者'];
+  pensionInsuranceTypes = ['国民年金第2号被保険者'];
   
   // 扶養者一覧
   dependents: any[] = [];
@@ -2275,6 +2310,13 @@ export class HrDashboardComponent {
 
   // フォームにデータを設定
   populateEmployeeEditForm(data: any) {
+    // 基本情報欄のフィールドを変更不可にする
+    this.employeeEditForm.get('lastName')?.disable();
+    this.employeeEditForm.get('firstName')?.disable();
+    this.employeeEditForm.get('lastNameKana')?.disable();
+    this.employeeEditForm.get('firstNameKana')?.disable();
+    this.employeeEditForm.get('birthDate')?.disable();
+    
     // マイナンバーを分割
     if (data.myNumber && data.myNumber.length === 12) {
       this.employeeEditForm.patchValue({

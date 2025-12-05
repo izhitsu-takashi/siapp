@@ -69,6 +69,8 @@ export class EmployeeDashboardComponent {
   };
   // 退職日の最小日付（今日）
   minResignationDate: string = '';
+  // 最終出社日の最大日付（退職日より前）
+  maxLastWorkDate: string = '';
   
   // 氏名変更申請用ファイル
   nameChangeIdDocumentFile: File | null = null;
@@ -1420,9 +1422,9 @@ export class EmployeeDashboardComponent {
   }
   
   createResignationForm(): FormGroup {
-    return this.fb.group({
+    const form = this.fb.group({
       resignationDate: ['', [Validators.required, this.futureDateValidator]],
-      lastWorkDate: ['', Validators.required],
+      lastWorkDate: ['', [Validators.required, this.lastWorkDateValidator.bind(this)]],
       resignationReason: ['', Validators.required], // 退職理由（必須）
       separationNotice: ['', Validators.required],
       postResignationAddress: [''],
@@ -1430,6 +1432,46 @@ export class EmployeeDashboardComponent {
       postResignationEmail: [''],
       postResignationInsurance: ['', Validators.required]
     });
+    
+    // 退職日が変更されたときに、最終出社日の最大日付を更新
+    form.get('resignationDate')?.valueChanges.subscribe(resignationDate => {
+      if (resignationDate) {
+        // 退職日の前日を計算
+        const date = new Date(resignationDate);
+        date.setDate(date.getDate() - 1);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        this.maxLastWorkDate = `${year}-${month}-${day}`;
+      } else {
+        this.maxLastWorkDate = '';
+      }
+      // 最終出社日のバリデーションを再実行
+      form.get('lastWorkDate')?.updateValueAndValidity();
+    });
+    
+    return form;
+  }
+  
+  // 最終出社日のバリデーター（退職日より前であることを確認）
+  lastWorkDateValidator(control: any): { [key: string]: any } | null {
+    if (!control.value) {
+      return null; // requiredバリデーターで処理
+    }
+    
+    const resignationDateControl = control.parent?.get('resignationDate');
+    if (!resignationDateControl || !resignationDateControl.value) {
+      return null; // 退職日が設定されていない場合はスキップ
+    }
+    
+    const lastWorkDate = new Date(control.value);
+    const resignationDate = new Date(resignationDateControl.value);
+    
+    if (lastWorkDate >= resignationDate) {
+      return { 'lastWorkDateAfterResignation': true };
+    }
+    
+    return null;
   }
   
   
