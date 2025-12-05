@@ -1372,6 +1372,7 @@
                   class="form-input my-number-part"
                   maxlength="4"
                   placeholder="0000"
+                  (input)="onMyNumberInput($event, 'myNumberPart1')"
                 >
                 <span class="my-number-separator">-</span>
                 <input 
@@ -1381,6 +1382,7 @@
                   class="form-input my-number-part"
                   maxlength="4"
                   placeholder="0000"
+                  (input)="onMyNumberInput($event, 'myNumberPart2')"
                 >
                 <span class="my-number-separator">-</span>
                 <input 
@@ -1390,6 +1392,7 @@
                   class="form-input my-number-part"
                   maxlength="4"
                   placeholder="0000"
+                  (input)="onMyNumberInput($event, 'myNumberPart3')"
                 >
               </div>
             </div>
@@ -1673,13 +1676,24 @@
                 id="onboarding-emergencyPhone" 
                 formControlName="phone" 
                 class="form-input"
+                maxlength="11"
                 (input)="formatEmergencyPhoneNumber($event)"
               >
               <div *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.invalid && onboardingApplicationForm.get('emergencyContact.phone')?.touched" class="error-message">
                 <span *ngIf="onboardingApplicationForm.get('emergencyContact.phone')?.errors?.['pattern']">
-                  数字のみで入力してください
+                  数字のみで入力してください（最大11桁）
                 </span>
               </div>
+            </div>
+            <div class="form-group full-width">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  formControlName="sameAsCurrentAddressForEmergency"
+                  (change)="onSameAsCurrentAddressForEmergencyChange($event)"
+                >
+                現住所と同じ
+              </label>
             </div>
             <div class="form-group full-width">
               <label for="onboarding-emergencyAddress">住所</label>
@@ -1688,6 +1702,7 @@
                 formControlName="address" 
                 class="form-input" 
                 rows="2"
+                [disabled]="onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value"
               ></textarea>
             </div>
             <div class="form-group full-width">
@@ -1697,6 +1712,7 @@
                 formControlName="addressKana" 
                 class="form-input" 
                 rows="2"
+                [disabled]="onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value"
               ></textarea>
               <div *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.invalid && onboardingApplicationForm.get('emergencyContact.addressKana')?.touched" class="error-message">
                 <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['katakana']">

@@ -651,6 +651,18 @@ export class EmployeeDashboardComponent {
   }
 
   // 住民票住所を記載しないチェックボックスの変更処理
+  // マイナンバー入力時の処理（半角数字のみ許可）
+  onMyNumberInput(event: any, part: string) {
+    const input = event.target;
+    const value = input.value;
+    // 半角数字以外を削除
+    const filteredValue = value.replace(/[^0-9]/g, '');
+    if (value !== filteredValue) {
+      input.value = filteredValue;
+      this.onboardingApplicationForm.get(part)?.setValue(filteredValue, { emitEvent: false });
+    }
+  }
+
   onSkipResidentAddressChange(event: any) {
     const skipResident = event.target.checked;
     const residentPostalCodeControl = this.onboardingApplicationForm.get('residentPostalCode');
@@ -658,6 +670,7 @@ export class EmployeeDashboardComponent {
     const residentAddressKanaControl = this.onboardingApplicationForm.get('residentAddressKana');
     const residentAddressSkipReasonControl = this.onboardingApplicationForm.get('residentAddressSkipReason');
     const residentAddressSkipReasonOtherControl = this.onboardingApplicationForm.get('residentAddressSkipReasonOther');
+    const sameAsCurrentAddressControl = this.onboardingApplicationForm.get('sameAsCurrentAddress');
 
     if (skipResident) {
       // 住民票住所を記載しない場合：バリデーションを削除
@@ -670,6 +683,8 @@ export class EmployeeDashboardComponent {
       residentPostalCodeControl?.setValue('');
       residentAddressControl?.setValue('');
       residentAddressKanaControl?.setValue('');
+      // 現住所と同じチェックも解除
+      sameAsCurrentAddressControl?.setValue(false);
     } else {
       // 住民票住所を記載する場合：バリデーションを追加
       residentPostalCodeControl?.setValidators([Validators.required, Validators.pattern(/^\d{7}$/)]);
@@ -1225,11 +1240,12 @@ export class EmployeeDashboardComponent {
       // 履歴書・職務経歴書（ファイル入力はフォームから分離）
       
       // 緊急連絡先
+      sameAsCurrentAddressForEmergency: [false],
       emergencyContact: this.fb.group({
         name: [''],
         nameKana: ['', this.katakanaValidator],
         relationship: [''],
-        phone: ['', Validators.pattern(/^\d+$/)],
+        phone: ['', [Validators.pattern(/^\d{1,11}$/)]],
         address: [''],
         addressKana: ['', this.katakanaValidator]
       }),
@@ -2219,7 +2235,19 @@ export class EmployeeDashboardComponent {
             ? (formValue.currentAddressKana || '') 
             : (formValue.residentAddressKana || ''),
           // 緊急連絡先
-          emergencyContact: formValue.emergencyContact || {},
+          sameAsCurrentAddressForEmergency: formValue.sameAsCurrentAddressForEmergency || false,
+          emergencyContact: (() => {
+            const emergencyContact = formValue.emergencyContact || {};
+            // 現住所と同じにチェックされている場合、現住所をコピー
+            if (formValue.sameAsCurrentAddressForEmergency) {
+              return {
+                ...emergencyContact,
+                address: formValue.currentAddress || '',
+                addressKana: formValue.currentAddressKana || ''
+              };
+            }
+            return emergencyContact;
+          })(),
           // 口座情報
           bankAccount: formValue.bankAccount || {},
           // 社会保険
@@ -2236,12 +2264,16 @@ export class EmployeeDashboardComponent {
 
         // ファイルをアップロード（履歴書、職務経歴書）
         if (this.resumeFile) {
-          // ファイルアップロード処理（必要に応じて実装）
+          const resumePath = `applications/${this.employeeNumber}/resume_${Date.now()}_${this.resumeFile.name}`;
+          const resumeUrl = await this.firestoreService.uploadFile(this.resumeFile, resumePath);
           applicationData.resumeFile = this.resumeFile.name;
+          applicationData.resumeFileUrl = resumeUrl;
         }
         if (this.careerHistoryFile) {
-          // ファイルアップロード処理（必要に応じて実装）
+          const careerHistoryPath = `applications/${this.employeeNumber}/careerHistory_${Date.now()}_${this.careerHistoryFile.name}`;
+          const careerHistoryUrl = await this.firestoreService.uploadFile(this.careerHistoryFile, careerHistoryPath);
           applicationData.careerHistoryFile = this.careerHistoryFile.name;
+          applicationData.careerHistoryFileUrl = careerHistoryUrl;
         }
 
         // 申請を保存
@@ -3453,13 +3485,38 @@ export class EmployeeDashboardComponent {
     }
   }
 
-  // 緊急連絡先電話番号フォーマット（数字のみ）
+  // 緊急連絡先電話番号フォーマット（数字のみ、最大11桁）
   formatEmergencyPhoneNumber(event: any) {
     let value = event.target.value.replace(/\D/g, '');
+    // 最大11桁に制限
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
     event.target.value = value;
     const control = this.onboardingApplicationForm.get('emergencyContact.phone');
     if (control) {
       control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // 緊急連絡先の現住所と同じチェック変更時の処理
+  onSameAsCurrentAddressForEmergencyChange(event: any) {
+    const isSame = event.target.checked;
+    const currentAddressControl = this.onboardingApplicationForm.get('currentAddress');
+    const currentAddressKanaControl = this.onboardingApplicationForm.get('currentAddressKana');
+    const emergencyAddressControl = this.onboardingApplicationForm.get('emergencyContact.address');
+    const emergencyAddressKanaControl = this.onboardingApplicationForm.get('emergencyContact.addressKana');
+
+    if (isSame) {
+      // 現住所と同じにチェックした場合、現住所をコピー
+      const currentAddress = currentAddressControl?.value || '';
+      const currentAddressKana = currentAddressKanaControl?.value || '';
+      emergencyAddressControl?.setValue(currentAddress);
+      emergencyAddressKanaControl?.setValue(currentAddressKana);
+    } else {
+      // チェックを外した場合、値をクリア
+      emergencyAddressControl?.setValue('');
+      emergencyAddressKanaControl?.setValue('');
     }
   }
 

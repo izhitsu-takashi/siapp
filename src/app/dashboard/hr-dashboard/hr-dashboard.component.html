@@ -1097,10 +1097,15 @@
                   formControlName="employeeNumber" 
                   class="form-input"
                   placeholder="例: EMP001"
+                  [disabled]="isAddingEmployees"
+                  (input)="onEmployeeNumberInput($event, i)"
                 >
                 <div *ngIf="employeesFormArray.at(i).get('employeeNumber')?.invalid && employeesFormArray.at(i).get('employeeNumber')?.touched" class="error-message">
                   <span *ngIf="employeesFormArray.at(i).get('employeeNumber')?.errors?.['required']">
                     社員番号を入力してください
+                  </span>
+                  <span *ngIf="employeesFormArray.at(i).get('employeeNumber')?.errors?.['pattern']">
+                    半角英数字のみ入力できます
                   </span>
                   <span *ngIf="employeesFormArray.at(i).get('employeeNumber')?.errors?.['duplicate']">
                     この社員番号は既に使用されています
@@ -1168,17 +1173,17 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="add-row-button" (click)="addEmployeeRow()">
+          <button type="button" class="add-row-button" (click)="addEmployeeRow()" [disabled]="isAddingEmployees">
             + 行を追加
           </button>
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="cancel-button" (click)="closeAddModal()">
+          <button type="button" class="cancel-button" (click)="closeAddModal()" [disabled]="isAddingEmployees">
             キャンセル
           </button>
-          <button type="submit" class="submit-button" [disabled]="addEmployeeForm.invalid">
-            追加
+          <button type="submit" class="submit-button" [disabled]="addEmployeeForm.invalid || isAddingEmployees">
+            {{ isAddingEmployees ? '追加中...' : '追加' }}
           </button>
         </div>
       </form>
@@ -2921,6 +2926,34 @@
           </div>
         </section>
       </ng-container>
+      
+      <!-- 入社時申請の詳細 -->
+      <ng-container *ngIf="selectedApplication.applicationType === '入社時申請'">
+        <!-- 履歴書・職務経歴書 -->
+        <section class="detail-section" *ngIf="selectedApplication.resumeFile || selectedApplication.careerHistoryFile">
+          <h3 class="section-title">履歴書・職務経歴書</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width" *ngIf="selectedApplication.resumeFile">
+              <span class="detail-label">履歴書:</span>
+              <span class="detail-value">
+                <a *ngIf="selectedApplication.resumeFileUrl" [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.resumeFile }}
+                </a>
+                <span *ngIf="!selectedApplication.resumeFileUrl">{{ selectedApplication.resumeFile }}</span>
+              </span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.careerHistoryFile">
+              <span class="detail-label">職務経歴書:</span>
+              <span class="detail-value">
+                <a *ngIf="selectedApplication.careerHistoryFileUrl" [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.careerHistoryFile }}
+                </a>
+                <span *ngIf="!selectedApplication.careerHistoryFileUrl">{{ selectedApplication.careerHistoryFile }}</span>
+              </span>
+            </div>
+          </div>
+        </section>
+      </ng-container>
     </div>
     
     <div class="modal-footer">
@@ -3007,22 +3040,28 @@
             >
           </div>
           <div class="form-group">
-            <label for="onboarding-lastNameKana">姓（ヨミガナ）</label>
+            <label for="onboarding-lastNameKana">姓（ヨミガナ） <span class="required">*</span></label>
             <input 
               type="text" 
               id="onboarding-lastNameKana" 
               formControlName="lastNameKana" 
               class="form-input"
             >
+            <div *ngIf="onboardingEmployeeEditForm.get('lastNameKana')?.invalid && onboardingEmployeeEditForm.get('lastNameKana')?.touched" class="error-message">
+              姓（ヨミガナ）を入力してください
+            </div>
           </div>
           <div class="form-group">
-            <label for="onboarding-firstNameKana">名（ヨミガナ）</label>
+            <label for="onboarding-firstNameKana">名（ヨミガナ） <span class="required">*</span></label>
             <input 
               type="text" 
               id="onboarding-firstNameKana" 
               formControlName="firstNameKana" 
               class="form-input"
             >
+            <div *ngIf="onboardingEmployeeEditForm.get('firstNameKana')?.invalid && onboardingEmployeeEditForm.get('firstNameKana')?.touched" class="error-message">
+              名（ヨミガナ）を入力してください
+            </div>
           </div>
           <div class="form-group">
             <label for="onboarding-birthDate">生年月日 <span class="required">*</span></label>
@@ -3151,7 +3190,7 @@
               class="form-input"
             >
           </div>
-          <div class="form-group">
+          <div class="form-group" *ngIf="onboardingEmployeeEditForm.get('employmentStatus')?.value !== '在籍'">
             <label for="onboarding-resignationDate">退職年月日</label>
             <input 
               type="date" 
@@ -3160,7 +3199,7 @@
               class="form-input"
             >
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="onboardingEmployeeEditForm.get('employmentStatus')?.value !== '在籍'">
             <label for="onboarding-resignationReason">退職事由</label>
             <textarea 
               id="onboarding-resignationReason" 

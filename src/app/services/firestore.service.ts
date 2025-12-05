@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   projectId: 'kensyu10117'
@@ -11,10 +12,12 @@ const firebaseConfig = {
 })
 export class FirestoreService {
   private db: Firestore;
+  private storage: FirebaseStorage;
 
   constructor() {
     const app = initializeApp(firebaseConfig);
     this.db = getFirestore(app);
+    this.storage = getStorage(app);
   }
 
   /**
@@ -1192,6 +1195,21 @@ export class FirestoreService {
     } catch (error) {
       console.error('Error getting bonus history:', error);
       return [];
+    }
+  }
+
+  /**
+   * ファイルをFirebase StorageにアップロードしてURLを取得
+   */
+  async uploadFile(file: File, path: string): Promise<string> {
+    try {
+      const storageRef = ref(this.storage, path);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
     }
   }
 }

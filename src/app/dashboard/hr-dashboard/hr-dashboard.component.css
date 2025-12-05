@@ -1214,6 +1214,18 @@
   color: #666;
 }
 
+/* 申請詳細モーダルのファイルリンク */
+.file-link {
+  color: #3498db;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.file-link:hover {
+  color: #2980b9;
+  text-decoration: none;
+}
+
 .insurance-card-table {
   width: 100%;
   border-collapse: collapse;

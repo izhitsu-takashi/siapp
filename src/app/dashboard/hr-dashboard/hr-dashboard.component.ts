@@ -424,6 +424,7 @@ export class HrDashboardComponent {
   hasPensionHistory = false;
   isSaving = false;
   isUpdatingStatus = false;
+  isAddingEmployees = false;
   sameAsCurrentAddress = false;
   sameAsCurrentAddressForEmergency = false;
   hasSpouse = false;
@@ -947,7 +948,7 @@ export class HrDashboardComponent {
       firstName: ['', Validators.required],
       lastNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
       firstNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
-      employeeNumber: ['', [Validators.required, this.employeeNumberDuplicateValidator.bind(this)]],
+      employeeNumber: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9]+$/), this.employeeNumberDuplicateValidator.bind(this)]],
       email: ['', [Validators.required, Validators.email, this.emailDuplicateValidator.bind(this)]],
       employmentType: ['', Validators.required],
       initialPassword: ['', [Validators.required, Validators.minLength(6)]]
@@ -970,6 +971,18 @@ export class HrDashboardComponent {
   removeEmployeeRow(index: number) {
     if (this.employeesFormArray.length > 1) {
       this.employeesFormArray.removeAt(index);
+    }
+  }
+
+  // 社員番号入力時の処理（半角英数字のみ許可）
+  onEmployeeNumberInput(event: any, index: number) {
+    const input = event.target;
+    const value = input.value;
+    // 半角英数字以外を削除
+    const filteredValue = value.replace(/[^a-zA-Z0-9]/g, '');
+    if (value !== filteredValue) {
+      input.value = filteredValue;
+      this.employeesFormArray.at(index).get('employeeNumber')?.setValue(filteredValue, { emitEvent: false });
     }
   }
 
@@ -1904,56 +1917,61 @@ export class HrDashboardComponent {
 
   async addEmployees() {
     if (this.addEmployeeForm.valid) {
-      const newEmployees = this.employeesFormArray.value;
-      
-      // 各社員を新入社員一覧に保存
-      for (const employee of newEmployees) {
-        try {
-          // 姓と名を結合してnameを作成
-          const fullName = `${employee.lastName} ${employee.firstName}`.trim();
-          const fullNameKana = `${employee.lastNameKana || ''} ${employee.firstNameKana || ''}`.trim();
-          
-          // 新入社員データを保存（ステータス: 申請待ち）
-          await this.firestoreService.saveOnboardingEmployee(employee.employeeNumber, {
-            employeeNumber: employee.employeeNumber,
-            name: fullName,
-            nameKana: fullNameKana || '',
-            lastName: employee.lastName,
-            firstName: employee.firstName,
-            lastNameKana: employee.lastNameKana || '',
-            firstNameKana: employee.firstNameKana || '',
-            email: employee.email,
-            employmentType: employee.employmentType,
-            password: employee.initialPassword, // パスワードを保存（後でハッシュ化推奨）
-            isInitialPassword: true // 初期パスワードフラグ
-          });
-          
-          // メール送信
+      this.isAddingEmployees = true;
+      try {
+        const newEmployees = this.employeesFormArray.value;
+        
+        // 各社員を新入社員一覧に保存
+        for (const employee of newEmployees) {
           try {
-            await this.firestoreService.sendOnboardingEmail(
-              employee.email,
-              fullName,
-              employee.initialPassword
-            );
-          } catch (emailError) {
-            console.error('Error sending email:', emailError);
-            // メール送信エラーは警告のみ（社員追加は成功）
-            alert(`${fullName}さんのメール送信に失敗しましたが、社員データは保存されました。`);
+            // 姓と名を結合してnameを作成
+            const fullName = `${employee.lastName} ${employee.firstName}`.trim();
+            const fullNameKana = `${employee.lastNameKana || ''} ${employee.firstNameKana || ''}`.trim();
+            
+            // 新入社員データを保存（ステータス: 申請待ち）
+            await this.firestoreService.saveOnboardingEmployee(employee.employeeNumber, {
+              employeeNumber: employee.employeeNumber,
+              name: fullName,
+              nameKana: fullNameKana || '',
+              lastName: employee.lastName,
+              firstName: employee.firstName,
+              lastNameKana: employee.lastNameKana || '',
+              firstNameKana: employee.firstNameKana || '',
+              email: employee.email,
+              employmentType: employee.employmentType,
+              password: employee.initialPassword, // パスワードを保存（後でハッシュ化推奨）
+              isInitialPassword: true // 初期パスワードフラグ
+            });
+            
+            // メール送信
+            try {
+              await this.firestoreService.sendOnboardingEmail(
+                employee.email,
+                fullName,
+                employee.initialPassword
+              );
+            } catch (emailError) {
+              console.error('Error sending email:', emailError);
+              // メール送信エラーは警告のみ（社員追加は成功）
+              alert(`${fullName}さんのメール送信に失敗しましたが、社員データは保存されました。`);
+            }
+          } catch (error) {
+            console.error('Error adding employee:', error);
+            const fullName = `${employee.lastName} ${employee.firstName}`.trim();
+            alert(`${fullName}さんの追加に失敗しました`);
           }
-        } catch (error) {
-          console.error('Error adding employee:', error);
-          const fullName = `${employee.lastName} ${employee.firstName}`.trim();
-          alert(`${fullName}さんの追加に失敗しました`);
         }
+        
+        // モーダルを閉じる
+        this.closeAddModal();
+        
+        // 新入社員一覧を再読み込み
+        await this.loadOnboardingEmployees();
+        
+        alert(`${newEmployees.length}名の社員を追加しました`);
+      } finally {
+        this.isAddingEmployees = false;
       }
-      
-      // モーダルを閉じる
-      this.closeAddModal();
-      
-      // 新入社員一覧を再読み込み
-      await this.loadOnboardingEmployees();
-      
-      alert(`${newEmployees.length}名の社員を追加しました`);
     } else {
       alert('必須項目を入力してください');
     }
@@ -1998,8 +2016,8 @@ export class HrDashboardComponent {
       // 基本情報
       lastName: ['', Validators.required],
       firstName: ['', Validators.required],
-      lastNameKana: [''],
-      firstNameKana: [''],
+      lastNameKana: ['', Validators.required],
+      firstNameKana: ['', Validators.required],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -2010,7 +2028,7 @@ export class HrDashboardComponent {
       myNumberPart3: [''],
       
       // 入退社情報
-      employmentStatus: ['', Validators.required], // 必須
+      employmentStatus: ['在籍', Validators.required], // 必須（デフォルト: 在籍）
       joinDate: ['', Validators.required], // 必須
       resignationDate: [''],
       resignationReason: [''],
@@ -2077,13 +2095,6 @@ export class HrDashboardComponent {
       
       // 人事専用情報（給与）
       fixedSalary: [''],
-      
-      // 保険証情報（人事専用）
-      insuranceSymbol: [''],
-      insuranceNumber: [''],
-      insuranceCardIssueDate: [''],
-      insuranceCardReturnDate: [''],
-      insuranceCardDistributionStatus: [''],
       bonusAmount: [''], // 賞与額
       bonusYear: [''], // 賞与年月（年）
       bonusMonth: [''], // 賞与年月（月）
@@ -2203,13 +2214,6 @@ export class HrDashboardComponent {
       
       // 人事専用情報（給与）
       fixedSalary: [''],
-      
-      // 保険証情報（人事専用）
-      insuranceSymbol: [''],
-      insuranceNumber: [''],
-      insuranceCardIssueDate: [''],
-      insuranceCardReturnDate: [''],
-      insuranceCardStatus: [''], // 固定的賃金
       bonusAmount: [''], // 賞与額
       bonusYear: [''], // 賞与年月（年）
       bonusMonth: [''], // 賞与年月（月）
@@ -2337,27 +2341,6 @@ export class HrDashboardComponent {
       }
     }
 
-    // 保険証情報を設定
-    if (data.insuranceSymbol) {
-      this.employeeEditForm.patchValue({
-        insuranceSymbol: data.insuranceSymbol.toString()
-      });
-    }
-    if (data.insuranceNumber) {
-      this.employeeEditForm.patchValue({
-        insuranceNumber: data.insuranceNumber.toString()
-      });
-    }
-    if (data.insuranceCardIssueDate) {
-      this.employeeEditForm.patchValue({
-        insuranceCardIssueDate: data.insuranceCardIssueDate
-      });
-    }
-    if (data.insuranceCardReturnDate) {
-      this.employeeEditForm.patchValue({
-        insuranceCardReturnDate: data.insuranceCardReturnDate
-      });
-    }
     if (data.insuranceCardStatus) {
       this.employeeEditForm.patchValue({
         insuranceCardStatus: data.insuranceCardStatus
@@ -2841,33 +2824,6 @@ export class HrDashboardComponent {
     }
   }
   
-  formatInsuranceSymbolInput(event: any) {
-    let value = event.target.value.replace(/\D/g, '');
-    if (value.length > 8) {
-      value = value.substring(0, 8);
-    }
-    event.target.value = value;
-    // 新入社員モーダルが開いている場合は新入社員フォームを使用
-    if (this.showOnboardingEmployeeModal && this.onboardingEmployeeEditForm) {
-      this.onboardingEmployeeEditForm.get('insuranceSymbol')?.setValue(value, { emitEvent: false });
-    } else {
-      this.employeeEditForm.get('insuranceSymbol')?.setValue(value, { emitEvent: false });
-    }
-  }
-  
-  formatInsuranceNumberInput(event: any) {
-    let value = event.target.value.replace(/\D/g, '');
-    if (value.length > 3) {
-      value = value.substring(0, 3);
-    }
-    event.target.value = value;
-    // 新入社員モーダルが開いている場合は新入社員フォームを使用
-    if (this.showOnboardingEmployeeModal && this.onboardingEmployeeEditForm) {
-      this.onboardingEmployeeEditForm.get('insuranceNumber')?.setValue(value, { emitEvent: false });
-    } else {
-      this.employeeEditForm.get('insuranceNumber')?.setValue(value, { emitEvent: false });
-    }
-  }
 
   private removeUndefinedValues(obj: any): any {
     if (obj === null || obj === undefined) {
@@ -3926,33 +3882,6 @@ export class HrDashboardComponent {
       }
     }
     
-    // 保険証情報
-    if (data.insuranceSymbol) {
-      this.onboardingEmployeeEditForm.patchValue({
-        insuranceSymbol: data.insuranceSymbol.toString()
-      });
-    }
-    if (data.insuranceNumber) {
-      this.onboardingEmployeeEditForm.patchValue({
-        insuranceNumber: data.insuranceNumber.toString()
-      });
-    }
-    if (data.insuranceCardIssueDate) {
-      this.onboardingEmployeeEditForm.patchValue({
-        insuranceCardIssueDate: data.insuranceCardIssueDate
-      });
-    }
-    if (data.insuranceCardReturnDate) {
-      this.onboardingEmployeeEditForm.patchValue({
-        insuranceCardReturnDate: data.insuranceCardReturnDate
-      });
-    }
-    if (data.insuranceCardDistributionStatus) {
-      this.onboardingEmployeeEditForm.patchValue({
-        insuranceCardDistributionStatus: data.insuranceCardDistributionStatus
-      });
-    }
-    
     // 郵便番号を設定
     if (data.postalCode) {
       this.onboardingEmployeeEditForm.patchValue({
@@ -4550,18 +4479,15 @@ export class HrDashboardComponent {
         );
 
         // 必須項目が全て入力されている場合、ステータスを「準備完了」に変更
-        const requiredFieldsFilled = 
-          formData.insuranceSymbol &&
-          formData.insuranceNumber &&
-          formData.insuranceCardIssueDate &&
-          formData.insuranceCardDistributionStatus &&
-          formData.isMiner && // 坑内員（必須）
-          formData.qualificationCertificateRequired && // 資格確認書発行要否（必須）
-          formData.dependentStatus && // 被扶養者情報（必須）
-          formData.multipleWorkplaceAcquisition && // 二以上事業所勤務者の取得か（必須）
-          formData.reemploymentAfterRetirement && // 退職後の継続再雇用者の取得か（必須）
-          formData.otherQualificationAcquisition && // その他（必須）
-          (formData.otherQualificationAcquisition !== 'はい' || formData.otherQualificationReason); // その他が「はい」の場合は理由も必須
+        // フォームのvalid状態をチェック（*マークがついている項目が全て入力されているか）
+        const isFormValid = this.onboardingEmployeeEditForm.valid;
+        
+        // その他が「はい」の場合は理由も必須なので、追加チェック
+        const otherQualificationReasonValid = 
+          formData.otherQualificationAcquisition !== 'はい' || 
+          (formData.otherQualificationAcquisition === 'はい' && formData.otherQualificationReason);
+        
+        const requiredFieldsFilled = isFormValid && otherQualificationReasonValid;
         
         if (requiredFieldsFilled && this.selectedOnboardingEmployee.status !== '準備完了') {
           await this.firestoreService.updateOnboardingEmployeeStatus(
@@ -4609,58 +4535,62 @@ export class HrDashboardComponent {
     this.onboardingHasPensionHistory = false;
   }
 
-  // 必須項目が全て入力されているかチェック
+  // 必須項目が全て入力されているかチェック（*マークがついている項目が全て入力されているか）
   checkRequiredFieldsForReadyStatus(): { isValid: boolean; missingFields: string[] } {
     const missingFields: string[] = [];
     const form = this.onboardingEmployeeEditForm;
 
-    // 在籍状況
-    if (!form.get('employmentStatus')?.value) {
-      missingFields.push('在籍状況');
-    }
+    // フォームの各コントロールをチェック
+    Object.keys(form.controls).forEach(key => {
+      const control = form.get(key);
+      if (control && control.invalid && control.errors) {
+        // 必須エラーがある場合
+        if (control.errors['required']) {
+          // コントロール名から日本語名を取得（簡易的なマッピング）
+          const fieldNames: { [key: string]: string } = {
+            'lastName': '姓',
+            'firstName': '名',
+            'lastNameKana': '姓（ヨミガナ）',
+            'firstNameKana': '名（ヨミガナ）',
+            'birthDate': '生年月日',
+            'gender': '戸籍上の性別',
+            'email': 'メールアドレス',
+            'employmentStatus': '在籍状況',
+            'joinDate': '入社年月日',
+            'employeeNumber': '社員番号',
+            'employmentType': '雇用形態',
+            'basicPensionNumberPart1': '基礎年金番号',
+            'basicPensionNumberPart2': '基礎年金番号',
+            'socialInsuranceAcquisitionDate': '社会保険の資格取得年月日',
+            'expectedMonthlySalary': '見込み月給額（給与）',
+            'expectedMonthlySalaryInKind': '見込み月給額（現物）',
+            'pensionFundMembership': '年金基金に加入しているか',
+            'isMiner': '坑内員であるか',
+            'multipleWorkplaceAcquisition': '二以上事業所勤務者の取得か',
+            'reemploymentAfterRetirement': '退職後の継続再雇用者の取得か',
+            'otherQualificationAcquisition': 'その他',
+            'qualificationCertificateRequired': '資格確認書発行要否',
+            'dependentStatus': '被扶養者（有/無）'
+          };
+          const fieldName = fieldNames[key] || key;
+          if (!missingFields.includes(fieldName)) {
+            missingFields.push(fieldName);
+          }
+        }
+      }
+    });
 
-    // 入社年月日
-    if (!form.get('joinDate')?.value) {
-      missingFields.push('入社年月日');
-    }
-
-    // 社会保険の資格取得年月日
-    if (!form.get('socialInsuranceAcquisitionDate')?.value) {
-      missingFields.push('社会保険の資格取得年月日');
-    }
-
-    // 被保険者記号
-    if (!form.get('insuranceSymbol')?.value) {
-      missingFields.push('被保険者記号');
-    }
-
-    // 被保険者番号
-    if (!form.get('insuranceNumber')?.value) {
-      missingFields.push('被保険者番号');
-    }
-
-    // 発行日
-    if (!form.get('insuranceCardIssueDate')?.value) {
-      missingFields.push('発行日');
-    }
-
-    // 配布状況
-    if (!form.get('insuranceCardDistributionStatus')?.value) {
-      missingFields.push('配布状況');
-    }
-
-    // 見込み月給額（給与）
-    if (!form.get('expectedMonthlySalary')?.value) {
-      missingFields.push('見込み月給額（給与）');
-    }
-
-    // 見込み月給額（現物）
-    if (!form.get('expectedMonthlySalaryInKind')?.value) {
-      missingFields.push('見込み月給額（現物）');
+    // その他が「はい」の場合は理由も必須
+    const otherQualificationAcquisition = form.get('otherQualificationAcquisition')?.value;
+    const otherQualificationReason = form.get('otherQualificationReason')?.value;
+    if (otherQualificationAcquisition === 'はい' && !otherQualificationReason) {
+      if (!missingFields.includes('その他の理由')) {
+        missingFields.push('その他の理由');
+      }
     }
 
     return {
-      isValid: missingFields.length === 0,
+      isValid: missingFields.length === 0 && form.valid && (otherQualificationAcquisition !== 'はい' || otherQualificationReason),
       missingFields: missingFields
     };
   }
