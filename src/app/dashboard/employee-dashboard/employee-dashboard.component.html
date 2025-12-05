@@ -1985,7 +1985,7 @@
       <section class="form-section">
         <h3 class="section-title">基礎年金番号</h3>
         <div class="form-group">
-          <label>基礎年金番号</label>
+          <label>基礎年金番号 <span class="required">*</span></label>
           <div class="basic-pension-number-container">
             <input 
               type="text" 
@@ -2008,6 +2008,9 @@
               placeholder="000000"
               aria-label="基礎年金番号（後半6桁）"
             >
+          </div>
+          <div *ngIf="(dependentApplicationForm.get('basicPensionNumberPart1')?.invalid || dependentApplicationForm.get('basicPensionNumberPart2')?.invalid) && (dependentApplicationForm.get('basicPensionNumberPart1')?.touched || dependentApplicationForm.get('basicPensionNumberPart2')?.touched)" class="error-message">
+            基礎年金番号を入力してください
           </div>
         </div>
         <div class="form-group">
@@ -2093,14 +2096,20 @@
       <section class="form-section">
         <h3 class="section-title">マイナンバー</h3>
         <div class="form-group">
-          <label class="radio-label">
-            <input type="radio" formControlName="provideMyNumber" value="提供する" (change)="onProvideMyNumberChange()">
-            提供する
-          </label>
-          <label class="radio-label">
-            <input type="radio" formControlName="provideMyNumber" value="提供しない" (change)="onProvideMyNumberChange()">
-            提供しない
-          </label>
+          <label>マイナンバーの提供 <span class="required">*</span></label>
+          <div>
+            <label class="radio-label">
+              <input type="radio" formControlName="provideMyNumber" value="提供する" (change)="onProvideMyNumberChange()">
+              提供する
+            </label>
+            <label class="radio-label">
+              <input type="radio" formControlName="provideMyNumber" value="提供しない" (change)="onProvideMyNumberChange()">
+              提供しない
+            </label>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('provideMyNumber')?.invalid && dependentApplicationForm.get('provideMyNumber')?.touched" class="error-message">
+            マイナンバーの提供を選択してください
+          </div>
         </div>
         
         <!-- マイナンバー提供する場合 -->

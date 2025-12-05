@@ -1266,8 +1266,8 @@ export class EmployeeDashboardComponent {
       relationship: [''], // 続柄（配偶者以外選択時のみ必須）
       
       // 基礎年金番号
-      basicPensionNumberPart1: [''],
-      basicPensionNumberPart2: [''],
+      basicPensionNumberPart1: ['', Validators.required], // 必須
+      basicPensionNumberPart2: ['', Validators.required], // 必須
       
       // 基本情報
       lastName: ['', Validators.required],

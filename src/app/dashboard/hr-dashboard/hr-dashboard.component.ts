@@ -1425,14 +1425,25 @@ export class HrDashboardComponent {
               isNewDependent = true;
             }
             
+            // 扶養者情報が「無」だった場合、「有」に変更
+            const currentDependentStatus = employeeData.dependentStatus || employeeData.hasDependents;
+            let updatedDependentStatus = currentDependentStatus;
+            if (currentDependentStatus === '無' || currentDependentStatus === false || currentDependentStatus === 'false') {
+              updatedDependentStatus = '有';
+            }
+            
             // 社員データを更新（扶養者情報と保険証情報を含む）
             await this.firestoreService.saveEmployeeData(employeeNumber, {
               ...employeeData,
               dependents: dependents,
+              dependentStatus: updatedDependentStatus,
               updatedAt: new Date()
             });
             
             console.log('扶養家族情報を追加しました:', employeeNumber, isNewDependent ? '新しい扶養者を追加' : '既存の扶養者を更新');
+            if (updatedDependentStatus !== currentDependentStatus) {
+              console.log('扶養者情報を「有」に変更しました:', employeeNumber);
+            }
             
             // 社員情報編集モーダルが開いている場合、扶養家族情報を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -1463,6 +1474,21 @@ export class HrDashboardComponent {
                 dependentRelationship
               );
               console.log('扶養家族情報を削除しました:', employeeNumber, dependentName);
+              
+              // 削除後の扶養者数を確認
+              const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+              if (employeeData) {
+                const remainingDependents = employeeData.dependents || [];
+                // 最後の一人だった場合、扶養者情報を「無」に変更
+                if (remainingDependents.length === 0) {
+                  await this.firestoreService.saveEmployeeData(employeeNumber, {
+                    ...employeeData,
+                    dependentStatus: '無',
+                    updatedAt: new Date()
+                  });
+                  console.log('扶養者情報を「無」に変更しました:', employeeNumber);
+                }
+              }
               
               // 社員情報編集モーダルが開いている場合、扶養家族情報を再読み込み
               if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -2194,6 +2220,18 @@ export class HrDashboardComponent {
       const data = await this.firestoreService.getEmployeeData(employeeNumber);
       if (data) {
         this.populateEmployeeEditForm(data);
+        
+        // 社員データから被扶養者情報を取得（優先）
+        if (data.dependentStatus) {
+          this.employeeDependentStatus = data.dependentStatus;
+        } else if (data.hasDependents !== undefined) {
+          // hasDependentsが設定されている場合、それをdependentStatusに変換
+          this.employeeDependentStatus = (data.hasDependents === 'true' || data.hasDependents === true) ? '有' : '無';
+        } else {
+          // 扶養者数から判定
+          const dependents = data.dependents || [];
+          this.employeeDependentStatus = dependents.length > 0 ? '有' : '無';
+        }
       }
       
       // 入社時申請から情報を取得
@@ -2201,34 +2239,34 @@ export class HrDashboardComponent {
         const applications = await this.firestoreService.getEmployeeApplications(employeeNumber);
         const onboardingApplication = applications.find((app: any) => app.applicationType === '入社時申請');
         if (onboardingApplication) {
-          if (onboardingApplication.dependentStatus) {
+          // 社員データにdependentStatusがない場合のみ、入社時申請から取得
+          if (!data?.dependentStatus && onboardingApplication.dependentStatus) {
             this.employeeDependentStatus = onboardingApplication.dependentStatus;
           }
           // 入社時申請の情報を社員データに反映
-          if (onboardingApplication.isOverseasResident !== undefined) {
-            data.isOverseasResident = onboardingApplication.isOverseasResident;
+          if (data) {
+            if (onboardingApplication.isOverseasResident !== undefined) {
+              data.isOverseasResident = onboardingApplication.isOverseasResident;
+            }
+            if (onboardingApplication.overseasAddress) {
+              data.overseasAddress = onboardingApplication.overseasAddress;
+            }
+            if (onboardingApplication.skipResidentAddress !== undefined) {
+              data.skipResidentAddress = onboardingApplication.skipResidentAddress;
+            }
+            if (onboardingApplication.residentAddressSkipReason) {
+              data.residentAddressSkipReason = onboardingApplication.residentAddressSkipReason;
+            }
+            if (onboardingApplication.residentAddressSkipReasonOther) {
+              data.residentAddressSkipReasonOther = onboardingApplication.residentAddressSkipReasonOther;
+            }
+            if (onboardingApplication.pensionFundMembership) {
+              data.pensionFundMembership = onboardingApplication.pensionFundMembership;
+            }
           }
-          if (onboardingApplication.overseasAddress) {
-            data.overseasAddress = onboardingApplication.overseasAddress;
-          }
-          if (onboardingApplication.skipResidentAddress !== undefined) {
-            data.skipResidentAddress = onboardingApplication.skipResidentAddress;
-          }
-          if (onboardingApplication.residentAddressSkipReason) {
-            data.residentAddressSkipReason = onboardingApplication.residentAddressSkipReason;
-          }
-          if (onboardingApplication.residentAddressSkipReasonOther) {
-            data.residentAddressSkipReasonOther = onboardingApplication.residentAddressSkipReasonOther;
-          }
-          if (onboardingApplication.pensionFundMembership) {
-            data.pensionFundMembership = onboardingApplication.pensionFundMembership;
-          }
-        } else {
-          this.employeeDependentStatus = '';
         }
       } catch (error) {
         console.error('Error loading onboarding application:', error);
-        this.employeeDependentStatus = '';
       }
     } catch (error) {
       console.error('Error loading employee data:', error);
