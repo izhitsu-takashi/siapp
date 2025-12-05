@@ -56,6 +56,10 @@ export class KyuyoDashboardComponent {
   selectedPrefecture: string = '';
   treatBonusAsReward: boolean = true; // 年4回以上の賞与を報酬と扱うか（デフォルト: はい）
   
+  // 保険料を現金で徴収する社員
+  cashCollectionEmployees: any[] = []; // 現金徴収する社員のリスト
+  selectedCashCollectionEmployee: string = ''; // 選択された社員番号（追加用）
+  
   // 健康保険料率データ
   kenpoRates: any[] = [];
   
@@ -342,6 +346,13 @@ export class KyuyoDashboardComponent {
           this.treatBonusAsReward = settings.treatBonusAsReward;
         }
         
+        // 現金徴収する社員を読み込む
+        if (settings.cashCollectionEmployees && Array.isArray(settings.cashCollectionEmployees)) {
+          this.cashCollectionEmployees = settings.cashCollectionEmployees;
+        } else {
+          this.cashCollectionEmployees = [];
+        }
+        
         // フォームに値を設定
         this.settingsForm.patchValue({
           healthInsuranceType: this.healthInsuranceType,
@@ -453,6 +464,68 @@ export class KyuyoDashboardComponent {
     } catch (error) {
       console.error('Error saving detail settings:', error);
       alert('詳細設定の保存中にエラーが発生しました');
+    }
+  }
+  
+  // 現金徴収する社員を追加
+  addCashCollectionEmployee() {
+    if (!this.selectedCashCollectionEmployee) {
+      return;
+    }
+    
+    // 既に追加されているかチェック
+    if (this.isCashCollectionEmployeeAdded(this.selectedCashCollectionEmployee)) {
+      alert('この社員は既に追加されています');
+      return;
+    }
+    
+    // 社員情報を取得
+    const employee = this.employees.find(emp => emp.employeeNumber === this.selectedCashCollectionEmployee);
+    if (employee) {
+      this.cashCollectionEmployees.push({
+        employeeNumber: employee.employeeNumber,
+        name: employee.name
+      });
+      this.selectedCashCollectionEmployee = '';
+    }
+  }
+  
+  // 現金徴収する社員を削除
+  removeCashCollectionEmployee(employeeNumber: string) {
+    this.cashCollectionEmployees = this.cashCollectionEmployees.filter(
+      emp => emp.employeeNumber !== employeeNumber
+    );
+  }
+  
+  // 現金徴収する社員が既に追加されているかチェック
+  isCashCollectionEmployeeAdded(employeeNumber: string): boolean {
+    return this.cashCollectionEmployees.some(emp => emp.employeeNumber === employeeNumber);
+  }
+  
+  // 現金徴収する社員の選択が変更されたとき
+  onCashCollectionEmployeeChange() {
+    // 特に処理は不要
+  }
+  
+  // 現金徴収する社員の設定を保存
+  async saveCashCollectionEmployees() {
+    try {
+      // Firestoreから現在の設定を取得してマージ
+      const currentSettings = await this.firestoreService.getSettings() || {};
+      
+      // Firestoreに保存
+      await this.firestoreService.saveSettings({
+        ...currentSettings,
+        cashCollectionEmployees: this.cashCollectionEmployees
+      });
+      
+      alert('現金徴収社員設定を保存しました');
+      
+      // 社会保険料一覧を再読み込み
+      await this.loadInsuranceList();
+    } catch (error) {
+      console.error('Error saving cash collection employees:', error);
+      alert('現金徴収社員設定の保存中にエラーが発生しました');
     }
   }
   
@@ -861,6 +934,21 @@ export class KyuyoDashboardComponent {
     }
   }
   
+  // 現金徴収用：端数が0.50未満なら切り捨て、0.50以上なら切り上げ（1円単位）
+  roundHalfCash(amount: number): number {
+    const decimal = amount % 1;
+    if (decimal < 0.50) {
+      return Math.floor(amount);
+    } else {
+      return Math.ceil(amount);
+    }
+  }
+  
+  // 社員が現金徴収対象かどうかを判定
+  isCashCollectionEmployee(employeeNumber: string): boolean {
+    return this.cashCollectionEmployees.some(emp => emp.employeeNumber === employeeNumber);
+  }
+  
   // 年齢を計算（生年月日から）
   calculateAge(birthDate: string | Date | null | undefined): number | null {
     if (!birthDate) return null;
@@ -1065,13 +1153,17 @@ export class KyuyoDashboardComponent {
             const pensionInsuranceRaw = pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
             
             // 社員負担額を計算
-            // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
-            const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-            const healthNursingBurden = this.roundHalf(healthNursingHalf);
+            // 現金徴収する社員かどうかを判定
+            const isCashCollection = this.isCashCollectionEmployee(emp.employeeNumber);
+            const roundFunction = isCashCollection ? this.roundHalfCash.bind(this) : this.roundHalf.bind(this);
             
-            // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+            // (健康保険料 + 介護保険料) ÷ 2 の端数処理
+            const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
+            const healthNursingBurden = roundFunction(healthNursingHalf);
+            
+            // 厚生年金保険料 ÷ 2 の端数処理
             const pensionHalf = pensionInsuranceRaw / 2;
-            const pensionBurden = this.roundHalf(pensionHalf);
+            const pensionBurden = roundFunction(pensionHalf);
             
             // 社員負担額（合計）
             const employeeBurden = healthNursingBurden + pensionBurden;
@@ -1238,6 +1330,13 @@ export class KyuyoDashboardComponent {
     if (tabName === '休業・任意保険者') {
       this.loadLeaveVoluntaryList().catch(err => {
         console.error('Error in loadLeaveVoluntaryList:', err);
+      });
+    }
+    
+    // 設定タブが選択された場合、社員一覧を読み込む（現金徴収社員設定用）
+    if (tabName === '設定') {
+      this.loadEmployees().catch(err => {
+        console.error('Error in loadEmployees:', err);
       });
     }
     
@@ -1640,19 +1739,23 @@ export class KyuyoDashboardComponent {
             // 社員負担額を計算
             let employeeBurden = 0;
             if (!isInMaternityLeave) {
+              // 現金徴収する社員かどうかを判定
+              const isCashCollection = this.isCashCollectionEmployee(item.employeeNumber);
+              const roundFunction = isCashCollection ? this.roundHalfCash.bind(this) : this.roundHalf.bind(this);
+              
               if (isVoluntaryContinuation) {
                 // 任意継続被保険者の場合、健康保険料と介護保険料は全額社員負担
-                // 端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                // 端数処理（現金徴収の場合は50未満なら切り捨て、50以上なら切り上げ）
                 const healthNursingTotal = healthInsuranceRaw + nursingInsuranceRaw;
-                employeeBurden = this.roundHalf(healthNursingTotal);
+                employeeBurden = roundFunction(healthNursingTotal);
               } else {
-                // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                // (健康保険料 + 介護保険料) ÷ 2 の端数処理
                 const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-                const healthNursingBurden = this.roundHalf(healthNursingHalf);
+                const healthNursingBurden = roundFunction(healthNursingHalf);
                 
-                // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                // 厚生年金保険料 ÷ 2 の端数処理
                 const pensionHalf = pensionInsuranceRaw / 2;
-                const pensionBurden = this.roundHalf(pensionHalf);
+                const pensionBurden = roundFunction(pensionHalf);
                 
                 // 社員負担額（合計）
                 employeeBurden = healthNursingBurden + pensionBurden;
@@ -1890,19 +1993,23 @@ export class KyuyoDashboardComponent {
               // 社員負担額を計算
               let employeeBurden = 0;
               if (!isInMaternityLeave) {
+                // 現金徴収する社員かどうかを判定
+                const isCashCollection = this.isCashCollectionEmployee(bonusGroup.employeeNumber);
+                const roundFunction = isCashCollection ? this.roundHalfCash.bind(this) : this.roundHalf.bind(this);
+                
                 if (isVoluntaryContinuation) {
                   // 任意継続被保険者の場合、健康保険料と介護保険料は全額社員負担
-                  // 端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                  // 端数処理（現金徴収の場合は50未満なら切り捨て、50以上なら切り上げ）
                   const healthNursingTotal = healthInsuranceRaw + nursingInsuranceRaw;
-                  employeeBurden = this.roundHalf(healthNursingTotal);
+                  employeeBurden = roundFunction(healthNursingTotal);
                 } else {
-                  // (健康保険料 + 介護保険料) ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                  // (健康保険料 + 介護保険料) ÷ 2 の端数処理
                   const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
-                  const healthNursingBurden = this.roundHalf(healthNursingHalf);
+                  const healthNursingBurden = roundFunction(healthNursingHalf);
                   
-                  // 厚生年金保険料 ÷ 2 の端数が0.50以下なら切り捨て、0.51以上なら切り上げ
+                  // 厚生年金保険料 ÷ 2 の端数処理
                   const pensionHalf = pensionInsuranceRaw / 2;
-                  const pensionBurden = this.roundHalf(pensionHalf);
+                  const pensionBurden = roundFunction(pensionHalf);
                   
                   // 社員負担額（合計）
                   employeeBurden = healthNursingBurden + pensionBurden;

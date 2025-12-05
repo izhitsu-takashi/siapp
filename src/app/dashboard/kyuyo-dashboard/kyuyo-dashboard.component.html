@@ -745,6 +745,60 @@
                     </button>
                   </div>
                 </section>
+                
+                <!-- 保険料を現金で徴収する社員を設定 -->
+                <section class="settings-section">
+                  <h4 class="section-title">保険料を現金で徴収する社員を設定</h4>
+                  <div class="form-group">
+                    <label>現金徴収する社員を選択</label>
+                    <div class="cash-collection-employees">
+                      <div class="employee-select-container">
+                        <select 
+                          [(ngModel)]="selectedCashCollectionEmployee" 
+                          [ngModelOptions]="{standalone: true}"
+                          class="form-input"
+                          (change)="onCashCollectionEmployeeChange()"
+                        >
+                          <option value="">社員を選択してください</option>
+                          <option *ngFor="let emp of employees" [value]="emp.employeeNumber">
+                            {{ emp.employeeNumber }} - {{ emp.name }}
+                          </option>
+                        </select>
+                        <button 
+                          type="button" 
+                          class="add-employee-button" 
+                          (click)="addCashCollectionEmployee()"
+                          [disabled]="!selectedCashCollectionEmployee || isCashCollectionEmployeeAdded(selectedCashCollectionEmployee)"
+                        >
+                          追加
+                        </button>
+                      </div>
+                      <div class="selected-employees-list" *ngIf="cashCollectionEmployees.length > 0">
+                        <h5>現金徴収する社員一覧</h5>
+                        <ul class="employee-list">
+                          <li *ngFor="let emp of cashCollectionEmployees">
+                            <span>{{ emp.employeeNumber }} - {{ emp.name }}</span>
+                            <button 
+                              type="button" 
+                              class="remove-employee-button" 
+                              (click)="removeCashCollectionEmployee(emp.employeeNumber)"
+                            >
+                              削除
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="form-description">
+                      <p>現金で徴収する社員の場合、端数が50未満なら切り捨て、50以上なら切り上げとして計算されます。</p>
+                    </div>
+                  </div>
+                  <div class="section-actions">
+                    <button type="button" class="save-section-button" (click)="saveCashCollectionEmployees()">
+                      現金徴収社員設定を保存
+                    </button>
+                  </div>
+                </section>
               </div>
             </form>
           </div>
