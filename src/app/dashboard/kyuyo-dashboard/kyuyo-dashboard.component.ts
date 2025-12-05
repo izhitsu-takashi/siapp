@@ -95,6 +95,15 @@ export class KyuyoDashboardComponent {
   // ローディング状態
   isSavingSalary = false;
   isSavingBonus = false;
+  
+  // 給与設定の進行状況
+  salarySaveProgress: {
+    message: string;
+    progress: number; // 0-100
+  } = {
+    message: '',
+    progress: 0
+  };
 
   // 社員情報モーダル
   showEmployeeInfoModal = false;
@@ -122,10 +131,16 @@ export class KyuyoDashboardComponent {
     this.settingsForm = this.createSettingsForm();
     this.voluntaryEndForm = this.createVoluntaryEndForm();
     
-    // 年月フィルター用の選択肢を初期化（2025年から2030年まで）
+    // 年月フィルター用の選択肢を初期化（2025年から2028年まで）
     const currentYear = new Date().getFullYear();
-    for (let year = 2025; year <= 2030; year++) {
+    for (let year = 2025; year <= 2028; year++) {
       this.availableYears.push(year);
+    }
+    
+    // 現在の年月が2028年12月を超えている場合は、2028年12月に設定
+    if (this.insuranceListYear > 2028 || (this.insuranceListYear === 2028 && this.insuranceListMonth > 12)) {
+      this.insuranceListYear = 2028;
+      this.insuranceListMonth = 12;
     }
     
     if (isPlatformBrowser(this.platformId)) {
@@ -178,9 +193,8 @@ export class KyuyoDashboardComponent {
   // 設定フォームを作成
   createSettingsForm(): FormGroup {
     const form = this.fb.group({
-      // 健康保険設定
-      healthInsuranceType: ['協会けんぽ'],
-      prefecture: [''], // 都道府県（協会けんぽ選択時のみ）
+      // 都道府県設定
+      prefecture: [''], // 都道府県
       // 保険料率設定
       healthInsuranceRate: [0],
       nursingInsuranceRate: [0],
@@ -188,10 +202,6 @@ export class KyuyoDashboardComponent {
       // 詳細設定
       treatBonusAsReward: [true] // 年4回以上の賞与を報酬と扱うか
     });
-    
-    // 初期状態で協会けんぽが選択されているため、健康保険料率と介護保険料率を無効化
-    form.get('healthInsuranceRate')?.disable();
-    form.get('nursingInsuranceRate')?.disable();
     
     return form;
   }
@@ -339,10 +349,7 @@ export class KyuyoDashboardComponent {
       const settings = await this.firestoreService.getSettings();
       
       if (settings) {
-        // 健康保険設定を読み込む
-        if (settings.healthInsuranceType) {
-          this.healthInsuranceType = settings.healthInsuranceType;
-        }
+        // 都道府県設定を読み込む
         if (settings.prefecture) {
           this.selectedPrefecture = settings.prefecture;
         }
@@ -380,23 +387,12 @@ export class KyuyoDashboardComponent {
         
         // フォームに値を設定
         this.settingsForm.patchValue({
-          healthInsuranceType: this.healthInsuranceType,
           prefecture: this.selectedPrefecture,
           healthInsuranceRate: this.insuranceRates.healthInsurance,
           nursingInsuranceRate: this.insuranceRates.nursingInsurance,
           pensionInsuranceRate: this.insuranceRates.pensionInsurance,
           treatBonusAsReward: this.treatBonusAsReward
         });
-        
-        // 健康保険種別に応じて保険料率フィールドを無効化/有効化
-        const currentHealthInsuranceType = this.settingsForm.get('healthInsuranceType')?.value || '協会けんぽ';
-        if (currentHealthInsuranceType === '協会けんぽ') {
-          this.settingsForm.get('healthInsuranceRate')?.disable();
-          this.settingsForm.get('nursingInsuranceRate')?.disable();
-        } else {
-          this.settingsForm.get('healthInsuranceRate')?.enable();
-          this.settingsForm.get('nursingInsuranceRate')?.enable();
-        }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -404,21 +400,6 @@ export class KyuyoDashboardComponent {
   }
   
   // 健康保険種別が変更されたときの処理
-  onHealthInsuranceTypeChange() {
-    const type = this.settingsForm.get('healthInsuranceType')?.value;
-    if (type === '協会けんぽ') {
-      // 協会けんぽ選択時は健康保険料率と介護保険料率を無効化
-      this.settingsForm.get('healthInsuranceRate')?.disable();
-      this.settingsForm.get('nursingInsuranceRate')?.disable();
-    } else {
-      // 組合保険を選択した場合、都道府県をリセット
-      this.settingsForm.patchValue({ prefecture: '' });
-      this.selectedPrefecture = '';
-      // 健康保険料率と介護保険料率を有効化
-      this.settingsForm.get('healthInsuranceRate')?.enable();
-      this.settingsForm.get('nursingInsuranceRate')?.enable();
-    }
-  }
   
   // 都道府県が選択されたときの処理
   onPrefectureChange() {
@@ -437,50 +418,6 @@ export class KyuyoDashboardComponent {
     }
   }
   
-  // 健康保険設定を保存
-  async saveHealthInsuranceSetting() {
-    try {
-      const formValue = this.settingsForm.value;
-      
-      // 健康保険設定を更新
-      this.healthInsuranceType = formValue.healthInsuranceType || '協会けんぽ';
-      this.selectedPrefecture = formValue.prefecture || '';
-      
-      // 協会けんぽで都道府県が選択されている場合、保険料率も自動更新
-      if (this.healthInsuranceType === '協会けんぽ' && this.selectedPrefecture) {
-        const rateData = this.kenpoRates.find((rate: any) => rate.prefecture === this.selectedPrefecture);
-        if (rateData) {
-          this.insuranceRates.healthInsurance = rateData.healthRate;
-          this.insuranceRates.nursingInsurance = rateData.careRate;
-          // フォームにも反映
-          this.settingsForm.patchValue({
-            healthInsuranceRate: rateData.healthRate,
-            nursingInsuranceRate: rateData.careRate
-          });
-        }
-      }
-      
-      // Firestoreから現在の設定を取得してマージ
-      const currentSettings = await this.firestoreService.getSettings() || {};
-      
-      // 詳細設定も更新
-      this.treatBonusAsReward = this.settingsForm.get('treatBonusAsReward')?.value !== false;
-      
-      // Firestoreに保存
-      await this.firestoreService.saveSettings({
-        ...currentSettings,
-        healthInsuranceType: this.healthInsuranceType,
-        prefecture: this.selectedPrefecture,
-        insuranceRates: this.insuranceRates,
-        treatBonusAsReward: this.treatBonusAsReward
-      });
-      
-      alert('健康保険設定を保存しました');
-    } catch (error) {
-      console.error('Error saving health insurance setting:', error);
-      alert('健康保険設定の保存中にエラーが発生しました');
-    }
-  }
   
   // 詳細設定を保存
   async saveDetailSettings() {
@@ -576,6 +513,9 @@ export class KyuyoDashboardComponent {
     try {
       const formValue = this.settingsForm.value;
       
+      // 都道府県設定を更新
+      this.selectedPrefecture = formValue.prefecture || '';
+      
       // 保険料率設定を更新
       this.insuranceRates = {
         healthInsurance: Number(formValue.healthInsuranceRate) || 0,
@@ -592,6 +532,7 @@ export class KyuyoDashboardComponent {
       // Firestoreに保存
       await this.firestoreService.saveSettings({
         ...currentSettings,
+        prefecture: this.selectedPrefecture,
         insuranceRates: this.insuranceRates,
         treatBonusAsReward: this.treatBonusAsReward
       });
@@ -1572,8 +1513,16 @@ export class KyuyoDashboardComponent {
     this.isLoadingInsuranceList = true;
     try {
       // 年月を数値型に変換（HTMLのselectから文字列型で来る可能性があるため）
-      const filterYear = Number(this.insuranceListYear);
-      const filterMonth = Number(this.insuranceListMonth);
+      let filterYear = Number(this.insuranceListYear);
+      let filterMonth = Number(this.insuranceListMonth);
+      
+      // 2028年12月を超える年月は2028年12月に制限
+      if (filterYear > 2028 || (filterYear === 2028 && filterMonth > 12)) {
+        filterYear = 2028;
+        filterMonth = 12;
+        this.insuranceListYear = 2028;
+        this.insuranceListMonth = 12;
+      }
       
       // 設定から保険料率を取得
       const settings = await this.firestoreService.getSettings();
@@ -2268,8 +2217,17 @@ export class KyuyoDashboardComponent {
   // 保険料一覧の年月を変更
   async onInsuranceListDateChange() {
     // 年月を数値型に変換（HTMLのselectから文字列型で来る可能性があるため）
-    this.insuranceListYear = Number(this.insuranceListYear);
-    this.insuranceListMonth = Number(this.insuranceListMonth);
+    let year = Number(this.insuranceListYear);
+    let month = Number(this.insuranceListMonth);
+    
+    // 2028年12月を超える年月は2028年12月に制限
+    if (year > 2028 || (year === 2028 && month > 12)) {
+      year = 2028;
+      month = 12;
+      this.insuranceListYear = 2028;
+      this.insuranceListMonth = 12;
+    }
+    
     await this.filterInsuranceListByDate();
   }
   
@@ -2546,11 +2504,20 @@ export class KyuyoDashboardComponent {
     }
     
     this.isSavingSalary = true;
+    this.salarySaveProgress = { message: '給与設定を開始しています...', progress: 0 };
     try {
-      // 給与設定をFirestoreに保存（指定年月以降の2030年12月までの給与を設定）
+      // 給与設定をFirestoreに保存（指定年月以降の2028年12月までの給与を設定）
       console.log(`[給与設定] 給与設定開始。社員番号: ${this.selectedSalaryEmployee}, 年: ${this.salaryYear}, 月: ${this.salaryMonth}, 金額: ${this.salaryAmount}`);
       
+      // 設定年月が2028年12月を超えている場合はエラー
+      if (this.salaryYear > 2028 || (this.salaryYear === 2028 && this.salaryMonth > 12)) {
+        alert('給与設定は2028年12月までしか設定できません。');
+        this.isSavingSalary = false;
+        return;
+      }
+      
       // 最初に設定した年月のみを手動設定として記録
+      this.salarySaveProgress = { message: '手動給与設定を保存しています...', progress: 5 };
       await this.firestoreService.saveSalary(
         this.selectedSalaryEmployee,
         this.salaryYear,
@@ -2559,7 +2526,7 @@ export class KyuyoDashboardComponent {
         true // isManual = true（手動設定）
       );
       
-      // 設定年月から2030年12月までの残りの月に給与を自動設定
+      // 設定年月から2028年12月までの残りの月に給与を自動設定
       let currentYear = this.salaryYear;
       let currentMonth = this.salaryMonth + 1; // 次の月から開始
       
@@ -2569,7 +2536,23 @@ export class KyuyoDashboardComponent {
         currentYear++;
       }
       
-      while (currentYear < 2030 || (currentYear === 2030 && currentMonth <= 12)) {
+      // 自動設定する月数を計算
+      let totalMonths = 0;
+      let tempYear = currentYear;
+      let tempMonth = currentMonth;
+      while (tempYear < 2028 || (tempYear === 2028 && tempMonth <= 12)) {
+        totalMonths++;
+        tempMonth++;
+        if (tempMonth > 12) {
+          tempMonth = 1;
+          tempYear++;
+        }
+      }
+      
+      let processedMonths = 0;
+      this.salarySaveProgress = { message: '自動給与設定を保存しています...', progress: 10 };
+      
+      while (currentYear < 2028 || (currentYear === 2028 && currentMonth <= 12)) {
         await this.firestoreService.saveSalary(
           this.selectedSalaryEmployee,
           currentYear,
@@ -2577,6 +2560,13 @@ export class KyuyoDashboardComponent {
           this.salaryAmount,
           false // isManual = false（自動設定）
         );
+        
+        processedMonths++;
+        const progress = 10 + Math.floor((processedMonths / totalMonths) * 20); // 10-30%
+        this.salarySaveProgress = { 
+          message: `自動給与設定を保存しています... (${processedMonths}/${totalMonths}月)`, 
+          progress: progress 
+        };
         
         // 次の月に進む
         currentMonth++;
@@ -2586,10 +2576,11 @@ export class KyuyoDashboardComponent {
         }
       }
       
-      console.log(`[給与設定] 給与設定完了。${this.salaryYear}年${this.salaryMonth}月から2030年12月まで設定しました。`);
+      console.log(`[給与設定] 給与設定完了。${this.salaryYear}年${this.salaryMonth}月から2028年12月まで設定しました。`);
       
       // 給与設定履歴を再読み込み（標準報酬月額変更チェックの前に必要）
       // 定時改定・随時改定の計算には、すべての給与（自動設定含む）が必要なため、getAllSalaryHistoryを使用
+      this.salarySaveProgress = { message: '給与設定履歴を読み込んでいます...', progress: 35 };
       const history = await this.firestoreService.getAllSalaryHistory();
       
       // 日時順にソート（新しいものから）
@@ -2610,17 +2601,27 @@ export class KyuyoDashboardComponent {
       
       // 標準報酬月額の変更を検出して処理（随時改定）
       // 新しい給与設定を行った際、その社員のすべての随時改定を再計算
+      this.salarySaveProgress = { message: '随時改定を再計算しています...', progress: 40 };
       await this.recalculateAllZujijiKaitei(
         this.selectedSalaryEmployee,
         sortedHistory
       );
       
-      // 定時改定の処理（2030年12月までのすべての年度で定時改定をチェック）
-      // 2025年度から2030年度まで、すべての年度について定時改定をチェック
+      // 定時改定の処理（2028年12月までのすべての年度で定時改定をチェック）
+      // 2025年度から2028年度まで、すべての年度について定時改定をチェック
       console.log(`[定時改定] 給与設定後の定時改定チェック開始。社員番号: ${this.selectedSalaryEmployee}`);
       
-      for (let fiscalYear = 2025; fiscalYear <= 2030; fiscalYear++) {
+      const totalFiscalYears = 4; // 2025-2028年度
+      let processedFiscalYears = 0;
+      
+      for (let fiscalYear = 2025; fiscalYear <= 2028; fiscalYear++) {
         console.log(`[定時改定] ${fiscalYear}年度（${fiscalYear}年4月～${fiscalYear + 1}年3月）のチェック開始`);
+        
+        const progress = 50 + Math.floor((processedFiscalYears / totalFiscalYears) * 30); // 50-80%
+        this.salarySaveProgress = { 
+          message: `定時改定をチェックしています... (${fiscalYear}年度)`, 
+          progress: progress 
+        };
         
         // 該当年度の4月、5月、6月の給与を取得できるかチェック
         // 給与設定は「その年月以降の給与を設定する」という意味なので、
@@ -2690,11 +2691,14 @@ export class KyuyoDashboardComponent {
         } else {
           console.log(`[定時改定] ${fiscalYear}年度 - 4月、5月、6月の給与が取得できないため、スキップします。`);
         }
+        
+        processedFiscalYears++;
       }
       
       console.log(`[定時改定] 給与設定後の定時改定チェック完了`);
       
       // 給与設定履歴を設定
+      this.salarySaveProgress = { message: '給与設定履歴を更新しています...', progress: 85 };
       this.salaryHistory = sortedHistory;
       
       // 社員名を追加
@@ -2711,8 +2715,11 @@ export class KyuyoDashboardComponent {
       this.filterSalaryHistory();
       
       // 保険料一覧を再読み込み
+      this.salarySaveProgress = { message: '社会保険料一覧を更新しています...', progress: 90 };
       await this.loadInsuranceList();
       await this.filterInsuranceListByDate();
+      
+      this.salarySaveProgress = { message: '完了しました', progress: 100 };
       
       alert('給与を設定しました');
       
@@ -2721,9 +2728,14 @@ export class KyuyoDashboardComponent {
       this.salaryAmount = 0;
     } catch (error) {
       console.error('Error saving salary:', error);
+      this.salarySaveProgress = { message: 'エラーが発生しました', progress: 0 };
       alert('給与の設定に失敗しました');
     } finally {
       this.isSavingSalary = false;
+      // 少し遅延してからプログレスをリセット（完了メッセージを表示するため）
+      setTimeout(() => {
+        this.salarySaveProgress = { message: '', progress: 0 };
+      }, 1000);
     }
   }
 
@@ -3432,7 +3444,7 @@ export class KyuyoDashboardComponent {
         }
         
         // 各年度について定時改定を計算（2025年度から2030年度まで）
-        for (let fiscalYear = 2025; fiscalYear <= 2030; fiscalYear++) {
+        for (let fiscalYear = 2025; fiscalYear <= 2028; fiscalYear++) {
           // 6月の給与設定が完了しているかチェック
           const hasJuneSalary = filteredHistory.some((s: any) => {
             const salaryYear = Number(s['year']);
@@ -3521,6 +3533,13 @@ export class KyuyoDashboardComponent {
     // 年月を数値型に変換（selectから文字列型で来る可能性があるため）
     this.bonusYear = Number(this.bonusYear);
     this.bonusMonth = Number(this.bonusMonth);
+    
+    // 設定年月が2028年12月を超えている場合はエラー
+    if (this.bonusYear > 2028 || (this.bonusYear === 2028 && this.bonusMonth > 12)) {
+      alert('賞与設定は2028年12月までしか設定できません。');
+      this.isSavingBonus = false;
+      return;
+    }
     
     // その社員の最新の賞与設定年月を取得
     const employeeBonuses = this.bonusHistory.filter((b: any) => 

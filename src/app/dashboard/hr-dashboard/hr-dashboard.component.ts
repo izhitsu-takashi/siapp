@@ -467,7 +467,7 @@ export class HrDashboardComponent {
   
   // 人事専用選択肢
   healthInsuranceTypes = ['健康保険被保険者', '任意継続被保険者'];
-  nursingInsuranceTypes = ['介護保険第1号被保険者', '介護保険第2号被保険者', '任意継続被保険者', '介護保険の被保険者でない者', '特定被保険者'];
+  nursingInsuranceTypes = ['介護保険第1号被保険者', '介護保険第2号被保険者', '任意継続被保険者', '介護保険の被保険者でない者'];
   pensionInsuranceTypes = ['国民年金第2号被保険者'];
   
   // 扶養者一覧

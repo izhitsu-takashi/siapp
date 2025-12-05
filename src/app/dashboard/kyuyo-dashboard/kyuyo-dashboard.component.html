@@ -256,6 +256,15 @@
                   </button>
                 </div>
               </div>
+              
+              <!-- 進行状況表示 -->
+              <div *ngIf="isSavingSalary && salarySaveProgress.message" class="salary-progress-container">
+                <div class="progress-message">{{ salarySaveProgress.message }}</div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar" [style.width.%]="salarySaveProgress.progress"></div>
+                </div>
+                <div class="progress-percentage">{{ salarySaveProgress.progress }}%</div>
+              </div>
             </form>
           </div>
 
@@ -263,8 +272,8 @@
           <div class="history-container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
               <h3 class="form-section-title" style="margin: 0;">給与設定履歴</h3>
-              <div class="form-group" style="margin: 0; min-width: 200px;">
-                <label for="salaryHistoryFilter" style="margin-right: 0.5rem;">社員でフィルター:</label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label for="salaryHistoryFilter" style="margin: 0; white-space: nowrap;">社員でフィルター:</label>
                 <select 
                   id="salaryHistoryFilter" 
                   [(ngModel)]="selectedSalaryHistoryFilter" 
@@ -390,8 +399,8 @@
           <div class="history-container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
               <h3 class="form-section-title" style="margin: 0;">賞与設定履歴</h3>
-              <div class="form-group" style="margin: 0; min-width: 200px;">
-                <label for="bonusHistoryFilter" style="margin-right: 0.5rem;">社員でフィルター:</label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label for="bonusHistoryFilter" style="margin: 0; white-space: nowrap;">社員でフィルター:</label>
                 <select 
                   id="bonusHistoryFilter" 
                   [(ngModel)]="selectedBonusHistoryFilter" 
@@ -548,23 +557,11 @@
               <div class="settings-container">
                 <h3 class="container-title">保険料率設定欄</h3>
                 
-                <!-- 健康保険設定 -->
+                <!-- 保険料率設定 -->
                 <section class="settings-section">
-                  <h4 class="section-title">健康保険設定</h4>
+                  <h4 class="section-title">保険料率設定</h4>
                   <div class="form-grid">
                     <div class="form-group">
-                      <label for="healthInsuranceType">健康保険種別</label>
-                      <select 
-                        id="healthInsuranceType" 
-                        formControlName="healthInsuranceType" 
-                        class="form-input"
-                        (change)="onHealthInsuranceTypeChange()"
-                      >
-                        <option value="協会けんぽ">協会けんぽ</option>
-                        <option value="組合保険">組合保険</option>
-                      </select>
-                    </div>
-                    <div class="form-group" *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'">
                       <label for="prefecture">都道府県 <span class="required">*</span></label>
                       <select 
                         id="prefecture" 
@@ -578,18 +575,6 @@
                         </option>
                       </select>
                     </div>
-                  </div>
-                  <div class="section-actions">
-                    <button type="button" class="save-section-button" (click)="saveHealthInsuranceSetting()">
-                      健康保険設定を保存
-                    </button>
-                  </div>
-                </section>
-
-                <!-- 保険料率設定 -->
-                <section class="settings-section">
-                  <h4 class="section-title">保険料率設定</h4>
-                  <div class="form-grid">
                     <div class="form-group">
                       <label for="healthInsuranceRate">健康保険料率 (%)</label>
                       <input 
@@ -602,9 +587,6 @@
                         max="100"
                         placeholder="例: 5.0"
                       >
-                      <div *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'" class="form-hint">
-                        協会けんぽ選択時は都道府県の設定から自動で取得されます
-                      </div>
                     </div>
                     <div class="form-group">
                       <label for="nursingInsuranceRate">介護保険料率 (%)</label>
@@ -618,9 +600,6 @@
                         max="100"
                         placeholder="例: 1.0"
                       >
-                      <div *ngIf="settingsForm.get('healthInsuranceType')?.value === '協会けんぽ'" class="form-hint">
-                        協会けんぽ選択時は都道府県の設定から自動で取得されます
-                      </div>
                     </div>
                     <div class="form-group">
                       <label for="pensionInsuranceRate">厚生年金保険料率 (%)</label>
