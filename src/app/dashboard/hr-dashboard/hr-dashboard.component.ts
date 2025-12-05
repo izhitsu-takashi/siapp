@@ -980,9 +980,20 @@ export class HrDashboardComponent {
     const value = input.value;
     // 半角英数字以外を削除
     const filteredValue = value.replace(/[^a-zA-Z0-9]/g, '');
+    const employeeNumberControl = this.employeesFormArray.at(index).get('employeeNumber');
+    
     if (value !== filteredValue) {
       input.value = filteredValue;
-      this.employeesFormArray.at(index).get('employeeNumber')?.setValue(filteredValue, { emitEvent: false });
+      // 非同期でsetValueを実行して無限ループを防ぐ
+      setTimeout(() => {
+        employeeNumberControl?.setValue(filteredValue, { emitEvent: true });
+        employeeNumberControl?.updateValueAndValidity();
+      }, 0);
+    } else {
+      // 値が変更されていない場合でも、バリデーションを再実行
+      setTimeout(() => {
+        employeeNumberControl?.updateValueAndValidity({ emitEvent: true });
+      }, 0);
     }
   }
 
