@@ -104,14 +104,12 @@ export class PdfEditService {
         const fontkitModule = await import('@pdf-lib/fontkit');
         // デフォルトエクスポートまたは名前付きエクスポートを確認
         fontkit = fontkitModule.default || fontkitModule;
-        console.log('@pdf-lib/fontkitを読み込みました');
       } catch (error) {
         // @pdf-lib/fontkitが失敗した場合、通常のfontkitを試す
         try {
           // @ts-ignore
           const fontkitModule = await import('fontkit');
           fontkit = fontkitModule.default || fontkitModule;
-          console.log('fontkitを読み込みました');
         } catch (error2) {
           console.warn('fontkitの読み込みに失敗しました:', error2);
           fontkit = null;
@@ -128,7 +126,6 @@ export class PdfEditService {
         // PDFDocumentのインスタンスに対してregisterFontkitを呼び出す
         if (typeof (pdfDoc as any).registerFontkit === 'function') {
           (pdfDoc as any).registerFontkit(fontkit);
-          console.log('fontkitを登録しました');
         } else {
           console.warn('pdfDoc.registerFontkitが存在しません。');
           console.warn('日本語フォントは使用できませんが、英数字のみで続行します。');
@@ -153,7 +150,6 @@ export class PdfEditService {
           // 日本語フォントを埋め込む（pdf-libのembedFontはフォントファイルのバイト配列を受け取る）
           font = await pdfDoc.embedFont(japaneseFontBytes);
           hasJapaneseFont = true;
-          console.log('日本語フォントを埋め込みました');
         } else {
           // 日本語フォントが存在しない、またはfontkitが読み込まれていない場合は標準フォントを使用
           font = await pdfDoc.embedFont('Helvetica');
@@ -181,13 +177,7 @@ export class PdfEditService {
         try {
           const settings = await this.firestoreService.getSettings();
           companyInfo = settings?.companyInfo || null;
-          // デバッグログ
-          console.log('Company info for PDF:', companyInfo);
-          console.log('Full settings:', settings);
           if (companyInfo) {
-            console.log('officeCodePart1:', companyInfo.officeCodePart1);
-            console.log('officeCodePart2:', companyInfo.officeCodePart2);
-            console.log('officeCode:', companyInfo.officeCode);
             // officeCodePart1とofficeCodePart2が存在しない場合、officeCodeから分割を試みる
             if (!companyInfo.officeCodePart1 && !companyInfo.officeCodePart2 && companyInfo.officeCode) {
               const officeCode = companyInfo.officeCode;
@@ -195,7 +185,6 @@ export class PdfEditService {
               if (match) {
                 companyInfo.officeCodePart1 = match[1] || '';
                 companyInfo.officeCodePart2 = match[2] || '';
-                console.log('Parsed from officeCode:', { officeCodePart1: companyInfo.officeCodePart1, officeCodePart2: companyInfo.officeCodePart2 });
               }
             }
           }
@@ -334,7 +323,6 @@ export class PdfEditService {
       // officeCodePart1とofficeCodePart2から直接取得
       const officeCodePart1 = companyInfo?.officeCodePart1 || '';
       const officeCodePart2 = companyInfo?.officeCodePart2 || '';
-      console.log('Office code parts:', { officeCodePart1, officeCodePart2 });
       
       // 最初の数字2桁(間隔はx座標13開ける）：(86,80)
       if (officeCodePart1) {
@@ -632,7 +620,6 @@ export class PdfEditService {
     
     // ⑫性別※指定の場所に直径4座標分の〇を付ける
     const gender = employeeData.gender || '';
-    console.log('Gender for PDF:', gender, 'from employeeData:', employeeData);
     
     // 年金基金に加入しているかチェック
     const pensionFundMembership = employeeData.pensionFundMembership || 
@@ -763,46 +750,17 @@ export class PdfEditService {
     const hasDependentsValue = employeeData.hasDependents || '';
     const hasDependents = hasDependentsValue === 'true' || dependentStatus === '有';
     
-    console.log('被扶養者情報チェック:', { 
-      dependentStatus, 
-      hasDependentsValue, 
-      hasDependents,
-      yOffset,
-      yPosition: y(263)
-    });
-    
     // 被扶養者のy座標を計算
     const dependentY = y(263);
     const dependentX = hasDependents ? 544 : 500;
     
-    console.log('被扶養者情報チェック:', { 
-      dependentStatus, 
-      hasDependentsValue, 
-      hasDependents,
-      yOffset,
-      yPosition: dependentY,
-      xPosition: dependentX,
-      height: height,
-      width: width,
-      baseY: 263
-    });
-    
-    // 座標がページの範囲内かチェック
-    if (dependentX < 0 || dependentX > width || dependentY < 0 || dependentY > height) {
-      console.warn('被扶養者情報の座標がページ範囲外:', { x: dependentX, y: dependentY, width, height });
-    }
-    
     if (hasDependents) {
       // 被扶養者が「有」の場合
-      console.log('被扶養者「有」: 座標(', dependentX, ',', dependentY, ')に〇を描画');
       this.drawCircle(page, dependentX, dependentY, 4, font);
-      console.log('被扶養者「有」の〇描画完了');
     } else {
       // 被扶養者が「無」の場合、または未設定の場合
-      console.log('被扶養者「無」または未設定: 座標(', dependentX, ',', dependentY, ')に〇を描画');
       // 「無」の場合も必ず描画を実行
       this.drawCircle(page, dependentX, dependentY, 4, font);
-      console.log('被扶養者「無」の〇描画完了');
     }
     
     // ⑰見込み給与額
@@ -812,7 +770,6 @@ export class PdfEditService {
     const expectedMonthlySalary = parseFloat(employeeData.expectedMonthlySalary) || 0;
     const expectedMonthlySalaryInKind = parseFloat(employeeData.expectedMonthlySalaryInKind) || 0;
     const totalSalary = expectedMonthlySalary + expectedMonthlySalaryInKind;
-    console.log('Salary info:', { expectedMonthlySalary, expectedMonthlySalaryInKind, totalSalary });
     
     // 給与：(110,292)
     if (expectedMonthlySalary > 0) {
@@ -1090,7 +1047,6 @@ export class PdfEditService {
       this.drawCheckMark(page, 493, y(318), font);
     }
     
-    console.log('被保険者資格取得届の記入処理を実行しました');
   }
   
   /**
@@ -1201,7 +1157,6 @@ export class PdfEditService {
    * 円を描画する
    */
   private drawCircle(page: any, x: number, y: number, radius: number, font?: PDFFont) {
-    console.log(`drawCircle called: x=${x}, y=${y}, radius=${radius}`);
     try {
       // pdf-libのdrawCircleを使用
       page.drawCircle({
@@ -1211,10 +1166,8 @@ export class PdfEditService {
         borderColor: rgb(0, 0, 0),
         borderWidth: 1,
       });
-      console.log(`drawCircle succeeded: x=${x}, y=${y}, radius=${radius}`);
     } catch (error) {
       // drawCircleが存在しない場合は、テキストで円を描画（簡易的な方法）
-      console.warn('drawCircle failed, using text fallback:', error);
       if (font) {
         try {
           page.drawText('○', {
@@ -1223,9 +1176,7 @@ export class PdfEditService {
             size: radius * 2,
             font: font,
           });
-          console.log(`drawCircle text fallback succeeded: x=${x}, y=${y}, radius=${radius}`);
         } catch (textError) {
-          console.error('Failed to draw circle with text:', textError);
           // 最後の手段として、小さな円を線で描画
           try {
             const path = page.path();
@@ -1241,13 +1192,10 @@ export class PdfEditService {
             }
             path.closePath();
             page.drawPath(path);
-            console.log(`drawCircle path fallback succeeded: x=${x}, y=${y}, radius=${radius}`);
           } catch (pathError) {
-            console.error('Failed to draw circle with path:', pathError);
+            // エラーは無視（フォールバック処理）
           }
         }
-      } else {
-        console.warn('No font available for circle drawing');
       }
     }
   }

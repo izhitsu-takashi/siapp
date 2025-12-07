@@ -9,7 +9,7 @@
         <span class="employee-number">社員番号: {{ employeeNumber }}</span>
         <span class="employee-name">{{ employeeName }}</span>
       </span>
-      <button class="logout-button" (click)="logout()">ログアウト</button>
+      <button class="logout-button" (click)="logout()" [attr.disabled]="isSubmittingOnboardingApplication ? '' : null" [title]="isSubmittingOnboardingApplication ? '申請中です。しばらくお待ちください。' : ''">ログアウト</button>
     </div>
   </header>
 
@@ -23,6 +23,8 @@
           class="sidebar-item"
           [class.active]="currentTab === tab.name"
           (click)="switchTab(tab.name)"
+          [attr.disabled]="isSubmittingOnboardingApplication ? '' : null"
+          [title]="isSubmittingOnboardingApplication ? '申請中です。しばらくお待ちください。' : ''"
         >
           {{ tab.name }}
         </button>
@@ -120,16 +122,15 @@
                   >
                 </div>
                 <div class="form-group full-width">
-                  <label for="idDocument">本人確認書類添付</label>
-                  <input 
-                    type="file" 
-                    id="idDocument" 
-                    class="form-input"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'idDocument')"
-                    [disabled]="true"
-                  >
-                  <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
+                  <label>本人確認書類添付</label>
+                  <div *ngIf="employeeData?.idDocumentFileUrl" class="file-info">
+                    <a [href]="employeeData.idDocumentFileUrl" target="_blank" class="file-link">
+                      {{ employeeData.idDocumentFile || '本人確認書類を開く' }}
+                    </a>
+                  </div>
+                  <div *ngIf="!employeeData?.idDocumentFileUrl" class="file-info">
+                    <span class="no-file-message">添付ファイルがありません</span>
+                  </div>
                 </div>
               </div>
             </section>
@@ -426,28 +427,26 @@
               <h3 class="section-title">履歴書・職務経歴書</h3>
               <div class="form-grid">
                 <div class="form-group full-width">
-                  <label for="resume">履歴書添付</label>
-                  <input 
-                    type="file" 
-                    id="resume" 
-                    class="form-input"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'resume')"
-                    [disabled]="true"
-                  >
-                  <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
+                  <label>履歴書添付</label>
+                  <div *ngIf="employeeData?.resumeFileUrl" class="file-info">
+                    <a [href]="employeeData.resumeFileUrl" target="_blank" class="file-link">
+                      {{ employeeData.resumeFile || '履歴書を開く' }}
+                    </a>
+                  </div>
+                  <div *ngIf="!employeeData?.resumeFileUrl" class="file-info">
+                    <span class="no-file-message">添付ファイルがありません</span>
+                  </div>
                 </div>
                 <div class="form-group full-width">
-                  <label for="careerHistory">職務経歴書添付</label>
-                  <input 
-                    type="file" 
-                    id="careerHistory" 
-                    class="form-input"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'careerHistory')"
-                    [disabled]="true"
-                  >
-                  <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
+                  <label>職務経歴書添付</label>
+                  <div *ngIf="employeeData?.careerHistoryFileUrl" class="file-info">
+                    <a [href]="employeeData.careerHistoryFileUrl" target="_blank" class="file-link">
+                      {{ employeeData.careerHistoryFile || '職務経歴書を開く' }}
+                    </a>
+                  </div>
+                  <div *ngIf="!employeeData?.careerHistoryFileUrl" class="file-info">
+                    <span class="no-file-message">添付ファイルがありません</span>
+                  </div>
                 </div>
               </div>
             </section>
@@ -688,16 +687,15 @@
                   >
                 </div>
                 <div class="form-group full-width">
-                  <label for="basicPensionNumberDoc">基礎年金番号確認書類添付</label>
-                  <input 
-                    type="file" 
-                    id="basicPensionNumberDoc" 
-                    class="form-input"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'basicPensionNumberDoc')"
-                    [disabled]="true"
-                  >
-                  <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
+                  <label>基礎年金番号確認書類添付</label>
+                  <div *ngIf="employeeData?.basicPensionNumberDocFileUrl" class="file-info">
+                    <a [href]="employeeData.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
+                      {{ employeeData.basicPensionNumberDocFile || '基礎年金番号がわかる書類を開く' }}
+                    </a>
+                  </div>
+                  <div *ngIf="!employeeData?.basicPensionNumberDocFileUrl" class="file-info">
+                    <span class="no-file-message">添付ファイルがありません</span>
+                  </div>
                 </div>
               </div>
             </section>
@@ -1238,10 +1236,15 @@
 
 <!-- 入社時申請モーダル -->
 <div class="modal-overlay" *ngIf="showApplicationModal && currentApplicationType === '入社時申請'">
-  <div class="modal-content">
+  <div class="modal-content" [class.form-disabled]="isSubmittingOnboardingApplication">
     <div class="modal-header">
       <h2 class="modal-title">入社時申請</h2>
-      <button class="modal-close-button" (click)="closeApplicationModal()">×</button>
+      <button class="modal-close-button" (click)="closeApplicationModal()" [disabled]="isSubmittingOnboardingApplication" [title]="isSubmittingOnboardingApplication ? '申請中です。しばらくお待ちください。' : ''">×</button>
+    </div>
+    
+    <div *ngIf="isSubmittingOnboardingApplication" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <p class="loading-message">申請を送信しています。しばらくお待ちください...</p>
     </div>
     
     <form [formGroup]="onboardingApplicationForm" (ngSubmit)="submitOnboardingApplication()" class="application-form">
@@ -1354,6 +1357,17 @@
             <div *ngIf="onboardingApplicationForm.get('email')?.invalid && onboardingApplicationForm.get('email')?.touched" class="error-message">
               有効なメールアドレスを入力してください
             </div>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboarding-idDocument">本人確認書類添付</label>
+            <input 
+              type="file" 
+              id="onboarding-idDocument" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'idDocument')"
+            >
+            <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
           </div>
         </div>
       </section>
@@ -1636,6 +1650,18 @@
       <!-- 緊急連絡先欄 -->
       <section class="form-section">
         <h3 class="section-title">緊急連絡先</h3>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                formControlName="sameAsCurrentAddressForEmergency"
+                (change)="onSameAsCurrentAddressForEmergencyChange($event)"
+              >
+              現住所と同じ
+            </label>
+          </div>
+        </div>
         <div formGroupName="emergencyContact" class="nested-form">
           <div class="form-grid">
             <div class="form-group">
@@ -1687,23 +1713,12 @@
               </div>
             </div>
             <div class="form-group full-width">
-              <label class="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  formControlName="sameAsCurrentAddressForEmergency"
-                  (change)="onSameAsCurrentAddressForEmergencyChange($event)"
-                >
-                現住所と同じ
-              </label>
-            </div>
-            <div class="form-group full-width">
               <label for="onboarding-emergencyAddress">住所</label>
               <textarea 
                 id="onboarding-emergencyAddress" 
                 formControlName="address" 
                 class="form-input" 
                 rows="2"
-                [disabled]="onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value"
               ></textarea>
             </div>
             <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value || !onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value">
@@ -1713,7 +1728,6 @@
                 formControlName="addressKana" 
                 class="form-input" 
                 rows="2"
-                [disabled]="onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value"
               ></textarea>
               <div *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.invalid && onboardingApplicationForm.get('emergencyContact.addressKana')?.touched" class="error-message">
                 <span *ngIf="onboardingApplicationForm.get('emergencyContact.addressKana')?.errors?.['katakana']">
@@ -1840,6 +1854,17 @@
               厚生年金加入履歴を選択してください
             </div>
           </div>
+          <div class="form-group full-width">
+            <label for="onboarding-basicPensionNumberDoc">基礎年金番号確認書類添付</label>
+            <input 
+              type="file" 
+              id="onboarding-basicPensionNumberDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'basicPensionNumberDoc')"
+            >
+            <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
+          </div>
           <div class="form-group full-width" *ngIf="hasPensionHistory">
             <label for="onboarding-pensionHistory">厚生年金加入履歴（詳細）</label>
             <textarea 
@@ -1942,9 +1967,9 @@
 
       <!-- 送信ボタン -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="onboardingApplicationForm.invalid">
-          申請
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingOnboardingApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="onboardingApplicationForm.invalid || isSubmittingOnboardingApplication">
+          {{ isSubmittingOnboardingApplication ? '申請中...' : '申請' }}
         </button>
       </div>
     </form>

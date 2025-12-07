@@ -83,6 +83,7 @@ export class EmployeeDashboardComponent {
   selectedApplication: any = null;
   isEditModeForReapplication = false;
   isSubmittingReapplication = false; // 再申請送信中フラグ
+  isSubmittingOnboardingApplication = false; // 入社時申請送信中フラグ
   
   // 保険・扶養ページ用データ
   insuranceData: any = {
@@ -242,6 +243,8 @@ export class EmployeeDashboardComponent {
     try {
       const data = await this.firestoreService.getEmployeeData(this.employeeNumber);
       if (data) {
+        // employeeDataを更新（添付ファイル情報を含む）
+        this.employeeData = data;
         this.populateForm(data);
         // 保険・扶養ページ用データを設定
         this.loadInsuranceAndDependentsData(data);
@@ -976,6 +979,10 @@ export class EmployeeDashboardComponent {
   }
 
   switchTab(tabName: string) {
+    // 申請中はタブ切り替えを無効化
+    if (this.isSubmittingOnboardingApplication) {
+      return;
+    }
     this.currentTab = tabName;
     
     // 各種申請ページに切り替えた場合、申請一覧を読み込む
@@ -995,6 +1002,10 @@ export class EmployeeDashboardComponent {
   }
 
   logout() {
+    // 申請中はログアウトを無効化
+    if (this.isSubmittingOnboardingApplication) {
+      return;
+    }
     // ブラウザ環境でのみセッションストレージをクリア
     if (isPlatformBrowser(this.platformId)) {
       sessionStorage.removeItem('employeeNumber');
@@ -1165,7 +1176,6 @@ export class EmployeeDashboardComponent {
         this.isSaving = false;
       }
     } else {
-      console.log('Form is invalid');
       alert('必須項目を入力してください');
     }
   }
@@ -1219,6 +1229,10 @@ export class EmployeeDashboardComponent {
   }
   
   closeApplicationModal() {
+    // 申請中はモーダルを閉じられないようにする
+    if (this.isSubmittingOnboardingApplication) {
+      return;
+    }
     this.showApplicationModal = false;
     this.currentApplicationType = '';
     // 入社時申請フォームのdisabled状態を解除
@@ -2227,6 +2241,9 @@ export class EmployeeDashboardComponent {
   // 入社時申請を送信
   async submitOnboardingApplication() {
     if (this.onboardingApplicationForm.valid) {
+      this.isSubmittingOnboardingApplication = true;
+      // フォームを無効化
+      this.onboardingApplicationForm.disable();
       try {
         // マイナンバーを結合
         const myNumberParts = [
@@ -2338,6 +2355,22 @@ export class EmployeeDashboardComponent {
           applicationData.idDocumentFile = this.idDocumentFile.name;
           applicationData.idDocumentFileUrl = idDocumentUrl;
         }
+        
+        // 既存の申請データからファイルURLを保持（新しいファイルが選択されていない場合）
+        // これは初回申請時には不要だが、再申請時に既存のファイルを保持するために必要
+        const existingApplication = await this.firestoreService.getEmployeeApplicationsByType('入社時申請').then(apps => 
+          apps.find((app: any) => app.employeeNumber === this.employeeNumber)
+        );
+        if (existingApplication) {
+          if (!this.basicPensionNumberDocFile && existingApplication.basicPensionNumberDocFileUrl) {
+            applicationData.basicPensionNumberDocFileUrl = existingApplication.basicPensionNumberDocFileUrl;
+            applicationData.basicPensionNumberDocFile = existingApplication.basicPensionNumberDocFile || '';
+          }
+          if (!this.idDocumentFile && existingApplication.idDocumentFileUrl) {
+            applicationData.idDocumentFileUrl = existingApplication.idDocumentFileUrl;
+            applicationData.idDocumentFile = existingApplication.idDocumentFile || '';
+          }
+        }
 
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
@@ -2366,6 +2399,10 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting onboarding application:', error);
         alert('申請の送信に失敗しました');
+      } finally {
+        this.isSubmittingOnboardingApplication = false;
+        // フォームを再度有効化
+        this.onboardingApplicationForm.enable();
       }
     } else {
       this.onboardingApplicationForm.markAllAsTouched();
@@ -2719,29 +2756,12 @@ export class EmployeeDashboardComponent {
   
   // 編集モードを有効にする
   enableEditMode() {
-    console.log('=== enableEditMode 開始 ===');
-    console.log('selectedApplication:', this.selectedApplication);
-    console.log('selectedApplication.status:', this.selectedApplication?.status);
-    console.log('selectedApplication.applicationType:', this.selectedApplication?.applicationType);
-    
     if (this.selectedApplication && this.selectedApplication.status === '差し戻し') {
-      console.log('条件を満たしています。フォームを初期化します。');
-      
       // フォームを初期化してからデータをロード
       if (this.selectedApplication.applicationType === '扶養家族追加') {
-        console.log('扶養家族追加申請のフォームを初期化します。');
         this.dependentApplicationForm = this.createDependentApplicationForm();
-        console.log('dependentApplicationForm 作成完了:', this.dependentApplicationForm);
-        console.log('dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
-        console.log('dependentApplicationForm.value:', this.dependentApplicationForm.value);
-        
-        // データをフォームにロード
-        console.log('データをフォームにロードします。');
         this.loadApplicationDataToForm(this.selectedApplication);
-        console.log('データロード後の dependentApplicationForm.value:', this.dependentApplicationForm.value);
-        console.log('データロード後の dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
       } else if (this.selectedApplication.applicationType === '入社時申請') {
-        console.log('入社時申請のフォームを初期化します。');
         // ファイルをリセット
         this.resumeFile = null;
         this.careerHistoryFile = null;
@@ -2749,69 +2769,37 @@ export class EmployeeDashboardComponent {
         this.onboardingApplicationForm = this.createOnboardingApplicationForm();
         this.loadApplicationDataToForm(this.selectedApplication);
       } else if (this.selectedApplication.applicationType === '扶養削除申請') {
-        console.log('扶養削除申請のフォームを初期化します。');
         this.dependentRemovalForm = this.createDependentRemovalForm();
         this.loadApplicationDataToForm(this.selectedApplication);
       } else if (this.selectedApplication.applicationType === '住所変更申請') {
-        console.log('住所変更申請のフォームを初期化します。');
         this.addressChangeForm = this.createAddressChangeForm();
         this.loadApplicationDataToForm(this.selectedApplication);
       } else if (this.selectedApplication.applicationType === '氏名変更申請') {
-        console.log('氏名変更申請のフォームを初期化します。');
         this.nameChangeForm = this.createNameChangeForm();
         this.loadApplicationDataToForm(this.selectedApplication);
       } else if (this.selectedApplication.applicationType === '産前産後休業申請') {
-        console.log('産前産後休業申請のフォームを初期化します。');
         this.maternityLeaveForm = this.createMaternityLeaveForm();
         this.loadApplicationDataToForm(this.selectedApplication);
       } else if (this.selectedApplication.applicationType === '退職申請') {
-        console.log('退職申請のフォームを初期化します。');
         this.resignationForm = this.createResignationForm();
         this.loadApplicationDataToForm(this.selectedApplication);
-      } else {
-        console.log('未対応の申請タイプ:', this.selectedApplication.applicationType);
       }
       
       // 編集モードを有効化（フォーム初期化後に設定）
-      console.log('isEditModeForReapplication を true に設定します。');
       this.isEditModeForReapplication = true;
-      console.log('isEditModeForReapplication:', this.isEditModeForReapplication);
-      console.log('=== enableEditMode 終了 ===');
-    } else {
-      console.log('条件を満たしていません。');
-      console.log('selectedApplication:', this.selectedApplication);
-      console.log('status === 差し戻し:', this.selectedApplication?.status === '差し戻し');
     }
   }
   
   // 申請データをフォームに読み込む
   loadApplicationDataToForm(application: any) {
-    console.log('=== loadApplicationDataToForm 開始 ===');
-    console.log('application:', application);
-    console.log('application.applicationType:', application.applicationType);
     
     if (application.applicationType === '扶養家族追加') {
       // フォームは既に初期化されている前提（enableEditModeで初期化済み）
       if (!this.dependentApplicationForm) {
-        console.log('dependentApplicationForm が存在しないため、作成します。');
         this.dependentApplicationForm = this.createDependentApplicationForm();
-      } else {
-        console.log('dependentApplicationForm は既に存在します。');
       }
       
-      console.log('application のデータ:', {
-        relationshipType: application.relationshipType,
-        lastName: application.lastName,
-        firstName: application.firstName,
-        birthDate: application.birthDate,
-        gender: application.gender,
-        dependentStartDate: application.dependentStartDate,
-        provideMyNumber: application.provideMyNumber,
-        livingTogether: application.livingTogether
-      });
-      
       // データをフォームに設定
-      console.log('patchValue を実行します。');
       this.dependentApplicationForm.patchValue({
         relationshipType: application.relationshipType || '',
         spouseType: application.spouseType || '',
@@ -2861,28 +2849,9 @@ export class EmployeeDashboardComponent {
       }
       
       // バリデーションを再設定
-      console.log('バリデーションを再設定します。');
       this.onRelationshipTypeChange();
       this.onProvideMyNumberChange();
       this.onLivingTogetherChange();
-      
-      console.log('patchValue 後の dependentApplicationForm.value:', this.dependentApplicationForm.value);
-      console.log('patchValue 後の dependentApplicationForm.valid:', this.dependentApplicationForm.valid);
-      console.log('patchValue 後の dependentApplicationForm.errors:', this.dependentApplicationForm.errors);
-      
-      // 各フィールドのエラーを確認
-      Object.keys(this.dependentApplicationForm.controls).forEach(key => {
-        const control = this.dependentApplicationForm.get(key);
-        if (control && control.invalid) {
-          console.log(`フィールド ${key} が無効:`, {
-            value: control.value,
-            errors: control.errors,
-            touched: control.touched
-          });
-        }
-      });
-      
-      console.log('=== loadApplicationDataToForm 終了 ===');
     } else if (application.applicationType === '入社時申請') {
       // 入社時申請フォームを初期化
       if (!this.onboardingApplicationForm) {
@@ -3040,7 +3009,6 @@ export class EmployeeDashboardComponent {
       this.onboardingApplicationForm.get('firstName')?.disable();
       this.onboardingApplicationForm.get('email')?.disable();
       
-      console.log('=== loadApplicationDataToForm 終了（入社時申請） ===');
     } else if (application.applicationType === '扶養削除申請') {
       this.dependentRemovalForm = this.createDependentRemovalForm();
       // 扶養者IDを取得（dependentsDataから一致するものを探す）
@@ -3138,11 +3106,7 @@ export class EmployeeDashboardComponent {
   
   // 再申請を送信
   async submitReapplication() {
-    console.log('=== submitReapplication 開始 ===');
-    console.log('selectedApplication:', this.selectedApplication);
-    
     if (!this.selectedApplication) {
-      console.log('selectedApplication が存在しません。');
       return;
     }
     
@@ -3158,32 +3122,9 @@ export class EmployeeDashboardComponent {
       let applicationData: any = {};
       
       if (this.selectedApplication.applicationType === '扶養家族追加') {
-        console.log('扶養家族追加申請の再申請を処理します。');
-        console.log('dependentApplicationForm:', this.dependentApplicationForm);
-        console.log('dependentApplicationForm.valid:', this.dependentApplicationForm?.valid);
-        console.log('dependentApplicationForm.value:', this.dependentApplicationForm?.value);
-        
-        if (this.dependentApplicationForm) {
-          // 各フィールドのエラーを確認
-          Object.keys(this.dependentApplicationForm.controls).forEach(key => {
-            const control = this.dependentApplicationForm.get(key);
-            if (control && control.invalid) {
-              console.log(`フィールド ${key} が無効:`, {
-                value: control.value,
-                errors: control.errors,
-                touched: control.touched
-              });
-            }
-          });
-        } else {
-          console.log('dependentApplicationForm が存在しません！');
-        }
-        
         formValid = this.dependentApplicationForm?.valid || false;
-        console.log('formValid:', formValid);
         
         if (formValid) {
-          console.log('フォームが有効です。データを取得します。');
           const basicPensionNumberParts = [
             this.dependentApplicationForm.get('basicPensionNumberPart1')?.value || '',
             this.dependentApplicationForm.get('basicPensionNumberPart2')?.value || ''
@@ -3198,8 +3139,6 @@ export class EmployeeDashboardComponent {
           const myNumber = myNumberParts.join('');
           
           const formValue = this.dependentApplicationForm.value;
-          console.log('formValue:', formValue);
-          
           applicationData = {
             ...formValue,
             basicPensionNumber: basicPensionNumber || null,
@@ -3207,9 +3146,6 @@ export class EmployeeDashboardComponent {
             employeeNumber: this.employeeNumber,
             applicationType: '扶養家族追加'
           };
-          console.log('applicationData:', applicationData);
-        } else {
-          console.log('フォームが無効です。');
         }
       } else if (this.selectedApplication.applicationType === '扶養削除申請') {
         formValid = this.dependentRemovalForm.valid;
@@ -3471,23 +3407,15 @@ export class EmployeeDashboardComponent {
         }
       }
       
-      console.log('formValid:', formValid);
-      
       if (!formValid) {
-        console.log('フォームが無効です。必須項目を入力してください。');
         if (this.selectedApplication.applicationType === '扶養家族追加' && this.dependentApplicationForm) {
           this.dependentApplicationForm.markAllAsTouched();
-          console.log('すべてのフィールドを touched に設定しました。');
         } else if (this.selectedApplication.applicationType === '入社時申請' && this.onboardingApplicationForm) {
           this.onboardingApplicationForm.markAllAsTouched();
-          console.log('すべてのフィールドを touched に設定しました。');
         }
         alert('必須項目を入力してください');
         return;
       }
-      
-      console.log('フォームは有効です。再申請を実行します。');
-      console.log('applicationData:', applicationData);
       
       // 再申請として保存（ステータスを「申請済み」に設定）
       await this.firestoreService.resubmitApplication(this.selectedApplication.id, applicationData);
@@ -3686,7 +3614,13 @@ export class EmployeeDashboardComponent {
         emergencyAddressControl?.setValue(currentAddress);
         emergencyAddressKanaControl?.setValue(currentAddressKana);
       }
+      // 緊急連絡先住所フィールドを無効化
+      emergencyAddressControl?.disable();
+      emergencyAddressKanaControl?.disable();
     } else {
+      // 緊急連絡先住所フィールドを有効化
+      emergencyAddressControl?.enable();
+      emergencyAddressKanaControl?.enable();
       // チェックを外した場合、値をクリア
       emergencyAddressControl?.setValue('');
       emergencyAddressKanaControl?.setValue('');

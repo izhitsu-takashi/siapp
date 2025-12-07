@@ -1097,7 +1097,6 @@
                   formControlName="employeeNumber" 
                   class="form-input"
                   placeholder="例: EMP001"
-                  [disabled]="isAddingEmployees"
                 >
                 <div *ngIf="employeesFormArray.at(i).get('employeeNumber')?.touched && employeesFormArray.at(i).get('employeeNumber')?.errors" class="error-message">
                   <span *ngIf="employeesFormArray.at(i).get('employeeNumber')?.errors?.['duplicate']">
@@ -1166,16 +1165,16 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="add-row-button" (click)="addEmployeeRow()" [disabled]="isAddingEmployees">
+          <button type="button" class="add-row-button" (click)="addEmployeeRow()">
             + 行を追加
           </button>
         </div>
 
         <div class="modal-actions">
-          <button type="button" class="cancel-button" (click)="closeAddModal()" [disabled]="isAddingEmployees">
+          <button type="button" class="cancel-button" (click)="closeAddModal()">
             キャンセル
           </button>
-          <button type="submit" class="submit-button" [disabled]="addEmployeeForm.invalid || isAddingEmployees">
+          <button type="submit" class="submit-button" [attr.disabled]="addEmployeeForm.invalid || isAddingEmployees ? '' : null">
             {{ isAddingEmployees ? '追加中...' : '追加' }}
           </button>
         </div>
@@ -1275,6 +1274,11 @@
                 (change)="onFileSelected($event, 'idDocument')"
               >
               <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
+              <div *ngIf="!idDocumentFile && existingIdDocumentFileUrl" class="file-info" style="margin-top: 0.5rem;">
+                <a [href]="existingIdDocumentFileUrl" target="_blank" class="file-link">
+                  {{ existingIdDocumentFileName || '本人確認書類を開く' }}
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -1567,6 +1571,11 @@
                 (change)="onFileSelected($event, 'resume')"
               >
               <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
+              <div *ngIf="!resumeFile && existingResumeFileUrl" class="file-info" style="margin-top: 0.5rem;">
+                <a [href]="existingResumeFileUrl" target="_blank" class="file-link">
+                  {{ existingResumeFileName || '履歴書を開く' }}
+                </a>
+              </div>
             </div>
             <div class="form-group full-width">
               <label for="hr-careerHistory">職務経歴書添付</label>
@@ -1578,6 +1587,11 @@
                 (change)="onFileSelected($event, 'careerHistory')"
               >
               <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
+              <div *ngIf="!careerHistoryFile && existingCareerHistoryFileUrl" class="file-info" style="margin-top: 0.5rem;">
+                <a [href]="existingCareerHistoryFileUrl" target="_blank" class="file-link">
+                  {{ existingCareerHistoryFileName || '職務経歴書を開く' }}
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -1811,6 +1825,11 @@
                 (change)="onFileSelected($event, 'basicPensionNumberDoc')"
               >
               <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
+              <div *ngIf="!basicPensionNumberDocFile && existingBasicPensionNumberDocFileUrl" class="file-info" style="margin-top: 0.5rem;">
+                <a [href]="existingBasicPensionNumberDocFileUrl" target="_blank" class="file-link">
+                  {{ existingBasicPensionNumberDocFileName || '基礎年金番号がわかる書類を開く' }}
+                </a>
+              </div>
             </div>
           </div>
         </section>

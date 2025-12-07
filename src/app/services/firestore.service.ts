@@ -1230,18 +1230,11 @@ export class FirestoreService {
       pathParts[pathParts.length - 1] = sanitizedFileName;
       const sanitizedPath = pathParts.join('/');
       
-      console.log('Original path:', path);
-      console.log('Sanitized path:', sanitizedPath);
-      console.log('Storage bucket:', this.storage.app.options.storageBucket);
-      
       const storageRef = ref(this.storage, sanitizedPath);
-      console.log('Uploading file to:', sanitizedPath);
       
       await uploadBytes(storageRef, file);
-      console.log('File uploaded successfully');
       
       const downloadURL = await getDownloadURL(storageRef);
-      console.log('Download URL:', downloadURL);
       
       return downloadURL;
     } catch (error: any) {

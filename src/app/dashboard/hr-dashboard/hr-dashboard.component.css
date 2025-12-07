@@ -1741,6 +1741,10 @@
 
 .add-employee-form {
   padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .employee-form-row {
@@ -1844,11 +1848,16 @@
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding-top: 1.5rem;
+  padding: 1.5rem;
   border-top: 1px solid #e0e0e0;
-  position: sticky;
-  bottom: 0;
+  flex-shrink: 0;
   background: white;
+  margin-top: auto;
+}
+
+.add-employee-form .modal-actions {
+  margin-top: 0;
+  padding-top: 1.5rem;
 }
 
 .cancel-button {
@@ -1888,7 +1897,8 @@
   box-shadow: 0 4px 8px rgba(240, 147, 251, 0.3);
 }
 
-.submit-button:disabled {
+.submit-button:disabled,
+.submit-button.disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -2720,7 +2730,8 @@
   transform: translateY(0);
 }
 
-.onboarding-process-modal .submit-button:disabled {
+.onboarding-process-modal .submit-button:disabled,
+.submit-button.disabled {
   background: #ccc;
   cursor: not-allowed;
   opacity: 0.7;

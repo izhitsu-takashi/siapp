@@ -126,7 +126,6 @@ export class HrDashboardComponent {
         for (const employeeNumber of group) {
           const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
           if (!employee) {
-            console.warn(`Employee not found: ${employeeNumber}`);
             continue;
           }
 
@@ -160,7 +159,6 @@ export class HrDashboardComponent {
               employeeDataArray.push(employeeData);
               employeeNames.push(`${employeeNumber}_${employee.name}`);
             } else {
-              console.warn(`Employee data not found for ${employeeNumber}`);
               errorCount++;
             }
           } catch (error) {
@@ -178,7 +176,6 @@ export class HrDashboardComponent {
             );
             const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNames.join('_')}.pdf`;
             this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
-            console.log(`PDF generated successfully for group: ${employeeNames.join(', ')}`);
             successCount += employeeDataArray.length;
           } catch (error) {
             console.error(`Error generating PDF for group:`, error);
@@ -231,7 +228,6 @@ export class HrDashboardComponent {
         for (const employeeNumber of group) {
           const employee = this.readyEmployees.find(emp => emp.employeeNumber === employeeNumber);
           if (!employee) {
-            console.warn(`Employee not found: ${employeeNumber}`);
             continue;
           }
 
@@ -266,7 +262,6 @@ export class HrDashboardComponent {
               employeeNames.push(`${employeeNumber}_${employee.name}`);
               processedEmployees.push({ employeeNumber, employeeData });
             } else {
-              console.warn(`Employee data not found for ${employeeNumber}`);
               errorCount++;
             }
           } catch (error) {
@@ -284,7 +279,6 @@ export class HrDashboardComponent {
             );
             const pdfFileName = `健康保険・厚生年金保険被保険者資格取得届_${employeeNames.join('_')}.pdf`;
             this.pdfEditService.downloadPdf(pdfBytes, pdfFileName);
-            console.log(`PDF generated successfully for group: ${employeeNames.join(', ')}`);
           } catch (pdfError) {
             console.error(`Error generating PDF for group:`, pdfError);
             alert(`グループ（${employeeNames.join(', ')}）のPDF生成に失敗しました: ${pdfError instanceof Error ? pdfError.message : '不明なエラー'}`);
@@ -297,6 +291,33 @@ export class HrDashboardComponent {
           try {
             // ステータス関連のフィールドを除外
             const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = employeeData;
+            
+            // 申請データから添付資料のURLを取得
+            try {
+              const applications = await this.firestoreService.getEmployeeApplicationsByType('入社時申請');
+              const onboardingApp = applications.find((app: any) => app.employeeNumber === employeeNumber);
+              if (onboardingApp) {
+                // 添付資料のURLを社員データに保存
+                if (onboardingApp.resumeFileUrl) {
+                  employeeDataWithoutStatus.resumeFileUrl = onboardingApp.resumeFileUrl;
+                  employeeDataWithoutStatus.resumeFile = onboardingApp.resumeFile || '';
+                }
+                if (onboardingApp.careerHistoryFileUrl) {
+                  employeeDataWithoutStatus.careerHistoryFileUrl = onboardingApp.careerHistoryFileUrl;
+                  employeeDataWithoutStatus.careerHistoryFile = onboardingApp.careerHistoryFile || '';
+                }
+                if (onboardingApp.basicPensionNumberDocFileUrl) {
+                  employeeDataWithoutStatus.basicPensionNumberDocFileUrl = onboardingApp.basicPensionNumberDocFileUrl;
+                  employeeDataWithoutStatus.basicPensionNumberDocFile = onboardingApp.basicPensionNumberDocFile || '';
+                }
+                if (onboardingApp.idDocumentFileUrl) {
+                  employeeDataWithoutStatus.idDocumentFileUrl = onboardingApp.idDocumentFileUrl;
+                  employeeDataWithoutStatus.idDocumentFile = onboardingApp.idDocumentFile || '';
+                }
+              }
+            } catch (appError) {
+              // 申請データの取得に失敗しても処理は続行
+            }
             
             // 年齢を計算（介護保険者種別の判定に使用）
             let age: number | null = null;
@@ -344,7 +365,6 @@ export class HrDashboardComponent {
                   status: '未対応',
                   message: '扶養家族追加申請を行ってください'
                 });
-                console.log(`扶養家族追加申請の依頼を作成しました: ${employeeNumber}`);
               } catch (requestError) {
                 console.error(`Error creating application request for ${employeeNumber}:`, requestError);
                 // 申請要求の作成エラーは警告のみ（処理は続行）
@@ -352,7 +372,6 @@ export class HrDashboardComponent {
             }
             
             successCount++;
-            console.log(`Successfully processed employee ${employeeNumber}`);
           } catch (error) {
             console.error(`Error processing employee ${employeeNumber}:`, error);
             errorCount++;
@@ -501,6 +520,16 @@ export class HrDashboardComponent {
   resumeFile: File | null = null;
   careerHistoryFile: File | null = null;
   basicPensionNumberDocFile: File | null = null;
+  
+  // 既存の添付資料URL（表示用）
+  existingResumeFileUrl: string | null = null;
+  existingResumeFileName: string | null = null;
+  existingCareerHistoryFileUrl: string | null = null;
+  existingCareerHistoryFileName: string | null = null;
+  existingBasicPensionNumberDocFileUrl: string | null = null;
+  existingBasicPensionNumberDocFileName: string | null = null;
+  existingIdDocumentFileUrl: string | null = null;
+  existingIdDocumentFileName: string | null = null;
 
   // 選択肢
   departments = ['営業部', '開発部', '人事部', '経理部', '総務部'];
@@ -1525,10 +1554,6 @@ export class HrDashboardComponent {
               updatedAt: new Date()
             });
             
-            console.log('扶養家族情報を追加しました:', employeeNumber, isNewDependent ? '新しい扶養者を追加' : '既存の扶養者を更新');
-            if (updatedDependentStatus !== currentDependentStatus) {
-              console.log('扶養者情報を「有」に変更しました:', employeeNumber);
-            }
             
             // 社員情報編集モーダルが開いている場合、扶養家族情報を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -1558,7 +1583,6 @@ export class HrDashboardComponent {
                 dependentName,
                 dependentRelationship
               );
-              console.log('扶養家族情報を削除しました:', employeeNumber, dependentName);
               
               // 削除後の扶養者数を確認
               const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
@@ -1571,7 +1595,6 @@ export class HrDashboardComponent {
                     dependentStatus: '無',
                     updatedAt: new Date()
                   });
-                  console.log('扶養者情報を「無」に変更しました:', employeeNumber);
                 }
               }
               
@@ -1596,7 +1619,6 @@ export class HrDashboardComponent {
               newAddress: this.selectedApplication.newAddress,
               residentAddress: this.selectedApplication.residentAddress
             });
-            console.log('住所情報を更新しました:', employeeNumber);
             
             // 社員情報編集モーダルが開いている場合、住所情報を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -1615,7 +1637,6 @@ export class HrDashboardComponent {
           const employeeNumber = this.selectedApplication.employeeNumber;
           if (employeeNumber && this.selectedApplication.newName) {
             await this.firestoreService.updateEmployeeName(employeeNumber, this.selectedApplication.newName);
-            console.log('氏名を更新しました:', employeeNumber);
             
             // 社員情報編集モーダルが開いている場合、氏名を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -1634,7 +1655,6 @@ export class HrDashboardComponent {
           const employeeNumber = this.selectedApplication.employeeNumber;
           if (employeeNumber && this.selectedApplication.newMyNumber) {
             await this.firestoreService.updateEmployeeMyNumber(employeeNumber, this.selectedApplication.newMyNumber);
-            console.log('マイナンバーを更新しました:', employeeNumber);
             
             // 社員情報編集モーダルが開いている場合、マイナンバーを再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -1660,7 +1680,6 @@ export class HrDashboardComponent {
                 maternityLeaveEndDate: this.selectedApplication.maternityLeaveEndDate || this.selectedApplication.postMaternityLeaveEndDate || '',
                 updatedAt: new Date()
               });
-              console.log('産前産後休業期間を保存しました:', employeeNumber);
             }
           }
         } catch (error) {
@@ -1683,7 +1702,6 @@ export class HrDashboardComponent {
               postResignationEmail: this.selectedApplication.postResignationEmail,
               postResignationInsurance: this.selectedApplication.postResignationInsurance
             });
-            console.log('退職情報を更新しました:', employeeNumber);
             
             // 社員情報編集モーダルが開いている場合、退職情報を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -1958,7 +1976,7 @@ export class HrDashboardComponent {
   async addEmployees() {
     if (this.addEmployeeForm.valid) {
       this.isAddingEmployees = true;
-      // フォームを無効化
+      // フォームを無効化（すべてのコントロールを無効化）
       this.addEmployeeForm.disable();
       try {
         const newEmployees = this.employeesFormArray.value;
@@ -2053,6 +2071,14 @@ export class HrDashboardComponent {
     this.resumeFile = null;
     this.careerHistoryFile = null;
     this.basicPensionNumberDocFile = null;
+    this.existingResumeFileUrl = null;
+    this.existingResumeFileName = null;
+    this.existingCareerHistoryFileUrl = null;
+    this.existingCareerHistoryFileName = null;
+    this.existingBasicPensionNumberDocFileUrl = null;
+    this.existingBasicPensionNumberDocFileName = null;
+    this.existingIdDocumentFileUrl = null;
+    this.existingIdDocumentFileName = null;
     this.dependents = [];
     this.dependentExpandedStates = [];
   }
@@ -2469,11 +2495,9 @@ export class HrDashboardComponent {
       }));
       // 展開状態を初期化（すべて折りたたみ）
       this.dependentExpandedStates = new Array(this.dependents.length).fill(false);
-      console.log('Loaded dependents:', this.dependents);
     } else {
       this.dependents = [];
       this.dependentExpandedStates = [];
-      console.log('No dependents found, initializing empty array');
     }
 
     // 氏名を姓・名に分割（既存データとの互換性を考慮）
@@ -2551,6 +2575,16 @@ export class HrDashboardComponent {
 
     // 残りのフィールドを設定
     this.employeeEditForm.patchValue(formData);
+    
+    // 添付資料のURLを保存（表示用）
+    this.existingResumeFileUrl = data.resumeFileUrl || null;
+    this.existingResumeFileName = data.resumeFile || null;
+    this.existingCareerHistoryFileUrl = data.careerHistoryFileUrl || null;
+    this.existingCareerHistoryFileName = data.careerHistoryFile || null;
+    this.existingBasicPensionNumberDocFileUrl = data.basicPensionNumberDocFileUrl || null;
+    this.existingBasicPensionNumberDocFileName = data.basicPensionNumberDocFile || null;
+    this.existingIdDocumentFileUrl = data.idDocumentFileUrl || null;
+    this.existingIdDocumentFileName = data.idDocumentFile || null;
     
     // 入社時申請の情報を設定（海外在住、住民票住所を記載しない理由、年金基金加入、坑内員）
     if (data.isOverseasResident !== undefined) {
@@ -2968,14 +3002,57 @@ export class HrDashboardComponent {
           notes: dep.notes || ''
         }));
 
-        // デバッグ用ログ
-        console.log('Saving dependents:', formData.dependents);
+        // ファイルをアップロード（新しいファイルが選択された場合）
+        if (this.resumeFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.resumeFile.name);
+          const resumePath = `employees/${this.selectedEmployeeNumber}/resume_${Date.now()}_${sanitizedFileName}`;
+          const resumeUrl = await this.firestoreService.uploadFile(this.resumeFile, resumePath);
+          formData.resumeFile = this.resumeFile.name;
+          formData.resumeFileUrl = resumeUrl;
+        } else if (this.existingResumeFileUrl) {
+          // 既存のファイルURLを保持
+          formData.resumeFileUrl = this.existingResumeFileUrl;
+          formData.resumeFile = this.existingResumeFileName || '';
+        }
+        
+        if (this.careerHistoryFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.careerHistoryFile.name);
+          const careerHistoryPath = `employees/${this.selectedEmployeeNumber}/careerHistory_${Date.now()}_${sanitizedFileName}`;
+          const careerHistoryUrl = await this.firestoreService.uploadFile(this.careerHistoryFile, careerHistoryPath);
+          formData.careerHistoryFile = this.careerHistoryFile.name;
+          formData.careerHistoryFileUrl = careerHistoryUrl;
+        } else if (this.existingCareerHistoryFileUrl) {
+          // 既存のファイルURLを保持
+          formData.careerHistoryFileUrl = this.existingCareerHistoryFileUrl;
+          formData.careerHistoryFile = this.existingCareerHistoryFileName || '';
+        }
+        
+        if (this.basicPensionNumberDocFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.basicPensionNumberDocFile.name);
+          const basicPensionNumberDocPath = `employees/${this.selectedEmployeeNumber}/basicPensionNumberDoc_${Date.now()}_${sanitizedFileName}`;
+          const basicPensionNumberDocUrl = await this.firestoreService.uploadFile(this.basicPensionNumberDocFile, basicPensionNumberDocPath);
+          formData.basicPensionNumberDocFile = this.basicPensionNumberDocFile.name;
+          formData.basicPensionNumberDocFileUrl = basicPensionNumberDocUrl;
+        } else if (this.existingBasicPensionNumberDocFileUrl) {
+          // 既存のファイルURLを保持
+          formData.basicPensionNumberDocFileUrl = this.existingBasicPensionNumberDocFileUrl;
+          formData.basicPensionNumberDocFile = this.existingBasicPensionNumberDocFileName || '';
+        }
+        
+        if (this.idDocumentFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.idDocumentFile.name);
+          const idDocumentPath = `employees/${this.selectedEmployeeNumber}/idDocument_${Date.now()}_${sanitizedFileName}`;
+          const idDocumentUrl = await this.firestoreService.uploadFile(this.idDocumentFile, idDocumentPath);
+          formData.idDocumentFile = this.idDocumentFile.name;
+          formData.idDocumentFileUrl = idDocumentUrl;
+        } else if (this.existingIdDocumentFileUrl) {
+          // 既存のファイルURLを保持
+          formData.idDocumentFileUrl = this.existingIdDocumentFileUrl;
+          formData.idDocumentFile = this.existingIdDocumentFileName || '';
+        }
 
         // undefinedの値を削除（サービス側でも処理されるが、事前に削除）
         const cleanedData = this.removeUndefinedValues(formData);
-        
-        // デバッグ用ログ
-        console.log('Cleaned data with dependents:', cleanedData.dependents);
 
         // Firestoreに保存（サービス側で最終的な正規化が行われる）
         await this.firestoreService.saveEmployeeData(this.selectedEmployeeNumber, cleanedData);
@@ -3015,7 +3092,6 @@ export class HrDashboardComponent {
   // 文書作成・管理ページ用のメソッド
   onDocumentTypeChange() {
     // 文書タイプが変更された時の処理（今後実装）
-    console.log('Selected document type:', this.selectedDocumentType);
   }
 
   onEmployeeSearch() {
@@ -3829,7 +3905,6 @@ export class HrDashboardComponent {
       await this.loadOnboardingEmployeeData(employee.employeeNumber);
     } catch (error) {
       console.error('Error opening onboarding employee modal:', error);
-      console.error('Employee:', employee);
     }
   }
   
@@ -4212,7 +4287,6 @@ export class HrDashboardComponent {
     }
     } catch (error) {
       console.error('Error populating onboarding employee edit form:', error);
-      console.error('Data:', data);
     }
   }
   
