@@ -133,6 +133,30 @@ export class HrDashboardComponent {
           try {
             const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
             if (employeeData) {
+              // フォームからlastNameとfirstNameを取得（新入社員詳細情報モーダルのフォームを参照）
+              // データベースにlastNameとfirstNameが存在する場合はそれを使用
+              // 存在しない場合は、nameから分割するのではなく、フォームの値を優先
+              if (!employeeData.lastName || !employeeData.firstName) {
+                // データベースにlastName/firstNameがない場合、nameから分割する
+                // ただし、これはフォールバック処理
+                if (employeeData.name) {
+                  const nameParts = employeeData.name.split(/[\s　]+/);
+                  if (nameParts.length >= 2) {
+                    employeeData.lastName = nameParts[0];
+                    employeeData.firstName = nameParts.slice(1).join(' ');
+                  }
+                }
+              }
+              // 同様にnameKanaも処理
+              if (!employeeData.lastNameKana || !employeeData.firstNameKana) {
+                if (employeeData.nameKana) {
+                  const nameKanaParts = employeeData.nameKana.split(/[\s　]+/);
+                  if (nameKanaParts.length >= 2) {
+                    employeeData.lastNameKana = nameKanaParts[0];
+                    employeeData.firstNameKana = nameKanaParts.slice(1).join(' ');
+                  }
+                }
+              }
               employeeDataArray.push(employeeData);
               employeeNames.push(`${employeeNumber}_${employee.name}`);
             } else {
@@ -214,6 +238,30 @@ export class HrDashboardComponent {
           try {
             const employeeData = await this.firestoreService.getOnboardingEmployee(employeeNumber);
             if (employeeData) {
+              // フォームからlastNameとfirstNameを取得（新入社員詳細情報モーダルのフォームを参照）
+              // データベースにlastNameとfirstNameが存在する場合はそれを使用
+              // 存在しない場合は、nameから分割するのではなく、フォームの値を優先
+              if (!employeeData.lastName || !employeeData.firstName) {
+                // データベースにlastName/firstNameがない場合、nameから分割する
+                // ただし、これはフォールバック処理
+                if (employeeData.name) {
+                  const nameParts = employeeData.name.split(/[\s　]+/);
+                  if (nameParts.length >= 2) {
+                    employeeData.lastName = nameParts[0];
+                    employeeData.firstName = nameParts.slice(1).join(' ');
+                  }
+                }
+              }
+              // 同様にnameKanaも処理
+              if (!employeeData.lastNameKana || !employeeData.firstNameKana) {
+                if (employeeData.nameKana) {
+                  const nameKanaParts = employeeData.nameKana.split(/[\s　]+/);
+                  if (nameKanaParts.length >= 2) {
+                    employeeData.lastNameKana = nameKanaParts[0];
+                    employeeData.firstNameKana = nameKanaParts.slice(1).join(' ');
+                  }
+                }
+              }
               employeeDataArray.push(employeeData);
               employeeNames.push(`${employeeNumber}_${employee.name}`);
               processedEmployees.push({ employeeNumber, employeeData });

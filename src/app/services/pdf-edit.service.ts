@@ -527,57 +527,51 @@ export class PdfEditService {
     }
     
     // ⑨被保険者氏名（フリガナ）※小さめのフォント、指定したX座標は要素の中心
-    const nameKana = employeeData.nameKana || '';
-    if (nameKana && hasJapaneseFont) {
-      // 姓と名を分割
-      const nameKanaParts = this.splitName(nameKana);
-      // 姓：(170,221) - X座標は要素の中心
-      if (nameKanaParts.lastName) {
-        const textWidth = this.getTextWidth(nameKanaParts.lastName, smallFontSize, font);
-        page.drawText(nameKanaParts.lastName, {
-          x: 170 - (textWidth / 2),
-          y: y(221),
-          size: smallFontSize,
-          font: font,
-        });
-      }
-      // 名：(280,221) - X座標は要素の中心
-      if (nameKanaParts.firstName) {
-        const textWidth = this.getTextWidth(nameKanaParts.firstName, smallFontSize, font);
-        page.drawText(nameKanaParts.firstName, {
-          x: 270 - (textWidth / 2),
-          y: y(221),
-          size: smallFontSize,
-          font: font,
-        });
-      }
+    // 必ずlastNameKanaとfirstNameKanaを使用（新入社員詳細情報モーダルのフォームから取得）
+    const lastNameKana = employeeData.lastNameKana || '';
+    const firstNameKana = employeeData.firstNameKana || '';
+    
+    if (lastNameKana && hasJapaneseFont) {
+      const textWidth = this.getTextWidth(lastNameKana, smallFontSize, font);
+      page.drawText(lastNameKana, {
+        x: 170 - (textWidth / 2),
+        y: y(221),
+        size: smallFontSize,
+        font: font,
+      });
+    }
+    if (firstNameKana && hasJapaneseFont) {
+      const textWidth = this.getTextWidth(firstNameKana, smallFontSize, font);
+      page.drawText(firstNameKana, {
+        x: 270 - (textWidth / 2),
+        y: y(221),
+        size: smallFontSize,
+        font: font,
+      });
     }
     
     // ⑩被保険者氏名（漢字）※指定したX座標は要素の中心
-    const name = employeeData.name || '';
-    if (name && hasJapaneseFont) {
-      // 姓と名を分割
-      const nameParts = this.splitName(name);
-      // 姓：(180,240) - X座標は要素の中心
-      if (nameParts.lastName) {
-        const textWidth = this.getTextWidth(nameParts.lastName, fontSize, font);
-        page.drawText(nameParts.lastName, {
-          x: 170 - (textWidth / 2),
-          y: y(240),
-          size: fontSize,
-          font: font,
-        });
-      }
-      // 名：(295,240) - X座標は要素の中心
-      if (nameParts.firstName) {
-        const textWidth = this.getTextWidth(nameParts.firstName, fontSize, font);
-        page.drawText(nameParts.firstName, {
-          x: 270 - (textWidth / 2),
-          y: y(240),
-          size: fontSize,
-          font: font,
-        });
-      }
+    // 必ずlastNameとfirstNameを使用（新入社員詳細情報モーダルのフォームから取得）
+    const lastName = employeeData.lastName || '';
+    const firstName = employeeData.firstName || '';
+    
+    if (lastName && hasJapaneseFont) {
+      const textWidth = this.getTextWidth(lastName, fontSize, font);
+      page.drawText(lastName, {
+        x: 170 - (textWidth / 2),
+        y: y(240),
+        size: fontSize,
+        font: font,
+      });
+    }
+    if (firstName && hasJapaneseFont) {
+      const textWidth = this.getTextWidth(firstName, fontSize, font);
+      page.drawText(firstName, {
+        x: 270 - (textWidth / 2),
+        y: y(240),
+        size: fontSize,
+        font: font,
+      });
     }
     
     // ⑪生年月日※昭和/平成/令和〇年〇月〇日方式、元号は指定の座標に直径8座標分の丸を付ける
