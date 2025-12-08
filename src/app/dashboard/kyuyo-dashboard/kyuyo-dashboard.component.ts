@@ -1071,17 +1071,12 @@ export class KyuyoDashboardComponent {
         this.insuranceList = employeeDetails
           .filter((emp: any) => emp && emp.employeeNumber && emp.name)
           .map((emp: any) => {
-            // 固定的賃金額を見込み給与額（給与）と見込み給与額（賞与）の合計にする
+            // 固定的賃金額を見込み給与額（給与）と見込み現物額の合計にする
             const expectedMonthlySalary = Number(emp.expectedMonthlySalary) || 0;
-            // 見込み給与額（賞与）は年額なので、月額に変換（12で割る）
-            // 賞与は年1回支給される想定で、年額を12で割って月額換算
-            // 新入社員データから賞与情報を取得（applicationDataからも取得を試みる）
-            const expectedAnnualBonus = Number(emp.expectedAnnualBonus) || 
-                                       Number(emp.applicationData?.expectedAnnualBonus) || 0;
-            const expectedMonthlyBonus = expectedAnnualBonus / 12;
+            const expectedMonthlySalaryInKind = Number(emp.expectedMonthlySalaryInKind) || 0;
             
-            // 固定的賃金額 = 見込み給与額（給与）+ 見込み給与額（賞与の月額換算）
-            const fixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
+            // 固定的賃金額 = 見込み給与額（給与）+ 見込み現物額
+            const fixedSalary = expectedMonthlySalary + expectedMonthlySalaryInKind;
             
             // 給与設定履歴から、現在の年月以前の最新の給与を取得
             // （給与設定は「その年月以降の給与を設定する」という意味）
@@ -1756,10 +1751,8 @@ export class KyuyoDashboardComponent {
               const employeeData = await this.firestoreService.getEmployeeData(item.employeeNumber);
               if (employeeData) {
                 const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
-                const expectedAnnualBonus = Number(employeeData.expectedAnnualBonus) || 
-                                           Number(employeeData.applicationData?.expectedAnnualBonus) || 0;
-                const expectedMonthlyBonus = expectedAnnualBonus / 12;
-                const initialFixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
+                const expectedMonthlySalaryInKind = Number(employeeData.expectedMonthlySalaryInKind) || 0;
+                const initialFixedSalary = expectedMonthlySalary + expectedMonthlySalaryInKind;
                 
                 const initialStandardInfo = this.calculateStandardMonthlySalary(initialFixedSalary);
                 standardMonthlySalary = initialStandardInfo ? initialStandardInfo.monthlyStandard : 0;
@@ -3792,10 +3785,8 @@ export class KyuyoDashboardComponent {
         } else {
           // 保険料一覧にない場合は、固定的賃金から計算
           const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
-          const expectedAnnualBonus = Number(employeeData.expectedAnnualBonus) || 
-                                     Number(employeeData.applicationData?.expectedAnnualBonus) || 0;
-          const expectedMonthlyBonus = expectedAnnualBonus / 12;
-          const fixedSalary = expectedMonthlySalary + expectedMonthlyBonus;
+          const expectedMonthlySalaryInKind = Number(employeeData.expectedMonthlySalaryInKind) || 0;
+          const fixedSalary = expectedMonthlySalary + expectedMonthlySalaryInKind;
           
           // 給与設定履歴から最新の給与を取得
           const relevantSalaries = this.salaryHistory

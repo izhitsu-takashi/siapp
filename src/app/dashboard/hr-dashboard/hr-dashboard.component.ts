@@ -2216,8 +2216,6 @@ export class HrDashboardComponent {
       
       // 業務情報
       employeeNumber: ['', Validators.required],
-      office: [''],
-      workContent: [''],
       employmentType: ['', Validators.required],
       paymentType: [''],
       
@@ -2229,13 +2227,11 @@ export class HrDashboardComponent {
       currentAddress: ['', Validators.required],
       currentAddressKana: ['', Validators.required],
       phoneNumber: ['', [Validators.required, Validators.pattern(/^\d{1,11}$/)]],
-      currentHouseholdHead: [''],
       
       // 住民票住所
       sameAsCurrentAddress: [false],
       residentAddress: ['', Validators.required],
       residentAddressKana: ['', Validators.required],
-      residentHouseholdHead: ['', Validators.required],
       
       // 緊急連絡先
       emergencyContact: this.fb.group({
@@ -2431,23 +2427,19 @@ export class HrDashboardComponent {
       if (this.sameAsCurrentAddress && data.currentAddress) {
         this.employeeEditForm.patchValue({
           residentAddress: data.residentAddress || data.currentAddress,
-          residentAddressKana: data.residentAddressKana || data.currentAddressKana || '',
-          residentHouseholdHead: data.residentHouseholdHead || data.currentHouseholdHead || ''
+          residentAddressKana: data.residentAddressKana || data.currentAddressKana || ''
         });
         // コントロールを無効化
         this.employeeEditForm.get('residentAddress')?.disable();
         this.employeeEditForm.get('residentAddressKana')?.disable();
-        this.employeeEditForm.get('residentHouseholdHead')?.disable();
       } else if (data.residentAddress) {
         this.employeeEditForm.patchValue({
           residentAddress: data.residentAddress,
-          residentAddressKana: data.residentAddressKana || '',
-          residentHouseholdHead: data.residentHouseholdHead || ''
+          residentAddressKana: data.residentAddressKana || ''
         });
         // コントロールを有効化
         this.employeeEditForm.get('residentAddress')?.enable();
         this.employeeEditForm.get('residentAddressKana')?.enable();
-        this.employeeEditForm.get('residentHouseholdHead')?.enable();
       }
     }
 
@@ -2653,7 +2645,6 @@ export class HrDashboardComponent {
     if (this.sameAsCurrentAddress) {
       this.employeeEditForm.get('residentAddress')?.disable();
       this.employeeEditForm.get('residentAddressKana')?.disable();
-      this.employeeEditForm.get('residentHouseholdHead')?.disable();
     }
     
     // sameAsCurrentAddressForEmergencyがtrueの場合、緊急連絡先住所フィールドを無効化
@@ -2692,29 +2683,24 @@ export class HrDashboardComponent {
     // フォームコントロールのdisable/enableを使用（[disabled]属性の警告を回避）
     const residentAddressControl = this.employeeEditForm.get('residentAddress');
     const residentAddressKanaControl = this.employeeEditForm.get('residentAddressKana');
-    const residentHouseholdHeadControl = this.employeeEditForm.get('residentHouseholdHead');
     
     if (isChecked) {
       // 現住所の値を住民票住所にコピー
       const currentAddress = this.employeeEditForm.get('currentAddress')?.value || '';
       const currentAddressKana = this.employeeEditForm.get('currentAddressKana')?.value || '';
-      const currentHouseholdHead = this.employeeEditForm.get('currentHouseholdHead')?.value || '';
       
       this.employeeEditForm.patchValue({
         residentAddress: currentAddress,
-        residentAddressKana: currentAddressKana,
-        residentHouseholdHead: currentHouseholdHead
+        residentAddressKana: currentAddressKana
       });
       
       // コントロールを無効化
       residentAddressControl?.disable();
       residentAddressKanaControl?.disable();
-      residentHouseholdHeadControl?.disable();
     } else {
       // コントロールを有効化
       residentAddressControl?.enable();
       residentAddressKanaControl?.enable();
-      residentHouseholdHeadControl?.enable();
     }
   }
 
@@ -2944,8 +2930,8 @@ export class HrDashboardComponent {
         ];
         const basicPensionNumber = basicPensionNumberParts.join('');
 
-        // フォームデータを準備
-        const formValue = this.employeeEditForm.value;
+        // フォームデータを準備（disabled状態のフィールドも含めるため、getRawValue()を使用）
+        const formValue = this.employeeEditForm.getRawValue();
         const formData: any = {
           ...formValue,
           myNumber: myNumber || null,
@@ -2958,16 +2944,6 @@ export class HrDashboardComponent {
         };
 
         // sameAsCurrentAddressがtrueの場合、現住所の値を住民票住所にコピー
-        if (this.sameAsCurrentAddress) {
-          const currentAddress = this.employeeEditForm.get('currentAddress')?.value || '';
-          const currentAddressKana = this.employeeEditForm.get('currentAddressKana')?.value || '';
-          const currentHouseholdHead = this.employeeEditForm.get('currentHouseholdHead')?.value || '';
-          formData.residentAddress = currentAddress;
-          formData.residentAddressKana = currentAddressKana;
-          formData.residentHouseholdHead = currentHouseholdHead;
-        }
-
-        // sameAsCurrentAddressがtrueの場合、住民票住所を現住所と同じにする
         if (this.sameAsCurrentAddress) {
           const currentAddress = this.employeeEditForm.get('currentAddress')?.value || '';
           const currentAddressKana = this.employeeEditForm.get('currentAddressKana')?.value || '';
@@ -4989,7 +4965,6 @@ export class HrDashboardComponent {
       // 住民票住所（現住所と同じの場合は現住所を使用）
       residentAddress: employeeData.sameAsCurrentAddress ? employeeData.currentAddress : employeeData.residentAddress,
       residentAddressKana: employeeData.sameAsCurrentAddress ? employeeData.currentAddressKana : employeeData.residentAddressKana,
-      residentHouseholdHead: employeeData.residentHouseholdHead,
       // 社会保険
       healthInsuranceNumber: employeeData.healthInsuranceNumber,
       pensionInsuranceNumber: employeeData.pensionInsuranceNumber,

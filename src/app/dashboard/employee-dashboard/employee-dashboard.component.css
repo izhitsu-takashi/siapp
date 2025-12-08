@@ -446,6 +446,11 @@
   color: #084298;
 }
 
+.status-submitted {
+  background: #e7f3ff;
+  color: #0066cc;
+}
+
 .empty-message {
   text-align: center;
   color: #999;

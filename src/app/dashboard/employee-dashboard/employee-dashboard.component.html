@@ -910,6 +910,7 @@
                               [class.status-pending]="application.status === '承認待ち'"
                               [class.status-reviewing]="application.status === '確認中'"
                               [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
+                              [class.status-submitted]="application.status === '申請済み'"
                               [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
                               [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
                           {{ application.status }}
@@ -3117,6 +3118,7 @@
               <span class="status-badge" 
                     [class.status-pending]="selectedApplication.status === '承認待ち'"
                     [class.status-approved]="selectedApplication.status === '承認' || selectedApplication.status === '承認済み'"
+                    [class.status-submitted]="selectedApplication.status === '申請済み'"
                     [class.status-rejected]="selectedApplication.status === '却下' || selectedApplication.status === '差し戻し'"
                     [class.status-resubmitted]="selectedApplication.status === '再申請' || selectedApplication.status === '再提出'">
                 {{ selectedApplication.status }}
@@ -4158,16 +4160,6 @@
                   </div>
                 </div>
               </div>
-              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)">
-                <span class="detail-label">世帯主（本人/親族）:</span>
-                <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.currentHouseholdHead || '-' }}</span>
-                <div *ngIf="isInEditMode()" class="detail-edit-input">
-                  <select formControlName="currentHouseholdHead" class="form-input">
-                    <option value="">選択してください</option>
-                    <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-                  </select>
-                </div>
-              </div>
             </div>
           </section>
           
@@ -4219,16 +4211,6 @@
                     <span *ngIf="onboardingApplicationForm.get('residentAddressKana')?.errors?.['required']">住所（ヨミガナ）を入力してください</span>
                     <span *ngIf="onboardingApplicationForm.get('residentAddressKana')?.errors?.['katakana']">カタカナで入力してください</span>
                   </div>
-                </div>
-              </div>
-              <div class="detail-item" *ngIf="(!selectedApplication.isOverseasResident || (isInEditMode() && !onboardingApplicationForm.get('isOverseasResident')?.value)) && (!selectedApplication.skipResidentAddress || (isInEditMode() && !onboardingApplicationForm.get('skipResidentAddress')?.value))">
-                <span class="detail-label">世帯主（本人/親族）:</span>
-                <span class="detail-value" *ngIf="isInViewMode()">{{ selectedApplication.residentHouseholdHead || '-' }}</span>
-                <div *ngIf="isInEditMode()" class="detail-edit-input">
-                  <select formControlName="residentHouseholdHead" class="form-input">
-                    <option value="">選択してください</option>
-                    <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-                  </select>
                 </div>
               </div>
             </div>
@@ -4688,10 +4670,6 @@
                 <span class="detail-label">電話番号:</span>
                 <span class="detail-value">{{ selectedApplication.phoneNumber || '-' }}</span>
               </div>
-              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident">
-                <span class="detail-label">世帯主（本人/親族）:</span>
-                <span class="detail-value">{{ selectedApplication.currentHouseholdHead || '-' }}</span>
-              </div>
             </div>
           </section>
           
@@ -4718,10 +4696,6 @@
               <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident && !selectedApplication.skipResidentAddress">
                 <span class="detail-label">住所（ヨミガナ）:</span>
                 <span class="detail-value">{{ selectedApplication.residentAddressKana || '-' }}</span>
-              </div>
-              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident && !selectedApplication.skipResidentAddress">
-                <span class="detail-label">世帯主（本人/親族）:</span>
-                <span class="detail-value">{{ selectedApplication.residentHouseholdHead || '-' }}</span>
               </div>
             </div>
           </section>
