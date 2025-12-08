@@ -44,7 +44,7 @@ export class LoginComponent {
       this.loginForm.get('email')?.updateValueAndValidity();
       this.loginForm.get('username')?.clearValidators();
       this.loginForm.get('username')?.updateValueAndValidity();
-      this.loginForm.get('password')?.setValidators([]); // 従業員はパスワード任意
+      this.loginForm.get('password')?.setValidators([Validators.required]); // 従業員はパスワード必須
       this.loginForm.get('password')?.updateValueAndValidity();
     } else {
       this.loginForm.get('email')?.clearValidators();
@@ -66,18 +66,34 @@ export class LoginComponent {
 
       try {
         if (this.loginType === 'employee') {
-          // 従業員ログイン: メールアドレスのみで認証
+          // 従業員ログイン: メールアドレスとパスワードで認証
           const email = this.loginForm.value.email;
+          const password = this.loginForm.value.password;
           
           const employee = await this.firestoreService.getEmployeeByEmail(email);
           
           if (employee) {
-            // ログイン成功: 社員番号をセッションストレージに保存（ブラウザ環境でのみ）
-            if (employee.employeeNumber && isPlatformBrowser(this.platformId)) {
-              sessionStorage.setItem('employeeNumber', employee.employeeNumber);
-              sessionStorage.setItem('employeeName', employee.name || '');
+            // パスワードを確認
+            // パスワードが設定されていない場合、社員番号を初期パスワードとして使用
+            const expectedPassword = employee.password || employee.employeeNumber || '';
+            
+            if (password === expectedPassword) {
+              // ログイン成功: 社員番号をセッションストレージに保存（ブラウザ環境でのみ）
+              if (employee.employeeNumber && isPlatformBrowser(this.platformId)) {
+                sessionStorage.setItem('employeeNumber', employee.employeeNumber);
+                const employeeName = employee.name || (employee.lastName && employee.firstName ? employee.lastName + employee.firstName : '');
+                sessionStorage.setItem('employeeName', employeeName);
+              }
+              
+              // 初期パスワードの場合はパスワード変更ページにリダイレクト
+              if (employee.isInitialPassword === true || !employee.password) {
+                this.router.navigate(['/dashboard/employee'], { queryParams: { initialPassword: 'true' } });
+              } else {
+                this.router.navigate(['/dashboard/employee']);
+              }
+            } else {
+              this.errorMessage = 'メールアドレスまたはパスワードが正しくありません。';
             }
-            this.router.navigate(['/dashboard/employee']);
           } else {
             this.errorMessage = 'このメールアドレスは登録されていません。社員情報管理で登録されているメールアドレスでログインしてください。';
           }

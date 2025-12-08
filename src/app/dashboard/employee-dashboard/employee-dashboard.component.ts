@@ -2860,7 +2860,10 @@ export class EmployeeDashboardComponent {
           return;
         }
 
-        if (employeeData.password !== currentPassword) {
+        // パスワードが設定されていない場合、社員番号を初期パスワードとして使用
+        const expectedPassword = employeeData.password || employeeData.employeeNumber || '';
+        
+        if (currentPassword !== expectedPassword) {
           alert('現在のパスワードが正しくありません');
           return;
         }

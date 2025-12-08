@@ -35,7 +35,7 @@
     
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group" *ngIf="loginType === 'employee'">
-        <label for="email">メールアドレス</label>
+        <label for="email">メールアドレス <span class="required">*</span></label>
         <input
           type="email"
           id="email"
@@ -52,6 +52,25 @@
           </span>
           <span *ngIf="loginForm.get('email')?.errors?.['email']">
             有効なメールアドレスを入力してください
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="loginType === 'employee'">
+        <label for="password-employee">パスワード <span class="required">*</span></label>
+        <input
+          type="password"
+          id="password-employee"
+          formControlName="password"
+          class="form-input"
+          placeholder="パスワードを入力"
+        />
+        <div
+          *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          class="error-message"
+        >
+          <span *ngIf="loginForm.get('password')?.errors?.['required']">
+            パスワードを入力してください
           </span>
         </div>
       </div>
