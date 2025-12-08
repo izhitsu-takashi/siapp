@@ -3062,8 +3062,10 @@
               [ngModel]="pendingOnboardingStatus || selectedOnboardingEmployee?.status"
               [ngModelOptions]="{standalone: true}"
               (ngModelChange)="onOnboardingStatusChange($event)"
+              [disabled]="(pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '申請待ち'"
             >
-              <option value="申請待ち">申請待ち</option>
+              <option *ngIf="(pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '申請待ち'" value="申請待ち">申請待ち</option>
+              <option *ngIf="(pendingOnboardingStatus || selectedOnboardingEmployee?.status) !== '申請待ち'" value="申請待ち" disabled>申請待ち</option>
               <option value="申請済み">申請済み</option>
               <option value="差し戻し">差し戻し</option>
               <option value="準備完了">準備完了</option>
