@@ -3258,7 +3258,11 @@ export class EmployeeDashboardComponent {
         newFirstNameKana: application.newName?.firstNameKana || ''
       });
     } else if (application.applicationType === '産前産後休業申請') {
-      this.maternityLeaveForm = this.createMaternityLeaveForm();
+      // フォームは既に初期化されている前提（enableEditModeで初期化済み）
+      if (!this.maternityLeaveForm) {
+        this.maternityLeaveForm = this.createMaternityLeaveForm();
+      }
+      
       this.maternityLeaveForm.patchValue({
         expectedDeliveryDate: application.expectedDeliveryDate || '',
         isMultipleBirth: application.isMultipleBirth || '',
@@ -3266,6 +3270,9 @@ export class EmployeeDashboardComponent {
         maternityLeaveEndDate: application.maternityLeaveEndDate || application.postMaternityLeaveEndDate || '',
         stayAddress: application.stayAddress || ''
       });
+      
+      // バリデーションを再実行
+      this.maternityLeaveForm.updateValueAndValidity();
     } else if (application.applicationType === '退職申請') {
       this.resignationForm = this.createResignationForm();
       this.resignationForm.patchValue({
@@ -3294,6 +3301,9 @@ export class EmployeeDashboardComponent {
       if (this.sameAsCurrentEmailForResignation) {
         this.onSameAsCurrentEmailForResignationChange({ target: { checked: true } });
       }
+      
+      // バリデーションを再実行
+      this.resignationForm.updateValueAndValidity();
     } else if (application.applicationType === 'マイナンバー変更申請') {
       // フォームは既に初期化されている前提（enableEditModeで初期化済み）
       if (!this.myNumberChangeForm) {

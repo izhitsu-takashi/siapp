@@ -4300,102 +4300,292 @@
       
       <!-- 産前産後休業申請の詳細 -->
       <ng-container *ngIf="selectedApplication.applicationType === '産前産後休業申請'">
-        <!-- 出産予定日 -->
-        <section class="detail-section">
-          <h3 class="section-title">出産予定日</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">出産予定日:</span>
-              <span class="detail-value">{{ selectedApplication.expectedDeliveryDate || '-' }}</span>
+        <!-- 編集フォーム（差し戻しの場合） -->
+        <form [formGroup]="maternityLeaveForm" (ngSubmit)="submitReapplication()" *ngIf="maternityLeaveForm && isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
+          <!-- 出産予定日 -->
+          <section class="detail-section">
+            <h3 class="section-title">出産予定日 <span class="required">*</span></h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">出産予定日 <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input type="date" formControlName="expectedDeliveryDate" class="form-input">
+                  <div *ngIf="maternityLeaveForm.get('expectedDeliveryDate')?.invalid && maternityLeaveForm.get('expectedDeliveryDate')?.touched" class="error-message">
+                    出産予定日を入力してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">双子以上か:</span>
+                <div class="detail-edit-input">
+                  <select formControlName="isMultipleBirth" class="form-input">
+                    <option value="">選択してください</option>
+                    <option value="いいえ">いいえ</option>
+                    <option value="はい">はい</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">双子以上か:</span>
-              <span class="detail-value">{{ selectedApplication.isMultipleBirth || '-' }}</span>
+          </section>
+          
+          <!-- 産前産後休業期間 -->
+          <section class="detail-section">
+            <h3 class="section-title">産前産後休業期間</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">産前産後休業開始日:</span>
+                <div class="detail-edit-input">
+                  <input type="date" formControlName="maternityLeaveStartDate" class="form-input">
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">産前産後休業終了日:</span>
+                <div class="detail-edit-input">
+                  <input type="date" formControlName="maternityLeaveEndDate" class="form-input">
+                </div>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">出産予定日を確認できる書類添付:</span>
-              <span class="detail-value">{{ selectedApplication.hasDocument ? 'あり' : 'なし' }}</span>
+          </section>
+          
+          <!-- 休業中の滞在先 -->
+          <section class="detail-section">
+            <h3 class="section-title">休業中の滞在先</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">休業中の滞在先（現住所と異なる場合）:</span>
+                <div class="detail-edit-input">
+                  <textarea formControlName="stayAddress" class="form-input" rows="2"></textarea>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </form>
         
-        <!-- 産前産後休業期間 -->
-        <section class="detail-section">
-          <h3 class="section-title">産前産後休業期間</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">産前産後休業開始日:</span>
-              <span class="detail-value">{{ selectedApplication.maternityLeaveStartDate || selectedApplication.preMaternityLeaveStartDate || '-' }}</span>
+        <!-- 表示モード（編集モードでない場合） -->
+        <ng-container *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+          <!-- 出産予定日 -->
+          <section class="detail-section">
+            <h3 class="section-title">出産予定日</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">出産予定日:</span>
+                <span class="detail-value">{{ selectedApplication.expectedDeliveryDate || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">双子以上か:</span>
+                <span class="detail-value">{{ selectedApplication.isMultipleBirth || '-' }}</span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">産前産後休業終了日:</span>
-              <span class="detail-value">{{ selectedApplication.maternityLeaveEndDate || selectedApplication.postMaternityLeaveEndDate || '-' }}</span>
+          </section>
+          
+          <!-- 産前産後休業期間 -->
+          <section class="detail-section">
+            <h3 class="section-title">産前産後休業期間</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">産前産後休業開始日:</span>
+                <span class="detail-value">{{ selectedApplication.maternityLeaveStartDate || selectedApplication.preMaternityLeaveStartDate || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">産前産後休業終了日:</span>
+                <span class="detail-value">{{ selectedApplication.maternityLeaveEndDate || selectedApplication.postMaternityLeaveEndDate || '-' }}</span>
+              </div>
             </div>
-          </div>
-        </section>
-        
-        <!-- 休業中の滞在先 -->
-        <section class="detail-section" *ngIf="selectedApplication.stayAddress">
-          <h3 class="section-title">休業中の滞在先</h3>
-          <div class="detail-grid">
-            <div class="detail-item full-width">
-              <span class="detail-label">休業中の滞在先（現住所と異なる場合）:</span>
-              <span class="detail-value">{{ selectedApplication.stayAddress }}</span>
+          </section>
+          
+          <!-- 休業中の滞在先 -->
+          <section class="detail-section" *ngIf="selectedApplication.stayAddress">
+            <h3 class="section-title">休業中の滞在先</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">休業中の滞在先（現住所と異なる場合）:</span>
+                <span class="detail-value">{{ selectedApplication.stayAddress }}</span>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </ng-container>
       </ng-container>
       
       <!-- 退職申請の詳細 -->
       <ng-container *ngIf="selectedApplication.applicationType === '退職申請'">
-        <!-- 退職日・最終出社日 -->
-        <section class="detail-section">
-          <h3 class="section-title">退職情報</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">退職日:</span>
-              <span class="detail-value">{{ selectedApplication.resignationDate || '-' }}</span>
+        <!-- 編集フォーム（差し戻しの場合） -->
+        <form [formGroup]="resignationForm" (ngSubmit)="submitReapplication()" *ngIf="resignationForm && isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
+          <!-- 退職日・最終出社日 -->
+          <section class="detail-section">
+            <h3 class="section-title">退職情報 <span class="required">*</span></h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">退職日 <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input type="date" formControlName="resignationDate" class="form-input" [min]="minResignationDate">
+                  <div *ngIf="resignationForm.get('resignationDate')?.invalid && resignationForm.get('resignationDate')?.touched" class="error-message">
+                    <span *ngIf="resignationForm.get('resignationDate')?.errors?.['required']">退職日を入力してください</span>
+                    <span *ngIf="resignationForm.get('resignationDate')?.errors?.['pastDate']">退職日は今日以降の日付を入力してください</span>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">最終出社日 <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input type="date" formControlName="lastWorkDate" class="form-input" [max]="maxLastWorkDate">
+                  <div *ngIf="resignationForm.get('lastWorkDate')?.invalid && resignationForm.get('lastWorkDate')?.touched" class="error-message">
+                    <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['required']">最終出社日を入力してください</span>
+                    <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['futureDate']">最終出社日は退職日以前の日付を入力してください</span>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">退職事由:</span>
+                <div class="detail-edit-input">
+                  <textarea formControlName="resignationReason" class="form-input" rows="3"></textarea>
+                </div>
+              </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">離職票の発行について:</span>
+                <div class="detail-edit-input">
+                  <textarea formControlName="separationNotice" class="form-input" rows="2"></textarea>
+                </div>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">最終出社日:</span>
-              <span class="detail-value">{{ selectedApplication.lastWorkDate || '-' }}</span>
+          </section>
+          
+          <!-- 退職後の連絡先 -->
+          <section class="detail-section">
+            <h3 class="section-title">退職後の連絡先</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    [checked]="sameAsCurrentAddressForResignation"
+                    (change)="onSameAsCurrentAddressForResignationChange($event)"
+                  >
+                  現住所と同じ
+                </label>
+              </div>
+              <div class="detail-item full-width" *ngIf="!sameAsCurrentAddressForResignation">
+                <span class="detail-label">退職後の住所:</span>
+                <div class="detail-edit-input">
+                  <textarea formControlName="postResignationAddress" class="form-input" rows="2"></textarea>
+                </div>
+              </div>
+              <div class="detail-item full-width">
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    [checked]="sameAsCurrentPhoneForResignation"
+                    (change)="onSameAsCurrentPhoneForResignationChange($event)"
+                  >
+                  現電話番号と同じ
+                </label>
+              </div>
+              <div class="detail-item" *ngIf="!sameAsCurrentPhoneForResignation">
+                <span class="detail-label">退職後の電話番号:</span>
+                <div class="detail-edit-input">
+                  <input type="tel" formControlName="postResignationPhone" class="form-input">
+                </div>
+              </div>
+              <div class="detail-item full-width">
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    [checked]="sameAsCurrentEmailForResignation"
+                    (change)="onSameAsCurrentEmailForResignationChange($event)"
+                  >
+                  現メールアドレスと同じ
+                </label>
+              </div>
+              <div class="detail-item" *ngIf="!sameAsCurrentEmailForResignation">
+                <span class="detail-label">退職後のメールアドレス:</span>
+                <div class="detail-edit-input">
+                  <input type="email" formControlName="postResignationEmail" class="form-input">
+                </div>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">離職票の発行について:</span>
-              <span class="detail-value">{{ selectedApplication.separationNotice || '-' }}</span>
+          </section>
+          
+          <!-- 退職後の社会保険加入 -->
+          <section class="detail-section">
+            <h3 class="section-title">退職後の社会保険加入 <span class="required">*</span></h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <div class="detail-edit-input">
+                  <label class="radio-label">
+                    <input type="radio" formControlName="postResignationInsurance" value="社会保険を任意継続する">
+                    社会保険を任意継続する
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="postResignationInsurance" value="国民健康保険に加入する">
+                    国民健康保険に加入する
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="postResignationInsurance" value="他社で社会保険に加入する">
+                    他社で社会保険に加入する
+                  </label>
+                  <div *ngIf="resignationForm.get('postResignationInsurance')?.invalid && resignationForm.get('postResignationInsurance')?.touched" class="error-message">
+                    退職後の社会保険加入を選択してください
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </form>
         
-        <!-- 退職後の連絡先 -->
-        <section class="detail-section">
-          <h3 class="section-title">退職後の連絡先</h3>
-          <div class="detail-grid">
-            <div class="detail-item full-width">
-              <span class="detail-label">退職後の住所:</span>
-              <span class="detail-value">{{ selectedApplication.postResignationAddress || '-' }}</span>
+        <!-- 表示モード（編集モードでない場合） -->
+        <ng-container *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+          <!-- 退職日・最終出社日 -->
+          <section class="detail-section">
+            <h3 class="section-title">退職情報</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">退職日:</span>
+                <span class="detail-value">{{ selectedApplication.resignationDate || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">最終出社日:</span>
+                <span class="detail-value">{{ selectedApplication.lastWorkDate || '-' }}</span>
+              </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">退職事由:</span>
+                <span class="detail-value">{{ selectedApplication.resignationReason || '-' }}</span>
+              </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">離職票の発行について:</span>
+                <span class="detail-value">{{ selectedApplication.separationNotice || '-' }}</span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">退職後の電話番号:</span>
-              <span class="detail-value">{{ selectedApplication.postResignationPhone || '-' }}</span>
+          </section>
+          
+          <!-- 退職後の連絡先 -->
+          <section class="detail-section">
+            <h3 class="section-title">退職後の連絡先</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">退職後の住所:</span>
+                <span class="detail-value">{{ selectedApplication.postResignationAddress || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">退職後の電話番号:</span>
+                <span class="detail-value">{{ selectedApplication.postResignationPhone || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">退職後のメールアドレス:</span>
+                <span class="detail-value">{{ selectedApplication.postResignationEmail || '-' }}</span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">退職後のメールアドレス:</span>
-              <span class="detail-value">{{ selectedApplication.postResignationEmail || '-' }}</span>
+          </section>
+          
+          <!-- 退職後の社会保険加入 -->
+          <section class="detail-section">
+            <h3 class="section-title">退職後の社会保険加入</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">退職後の社会保険加入:</span>
+                <span class="detail-value">{{ selectedApplication.postResignationInsurance || '-' }}</span>
+              </div>
             </div>
-          </div>
-        </section>
-        
-        <!-- 退職後の社会保険加入 -->
-        <section class="detail-section">
-          <h3 class="section-title">退職後の社会保険加入</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">退職後の社会保険加入:</span>
-              <span class="detail-value">{{ selectedApplication.postResignationInsurance || '-' }}</span>
-            </div>
-          </div>
-        </section>
+          </section>
+        </ng-container>
       </ng-container>
       
       <!-- 入社時申請の詳細（表示モード・編集モード） -->
