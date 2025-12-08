@@ -185,6 +185,17 @@
                     </button>
                   </div>
                 </div>
+                <div class="form-group full-width">
+                  <label>マイナンバーカード添付</label>
+                  <div *ngIf="employeeData?.myNumberCardFileUrl" class="file-info">
+                    <a [href]="employeeData.myNumberCardFileUrl" target="_blank" class="file-link">
+                      {{ employeeData.myNumberCardFile || 'マイナンバーカードを開く' }}
+                    </a>
+                  </div>
+                  <div *ngIf="!employeeData?.myNumberCardFileUrl" class="file-info">
+                    <span class="no-file-message">添付ファイルがありません</span>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -3994,50 +4005,152 @@
       
       <!-- マイナンバー変更申請の詳細 -->
       <ng-container *ngIf="selectedApplication.applicationType === 'マイナンバー変更申請'">
-        <!-- マイナンバー変更した日 -->
-        <section class="detail-section">
-          <h3 class="section-title">マイナンバー変更した日</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">マイナンバー変更した日:</span>
-              <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
+        <!-- 編集フォーム（差し戻しの場合） -->
+        <form [formGroup]="myNumberChangeForm" (ngSubmit)="submitReapplication()" *ngIf="myNumberChangeForm && isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
+          <!-- マイナンバー変更した日 -->
+          <section class="detail-section">
+            <h3 class="section-title">マイナンバー変更した日 <span class="required">*</span></h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">マイナンバー変更した日:</span>
+                <div class="detail-edit-input">
+                  <input type="date" formControlName="changeDate" class="form-input">
+                  <div *ngIf="myNumberChangeForm.get('changeDate')?.invalid && myNumberChangeForm.get('changeDate')?.touched" class="error-message">
+                    マイナンバー変更した日を入力してください
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+          
+          <!-- 新しいマイナンバー -->
+          <section class="detail-section">
+            <h3 class="section-title">新しいマイナンバー <span class="required">*</span></h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">1-4桁目:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="text" 
+                    formControlName="newMyNumberPart1" 
+                    class="form-input"
+                    maxlength="4"
+                    pattern="[0-9]*"
+                    inputmode="numeric"
+                  >
+                  <div *ngIf="myNumberChangeForm.get('newMyNumberPart1')?.invalid && myNumberChangeForm.get('newMyNumberPart1')?.touched" class="error-message">
+                    4桁の数字を入力してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">5-8桁目:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="text" 
+                    formControlName="newMyNumberPart2" 
+                    class="form-input"
+                    maxlength="4"
+                    pattern="[0-9]*"
+                    inputmode="numeric"
+                  >
+                  <div *ngIf="myNumberChangeForm.get('newMyNumberPart2')?.invalid && myNumberChangeForm.get('newMyNumberPart2')?.touched" class="error-message">
+                    4桁の数字を入力してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">9-12桁目:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="text" 
+                    formControlName="newMyNumberPart3" 
+                    class="form-input"
+                    maxlength="4"
+                    pattern="[0-9]*"
+                    inputmode="numeric"
+                  >
+                  <div *ngIf="myNumberChangeForm.get('newMyNumberPart3')?.invalid && myNumberChangeForm.get('newMyNumberPart3')?.touched" class="error-message">
+                    4桁の数字を入力してください
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- マイナンバーカード -->
+          <section class="detail-section">
+            <h3 class="section-title">マイナンバーカード</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">マイナンバーカード:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    class="form-input"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'myNumberChangeCard')"
+                  >
+                  <div *ngIf="myNumberChangeCardFile" class="file-name">{{ myNumberChangeCardFile.name }}</div>
+                  <div *ngIf="selectedApplication.myNumberCardFileUrl && !myNumberChangeCardFile" class="file-info" style="margin-top: 0.5rem;">
+                    <span>既存ファイル: </span>
+                    <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                      {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </form>
         
-        <!-- 新しいマイナンバー -->
-        <section class="detail-section" *ngIf="selectedApplication.newMyNumber">
-          <h3 class="section-title">新しいマイナンバー</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">1-4桁目:</span>
-              <span class="detail-value">{{ selectedApplication.newMyNumber.part1 || '-' }}</span>
+        <!-- 表示モード（差し戻しでない場合、または編集モードでない場合） -->
+        <ng-container *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+          <!-- マイナンバー変更した日 -->
+          <section class="detail-section">
+            <h3 class="section-title">マイナンバー変更した日</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">マイナンバー変更した日:</span>
+                <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">5-8桁目:</span>
-              <span class="detail-value">{{ selectedApplication.newMyNumber.part2 || '-' }}</span>
+          </section>
+          
+          <!-- 新しいマイナンバー -->
+          <section class="detail-section" *ngIf="selectedApplication.newMyNumber">
+            <h3 class="section-title">新しいマイナンバー</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">1-4桁目:</span>
+                <span class="detail-value">{{ selectedApplication.newMyNumber.part1 || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">5-8桁目:</span>
+                <span class="detail-value">{{ selectedApplication.newMyNumber.part2 || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">9-12桁目:</span>
+                <span class="detail-value">{{ selectedApplication.newMyNumber.part3 || '-' }}</span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">9-12桁目:</span>
-              <span class="detail-value">{{ selectedApplication.newMyNumber.part3 || '-' }}</span>
+          </section>
+          
+          <!-- マイナンバーカード -->
+          <section class="detail-section" *ngIf="selectedApplication.myNumberCardFileUrl">
+            <h3 class="section-title">マイナンバーカード</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">マイナンバーカード:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                  </a>
+                </span>
+              </div>
             </div>
-          </div>
-        </section>
-        
-        <!-- マイナンバーカード -->
-        <section class="detail-section" *ngIf="selectedApplication.myNumberCardFileUrl">
-          <h3 class="section-title">マイナンバーカード</h3>
-          <div class="detail-grid">
-            <div class="detail-item full-width">
-              <span class="detail-label">マイナンバーカード:</span>
-              <span class="detail-value">
-                <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
-                  {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
-                </a>
-              </span>
-            </div>
-          </div>
-        </section>
+          </section>
+        </ng-container>
       </ng-container>
       
       <!-- 氏名変更申請の詳細 -->
@@ -5138,7 +5251,7 @@
       </ng-container>
       
       <!-- その他の申請タイプの詳細（今後実装） -->
-      <ng-container *ngIf="selectedApplication.applicationType !== '扶養家族追加' && selectedApplication.applicationType !== '扶養削除申請' && selectedApplication.applicationType !== '住所変更申請' && selectedApplication.applicationType !== '氏名変更申請' && selectedApplication.applicationType !== '産前産後休業申請' && selectedApplication.applicationType !== '退職申請' && selectedApplication.applicationType !== '保険証再発行申請' && selectedApplication.applicationType !== '入社時申請'">
+      <ng-container *ngIf="selectedApplication.applicationType !== '扶養家族追加' && selectedApplication.applicationType !== '扶養削除申請' && selectedApplication.applicationType !== '住所変更申請' && selectedApplication.applicationType !== '氏名変更申請' && selectedApplication.applicationType !== '産前産後休業申請' && selectedApplication.applicationType !== '退職申請' && selectedApplication.applicationType !== '保険証再発行申請' && selectedApplication.applicationType !== '入社時申請' && selectedApplication.applicationType !== 'マイナンバー変更申請'">
         <section class="detail-section">
           <p class="no-detail-message">この申請タイプの詳細表示は今後実装予定です。</p>
         </section>

@@ -542,7 +542,7 @@ export class FirestoreService {
     }
   }
 
-  async resubmitApplication(applicationId: string, applicationData: any): Promise<void> {
+  async resubmitApplication(applicationId: string, applicationData: any, newStatus: string = '承認待ち'): Promise<void> {
     try {
       const applicationsCollection = collection(this.db, 'applications');
       const querySnapshot = await getDocs(applicationsCollection);
@@ -559,8 +559,8 @@ export class FirestoreService {
         throw new Error('Application not found');
       }
       
-      // 入社時申請の場合は「申請済み」、それ以外は「承認待ち」に設定
-      const status = applicationData.applicationType === '入社時申請' ? '申請済み' : '承認待ち';
+      // newStatusが指定されていない場合は、入社時申請の場合は「申請済み」、それ以外は「承認待ち」に設定
+      const status = newStatus || (applicationData.applicationType === '入社時申請' ? '申請済み' : '承認待ち');
       
       const applicationRef = doc(this.db, 'applications', targetDocId);
       await updateDoc(applicationRef, {

@@ -532,6 +532,9 @@ export class HrDashboardComponent {
   existingBasicPensionNumberDocFileName: string | null = null;
   existingIdDocumentFileUrl: string | null = null;
   existingIdDocumentFileName: string | null = null;
+  existingMyNumberCardFileUrl: string | null = null;
+  existingMyNumberCardFileName: string | null = null;
+  myNumberCardFile: File | null = null;
 
   // 選択肢
   departments = ['営業部', '開発部', '人事部', '経理部', '総務部'];
@@ -1724,6 +1727,18 @@ export class HrDashboardComponent {
           if (employeeNumber && this.selectedApplication.newMyNumber) {
             await this.firestoreService.updateEmployeeMyNumber(employeeNumber, this.selectedApplication.newMyNumber);
             
+            // マイナンバーカードの情報も更新
+            if (this.selectedApplication.myNumberCardFileUrl) {
+              const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+              if (employeeData) {
+                await this.firestoreService.saveEmployeeData(employeeNumber, {
+                  ...employeeData,
+                  myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl,
+                  myNumberCardFile: this.selectedApplication.myNumberCardFile || ''
+                });
+              }
+            }
+            
             // 社員情報編集モーダルが開いている場合、マイナンバーを再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
               await this.loadEmployeeData(employeeNumber);
@@ -1732,6 +1747,31 @@ export class HrDashboardComponent {
         } catch (error) {
           console.error('マイナンバーの更新に失敗しました:', error);
           alert('マイナンバーの更新に失敗しました。申請のステータス更新は完了しています。');
+        }
+      }
+      
+      // 入社時申請が承認済みになった場合、マイナンバーカードの情報を社員データに反映
+      if (status === '承認済み' && this.selectedApplication.applicationType === '入社時申請') {
+        try {
+          const employeeNumber = this.selectedApplication.employeeNumber;
+          if (employeeNumber && this.selectedApplication.myNumberCardFileUrl) {
+            const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+            if (employeeData) {
+              await this.firestoreService.saveEmployeeData(employeeNumber, {
+                ...employeeData,
+                myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl,
+                myNumberCardFile: this.selectedApplication.myNumberCardFile || ''
+              });
+            }
+            
+            // 社員情報編集モーダルが開いている場合、マイナンバーカードを再読み込み
+            if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
+              await this.loadEmployeeData(employeeNumber);
+            }
+          }
+        } catch (error) {
+          console.error('マイナンバーカード情報の反映に失敗しました:', error);
+          alert('マイナンバーカード情報の反映に失敗しました。申請のステータス更新は完了しています。');
         }
       }
       
@@ -2147,6 +2187,9 @@ export class HrDashboardComponent {
     this.existingBasicPensionNumberDocFileName = null;
     this.existingIdDocumentFileUrl = null;
     this.existingIdDocumentFileName = null;
+    this.existingMyNumberCardFileUrl = null;
+    this.existingMyNumberCardFileName = null;
+    this.myNumberCardFile = null;
     this.dependents = [];
     this.dependentExpandedStates = [];
   }
@@ -2439,6 +2482,16 @@ export class HrDashboardComponent {
             if (onboardingApplication.pensionFundMembership) {
               data.pensionFundMembership = onboardingApplication.pensionFundMembership;
             }
+            // マイナンバーカードの情報を入社時申請から取得（社員データにない場合）
+            if (!data.myNumberCardFileUrl && onboardingApplication.myNumberCardFileUrl) {
+              data.myNumberCardFileUrl = onboardingApplication.myNumberCardFileUrl;
+              data.myNumberCardFile = onboardingApplication.myNumberCardFile || '';
+            }
+          }
+          // 入社時申請のマイナンバーカード情報を既存ファイルとして設定
+          if (onboardingApplication.myNumberCardFileUrl && !this.existingMyNumberCardFileUrl) {
+            this.existingMyNumberCardFileUrl = onboardingApplication.myNumberCardFileUrl;
+            this.existingMyNumberCardFileName = onboardingApplication.myNumberCardFile || '';
           }
         }
       } catch (error) {
@@ -2653,6 +2706,8 @@ export class HrDashboardComponent {
     this.existingBasicPensionNumberDocFileName = data.basicPensionNumberDocFile || null;
     this.existingIdDocumentFileUrl = data.idDocumentFileUrl || null;
     this.existingIdDocumentFileName = data.idDocumentFile || null;
+    this.existingMyNumberCardFileUrl = data.myNumberCardFileUrl || null;
+    this.existingMyNumberCardFileName = data.myNumberCardFile || null;
     
     // 入社時申請の情報を設定（海外在住、住民票住所を記載しない理由、年金基金加入、坑内員）
     if (data.isOverseasResident !== undefined) {
@@ -2818,6 +2873,9 @@ export class HrDashboardComponent {
       switch (fileType) {
         case 'idDocument':
           this.idDocumentFile = file;
+          break;
+        case 'myNumberCard':
+          this.myNumberCardFile = file;
           break;
         case 'resume':
           this.resumeFile = file;
@@ -3155,6 +3213,18 @@ export class HrDashboardComponent {
           // 既存のファイルURLを保持
           formData.idDocumentFileUrl = this.existingIdDocumentFileUrl;
           formData.idDocumentFile = this.existingIdDocumentFileName || '';
+        }
+        
+        if (this.myNumberCardFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.myNumberCardFile.name);
+          const myNumberCardPath = `employees/${this.selectedEmployeeNumber}/myNumberCard_${Date.now()}_${sanitizedFileName}`;
+          const myNumberCardUrl = await this.firestoreService.uploadFile(this.myNumberCardFile, myNumberCardPath);
+          formData.myNumberCardFile = this.myNumberCardFile.name;
+          formData.myNumberCardFileUrl = myNumberCardUrl;
+        } else if (this.existingMyNumberCardFileUrl) {
+          // 既存のファイルURLを保持
+          formData.myNumberCardFileUrl = this.existingMyNumberCardFileUrl;
+          formData.myNumberCardFile = this.existingMyNumberCardFileName || '';
         }
 
         // undefinedの値を削除（サービス側でも処理されるが、事前に削除）
@@ -4908,6 +4978,22 @@ export class HrDashboardComponent {
         if (employeeData) {
           // ステータスとコメントを除いて通常の社員データとして保存
           const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = employeeData;
+          
+          // 入社時申請からマイナンバーカードの情報を取得
+          try {
+            const applications = await this.firestoreService.getEmployeeApplications(
+              this.selectedOnboardingEmployee.employeeNumber
+            );
+            const onboardingApplication = applications.find((app: any) => app.applicationType === '入社時申請');
+            if (onboardingApplication && onboardingApplication.myNumberCardFileUrl) {
+              // 入社時申請のマイナンバーカード情報を社員データに含める
+              employeeDataWithoutStatus.myNumberCardFileUrl = onboardingApplication.myNumberCardFileUrl;
+              employeeDataWithoutStatus.myNumberCardFile = onboardingApplication.myNumberCardFile || '';
+            }
+          } catch (error) {
+            console.error('Error loading onboarding application for my number card:', error);
+          }
+          
           await this.firestoreService.saveEmployeeData(
             this.selectedOnboardingEmployee.employeeNumber,
             employeeDataWithoutStatus

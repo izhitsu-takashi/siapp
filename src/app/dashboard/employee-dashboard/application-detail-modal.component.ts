@@ -139,7 +139,8 @@ export class ApplicationDetailModalComponent implements OnInit {
       '産前産後休業申請',
       '退職申請',
       '保険証再発行申請',
-      '入社時申請'
+      '入社時申請',
+      'マイナンバー変更申請'
     ];
     return !implementedTypes.includes(applicationType);
   }

@@ -1327,6 +1327,22 @@
                 </button>
               </div>
             </div>
+            <div class="form-group full-width">
+              <label for="hr-myNumberCard">マイナンバーカード添付</label>
+              <input 
+                type="file" 
+                id="hr-myNumberCard" 
+                class="form-input"
+                accept=".pdf,.jpg,.jpeg,.png"
+                (change)="onFileSelected($event, 'myNumberCard')"
+              >
+              <div *ngIf="myNumberCardFile" class="file-name">{{ myNumberCardFile.name }}</div>
+              <div *ngIf="!myNumberCardFile && existingMyNumberCardFileUrl" class="file-info" style="margin-top: 0.5rem;">
+                <a [href]="existingMyNumberCardFileUrl" target="_blank" class="file-link">
+                  {{ existingMyNumberCardFileName || 'マイナンバーカードを開く' }}
+                </a>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -3241,6 +3257,11 @@
               (change)="onFileSelected($event, 'onboardingMyNumberCard')"
             >
             <div *ngIf="onboardingMyNumberCardFile" class="file-name">{{ onboardingMyNumberCardFile.name }}</div>
+            <div *ngIf="!onboardingMyNumberCardFile && selectedOnboardingEmployee?.applicationData?.myNumberCardFileUrl" class="file-info" style="margin-top: 0.5rem;">
+              <a [href]="selectedOnboardingEmployee.applicationData.myNumberCardFileUrl" target="_blank" class="file-link">
+                {{ selectedOnboardingEmployee.applicationData.myNumberCardFile || 'マイナンバーカードを開く' }}
+              </a>
+            </div>
           </div>
         </div>
       </section>

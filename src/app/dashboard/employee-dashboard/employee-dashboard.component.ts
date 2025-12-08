@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -191,7 +191,8 @@ export class EmployeeDashboardComponent {
     private fb: FormBuilder,
     private firestoreService: FirestoreService,
     private chatService: ChatService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private cdr: ChangeDetectorRef
   ) {
     // settingsFormを初期化（必須）
     this.settingsForm = this.createForm();
@@ -248,8 +249,30 @@ export class EmployeeDashboardComponent {
     try {
       const data = await this.firestoreService.getEmployeeData(this.employeeNumber);
       if (data) {
+        // 入社時申請からマイナンバーカードの情報を取得（社員データにない場合）
+        let myNumberCardFileUrl = data.myNumberCardFileUrl || null;
+        let myNumberCardFile = data.myNumberCardFile || null;
+        
+        if (!myNumberCardFileUrl) {
+          try {
+            const applications = await this.firestoreService.getEmployeeApplications(this.employeeNumber);
+            const onboardingApplication = applications.find((app: any) => app.applicationType === '入社時申請');
+            if (onboardingApplication && onboardingApplication.myNumberCardFileUrl) {
+              myNumberCardFileUrl = onboardingApplication.myNumberCardFileUrl;
+              myNumberCardFile = onboardingApplication.myNumberCardFile || null;
+            }
+          } catch (error) {
+            console.error('Error loading onboarding application for my number card:', error);
+          }
+        }
+        
         // employeeDataを更新（添付ファイル情報を含む）
-        this.employeeData = data;
+        // マイナンバーカードの情報が含まれていることを確認
+        this.employeeData = {
+          ...data,
+          myNumberCardFileUrl: myNumberCardFileUrl,
+          myNumberCardFile: myNumberCardFile
+        };
         this.populateForm(data);
         // 保険・扶養ページ用データを設定
         this.loadInsuranceAndDependentsData(data);
@@ -2783,16 +2806,26 @@ export class EmployeeDashboardComponent {
         return app;
       });
       
-      // 承認済みステータスの申請を下に表示するようにソート
+      // 承認済みと取り消しステータスの申請を下に表示するようにソート
       this.applications = mappedApplications.sort((a: any, b: any) => {
         const aIsApproved = a.status === '承認済み' || a.status === '承認';
         const bIsApproved = b.status === '承認済み' || b.status === '承認';
+        const aIsCancelled = a.status === '取り消し';
+        const bIsCancelled = b.status === '取り消し';
         
-        // 承認済みの申請は下に表示
-        if (aIsApproved && !bIsApproved) {
+        // 取り消しステータスの申請は一番下に表示
+        if (aIsCancelled && !bIsCancelled) {
           return 1; // aを後ろに
         }
-        if (!aIsApproved && bIsApproved) {
+        if (!aIsCancelled && bIsCancelled) {
+          return -1; // bを後ろに
+        }
+        
+        // 承認済みの申請は下に表示（取り消しよりは上）
+        if (aIsApproved && !bIsApproved && !bIsCancelled) {
+          return 1; // aを後ろに
+        }
+        if (!aIsApproved && bIsApproved && !aIsCancelled) {
           return -1; // bを後ろに
         }
         
@@ -2801,6 +2834,11 @@ export class EmployeeDashboardComponent {
         const idB = b.applicationId || 0;
         return idA - idB;
       });
+      
+      // 取り消しステータスの申請を一番下に移動
+      const cancelledApplications = this.applications.filter((app: any) => app.status === '取り消し');
+      const otherApplications = this.applications.filter((app: any) => app.status !== '取り消し');
+      this.applications = [...otherApplications, ...cancelledApplications];
     } catch (error) {
       console.error('Error loading applications:', error);
       this.applications = [];
@@ -2892,32 +2930,62 @@ export class EmployeeDashboardComponent {
       if (this.selectedApplication.applicationType === '扶養家族追加') {
         this.dependentApplicationForm = this.createDependentApplicationForm();
         this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化
+        this.dependentApplicationForm.enable();
       } else if (this.selectedApplication.applicationType === '入社時申請') {
         // ファイルをリセット
         this.resumeFile = null;
         this.careerHistoryFile = null;
         this.basicPensionNumberDocFile = null;
+        this.myNumberCardFile = null;
         this.onboardingApplicationForm = this.createOnboardingApplicationForm();
         this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化（姓・名・メールアドレスは編集不可のまま）
+        this.onboardingApplicationForm.enable();
+        this.onboardingApplicationForm.get('lastName')?.disable();
+        this.onboardingApplicationForm.get('firstName')?.disable();
+        this.onboardingApplicationForm.get('lastNameKana')?.disable();
+        this.onboardingApplicationForm.get('firstNameKana')?.disable();
+        this.onboardingApplicationForm.get('email')?.disable();
       } else if (this.selectedApplication.applicationType === '扶養削除申請') {
         this.dependentRemovalForm = this.createDependentRemovalForm();
         this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化
+        this.dependentRemovalForm.enable();
       } else if (this.selectedApplication.applicationType === '住所変更申請') {
         this.addressChangeForm = this.createAddressChangeForm();
         this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化
+        this.addressChangeForm.enable();
       } else if (this.selectedApplication.applicationType === '氏名変更申請') {
         this.nameChangeForm = this.createNameChangeForm();
+        this.nameChangeIdDocumentFile = null; // Reset file input
         this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化
+        this.nameChangeForm.enable();
       } else if (this.selectedApplication.applicationType === '産前産後休業申請') {
         this.maternityLeaveForm = this.createMaternityLeaveForm();
         this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化
+        this.maternityLeaveForm.enable();
       } else if (this.selectedApplication.applicationType === '退職申請') {
         this.resignationForm = this.createResignationForm();
         this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化
+        this.resignationForm.enable();
+      } else if (this.selectedApplication.applicationType === 'マイナンバー変更申請') {
+        this.myNumberChangeForm = this.createMyNumberChangeForm();
+        this.myNumberChangeCardFile = null; // Reset file input
+        this.loadApplicationDataToForm(this.selectedApplication);
+        // フォームを有効化
+        this.myNumberChangeForm.enable();
       }
       
       // 編集モードを有効化（フォーム初期化後に設定）
       this.isEditModeForReapplication = true;
+      
+      // 変更検知をトリガー
+      this.cdr.detectChanges();
     }
   }
   
@@ -3226,6 +3294,22 @@ export class EmployeeDashboardComponent {
       if (this.sameAsCurrentEmailForResignation) {
         this.onSameAsCurrentEmailForResignationChange({ target: { checked: true } });
       }
+    } else if (application.applicationType === 'マイナンバー変更申請') {
+      // フォームは既に初期化されている前提（enableEditModeで初期化済み）
+      if (!this.myNumberChangeForm) {
+        this.myNumberChangeForm = this.createMyNumberChangeForm();
+      }
+      
+      // データをフォームに設定
+      this.myNumberChangeForm.patchValue({
+        changeDate: application.changeDate || '',
+        newMyNumberPart1: application.newMyNumber?.part1 || '',
+        newMyNumberPart2: application.newMyNumber?.part2 || '',
+        newMyNumberPart3: application.newMyNumber?.part3 || ''
+      });
+      
+      // バリデーションを更新
+      this.myNumberChangeForm.updateValueAndValidity();
     }
   }
   
@@ -3613,6 +3697,34 @@ export class EmployeeDashboardComponent {
             applicationType: '退職申請'
           };
         }
+      } else if (this.selectedApplication.applicationType === 'マイナンバー変更申請') {
+        formValid = this.myNumberChangeForm?.valid || false;
+        if (formValid) {
+          const formValue = this.myNumberChangeForm.value;
+          applicationData = {
+            changeDate: formValue.changeDate,
+            newMyNumber: {
+              part1: formValue.newMyNumberPart1,
+              part2: formValue.newMyNumberPart2,
+              part3: formValue.newMyNumberPart3
+            },
+            employeeNumber: this.employeeNumber,
+            applicationType: 'マイナンバー変更申請'
+          };
+          
+          // マイナンバーカードをアップロード
+          if (this.myNumberChangeCardFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.myNumberChangeCardFile.name);
+            const myNumberCardPath = `applications/${this.employeeNumber}/myNumberChangeCard_${Date.now()}_${sanitizedFileName}`;
+            const myNumberCardUrl = await this.firestoreService.uploadFile(this.myNumberChangeCardFile, myNumberCardPath);
+            applicationData.myNumberCardFile = this.myNumberChangeCardFile.name;
+            applicationData.myNumberCardFileUrl = myNumberCardUrl;
+          } else if (this.selectedApplication.myNumberCardFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.myNumberCardFileUrl = this.selectedApplication.myNumberCardFileUrl;
+            applicationData.myNumberCardFile = this.selectedApplication.myNumberCardFile || '';
+          }
+        }
       }
       
       if (!formValid) {
@@ -3624,13 +3736,21 @@ export class EmployeeDashboardComponent {
           this.nameChangeForm.markAllAsTouched();
         } else if (this.selectedApplication.applicationType === '住所変更申請' && this.addressChangeForm) {
           this.addressChangeForm.markAllAsTouched();
+        } else if (this.selectedApplication.applicationType === 'マイナンバー変更申請' && this.myNumberChangeForm) {
+          this.myNumberChangeForm.markAllAsTouched();
+        } else if (this.selectedApplication.applicationType === '産前産後休業申請' && this.maternityLeaveForm) {
+          this.maternityLeaveForm.markAllAsTouched();
+        } else if (this.selectedApplication.applicationType === '退職申請' && this.resignationForm) {
+          this.resignationForm.markAllAsTouched();
         }
         alert('必須項目を入力してください');
+        this.isSubmittingReapplication = false;
         return;
       }
       
       // 再申請として保存（入社時申請は「申請済み」、それ以外は「承認待ち」に設定）
-      await this.firestoreService.resubmitApplication(this.selectedApplication.id, applicationData);
+      const newStatus = this.selectedApplication.applicationType === '入社時申請' ? '申請済み' : '承認待ち';
+      await this.firestoreService.resubmitApplication(this.selectedApplication.id, applicationData, newStatus);
       
       // 入社時申請の場合、新入社員データも更新
       if (this.selectedApplication.applicationType === '入社時申請' && applicationData.employeeNumber) {
