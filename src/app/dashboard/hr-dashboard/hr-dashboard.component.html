@@ -36,16 +36,6 @@
         <!-- ダッシュボードページ -->
         <ng-container *ngIf="currentTab === 'ダッシュボード'">
           <div class="dashboard-page">
-            <!-- ページヘッダー -->
-            <div class="dashboard-header-section">
-              <h1 class="dashboard-main-title">
-                <span class="dashboard-icon">📊</span>
-                ダッシュボード
-              </h1>
-              <p class="dashboard-description">
-                申請管理と入社手続きの状況を一目で確認できます。
-              </p>
-            </div>
             
               <!-- 社員情報管理表のステータス一覧 -->
               <section class="dashboard-section">
@@ -2962,7 +2952,7 @@
             <select 
               id="onboarding-status"
               class="form-input"
-              [ngModel]="selectedOnboardingEmployee.status"
+              [ngModel]="pendingOnboardingStatus || selectedOnboardingEmployee?.status"
               [ngModelOptions]="{standalone: true}"
               (ngModelChange)="onOnboardingStatusChange($event)"
             >
@@ -2971,11 +2961,11 @@
               <option value="差し戻し">差し戻し</option>
               <option value="準備完了">準備完了</option>
             </select>
-            <div *ngIf="selectedOnboardingEmployee?.status === '準備完了' && onboardingEmployeeEditForm.invalid" class="error-message" style="margin-top: 0.5rem;">
+            <div *ngIf="(pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '準備完了' && onboardingEmployeeEditForm.invalid" class="error-message" style="margin-top: 0.5rem;">
               必須項目を入力してください
             </div>
           </div>
-          <div class="form-group full-width" *ngIf="selectedOnboardingEmployee?.status === '差し戻し'">
+          <div class="form-group full-width" *ngIf="(pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '差し戻し'">
             <label for="onboarding-statusComment">コメント（差し戻しの場合）</label>
             <textarea 
               id="onboarding-statusComment"
@@ -2991,8 +2981,8 @@
           <button 
             type="button" 
             class="status-button status-update"
-            [disabled]="(selectedOnboardingEmployee?.status === '準備完了' && (onboardingEmployeeEditForm.invalid || onboardingIsSaving)) || onboardingIsSaving"
-            (click)="updateOnboardingEmployeeStatus(selectedOnboardingEmployee.status)"
+            [disabled]="((pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '準備完了' && (onboardingEmployeeEditForm.invalid || onboardingIsSaving)) || onboardingIsSaving"
+            (click)="updateOnboardingEmployeeStatus(pendingOnboardingStatus || selectedOnboardingEmployee?.status)"
           >
             ステータスを更新
           </button>

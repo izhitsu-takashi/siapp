@@ -500,6 +500,7 @@ export class HrDashboardComponent {
   // 新入社員詳細モーダル
   showOnboardingEmployeeModal = false;
   selectedOnboardingEmployee: any = null;
+  pendingOnboardingStatus: string = ''; // プルダウンで選択された一時的なステータス
   onboardingStatusComment: string = '';
   onboardingEmployeeEditForm: FormGroup;
   onboardingSameAsCurrentAddress = false;
@@ -3866,7 +3867,9 @@ export class HrDashboardComponent {
   // 新入社員詳細モーダルを開く
   async openOnboardingEmployeeModal(employee: any) {
     try {
-      this.selectedOnboardingEmployee = employee;
+      // 一覧表のデータと同じオブジェクトを参照しないように、コピーを作成
+      this.selectedOnboardingEmployee = { ...employee };
+      this.pendingOnboardingStatus = employee.status || ''; // 一時的なステータスを初期化
       this.onboardingStatusComment = employee.statusComment || '';
       this.showOnboardingEmployeeModal = true;
       
@@ -4642,6 +4645,8 @@ export class HrDashboardComponent {
 
   // 新入社員詳細モーダルを閉じる
   closeOnboardingEmployeeModal() {
+    // 一時的なステータスをリセット
+    this.pendingOnboardingStatus = '';
     this.showOnboardingEmployeeModal = false;
     this.selectedOnboardingEmployee = null;
     this.onboardingStatusComment = '';
@@ -4719,20 +4724,25 @@ export class HrDashboardComponent {
   // 新入社員のステータス変更時の処理
   onOnboardingStatusChange(newStatus: string) {
     if (!this.selectedOnboardingEmployee) return;
-    // プルダウンの値のみ更新（実際のステータス変更は「ステータスを更新」ボタンで行う）
-    this.selectedOnboardingEmployee.status = newStatus;
+    // プルダウンの値のみ一時変数に保存（実際のステータス変更は「ステータスを更新」ボタンで行う）
+    // 準備完了に変更しようとする場合でも、pendingOnboardingStatusは設定する（ボタンのdisabled制御のため）
+    this.pendingOnboardingStatus = newStatus;
   }
 
   // 新入社員のステータスを変更
   async updateOnboardingEmployeeStatus(newStatus: string) {
     if (!this.selectedOnboardingEmployee) return;
+    
+    // pendingOnboardingStatusが設定されている場合はそれを使用、なければ引数を使用
+    const statusToUpdate = this.pendingOnboardingStatus || newStatus;
 
     // 準備完了に変更する場合、必須項目をチェック
-    if (newStatus === '準備完了') {
+    if (statusToUpdate === '準備完了') {
       const validation = this.checkRequiredFieldsForReadyStatus();
       if (!validation.isValid) {
         alert(`ステータスを「準備完了」に変更するには、以下の必須項目を入力してください：\n${validation.missingFields.join('\n')}`);
-        // プルダウンの表示を確実に更新する（現在のステータスを維持）
+        // プルダウンの表示を元のステータスに戻す
+        this.pendingOnboardingStatus = this.selectedOnboardingEmployee.status;
         setTimeout(() => {
           this.cdr.detectChanges();
         }, 0);
@@ -4743,7 +4753,7 @@ export class HrDashboardComponent {
     try {
       await this.firestoreService.updateOnboardingEmployeeStatus(
         this.selectedOnboardingEmployee.employeeNumber,
-        newStatus
+        statusToUpdate
       );
 
       // ステータスコメントを更新
@@ -4757,12 +4767,12 @@ export class HrDashboardComponent {
       // 対応する入社時申請のステータスも更新
       await this.updateOnboardingApplicationStatus(
         this.selectedOnboardingEmployee.employeeNumber,
-        newStatus,
+        statusToUpdate,
         this.onboardingStatusComment || ''
       );
 
       // 準備完了の場合、通常の社員データに移行
-      if (newStatus === '準備完了') {
+      if (statusToUpdate === '準備完了') {
         const employeeData = await this.firestoreService.getOnboardingEmployee(
           this.selectedOnboardingEmployee.employeeNumber
         );
@@ -4780,9 +4790,10 @@ export class HrDashboardComponent {
       await this.loadOnboardingEmployees();
       
       // モーダル内のステータスを更新
-      this.selectedOnboardingEmployee.status = newStatus;
+      this.selectedOnboardingEmployee.status = statusToUpdate;
+      this.pendingOnboardingStatus = statusToUpdate; // 一時的なステータスも更新
       
-      alert(`ステータスを「${newStatus}」に変更しました`);
+      alert(`ステータスを「${statusToUpdate}」に変更しました`);
     } catch (error) {
       console.error('Error updating onboarding employee status:', error);
       alert('ステータスの変更に失敗しました');
