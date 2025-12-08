@@ -637,6 +637,10 @@ export class EmployeeDashboardComponent {
   // 入社時申請の住民票住所チェックボックス変更
   onOnboardingSameAddressChange(event: any) {
     const isSame = event.target.checked;
+    const residentPostalCodeControl = this.onboardingApplicationForm.get('residentPostalCode');
+    const residentAddressControl = this.onboardingApplicationForm.get('residentAddress');
+    const residentAddressKanaControl = this.onboardingApplicationForm.get('residentAddressKana');
+    
     if (isSame) {
       // 現住所の値を住民票住所にコピー
       const postalCode = this.onboardingApplicationForm.get('postalCode')?.value || '';
@@ -647,6 +651,27 @@ export class EmployeeDashboardComponent {
         residentAddress: currentAddress,
         residentAddressKana: currentAddressKana
       });
+      // フォームコントロールを無効化
+      if (residentPostalCodeControl) {
+        residentPostalCodeControl.disable();
+      }
+      if (residentAddressControl) {
+        residentAddressControl.disable();
+      }
+      if (residentAddressKanaControl) {
+        residentAddressKanaControl.disable();
+      }
+    } else {
+      // フォームコントロールを有効化
+      if (residentPostalCodeControl) {
+        residentPostalCodeControl.enable();
+      }
+      if (residentAddressControl) {
+        residentAddressControl.enable();
+      }
+      if (residentAddressKanaControl) {
+        residentAddressKanaControl.enable();
+      }
     }
   }
 

@@ -508,7 +508,8 @@
                     >
                   </div>
                   <div class="form-group full-width">
-                    <label>
+                    <label for="emergencyAddress">住所</label>
+                    <label style="display: block; margin-bottom: 0.5rem;">
                       <input 
                         type="checkbox" 
                         [checked]="sameAsCurrentAddressForEmergency"
@@ -518,9 +519,6 @@
                       >
                       現住所と同じ
                     </label>
-                  </div>
-                  <div class="form-group full-width">
-                    <label for="emergencyAddress">住所</label>
                     <textarea 
                       id="emergencyAddress" 
                       formControlName="address" 
@@ -810,6 +808,9 @@
 
         <!-- メインページ -->
         <ng-container *ngIf="currentTab === 'メインページ'">
+          <div class="page-header">
+            <h2 class="page-title">メインページ</h2>
+          </div>
           <div class="main-page-layout">
             <!-- 上部エリア：自分の情報欄と人事からの依頼欄 -->
             <div class="main-page-top">
@@ -980,8 +981,10 @@
         <!-- その他のタブ -->
         <!-- 保険・扶養ページ -->
         <ng-container *ngIf="currentTab === '保険・扶養'">
-          <div class="insurance-dependents-page">
+          <div class="page-header">
             <h2 class="page-title">保険・扶養情報</h2>
+          </div>
+          <div class="insurance-dependents-page">
             
             <!-- 保険者種別情報 -->
             <section class="info-section">
@@ -1133,8 +1136,10 @@
 
         <!-- ナレッジページ -->
         <ng-container *ngIf="currentTab === 'ナレッジ'">
-          <div class="knowledge-page">
+          <div class="page-header">
             <h2 class="page-title">ナレッジ - AIアシスタント</h2>
+          </div>
+          <div class="knowledge-page">
             <p class="knowledge-description">
               人事・給与システムに関するご質問にお答えします。わからないことがあれば、お気軽にお尋ねください。
             </p>
@@ -1589,6 +1594,7 @@
               maxlength="7"
               (input)="formatResidentPostalCode($event)"
               placeholder="1234567"
+              [readonly]="onboardingApplicationForm.get('sameAsCurrentAddress')?.value"
             >
             <div *ngIf="onboardingApplicationForm.get('residentPostalCode')?.invalid && onboardingApplicationForm.get('residentPostalCode')?.touched" class="error-message">
               <span *ngIf="onboardingApplicationForm.get('residentPostalCode')?.errors?.['required']">
@@ -1717,22 +1723,18 @@
             </div>
           </div>
         </div>
-        <div class="form-grid">
-          <div class="form-group full-width">
-            <label class="checkbox-label">
-              <input 
-                type="checkbox" 
-                formControlName="sameAsCurrentAddressForEmergency"
-                (change)="onSameAsCurrentAddressForEmergencyChange($event)"
-              >
-              現住所と同じ
-            </label>
-          </div>
-        </div>
         <div formGroupName="emergencyContact" class="nested-form">
           <div class="form-grid">
             <div class="form-group full-width">
               <label for="onboarding-emergencyAddress">住所</label>
+              <label class="checkbox-label" style="display: block; margin-bottom: 0.5rem;">
+                <input 
+                  type="checkbox" 
+                  formControlName="sameAsCurrentAddressForEmergency"
+                  (change)="onSameAsCurrentAddressForEmergencyChange($event)"
+                >
+                現住所と同じ
+              </label>
               <textarea 
                 id="onboarding-emergencyAddress" 
                 formControlName="address" 

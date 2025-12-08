@@ -1091,18 +1091,8 @@ select.form-input {
 
 /* 保険・扶養ページ */
 .insurance-dependents-page {
-  padding: 1rem;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.insurance-dependents-page .page-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
 }
 
 .info-section {
@@ -1227,9 +1217,6 @@ select.form-input {
 
 /* レスポンシブ対応（保険・扶養ページ） */
 @media (max-width: 768px) {
-  .insurance-dependents-page {
-    padding: 1rem;
-  }
 
   .info-grid {
     grid-template-columns: 1fr;
@@ -1691,7 +1678,6 @@ select.form-input {
 
 /* ナレッジページ - チャットUI */
 .knowledge-page {
-  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -2065,9 +2051,6 @@ select.form-input {
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
-  .knowledge-page {
-    padding: 1rem;
-  }
 
   .chat-container {
     height: calc(100vh - 250px);
