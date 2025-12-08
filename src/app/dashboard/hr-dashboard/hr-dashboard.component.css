@@ -1971,12 +1971,42 @@
 .status-button.status-update {
   background: #2196f3;
   color: white;
+  position: relative;
 }
 
-.status-button.status-update:hover {
+.status-button.status-update:hover:not(:disabled) {
   background: #1976d2;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+.status-button.status-update:disabled {
+  background: #90caf9;
+  color: transparent;
+  cursor: wait;
+  opacity: 0.8;
+  position: relative;
+}
+
+.status-button.status-update:disabled::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 50%;
+  left: 50%;
+  margin-left: -9px;
+  margin-top: -9px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {

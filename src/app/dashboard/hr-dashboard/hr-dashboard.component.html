@@ -3091,7 +3091,7 @@
             [disabled]="((pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '準備完了' && (onboardingEmployeeEditForm.invalid || onboardingIsSaving)) || onboardingIsSaving"
             (click)="updateOnboardingEmployeeStatus(pendingOnboardingStatus || selectedOnboardingEmployee?.status)"
           >
-            ステータスを更新
+            {{ onboardingIsSaving ? '更新中...' : 'ステータスを更新' }}
           </button>
         </div>
       </section>

@@ -4949,6 +4949,7 @@ export class HrDashboardComponent {
       }
     }
 
+    this.onboardingIsSaving = true;
     try {
       await this.firestoreService.updateOnboardingEmployeeStatus(
         this.selectedOnboardingEmployee.employeeNumber,
@@ -5012,6 +5013,8 @@ export class HrDashboardComponent {
     } catch (error) {
       console.error('Error updating onboarding employee status:', error);
       alert('ステータスの変更に失敗しました');
+    } finally {
+      this.onboardingIsSaving = false;
     }
   }
 
