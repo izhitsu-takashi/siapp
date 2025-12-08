@@ -1399,17 +1399,13 @@ export class EmployeeDashboardComponent {
     return this.fb.group({
       moveDate: ['', Validators.required],
       // 新しい住所
-      newPostalCode: ['', Validators.required],
+      newPostalCode: ['', [Validators.required, Validators.pattern(/^[0-9]{7}$/)]],
       newAddress: ['', Validators.required],
       newAddressKana: [''],
-      newHouseholdHead: ['', Validators.required],
-      newHouseholdHeadName: [''],
       // 新しい住民票住所
-      residentPostalCode: [''],
+      residentPostalCode: ['', Validators.pattern(/^[0-9]{7}$/)],
       residentAddress: [''],
-      residentAddressKana: [''],
-      residentHouseholdHead: [''],
-      residentHouseholdHeadName: ['']
+      residentAddressKana: ['']
     });
   }
   
@@ -1585,15 +1581,11 @@ export class EmployeeDashboardComponent {
       const newPostalCode = this.addressChangeForm.get('newPostalCode')?.value || '';
       const newAddress = this.addressChangeForm.get('newAddress')?.value || '';
       const newAddressKana = this.addressChangeForm.get('newAddressKana')?.value || '';
-      const newHouseholdHead = this.addressChangeForm.get('newHouseholdHead')?.value || '';
-      const newHouseholdHeadName = this.addressChangeForm.get('newHouseholdHeadName')?.value || '';
       
       this.addressChangeForm.patchValue({
         residentPostalCode: newPostalCode,
         residentAddress: newAddress,
-        residentAddressKana: newAddressKana,
-        residentHouseholdHead: newHouseholdHead,
-        residentHouseholdHeadName: newHouseholdHeadName
+        residentAddressKana: newAddressKana
       });
       
       this.updateResidentAddressControls(true);
@@ -1608,34 +1600,24 @@ export class EmployeeDashboardComponent {
     const residentPostalCodeControl = this.addressChangeForm.get('residentPostalCode');
     const residentAddressControl = this.addressChangeForm.get('residentAddress');
     const residentAddressKanaControl = this.addressChangeForm.get('residentAddressKana');
-    const residentHouseholdHeadControl = this.addressChangeForm.get('residentHouseholdHead');
-    const residentHouseholdHeadNameControl = this.addressChangeForm.get('residentHouseholdHeadName');
     
     if (disabled) {
       residentPostalCodeControl?.clearValidators();
       residentAddressControl?.clearValidators();
       residentAddressKanaControl?.clearValidators();
-      residentHouseholdHeadControl?.clearValidators();
-      residentHouseholdHeadNameControl?.clearValidators();
       
       residentPostalCodeControl?.disable();
       residentAddressControl?.disable();
       residentAddressKanaControl?.disable();
-      residentHouseholdHeadControl?.disable();
-      residentHouseholdHeadNameControl?.disable();
     } else {
       residentPostalCodeControl?.enable();
       residentAddressControl?.enable();
       residentAddressKanaControl?.enable();
-      residentHouseholdHeadControl?.enable();
-      residentHouseholdHeadNameControl?.enable();
     }
     
     residentPostalCodeControl?.updateValueAndValidity();
     residentAddressControl?.updateValueAndValidity();
     residentAddressKanaControl?.updateValueAndValidity();
-    residentHouseholdHeadControl?.updateValueAndValidity();
-    residentHouseholdHeadNameControl?.updateValueAndValidity();
   }
   
   // フォームの条件付きバリデーションを更新
@@ -2015,30 +1997,22 @@ export class EmployeeDashboardComponent {
         let residentPostalCode = '';
         let residentAddress = '';
         let residentAddressKana = '';
-        let residentHouseholdHead = '';
-        let residentHouseholdHeadName = '';
         
         if (this.sameAsOldAddress) {
           // 変更前住所と同じ
           residentPostalCode = this.currentAddressInfo.postalCode || '';
           residentAddress = this.currentAddressInfo.address || '';
           residentAddressKana = this.currentAddressInfo.addressKana || '';
-          residentHouseholdHead = this.currentAddressInfo.householdHead || '';
-          residentHouseholdHeadName = this.currentAddressInfo.householdHeadName || '';
         } else if (this.sameAsNewAddress) {
           // 変更後の住所と同じ
           residentPostalCode = formValue.newPostalCode || '';
           residentAddress = formValue.newAddress || '';
           residentAddressKana = formValue.newAddressKana || '';
-          residentHouseholdHead = formValue.newHouseholdHead || '';
-          residentHouseholdHeadName = formValue.newHouseholdHeadName || '';
         } else {
           // 手動入力
           residentPostalCode = formValue.residentPostalCode || '';
           residentAddress = formValue.residentAddress || '';
           residentAddressKana = formValue.residentAddressKana || '';
-          residentHouseholdHead = formValue.residentHouseholdHead || '';
-          residentHouseholdHeadName = formValue.residentHouseholdHeadName || '';
         }
         
         const applicationData: any = {
@@ -2048,18 +2022,14 @@ export class EmployeeDashboardComponent {
           newAddress: {
             postalCode: formValue.newPostalCode,
             address: formValue.newAddress,
-            addressKana: formValue.newAddressKana || '',
-            householdHead: formValue.newHouseholdHead,
-            householdHeadName: formValue.newHouseholdHeadName || ''
+            addressKana: formValue.newAddressKana || ''
           },
           residentAddress: {
             sameAsOldAddress: this.sameAsOldAddress,
             sameAsNewAddress: this.sameAsNewAddress,
             postalCode: residentPostalCode,
             address: residentAddress,
-            addressKana: residentAddressKana,
-            householdHead: residentHouseholdHead,
-            householdHeadName: residentHouseholdHeadName
+            addressKana: residentAddressKana
           }
         };
         
@@ -2107,6 +2077,15 @@ export class EmployeeDashboardComponent {
           },
           hasIdDocument: !!this.nameChangeIdDocumentFile
         };
+        
+        // 本人確認書類をアップロード
+        if (this.nameChangeIdDocumentFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.nameChangeIdDocumentFile.name);
+          const idDocumentPath = `applications/${this.employeeNumber}/nameChangeIdDocument_${Date.now()}_${sanitizedFileName}`;
+          const idDocumentUrl = await this.firestoreService.uploadFile(this.nameChangeIdDocumentFile, idDocumentPath);
+          applicationData.idDocumentFile = this.nameChangeIdDocumentFile.name;
+          applicationData.idDocumentFileUrl = idDocumentUrl;
+        }
         
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
@@ -2190,8 +2169,7 @@ export class EmployeeDashboardComponent {
           isMultipleBirth: formValue.isMultipleBirth,
           maternityLeaveStartDate: formValue.maternityLeaveStartDate || '',
           maternityLeaveEndDate: formValue.maternityLeaveEndDate || '',
-          stayAddress: formValue.stayAddress || '',
-          hasDocument: !!this.maternityLeaveDocumentFile
+          stayAddress: formValue.stayAddress || ''
         };
         
         // 申請を保存
@@ -3140,13 +3118,9 @@ export class EmployeeDashboardComponent {
         newPostalCode: application.newAddress?.postalCode || '',
         newAddress: application.newAddress?.address || '',
         newAddressKana: application.newAddress?.addressKana || '',
-        newHouseholdHead: application.newAddress?.householdHead || '',
-        newHouseholdHeadName: application.newAddress?.householdHeadName || '',
         residentPostalCode: application.residentAddress?.postalCode || '',
         residentAddress: application.residentAddress?.address || '',
-        residentAddressKana: application.residentAddress?.addressKana || '',
-        residentHouseholdHead: application.residentAddress?.householdHead || '',
-        residentHouseholdHeadName: application.residentAddress?.householdHeadName || ''
+        residentAddressKana: application.residentAddress?.addressKana || ''
       });
       
       // チェックボックスの状態に応じてコントロールを更新
@@ -3336,30 +3310,22 @@ export class EmployeeDashboardComponent {
           let residentPostalCode = '';
           let residentAddress = '';
           let residentAddressKana = '';
-          let residentHouseholdHead = '';
-          let residentHouseholdHeadName = '';
           
           if (this.sameAsOldAddress) {
             // 変更前住所と同じ
             residentPostalCode = this.currentAddressInfo.postalCode || '';
             residentAddress = this.currentAddressInfo.address || '';
             residentAddressKana = this.currentAddressInfo.addressKana || '';
-            residentHouseholdHead = this.currentAddressInfo.householdHead || '';
-            residentHouseholdHeadName = this.currentAddressInfo.householdHeadName || '';
           } else if (this.sameAsNewAddress) {
             // 変更後の住所と同じ
             residentPostalCode = formValue.newPostalCode || '';
             residentAddress = formValue.newAddress || '';
             residentAddressKana = formValue.newAddressKana || '';
-            residentHouseholdHead = formValue.newHouseholdHead || '';
-            residentHouseholdHeadName = formValue.newHouseholdHeadName || '';
           } else {
             // 手動入力
             residentPostalCode = formValue.residentPostalCode || '';
             residentAddress = formValue.residentAddress || '';
             residentAddressKana = formValue.residentAddressKana || '';
-            residentHouseholdHead = formValue.residentHouseholdHead || '';
-            residentHouseholdHeadName = formValue.residentHouseholdHeadName || '';
           }
           
           applicationData = {
@@ -3367,18 +3333,14 @@ export class EmployeeDashboardComponent {
             newAddress: {
               postalCode: formValue.newPostalCode,
               address: formValue.newAddress,
-              addressKana: formValue.newAddressKana || '',
-              householdHead: formValue.newHouseholdHead,
-              householdHeadName: formValue.newHouseholdHeadName || ''
+              addressKana: formValue.newAddressKana || ''
             },
             residentAddress: {
               sameAsOldAddress: this.sameAsOldAddress,
               sameAsNewAddress: this.sameAsNewAddress,
               postalCode: residentPostalCode,
               address: residentAddress,
-              addressKana: residentAddressKana,
-              householdHead: residentHouseholdHead,
-              householdHeadName: residentHouseholdHeadName
+              addressKana: residentAddressKana
             },
             employeeNumber: this.employeeNumber,
             applicationType: '住所変更申請'
@@ -3396,10 +3358,23 @@ export class EmployeeDashboardComponent {
               lastNameKana: formValue.newLastNameKana,
               firstNameKana: formValue.newFirstNameKana
             },
-            hasIdDocument: !!this.nameChangeIdDocumentFile,
+            hasIdDocument: !!this.nameChangeIdDocumentFile || !!this.selectedApplication.idDocumentFileUrl,
             employeeNumber: this.employeeNumber,
             applicationType: '氏名変更申請'
           };
+          
+          // 本人確認書類をアップロード（新しいファイルが選択された場合のみ）
+          if (this.nameChangeIdDocumentFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.nameChangeIdDocumentFile.name);
+            const idDocumentPath = `applications/${this.employeeNumber}/nameChangeIdDocument_${Date.now()}_${sanitizedFileName}`;
+            const idDocumentUrl = await this.firestoreService.uploadFile(this.nameChangeIdDocumentFile, idDocumentPath);
+            applicationData.idDocumentFile = this.nameChangeIdDocumentFile.name;
+            applicationData.idDocumentFileUrl = idDocumentUrl;
+          } else if (this.selectedApplication.idDocumentFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.idDocumentFileUrl = this.selectedApplication.idDocumentFileUrl;
+            applicationData.idDocumentFile = this.selectedApplication.idDocumentFile || '';
+          }
         }
       } else if (this.selectedApplication.applicationType === '入社時申請') {
         formValid = this.onboardingApplicationForm?.valid || false;
@@ -3506,13 +3481,12 @@ export class EmployeeDashboardComponent {
           }
         }
       } else if (this.selectedApplication.applicationType === '産前産後休業申請') {
-        formValid = this.maternityLeaveForm.valid && !!this.maternityLeaveDocumentFile;
+        formValid = this.maternityLeaveForm.valid;
         if (formValid) {
           const formValue = this.maternityLeaveForm.value;
           applicationData = {
             expectedDeliveryDate: formValue.expectedDeliveryDate,
             isMultipleBirth: formValue.isMultipleBirth,
-            hasDocument: !!this.maternityLeaveDocumentFile,
             maternityLeaveStartDate: formValue.maternityLeaveStartDate || '',
             maternityLeaveEndDate: formValue.maternityLeaveEndDate || '',
             stayAddress: formValue.stayAddress || '',
@@ -3560,12 +3534,16 @@ export class EmployeeDashboardComponent {
           this.dependentApplicationForm.markAllAsTouched();
         } else if (this.selectedApplication.applicationType === '入社時申請' && this.onboardingApplicationForm) {
           this.onboardingApplicationForm.markAllAsTouched();
+        } else if (this.selectedApplication.applicationType === '氏名変更申請' && this.nameChangeForm) {
+          this.nameChangeForm.markAllAsTouched();
+        } else if (this.selectedApplication.applicationType === '住所変更申請' && this.addressChangeForm) {
+          this.addressChangeForm.markAllAsTouched();
         }
         alert('必須項目を入力してください');
         return;
       }
       
-      // 再申請として保存（ステータスを「申請済み」に設定）
+      // 再申請として保存（入社時申請は「申請済み」、それ以外は「承認待ち」に設定）
       await this.firestoreService.resubmitApplication(this.selectedApplication.id, applicationData);
       
       // 入社時申請の場合、新入社員データも更新
@@ -3677,6 +3655,32 @@ export class EmployeeDashboardComponent {
     }
     event.target.value = value;
     const control = this.onboardingApplicationForm.get('residentPostalCode');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // 住所変更申請の郵便番号フォーマット（数字7桁のみ）
+  formatAddressPostalCode(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 7) {
+      value = value.substring(0, 7);
+    }
+    event.target.value = value;
+    const control = this.addressChangeForm.get('newPostalCode');
+    if (control) {
+      control.setValue(value, { emitEvent: false });
+    }
+  }
+
+  // 住所変更申請の住民票住所の郵便番号フォーマット（数字7桁のみ）
+  formatResidentPostalCodeForAddressChange(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 7) {
+      value = value.substring(0, 7);
+    }
+    event.target.value = value;
+    const control = this.addressChangeForm.get('residentPostalCode');
     if (control) {
       control.setValue(value, { emitEvent: false });
     }

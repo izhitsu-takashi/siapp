@@ -509,6 +509,11 @@
   color: white;
 }
 
+.application-management-table .status-badge.status-cancelled {
+  background: #9e9e9e;
+  color: white;
+}
+
 /* 申請詳細モーダル内のステータスバッジ */
 .application-detail-modal .status-badge {
   display: inline-block;
@@ -540,6 +545,11 @@
 
 .application-detail-modal .status-badge.status-resubmitted {
   background: #2196f3;
+  color: white;
+}
+
+.application-detail-modal .status-badge.status-cancelled {
+  background: #9e9e9e;
   color: white;
 }
 
@@ -736,6 +746,7 @@
   border-top: 1px solid #e0e0e0;
   display: flex;
   justify-content: flex-end;
+  gap: 1rem;
   flex-shrink: 0;
 }
 
@@ -914,6 +925,27 @@
 
 .close-detail-button:hover {
   opacity: 0.9;
+}
+
+.cancel-application-button {
+  background: #9e9e9e;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.cancel-application-button:hover {
+  opacity: 0.9;
+}
+
+.cancel-application-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* レスポンシブ対応（申請詳細モーダル） */

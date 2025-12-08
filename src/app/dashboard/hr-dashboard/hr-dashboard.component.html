@@ -528,7 +528,8 @@
                             [class.status-reviewing]="application.status === '確認中'"
                             [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
                             [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
-                            [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
+                            [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'"
+                            [class.status-cancelled]="application.status === '取り消し'">
                         {{ application.status }}
                       </span>
                     </td>
@@ -2311,6 +2312,9 @@
               <div *ngIf="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認'" class="info-message" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
                 承認済みの申請のステータスは変更できません
               </div>
+              <div *ngIf="selectedApplication?.status === '取り消し'" class="info-message" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+                取り消し済みの申請のステータスは変更できません
+              </div>
             </div>
             <div class="form-group" *ngIf="statusChangeForm.get('status')?.value === '差し戻し'">
               <label for="statusComment">コメント <span class="required">*</span></label>
@@ -2387,7 +2391,8 @@
                     [class.status-reviewing]="selectedApplication.status === '確認中'"
                     [class.status-approved]="selectedApplication.status === '承認' || selectedApplication.status === '承認済み'"
                     [class.status-rejected]="selectedApplication.status === '却下' || selectedApplication.status === '差し戻し'"
-                    [class.status-resubmitted]="selectedApplication.status === '再申請' || selectedApplication.status === '再提出'">
+                    [class.status-resubmitted]="selectedApplication.status === '再申請' || selectedApplication.status === '再提出'"
+                    [class.status-cancelled]="selectedApplication.status === '取り消し'">
                 {{ selectedApplication.status }}
               </span>
             </span>
@@ -2807,6 +2812,14 @@
               <span class="detail-label">本人確認書類添付:</span>
               <span class="detail-value">{{ selectedApplication.hasIdDocument ? 'あり' : 'なし' }}</span>
             </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.idDocumentFileUrl">
+              <span class="detail-label">本人確認書類:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.idDocumentFile || '本人確認書類を開く' }}
+                </a>
+              </span>
+            </div>
           </div>
         </section>
       </ng-container>
@@ -2985,6 +2998,13 @@
     </div>
     
     <div class="modal-footer">
+      <button 
+        type="button" 
+        class="cancel-application-button" 
+        (click)="cancelApplication()"
+        *ngIf="selectedApplication && selectedApplication.status !== '取り消し' && selectedApplication.status !== '承認済み' && selectedApplication.status !== '承認'"
+        [disabled]="isUpdatingStatus"
+      >取り消し</button>
       <button type="button" class="close-detail-button" (click)="closeApplicationDetailModal()">閉じる</button>
     </div>
   </div>

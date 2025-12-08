@@ -36,7 +36,8 @@
                     [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
                     [class.status-submitted]="application.status === '申請済み'"
                     [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
-                    [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
+                    [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'"
+                    [class.status-cancelled]="application.status === '取り消し'">
                 {{ application.status }}
               </span>
             </span>

@@ -1455,6 +1455,11 @@ select.form-input {
   color: white;
 }
 
+.status-badge.status-cancelled {
+  background: #9e9e9e;
+  color: white;
+}
+
 /* 申請詳細モーダル内の編集入力フィールド */
 .application-detail-form {
   width: 100%;

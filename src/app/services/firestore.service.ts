@@ -559,10 +559,13 @@ export class FirestoreService {
         throw new Error('Application not found');
       }
       
+      // 入社時申請の場合は「申請済み」、それ以外は「承認待ち」に設定
+      const status = applicationData.applicationType === '入社時申請' ? '申請済み' : '承認待ち';
+      
       const applicationRef = doc(this.db, 'applications', targetDocId);
       await updateDoc(applicationRef, {
         ...applicationData,
-        status: '申請済み',
+        status: status,
         statusComment: '', // 差し戻しコメントをクリア
         updatedAt: new Date()
       });

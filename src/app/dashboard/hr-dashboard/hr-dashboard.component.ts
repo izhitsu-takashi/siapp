@@ -1300,9 +1300,10 @@ export class HrDashboardComponent {
     this.selectedApplication = application;
     this.showApplicationDetailModal = true;
     
-    // ステータスが承認済みの場合は無効化
+    // ステータスが承認済みまたは取り消しの場合は無効化
     const isApproved = application.status === '承認済み' || application.status === '承認';
-    const isDisabled = isApproved || this.isUpdatingStatus;
+    const isCancelled = application.status === '取り消し';
+    const isDisabled = isApproved || isCancelled || this.isUpdatingStatus;
     
     // ステータス変更フォームを初期化
     this.statusChangeForm = this.fb.group({
@@ -1331,6 +1332,42 @@ export class HrDashboardComponent {
     this.showApplicationDetailModal = false;
     this.selectedApplication = null;
     this.statusComment = '';
+  }
+  
+  // 申請を取り消す
+  async cancelApplication() {
+    if (!this.selectedApplication || !this.selectedApplication.id) {
+      alert('申請情報が見つかりません');
+      return;
+    }
+    
+    // 確認ダイアログを表示
+    const confirmed = confirm('この申請を取り消します。よろしいですか？');
+    if (!confirmed) {
+      return;
+    }
+    
+    this.isUpdatingStatus = true;
+    try {
+      await this.firestoreService.updateApplicationStatus(
+        this.selectedApplication.id, 
+        '取り消し',
+        ''
+      );
+      
+      // 申請一覧を更新
+      await this.loadAllApplications();
+      
+      // モーダルを閉じる
+      this.closeApplicationDetailModal();
+      
+      alert('申請を取り消しました');
+    } catch (error) {
+      console.error('Error cancelling application:', error);
+      alert('申請の取り消しに失敗しました');
+    } finally {
+      this.isUpdatingStatus = false;
+    }
   }
   
   // ステータス変更時の処理（コメント表示の制御、文書自動作成欄の表示）
@@ -1648,12 +1685,25 @@ export class HrDashboardComponent {
         }
       }
       
-      // 氏名変更申請が承認済みになった場合、氏名を更新
+      // 氏名変更申請が承認済みになった場合、氏名を更新し、本人確認書類を既存の添付資料と入れ替える
       if (status === '承認済み' && this.selectedApplication.applicationType === '氏名変更申請') {
         try {
           const employeeNumber = this.selectedApplication.employeeNumber;
           if (employeeNumber && this.selectedApplication.newName) {
             await this.firestoreService.updateEmployeeName(employeeNumber, this.selectedApplication.newName);
+            
+            // 本人確認書類を既存の添付資料と入れ替える
+            if (this.selectedApplication.idDocumentFileUrl) {
+              // 申請の本人確認書類URLを社員情報に保存
+              const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+              if (employeeData) {
+                await this.firestoreService.saveEmployeeData(employeeNumber, {
+                  ...employeeData,
+                  idDocumentFileUrl: this.selectedApplication.idDocumentFileUrl,
+                  idDocumentFile: this.selectedApplication.idDocumentFile || ''
+                });
+              }
+            }
             
             // 社員情報編集モーダルが開いている場合、氏名を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {

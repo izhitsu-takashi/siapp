@@ -912,6 +912,7 @@
                               [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
                               [class.status-submitted]="application.status === '申請済み'"
                               [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
+                              [class.status-cancelled]="application.status === '取り消し'"
                               [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
                           {{ application.status }}
                         </span>
@@ -2466,10 +2467,18 @@
               id="newPostalCode" 
               formControlName="newPostalCode" 
               class="form-input"
-              placeholder="例: 123-4567"
+              placeholder="1234567"
+              maxlength="7"
+              pattern="[0-9]{7}"
+              (input)="formatAddressPostalCode($event)"
             >
             <div *ngIf="addressChangeForm.get('newPostalCode')?.invalid && addressChangeForm.get('newPostalCode')?.touched" class="error-message">
-              郵便番号を入力してください
+              <span *ngIf="addressChangeForm.get('newPostalCode')?.errors?.['required']">
+                郵便番号を入力してください
+              </span>
+              <span *ngIf="addressChangeForm.get('newPostalCode')?.errors?.['pattern']">
+                7桁の数字を入力してください
+              </span>
             </div>
           </div>
           <div class="form-group full-width">
@@ -2492,30 +2501,6 @@
               class="form-input"
               rows="2"
             ></textarea>
-          </div>
-          <div class="form-group">
-            <label for="newHouseholdHead">世帯主の続柄（本人/親族） <span class="required">*</span></label>
-            <select 
-              id="newHouseholdHead" 
-              formControlName="newHouseholdHead" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option value="本人">本人</option>
-              <option value="親族">親族</option>
-            </select>
-            <div *ngIf="addressChangeForm.get('newHouseholdHead')?.invalid && addressChangeForm.get('newHouseholdHead')?.touched" class="error-message">
-              世帯主の続柄を選択してください
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="newHouseholdHeadName">世帯主氏名</label>
-            <input 
-              type="text" 
-              id="newHouseholdHeadName" 
-              formControlName="newHouseholdHeadName" 
-              class="form-input"
-            >
           </div>
         </div>
       </section>
@@ -2551,7 +2536,10 @@
               id="residentPostalCode" 
               formControlName="residentPostalCode" 
               class="form-input"
-              placeholder="例: 123-4567"
+              placeholder="1234567"
+              maxlength="7"
+              pattern="[0-9]{7}"
+              (input)="formatResidentPostalCodeForAddressChange($event)"
             >
           </div>
           <div class="form-group full-width">
@@ -2571,27 +2559,6 @@
               class="form-input"
               rows="2"
             ></textarea>
-          </div>
-          <div class="form-group">
-            <label for="residentHouseholdHead">世帯主の続柄（本人/親族）</label>
-            <select 
-              id="residentHouseholdHead" 
-              formControlName="residentHouseholdHead" 
-              class="form-input"
-            >
-              <option value="">選択してください</option>
-              <option value="本人">本人</option>
-              <option value="親族">親族</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="residentHouseholdHeadName">世帯主氏名</label>
-            <input 
-              type="text" 
-              id="residentHouseholdHeadName" 
-              formControlName="residentHouseholdHeadName" 
-              class="form-input"
-            >
           </div>
         </div>
       </section>
@@ -2844,21 +2811,6 @@
           <div *ngIf="maternityLeaveForm.get('isMultipleBirth')?.invalid && maternityLeaveForm.get('isMultipleBirth')?.touched" class="error-message">
             選択してください
           </div>
-        </div>
-      </section>
-      
-      <!-- 出産予定日を確認できる書類添付 -->
-      <section class="form-section">
-        <div class="form-group">
-          <label for="maternityLeaveDocument">出産予定日を確認できる書類添付</label>
-          <input 
-            type="file" 
-            id="maternityLeaveDocument" 
-            class="form-input"
-            accept=".pdf,.jpg,.jpeg,.png"
-            (change)="onFileSelected($event, 'maternityLeaveDocument')"
-          >
-          <div *ngIf="maternityLeaveDocumentFile" class="file-name">{{ maternityLeaveDocumentFile.name }}</div>
         </div>
       </section>
       
@@ -3157,7 +3109,8 @@
                     [class.status-approved]="selectedApplication.status === '承認' || selectedApplication.status === '承認済み'"
                     [class.status-submitted]="selectedApplication.status === '申請済み'"
                     [class.status-rejected]="selectedApplication.status === '却下' || selectedApplication.status === '差し戻し'"
-                    [class.status-resubmitted]="selectedApplication.status === '再申請' || selectedApplication.status === '再提出'">
+                    [class.status-resubmitted]="selectedApplication.status === '再申請' || selectedApplication.status === '再提出'"
+                    [class.status-cancelled]="selectedApplication.status === '取り消し'">
                 {{ selectedApplication.status }}
               </span>
             </span>
@@ -3941,50 +3894,147 @@
       
       <!-- 氏名変更申請の詳細 -->
       <ng-container *ngIf="selectedApplication.applicationType === '氏名変更申請'">
-        <!-- 氏名変更した日 -->
-        <section class="detail-section">
-          <h3 class="section-title">氏名変更した日</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">氏名変更した日:</span>
-              <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
+        <!-- 編集フォーム（差し戻しの場合） -->
+        <form [formGroup]="nameChangeForm" (ngSubmit)="submitReapplication()" *ngIf="nameChangeForm && isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
+          <!-- 氏名変更した日 -->
+          <section class="detail-section">
+            <h3 class="section-title">氏名変更した日 <span class="required">*</span></h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">氏名変更した日:</span>
+                <div class="detail-edit-input">
+                  <input type="date" formControlName="changeDate" class="form-input">
+                  <div *ngIf="nameChangeForm.get('changeDate')?.invalid && nameChangeForm.get('changeDate')?.touched" class="error-message">
+                    氏名変更した日を入力してください
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+          
+          <!-- 新しい氏名 -->
+          <section class="detail-section">
+            <h3 class="section-title">新しい氏名</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">姓 <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input type="text" formControlName="newLastName" class="form-input">
+                  <div *ngIf="nameChangeForm.get('newLastName')?.invalid && nameChangeForm.get('newLastName')?.touched" class="error-message">
+                    姓を入力してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名 <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input type="text" formControlName="newFirstName" class="form-input">
+                  <div *ngIf="nameChangeForm.get('newFirstName')?.invalid && nameChangeForm.get('newFirstName')?.touched" class="error-message">
+                    名を入力してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">姓（ヨミガナ） <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input type="text" formControlName="newLastNameKana" class="form-input">
+                  <div *ngIf="nameChangeForm.get('newLastNameKana')?.invalid && nameChangeForm.get('newLastNameKana')?.touched" class="error-message">
+                    姓（ヨミガナ）を入力してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名（ヨミガナ） <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input type="text" formControlName="newFirstNameKana" class="form-input">
+                  <div *ngIf="nameChangeForm.get('newFirstNameKana')?.invalid && nameChangeForm.get('newFirstNameKana')?.touched" class="error-message">
+                    名（ヨミガナ）を入力してください
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 本人確認書類 -->
+          <section class="detail-section">
+            <h3 class="section-title">本人確認書類添付</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">本人確認書類:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'nameChangeIdDocument')"
+                    class="form-input"
+                  >
+                  <div *ngIf="nameChangeIdDocumentFile" class="file-info">
+                    選択済み: {{ nameChangeIdDocumentFile.name }}
+                  </div>
+                  <div *ngIf="selectedApplication.idDocumentFileUrl && !nameChangeIdDocumentFile" class="file-info">
+                    現在のファイル: <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </form>
         
-        <!-- 新しい氏名 -->
-        <section class="detail-section" *ngIf="selectedApplication.newName">
-          <h3 class="section-title">新しい氏名</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">姓:</span>
-              <span class="detail-value">{{ selectedApplication.newName.lastName || '-' }}</span>
+        <!-- 表示モード（編集モードでない場合） -->
+        <ng-container *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+          <!-- 氏名変更した日 -->
+          <section class="detail-section">
+            <h3 class="section-title">氏名変更した日</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">氏名変更した日:</span>
+                <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">名:</span>
-              <span class="detail-value">{{ selectedApplication.newName.firstName || '-' }}</span>
+          </section>
+          
+          <!-- 新しい氏名 -->
+          <section class="detail-section" *ngIf="selectedApplication.newName">
+            <h3 class="section-title">新しい氏名</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">姓:</span>
+                <span class="detail-value">{{ selectedApplication.newName.lastName || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名:</span>
+                <span class="detail-value">{{ selectedApplication.newName.firstName || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">姓（ヨミガナ）:</span>
+                <span class="detail-value">{{ selectedApplication.newName.lastNameKana || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名（ヨミガナ）:</span>
+                <span class="detail-value">{{ selectedApplication.newName.firstNameKana || '-' }}</span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">姓（ヨミガナ）:</span>
-              <span class="detail-value">{{ selectedApplication.newName.lastNameKana || '-' }}</span>
+          </section>
+          
+          <!-- 本人確認書類 -->
+          <section class="detail-section">
+            <h3 class="section-title">本人確認書類</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">本人確認書類添付:</span>
+                <span class="detail-value">{{ selectedApplication.hasIdDocument ? 'あり' : 'なし' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.idDocumentFileUrl">
+                <span class="detail-label">本人確認書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.idDocumentFile || '本人確認書類を開く' }}
+                  </a>
+                </span>
+              </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">名（ヨミガナ）:</span>
-              <span class="detail-value">{{ selectedApplication.newName.firstNameKana || '-' }}</span>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 本人確認書類 -->
-        <section class="detail-section">
-          <h3 class="section-title">本人確認書類</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">本人確認書類添付:</span>
-              <span class="detail-value">{{ selectedApplication.hasIdDocument ? 'あり' : 'なし' }}</span>
-            </div>
-          </div>
-        </section>
+          </section>
+        </ng-container>
       </ng-container>
       
       <!-- 産前産後休業申請の詳細 -->
