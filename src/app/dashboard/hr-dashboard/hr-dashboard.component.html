@@ -1014,7 +1014,7 @@
             <div class="form-row-header">
               <h4>社員 {{ i + 1 }}</h4>
               <button 
-                *ngIf="employeesFormArray.length > 1"
+                *ngIf="employeesFormArray.length > 1 && !isAddingEmployees"
                 type="button" 
                 class="remove-row-button" 
                 (click)="removeEmployeeRow(i)"
