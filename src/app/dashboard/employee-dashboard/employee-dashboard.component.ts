@@ -306,9 +306,13 @@ export class EmployeeDashboardComponent {
             addressKana: dep.addressKana || '',
             addressChangeDate: dep.addressChangeDate || '',
             basicPensionNumber: dep.basicPensionNumber || '',
+            basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
+            myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
+            identityDocFileUrl: dep.identityDocFileUrl || '',
             disabilityCategory: dep.disabilityCategory || '',
             disabilityCardType: dep.disabilityCardType || '',
             disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
+            disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
             notes: dep.notes || ''
           }));
           // 展開状態を初期化（すべて折りたたみ）
@@ -1353,7 +1357,7 @@ export class EmployeeDashboardComponent {
       firstNameKana: [''],
       birthDate: ['', Validators.required],
       gender: ['', Validators.required],
-      phoneNumber: [''],
+      phoneNumber: ['', [Validators.pattern(/^[a-zA-Z0-9]{0,11}$/)]],
       occupation: [''],
       
       // 収入情報
@@ -1376,7 +1380,7 @@ export class EmployeeDashboardComponent {
       
       // 住所情報
       livingTogether: ['', Validators.required],
-      postalCode: [''],
+      postalCode: ['', [Validators.pattern(/^[a-zA-Z0-9]{7}$/)]],
       address: [''],
       addressKana: [''],
       addressChangeDate: ['']
@@ -1703,7 +1707,7 @@ export class EmployeeDashboardComponent {
     const addressControl = this.dependentApplicationForm.get('address');
     
     if (livingTogether === '別居') {
-      postalCodeControl?.setValidators([Validators.required]);
+      postalCodeControl?.setValidators([Validators.required, Validators.pattern(/^[a-zA-Z0-9]{7}$/)]);
       addressControl?.setValidators([Validators.required]);
     } else {
       postalCodeControl?.clearValidators();
@@ -1738,6 +1742,52 @@ export class EmployeeDashboardComponent {
     }
   }
   
+  formatDependentPhoneNumber(event: any) {
+    let value = event.target.value.replace(/[^a-zA-Z0-9]/g, ''); // 英数字以外を削除
+    if (value.length > 11) {
+      value = value.substring(0, 11); // 11桁に制限
+    }
+    event.target.value = value;
+    this.dependentApplicationForm.get('phoneNumber')?.setValue(value, { emitEvent: false });
+  }
+
+  formatDependentPostalCode(event: any) {
+    let value = event.target.value.replace(/[^a-zA-Z0-9]/g, ''); // 英数字以外を削除
+    if (value.length > 7) {
+      value = value.substring(0, 7); // 7桁に制限
+    }
+    event.target.value = value;
+    this.dependentApplicationForm.get('postalCode')?.setValue(value, { emitEvent: false });
+  }
+
+  // ファイル名を取得するヘルパーメソッド（保存されたファイル名があればそれを使用、なければURLから抽出）
+  getFileNameFromUrl(url: string, fileName?: string): string {
+    if (fileName) {
+      return fileName;
+    }
+    if (!url) return 'ファイル';
+    try {
+      // URLをデコードして、パスからファイル名を抽出
+      const decodedUrl = decodeURIComponent(url);
+      // クエリパラメータを除去
+      const urlWithoutQuery = decodedUrl.split('?')[0];
+      // パスの最後の部分を取得
+      const pathParts = urlWithoutQuery.split('/');
+      let extractedFileName = pathParts[pathParts.length - 1];
+      // URLエンコードされた文字をデコード
+      extractedFileName = decodeURIComponent(extractedFileName);
+      // ファイル名が長すぎる場合は切り詰める
+      if (extractedFileName.length > 50) {
+        const extension = extractedFileName.substring(extractedFileName.lastIndexOf('.'));
+        const nameWithoutExt = extractedFileName.substring(0, extractedFileName.lastIndexOf('.'));
+        extractedFileName = nameWithoutExt.substring(0, 47) + '...' + extension;
+      }
+      return extractedFileName || 'ファイル';
+    } catch (error) {
+      return 'ファイル';
+    }
+  }
+
   formatDependentMyNumberInput(event: any, part: number) {
     let value = event.target.value.replace(/\D/g, '');
     if (value.length > 4) {
@@ -1791,6 +1841,44 @@ export class EmployeeDashboardComponent {
         ];
         const myNumber = myNumberParts.join('');
         
+        // 添付ファイルをアップロード
+        let basicPensionNumberDocFileUrl = '';
+        let basicPensionNumberDocFileName = '';
+        let myNumberDocFileUrl = '';
+        let myNumberDocFileName = '';
+        let identityDocFileUrl = '';
+        let identityDocFileName = '';
+        let disabilityCardFileUrl = '';
+        let disabilityCardFileName = '';
+        
+        if (this.dependentBasicPensionNumberDocFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentBasicPensionNumberDocFile.name);
+          const basicPensionNumberDocPath = `applications/${this.employeeNumber}/dependentBasicPensionNumberDoc_${Date.now()}_${sanitizedFileName}`;
+          basicPensionNumberDocFileUrl = await this.firestoreService.uploadFile(this.dependentBasicPensionNumberDocFile, basicPensionNumberDocPath);
+          basicPensionNumberDocFileName = this.dependentBasicPensionNumberDocFile.name;
+        }
+        
+        if (this.dependentMyNumberDocFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberDocFile.name);
+          const myNumberDocPath = `applications/${this.employeeNumber}/dependentMyNumberDoc_${Date.now()}_${sanitizedFileName}`;
+          myNumberDocFileUrl = await this.firestoreService.uploadFile(this.dependentMyNumberDocFile, myNumberDocPath);
+          myNumberDocFileName = this.dependentMyNumberDocFile.name;
+        }
+        
+        if (this.dependentIdentityDocFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentIdentityDocFile.name);
+          const identityDocPath = `applications/${this.employeeNumber}/dependentIdentityDoc_${Date.now()}_${sanitizedFileName}`;
+          identityDocFileUrl = await this.firestoreService.uploadFile(this.dependentIdentityDocFile, identityDocPath);
+          identityDocFileName = this.dependentIdentityDocFile.name;
+        }
+        
+        if (this.dependentDisabilityCardFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentDisabilityCardFile.name);
+          const disabilityCardPath = `applications/${this.employeeNumber}/dependentDisabilityCard_${Date.now()}_${sanitizedFileName}`;
+          disabilityCardFileUrl = await this.firestoreService.uploadFile(this.dependentDisabilityCardFile, disabilityCardPath);
+          disabilityCardFileName = this.dependentDisabilityCardFile.name;
+        }
+        
         // フォームデータを準備
         const formValue = this.dependentApplicationForm.value;
         const applicationData: any = {
@@ -1800,6 +1888,8 @@ export class EmployeeDashboardComponent {
           spouseType: formValue.spouseType || '',
           relationship: formValue.relationship || '',
           basicPensionNumber: basicPensionNumber || null,
+          basicPensionNumberDocFileUrl: basicPensionNumberDocFileUrl,
+          basicPensionNumberDocFileName: basicPensionNumberDocFileName,
           lastName: formValue.lastName,
           firstName: formValue.firstName,
           lastNameKana: formValue.lastNameKana || '',
@@ -1814,10 +1904,16 @@ export class EmployeeDashboardComponent {
           dependentReason: formValue.dependentReason || '',
           provideMyNumber: formValue.provideMyNumber,
           myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+          myNumberDocFileUrl: myNumberDocFileUrl,
+          myNumberDocFileName: myNumberDocFileName,
           myNumberNotProvidedReason: formValue.provideMyNumber === '提供しない' ? formValue.myNumberNotProvidedReason : '',
+          identityDocFileUrl: identityDocFileUrl,
+          identityDocFileName: identityDocFileName,
           disabilityCategory: formValue.disabilityCategory || '',
           disabilityCardType: formValue.disabilityCardType || '',
           disabilityCardIssueDate: formValue.disabilityCardIssueDate || '',
+          disabilityCardFileUrl: disabilityCardFileUrl,
+          disabilityCardFileName: disabilityCardFileName,
           livingTogether: formValue.livingTogether,
           postalCode: formValue.livingTogether === '別居' ? formValue.postalCode : '',
           address: formValue.livingTogether === '別居' ? formValue.address : '',
@@ -3144,11 +3240,57 @@ export class EmployeeDashboardComponent {
           ];
           const myNumber = myNumberParts.join('');
           
+          // 添付ファイルをアップロード（新しいファイルが選択された場合のみ）
+          let basicPensionNumberDocFileUrl = this.selectedApplication.basicPensionNumberDocFileUrl || '';
+          let basicPensionNumberDocFileName = this.selectedApplication.basicPensionNumberDocFileName || '';
+          let myNumberDocFileUrl = this.selectedApplication.myNumberDocFileUrl || '';
+          let myNumberDocFileName = this.selectedApplication.myNumberDocFileName || '';
+          let identityDocFileUrl = this.selectedApplication.identityDocFileUrl || '';
+          let identityDocFileName = this.selectedApplication.identityDocFileName || '';
+          let disabilityCardFileUrl = this.selectedApplication.disabilityCardFileUrl || '';
+          let disabilityCardFileName = this.selectedApplication.disabilityCardFileName || '';
+          
+          if (this.dependentBasicPensionNumberDocFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentBasicPensionNumberDocFile.name);
+            const basicPensionNumberDocPath = `applications/${this.employeeNumber}/dependentBasicPensionNumberDoc_${Date.now()}_${sanitizedFileName}`;
+            basicPensionNumberDocFileUrl = await this.firestoreService.uploadFile(this.dependentBasicPensionNumberDocFile, basicPensionNumberDocPath);
+            basicPensionNumberDocFileName = this.dependentBasicPensionNumberDocFile.name;
+          }
+          
+          if (this.dependentMyNumberDocFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberDocFile.name);
+            const myNumberDocPath = `applications/${this.employeeNumber}/dependentMyNumberDoc_${Date.now()}_${sanitizedFileName}`;
+            myNumberDocFileUrl = await this.firestoreService.uploadFile(this.dependentMyNumberDocFile, myNumberDocPath);
+            myNumberDocFileName = this.dependentMyNumberDocFile.name;
+          }
+          
+          if (this.dependentIdentityDocFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentIdentityDocFile.name);
+            const identityDocPath = `applications/${this.employeeNumber}/dependentIdentityDoc_${Date.now()}_${sanitizedFileName}`;
+            identityDocFileUrl = await this.firestoreService.uploadFile(this.dependentIdentityDocFile, identityDocPath);
+            identityDocFileName = this.dependentIdentityDocFile.name;
+          }
+          
+          if (this.dependentDisabilityCardFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentDisabilityCardFile.name);
+            const disabilityCardPath = `applications/${this.employeeNumber}/dependentDisabilityCard_${Date.now()}_${sanitizedFileName}`;
+            disabilityCardFileUrl = await this.firestoreService.uploadFile(this.dependentDisabilityCardFile, disabilityCardPath);
+            disabilityCardFileName = this.dependentDisabilityCardFile.name;
+          }
+          
           const formValue = this.dependentApplicationForm.value;
           applicationData = {
             ...formValue,
             basicPensionNumber: basicPensionNumber || null,
+            basicPensionNumberDocFileUrl: basicPensionNumberDocFileUrl,
+            basicPensionNumberDocFileName: basicPensionNumberDocFileName,
             myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+            myNumberDocFileUrl: myNumberDocFileUrl,
+            myNumberDocFileName: myNumberDocFileName,
+            identityDocFileUrl: identityDocFileUrl,
+            identityDocFileName: identityDocFileName,
+            disabilityCardFileUrl: disabilityCardFileUrl,
+            disabilityCardFileName: disabilityCardFileName,
             employeeNumber: this.employeeNumber,
             applicationType: '扶養家族追加'
           };

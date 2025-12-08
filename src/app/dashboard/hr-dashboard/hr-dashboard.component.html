@@ -2188,6 +2188,31 @@
                     placeholder="例: 0000-000000"
                   >
                 </div>
+                <!-- 添付書類 -->
+                <div class="form-group full-width" *ngIf="dependent.basicPensionNumberDocFileUrl">
+                  <label [for]="'hr-dependent-basicPensionNumberDoc-' + i">基礎年金番号確認書類</label>
+                  <div class="file-link-container">
+                    <a [href]="dependent.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.basicPensionNumberDocFileUrl, dependent.basicPensionNumberDocFileName) }}</a>
+                  </div>
+                </div>
+                <div class="form-group full-width" *ngIf="dependent.myNumberDocFileUrl">
+                  <label [for]="'hr-dependent-myNumberDoc-' + i">マイナンバー確認書類</label>
+                  <div class="file-link-container">
+                    <a [href]="dependent.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberDocFileUrl, dependent.myNumberDocFileName) }}</a>
+                  </div>
+                </div>
+                <div class="form-group full-width" *ngIf="dependent.identityDocFileUrl">
+                  <label [for]="'hr-dependent-identityDoc-' + i">身元確認書類</label>
+                  <div class="file-link-container">
+                    <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
+                  </div>
+                </div>
+                <div class="form-group full-width" *ngIf="dependent.disabilityCardFileUrl">
+                  <label [for]="'hr-dependent-disabilityCardFile-' + i">障がい者手帳の画像</label>
+                  <div class="file-link-container">
+                    <a [href]="dependent.disabilityCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.disabilityCardFileUrl, dependent.disabilityCardFileName) }}</a>
+                  </div>
+                </div>
                 <div class="form-group" *ngIf="dependent.disabilityCategory || dependent.disabilityCardType || dependent.disabilityCardIssueDate">
                   <label [for]="'hr-dependent-disabilityCategory-' + i">障がい者区分</label>
                   <input 
@@ -2533,6 +2558,37 @@
             <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
               <span class="detail-label">住所変更年月日:</span>
               <span class="detail-value">{{ selectedApplication.addressChangeDate || '-' }}</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 添付書類 -->
+        <section class="detail-section" *ngIf="selectedApplication.basicPensionNumberDocFileUrl || selectedApplication.myNumberDocFileUrl || selectedApplication.identityDocFileUrl || selectedApplication.disabilityCardFileUrl">
+          <h3 class="section-title">添付書類</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width" *ngIf="selectedApplication.basicPensionNumberDocFileUrl">
+              <span class="detail-label">基礎年金番号確認書類:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.basicPensionNumberDocFileUrl, selectedApplication.basicPensionNumberDocFileName) }}</a>
+              </span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.myNumberDocFileUrl">
+              <span class="detail-label">マイナンバー確認書類:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.myNumberDocFileUrl, selectedApplication.myNumberDocFileName) }}</a>
+              </span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.identityDocFileUrl">
+              <span class="detail-label">身元確認書類:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.identityDocFileUrl, selectedApplication.identityDocFileName) }}</a>
+              </span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.disabilityCardFileUrl">
+              <span class="detail-label">障がい者手帳の画像:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.disabilityCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.disabilityCardFileUrl, selectedApplication.disabilityCardFileName) }}</a>
+              </span>
             </div>
           </div>
         </section>

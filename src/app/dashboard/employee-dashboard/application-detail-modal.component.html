@@ -1,0 +1,138 @@
+﻿<!-- 申請詳細モーダル -->
+<div 
+  class="modal-overlay" 
+  *ngIf="isVisible" 
+  [class.modal-disabled]="isSubmittingReapplication"
+>
+  <div class="modal-content application-detail-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">申請詳細</h2>
+      <button 
+        class="modal-close-button" 
+        (click)="closeModal()"
+        [disabled]="isSubmittingReapplication"
+        [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+      >×</button>
+    </div>
+    
+    <div class="application-detail-content" *ngIf="application">
+      <!-- 申請基本情報 -->
+      <section class="detail-section">
+        <h3 class="section-title">申請基本情報</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">申請ID:</span>
+            <span class="detail-value">{{ application.applicationId }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請種類:</span>
+            <span class="detail-value">{{ application.applicationType }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">ステータス:</span>
+            <span class="detail-value">
+              <span class="status-badge" 
+                    [class.status-pending]="application.status === '承認待ち'"
+                    [class.status-approved]="application.status === '承認' || application.status === '承認済み'"
+                    [class.status-submitted]="application.status === '申請済み'"
+                    [class.status-rejected]="application.status === '却下' || application.status === '差し戻し'"
+                    [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
+                {{ application.status }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-item full-width" *ngIf="application.status === '差し戻し' && application.statusComment">
+            <span class="detail-label">差し戻しコメント:</span>
+            <span class="detail-value">{{ application.statusComment }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">申請日:</span>
+            <span class="detail-value">{{ getApplicationDate(application) | date:'yyyy年MM月dd日' }}</span>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 差し戻しの場合の修正・再申請ボタン -->
+      <div class="reapplication-actions" *ngIf="application.status === '差し戻し'">
+        <button 
+          type="button" 
+          class="edit-button" 
+          (click)="enableEditMode()"
+          *ngIf="!isEditModeForReapplication"
+          [disabled]="isSubmittingReapplication"
+          [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+        >
+          修正
+        </button>
+        <button 
+          type="button" 
+          class="resubmit-button" 
+          (click)="submitReapplication()"
+          *ngIf="isEditModeForReapplication"
+          [disabled]="isSubmittingReapplication"
+          [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+        >
+          {{ isSubmittingReapplication ? '送信中...' : '再申請' }}
+        </button>
+      </div>
+      
+      <!-- その他の申請タイプの詳細（今後実装） -->
+      @if (isOtherApplicationType(application.applicationType)) {
+        <section class="detail-section">
+          <p class="no-detail-message">この申請タイプの詳細表示は今後実装予定です。</p>
+        </section>
+      }
+      
+      <!-- 添付資料 -->
+      @if (hasAttachmentFiles(application)) {
+        <section class="detail-section">
+          <h3 class="section-title">添付資料</h3>
+          <div class="detail-grid">
+            @if (application.resumeFileUrl) {
+              <div class="detail-item full-width">
+                <span class="detail-label">履歴書:</span>
+                <span class="detail-value">
+                  <a [href]="application.resumeFileUrl" target="_blank" class="file-link">履歴書を開く</a>
+                </span>
+              </div>
+            }
+            @if (application.careerHistoryFileUrl) {
+              <div class="detail-item full-width">
+                <span class="detail-label">職務経歴書:</span>
+                <span class="detail-value">
+                  <a [href]="application.careerHistoryFileUrl" target="_blank" class="file-link">職務経歴書を開く</a>
+                </span>
+              </div>
+            }
+            @if (application.basicPensionNumberDocFileUrl) {
+              <div class="detail-item full-width">
+                <span class="detail-label">基礎年金番号がわかる書類:</span>
+                <span class="detail-value">
+                  <a [href]="application.basicPensionNumberDocFileUrl" target="_blank" class="file-link">基礎年金番号がわかる書類を開く</a>
+                </span>
+              </div>
+            }
+            @if (application.idDocumentFileUrl) {
+              <div class="detail-item full-width">
+                <span class="detail-label">本人確認書類:</span>
+                <span class="detail-value">
+                  <a [href]="application.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
+                </span>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+    
+    <div class="modal-footer">
+      <button 
+        type="button" 
+        class="close-detail-button" 
+        (click)="closeModal()"
+        [disabled]="isSubmittingReapplication"
+        [title]="isSubmittingReapplication ? '処理中です。しばらくお待ちください。' : ''"
+      >閉じる</button>
+    </div>
+  </div>
+</div>

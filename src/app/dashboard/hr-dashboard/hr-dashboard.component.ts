@@ -1482,9 +1482,17 @@ export class HrDashboardComponent {
             
             let isNewDependent = false;
             if (existingDependentIndex >= 0) {
-              // 既存の扶養者情報を更新（保険証情報を追加または更新）
+              // 既存の扶養者情報を更新（添付ファイルURLとファイル名を追加または更新）
               dependents[existingDependentIndex] = {
                 ...dependents[existingDependentIndex],
+                basicPensionNumberDocFileUrl: this.selectedApplication.basicPensionNumberDocFileUrl || dependents[existingDependentIndex].basicPensionNumberDocFileUrl || '',
+                basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName || dependents[existingDependentIndex].basicPensionNumberDocFileName || '',
+                myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl || dependents[existingDependentIndex].myNumberDocFileUrl || '',
+                myNumberDocFileName: this.selectedApplication.myNumberDocFileName || dependents[existingDependentIndex].myNumberDocFileName || '',
+                identityDocFileUrl: this.selectedApplication.identityDocFileUrl || dependents[existingDependentIndex].identityDocFileUrl || '',
+                identityDocFileName: this.selectedApplication.identityDocFileName || dependents[existingDependentIndex].identityDocFileName || '',
+                disabilityCardFileUrl: this.selectedApplication.disabilityCardFileUrl || dependents[existingDependentIndex].disabilityCardFileUrl || '',
+                disabilityCardFileName: this.selectedApplication.disabilityCardFileName || dependents[existingDependentIndex].disabilityCardFileName || '',
                 insuranceSymbol: insuranceSymbol || dependents[existingDependentIndex].insuranceSymbol || '',
                 insuranceNumber: insuranceNumber || dependents[existingDependentIndex].insuranceNumber || '',
                 insuranceCardIssueDate: dependents[existingDependentIndex].insuranceCardIssueDate || this.selectedApplication.dependentStartDate || new Date(),
@@ -1497,7 +1505,7 @@ export class HrDashboardComponent {
                 }]
               };
             } else {
-              // 新しい扶養者情報を作成（保険証情報を含む）
+              // 新しい扶養者情報を作成（添付ファイルURLとファイル名を含む）
               const newDependent = {
                 name: dependentName,
                 nameKana: `${lastNameKana} ${firstNameKana}`.trim(),
@@ -1521,9 +1529,17 @@ export class HrDashboardComponent {
                 addressKana: this.selectedApplication.addressKana || '',
                 addressChangeDate: this.selectedApplication.addressChangeDate || '',
                 basicPensionNumber: this.selectedApplication.basicPensionNumber || '',
+                basicPensionNumberDocFileUrl: this.selectedApplication.basicPensionNumberDocFileUrl || '',
+                basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName || '',
+                myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl || '',
+                myNumberDocFileName: this.selectedApplication.myNumberDocFileName || '',
+                identityDocFileUrl: this.selectedApplication.identityDocFileUrl || '',
+                identityDocFileName: this.selectedApplication.identityDocFileName || '',
                 disabilityCategory: this.selectedApplication.disabilityCategory || '',
                 disabilityCardType: this.selectedApplication.disabilityCardType || '',
                 disabilityCardIssueDate: this.selectedApplication.disabilityCardIssueDate || '',
+                disabilityCardFileUrl: this.selectedApplication.disabilityCardFileUrl || '',
+                disabilityCardFileName: this.selectedApplication.disabilityCardFileName || '',
                 insuranceSymbol: insuranceSymbol,
                 insuranceNumber: insuranceNumber,
                 insuranceCardIssueDate: this.selectedApplication.dependentStartDate || new Date(),
@@ -2481,9 +2497,17 @@ export class HrDashboardComponent {
         addressKana: dep.addressKana || '',
         addressChangeDate: dep.addressChangeDate || '',
         basicPensionNumber: dep.basicPensionNumber || '',
+        basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
+        basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
+        myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
+        myNumberDocFileName: dep.myNumberDocFileName || '',
+        identityDocFileUrl: dep.identityDocFileUrl || '',
+        identityDocFileName: dep.identityDocFileName || '',
         disabilityCategory: dep.disabilityCategory || '',
         disabilityCardType: dep.disabilityCardType || '',
         disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
+        disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
+        disabilityCardFileName: dep.disabilityCardFileName || '',
         notes: dep.notes || ''
       }));
       // 展開状態を初期化（すべて折りたたみ）
@@ -2891,6 +2915,34 @@ export class HrDashboardComponent {
       }
     }
   }
+
+  // ファイル名を取得するヘルパーメソッド（保存されたファイル名があればそれを使用、なければURLから抽出）
+  getFileNameFromUrl(url: string, fileName?: string): string {
+    if (fileName) {
+      return fileName;
+    }
+    if (!url) return 'ファイル';
+    try {
+      // URLをデコードして、パスからファイル名を抽出
+      const decodedUrl = decodeURIComponent(url);
+      // クエリパラメータを除去
+      const urlWithoutQuery = decodedUrl.split('?')[0];
+      // パスの最後の部分を取得
+      const pathParts = urlWithoutQuery.split('/');
+      let extractedFileName = pathParts[pathParts.length - 1];
+      // URLエンコードされた文字をデコード
+      extractedFileName = decodeURIComponent(extractedFileName);
+      // ファイル名が長すぎる場合は切り詰める
+      if (extractedFileName.length > 50) {
+        const extension = extractedFileName.substring(extractedFileName.lastIndexOf('.'));
+        const nameWithoutExt = extractedFileName.substring(0, extractedFileName.lastIndexOf('.'));
+        extractedFileName = nameWithoutExt.substring(0, 47) + '...' + extension;
+      }
+      return extractedFileName || 'ファイル';
+    } catch (error) {
+      return 'ファイル';
+    }
+  }
   
 
   private removeUndefinedValues(obj: any): any {
@@ -2974,8 +3026,31 @@ export class HrDashboardComponent {
           nameKana: dep.nameKana || '',
           relationship: dep.relationship || '',
           birthDate: dep.birthDate || '',
+          gender: dep.gender || '',
           myNumber: dep.myNumber || '',
+          phoneNumber: dep.phoneNumber || '',
+          occupation: dep.occupation || '',
+          annualIncome: dep.annualIncome || '',
+          monthlyIncome: dep.monthlyIncome || '',
+          dependentStartDate: dep.dependentStartDate || '',
+          dependentReason: dep.dependentReason || '',
+          livingTogether: dep.livingTogether || '',
+          postalCode: dep.postalCode || '',
           address: dep.address || '',
+          addressKana: dep.addressKana || '',
+          addressChangeDate: dep.addressChangeDate || '',
+          basicPensionNumber: dep.basicPensionNumber || '',
+          basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
+          basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
+          myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
+          myNumberDocFileName: dep.myNumberDocFileName || '',
+          identityDocFileUrl: dep.identityDocFileUrl || '',
+          identityDocFileName: dep.identityDocFileName || '',
+          disabilityCategory: dep.disabilityCategory || '',
+          disabilityCardType: dep.disabilityCardType || '',
+          disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
+          disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
+          disabilityCardFileName: dep.disabilityCardFileName || '',
           notes: dep.notes || ''
         }));
 
