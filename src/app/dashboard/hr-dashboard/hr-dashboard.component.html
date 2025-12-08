@@ -2514,6 +2514,14 @@
               <span class="detail-label">マイナンバー:</span>
               <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber) }}</span>
             </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.provideMyNumber === '提供する' && selectedApplication.myNumberCardFileUrl">
+              <span class="detail-label">マイナンバーカード:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                </a>
+              </span>
+            </div>
             <div class="detail-item full-width" *ngIf="selectedApplication.provideMyNumber === '提供しない'">
               <span class="detail-label">未提供理由:</span>
               <span class="detail-value">{{ selectedApplication.myNumberNotProvidedReason || '-' }}</span>
@@ -2750,6 +2758,21 @@
             </div>
           </div>
         </section>
+        
+        <!-- マイナンバーカード -->
+        <section class="detail-section" *ngIf="selectedApplication.myNumberCardFileUrl">
+          <h3 class="section-title">マイナンバーカード</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">マイナンバーカード:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                </a>
+              </span>
+            </div>
+          </div>
+        </section>
       </ng-container>
       
       <!-- 氏名変更申請の詳細 -->
@@ -2941,7 +2964,7 @@
       <!-- 入社時申請の詳細 -->
       <ng-container *ngIf="selectedApplication.applicationType === '入社時申請'">
         <!-- 添付資料 -->
-        <section class="detail-section" *ngIf="selectedApplication.resumeFileUrl || selectedApplication.careerHistoryFileUrl || selectedApplication.basicPensionNumberDocFileUrl || selectedApplication.idDocumentFileUrl">
+        <section class="detail-section" *ngIf="selectedApplication.resumeFileUrl || selectedApplication.careerHistoryFileUrl || selectedApplication.basicPensionNumberDocFileUrl || selectedApplication.idDocumentFileUrl || selectedApplication.myNumberCardFileUrl">
           <h3 class="section-title">添付資料</h3>
           <div class="detail-grid">
             <div class="detail-item full-width" *ngIf="selectedApplication.resumeFileUrl">
@@ -2973,6 +2996,14 @@
               <span class="detail-value">
                 <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">
                   {{ selectedApplication.idDocumentFile || '本人確認書類を開く' }}
+                </a>
+              </span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl">
+              <span class="detail-label">マイナンバーカード:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
                 </a>
               </span>
             </div>
@@ -3199,6 +3230,17 @@
                 {{ onboardingShowMyNumber ? '非表示' : '表示' }}
               </button>
             </div>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboardingMyNumberCard">マイナンバーカード添付</label>
+            <input 
+              type="file" 
+              id="onboardingMyNumberCard" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'onboardingMyNumberCard')"
+            >
+            <div *ngIf="onboardingMyNumberCardFile" class="file-name">{{ onboardingMyNumberCardFile.name }}</div>
           </div>
         </div>
       </section>

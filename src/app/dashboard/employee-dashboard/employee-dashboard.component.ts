@@ -78,6 +78,11 @@ export class EmployeeDashboardComponent {
   // 産前産後休業申請用ファイル
   maternityLeaveDocumentFile: File | null = null;
   
+  // マイナンバーカード添付用ファイル
+  myNumberCardFile: File | null = null; // 入社時申請用
+  dependentMyNumberCardFile: File | null = null; // 扶養家族追加申請用
+  myNumberChangeCardFile: File | null = null; // マイナンバー変更申請用
+  
   // 申請詳細モーダル用
   showApplicationDetailModal = false;
   selectedApplication: any = null;
@@ -797,6 +802,15 @@ export class EmployeeDashboardComponent {
         case 'maternityLeaveDocument':
           this.maternityLeaveDocumentFile = file;
           break;
+        case 'myNumberCard':
+          this.myNumberCardFile = file;
+          break;
+        case 'dependentMyNumberCard':
+          this.dependentMyNumberCardFile = file;
+          break;
+        case 'myNumberChangeCard':
+          this.myNumberChangeCardFile = file;
+          break;
         case 'onboardingResume':
           this.resumeFile = file;
           break;
@@ -1264,6 +1278,9 @@ export class EmployeeDashboardComponent {
     this.dependentDisabilityCardFile = null;
     this.nameChangeIdDocumentFile = null;
     this.maternityLeaveDocumentFile = null;
+    this.myNumberCardFile = null;
+    this.dependentMyNumberCardFile = null;
+    this.myNumberChangeCardFile = null;
   }
   
   // 入社時申請フォームを作成
@@ -1840,6 +1857,16 @@ export class EmployeeDashboardComponent {
           basicPensionNumberDocFileName = this.dependentBasicPensionNumberDocFile.name;
         }
         
+        // マイナンバーカードをアップロード
+        let myNumberCardFileUrl = '';
+        let myNumberCardFileName = '';
+        if (this.dependentMyNumberCardFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberCardFile.name);
+          const myNumberCardPath = `applications/${this.employeeNumber}/dependentMyNumberCard_${Date.now()}_${sanitizedFileName}`;
+          myNumberCardFileUrl = await this.firestoreService.uploadFile(this.dependentMyNumberCardFile, myNumberCardPath);
+          myNumberCardFileName = this.dependentMyNumberCardFile.name;
+        }
+        
         if (this.dependentMyNumberDocFile) {
           const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberDocFile.name);
           const myNumberDocPath = `applications/${this.employeeNumber}/dependentMyNumberDoc_${Date.now()}_${sanitizedFileName}`;
@@ -1886,6 +1913,8 @@ export class EmployeeDashboardComponent {
           dependentReason: formValue.dependentReason || '',
           provideMyNumber: formValue.provideMyNumber,
           myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+          myNumberCardFileUrl: myNumberCardFileUrl,
+          myNumberCardFile: myNumberCardFileName,
           myNumberDocFileUrl: myNumberDocFileUrl,
           myNumberDocFileName: myNumberDocFileName,
           myNumberNotProvidedReason: formValue.provideMyNumber === '提供しない' ? formValue.myNumberNotProvidedReason : '',
@@ -2129,6 +2158,15 @@ export class EmployeeDashboardComponent {
             part3: formValue.newMyNumberPart3
           }
         };
+        
+        // マイナンバーカードをアップロード
+        if (this.myNumberChangeCardFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.myNumberChangeCardFile.name);
+          const myNumberCardPath = `applications/${this.employeeNumber}/myNumberChangeCard_${Date.now()}_${sanitizedFileName}`;
+          const myNumberCardUrl = await this.firestoreService.uploadFile(this.myNumberChangeCardFile, myNumberCardPath);
+          applicationData.myNumberCardFile = this.myNumberChangeCardFile.name;
+          applicationData.myNumberCardFileUrl = myNumberCardUrl;
+        }
         
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
@@ -2432,6 +2470,13 @@ export class EmployeeDashboardComponent {
           applicationData.idDocumentFile = this.idDocumentFile.name;
           applicationData.idDocumentFileUrl = idDocumentUrl;
         }
+        if (this.myNumberCardFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.myNumberCardFile.name);
+          const myNumberCardPath = `applications/${this.employeeNumber}/myNumberCard_${Date.now()}_${sanitizedFileName}`;
+          const myNumberCardUrl = await this.firestoreService.uploadFile(this.myNumberCardFile, myNumberCardPath);
+          applicationData.myNumberCardFile = this.myNumberCardFile.name;
+          applicationData.myNumberCardFileUrl = myNumberCardUrl;
+        }
         
         // 既存の申請データからファイルURLを保持（新しいファイルが選択されていない場合）
         // これは初回申請時には不要だが、再申請時に既存のファイルを保持するために必要
@@ -2446,6 +2491,10 @@ export class EmployeeDashboardComponent {
           if (!this.idDocumentFile && existingApplication.idDocumentFileUrl) {
             applicationData.idDocumentFileUrl = existingApplication.idDocumentFileUrl;
             applicationData.idDocumentFile = existingApplication.idDocumentFile || '';
+          }
+          if (!this.myNumberCardFile && existingApplication.myNumberCardFileUrl) {
+            applicationData.myNumberCardFileUrl = existingApplication.myNumberCardFileUrl;
+            applicationData.myNumberCardFile = existingApplication.myNumberCardFile || '';
           }
         }
 
@@ -3217,12 +3266,21 @@ export class EmployeeDashboardComponent {
           // 添付ファイルをアップロード（新しいファイルが選択された場合のみ）
           let basicPensionNumberDocFileUrl = this.selectedApplication.basicPensionNumberDocFileUrl || '';
           let basicPensionNumberDocFileName = this.selectedApplication.basicPensionNumberDocFileName || '';
+          let myNumberCardFileUrl = this.selectedApplication.myNumberCardFileUrl || '';
+          let myNumberCardFileName = this.selectedApplication.myNumberCardFile || '';
           let myNumberDocFileUrl = this.selectedApplication.myNumberDocFileUrl || '';
           let myNumberDocFileName = this.selectedApplication.myNumberDocFileName || '';
           let identityDocFileUrl = this.selectedApplication.identityDocFileUrl || '';
           let identityDocFileName = this.selectedApplication.identityDocFileName || '';
           let disabilityCardFileUrl = this.selectedApplication.disabilityCardFileUrl || '';
           let disabilityCardFileName = this.selectedApplication.disabilityCardFileName || '';
+          
+          if (this.dependentMyNumberCardFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberCardFile.name);
+            const myNumberCardPath = `applications/${this.employeeNumber}/dependentMyNumberCard_${Date.now()}_${sanitizedFileName}`;
+            myNumberCardFileUrl = await this.firestoreService.uploadFile(this.dependentMyNumberCardFile, myNumberCardPath);
+            myNumberCardFileName = this.dependentMyNumberCardFile.name;
+          }
           
           if (this.dependentBasicPensionNumberDocFile) {
             const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentBasicPensionNumberDocFile.name);
@@ -3259,6 +3317,8 @@ export class EmployeeDashboardComponent {
             basicPensionNumberDocFileUrl: basicPensionNumberDocFileUrl,
             basicPensionNumberDocFileName: basicPensionNumberDocFileName,
             myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+            myNumberCardFileUrl: myNumberCardFileUrl,
+            myNumberCardFile: myNumberCardFileName,
             myNumberDocFileUrl: myNumberDocFileUrl,
             myNumberDocFileName: myNumberDocFileName,
             identityDocFileUrl: identityDocFileUrl,
@@ -3375,6 +3435,19 @@ export class EmployeeDashboardComponent {
             applicationData.idDocumentFileUrl = this.selectedApplication.idDocumentFileUrl;
             applicationData.idDocumentFile = this.selectedApplication.idDocumentFile || '';
           }
+          
+          // マイナンバーカードをアップロード
+          if (this.myNumberChangeCardFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.myNumberChangeCardFile.name);
+            const myNumberCardPath = `applications/${this.employeeNumber}/myNumberChangeCard_${Date.now()}_${sanitizedFileName}`;
+            const myNumberCardUrl = await this.firestoreService.uploadFile(this.myNumberChangeCardFile, myNumberCardPath);
+            applicationData.myNumberCardFile = this.myNumberChangeCardFile.name;
+            applicationData.myNumberCardFileUrl = myNumberCardUrl;
+          } else if (this.selectedApplication.myNumberCardFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.myNumberCardFileUrl = this.selectedApplication.myNumberCardFileUrl;
+            applicationData.myNumberCardFile = this.selectedApplication.myNumberCardFile || '';
+          }
         }
       } else if (this.selectedApplication.applicationType === '入社時申請') {
         formValid = this.onboardingApplicationForm?.valid || false;
@@ -3478,6 +3551,19 @@ export class EmployeeDashboardComponent {
           } else if (this.selectedApplication.idDocumentFileUrl) {
             // 既存のファイルURLを保持
             applicationData.idDocumentFileUrl = this.selectedApplication.idDocumentFileUrl;
+          }
+          
+          // マイナンバーカードをアップロード
+          if (this.myNumberCardFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.myNumberCardFile.name);
+            const myNumberCardPath = `applications/${this.employeeNumber}/myNumberCard_${Date.now()}_${sanitizedFileName}`;
+            const myNumberCardUrl = await this.firestoreService.uploadFile(this.myNumberCardFile, myNumberCardPath);
+            applicationData.myNumberCardFile = this.myNumberCardFile.name;
+            applicationData.myNumberCardFileUrl = myNumberCardUrl;
+          } else if (this.selectedApplication.myNumberCardFileUrl) {
+            // 既存のファイルURLを保持
+            applicationData.myNumberCardFileUrl = this.selectedApplication.myNumberCardFileUrl;
+            applicationData.myNumberCardFile = this.selectedApplication.myNumberCardFile || '';
           }
         }
       } else if (this.selectedApplication.applicationType === '産前産後休業申請') {

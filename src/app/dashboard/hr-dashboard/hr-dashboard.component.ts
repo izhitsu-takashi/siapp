@@ -520,6 +520,7 @@ export class HrDashboardComponent {
   idDocumentFile: File | null = null;
   resumeFile: File | null = null;
   careerHistoryFile: File | null = null;
+  onboardingMyNumberCardFile: File | null = null;
   basicPensionNumberDocFile: File | null = null;
   
   // 既存の添付資料URL（表示用）
@@ -2826,6 +2827,9 @@ export class HrDashboardComponent {
           break;
         case 'basicPensionNumberDoc':
           this.basicPensionNumberDocFile = file;
+          break;
+        case 'onboardingMyNumberCard':
+          this.onboardingMyNumberCardFile = file;
           break;
       }
     }

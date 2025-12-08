@@ -700,35 +700,6 @@
               </div>
             </section>
 
-            <!-- 配偶者情報欄 -->
-            <section class="form-section">
-              <h3 class="section-title">配偶者情報</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="spouseStatus">配偶者の有無</label>
-                  <select 
-                    id="spouseStatus" 
-                    formControlName="spouseStatus" 
-                    class="form-input"
-                    (change)="onSpouseStatusChange($event)"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let option of spouseOptions" [value]="option">{{ option }}</option>
-                  </select>
-                </div>
-                <div class="form-group" *ngIf="hasSpouse">
-                  <label for="spouseAnnualIncome">配偶者の年収</label>
-                  <input 
-                    type="number" 
-                    id="spouseAnnualIncome" 
-                    formControlName="spouseAnnualIncome" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-              </div>
-            </section>
-
             <!-- 送信ボタン -->
             <div class="form-actions" *ngIf="isEditMode">
               <button type="submit" class="submit-button" [disabled]="settingsForm.invalid || isSaving">
@@ -1432,6 +1403,17 @@
                 >
               </div>
             </div>
+          </div>
+          <div class="form-group full-width">
+            <label for="onboardingMyNumberCard">マイナンバーカード添付</label>
+            <input 
+              type="file" 
+              id="onboardingMyNumberCard" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'myNumberCard')"
+            >
+            <div *ngIf="myNumberCardFile" class="file-name">{{ myNumberCardFile.name }}</div>
           </div>
         </div>
       </section>
@@ -2234,6 +2216,17 @@
             </div>
           </div>
           <div class="form-group">
+            <label for="dependentMyNumberCard">マイナンバーカード添付</label>
+            <input 
+              type="file" 
+              id="dependentMyNumberCard" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'dependentMyNumberCard')"
+            >
+            <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
+          </div>
+          <div class="form-group">
             <label for="dependentMyNumberDoc">番号確認書類添付</label>
             <input 
               type="file" 
@@ -2756,6 +2749,17 @@
             <div *ngIf="myNumberChangeForm.get('newMyNumberPart3')?.invalid && myNumberChangeForm.get('newMyNumberPart3')?.touched" class="error-message">
               4桁の数字を入力してください
             </div>
+          </div>
+          <div class="form-group full-width">
+            <label for="myNumberChangeCard">マイナンバーカード添付</label>
+            <input 
+              type="file" 
+              id="myNumberChangeCard" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event, 'myNumberChangeCard')"
+            >
+            <div *ngIf="myNumberChangeCardFile" class="file-name">{{ myNumberChangeCardFile.name }}</div>
           </div>
         </div>
       </section>
@@ -3498,6 +3502,32 @@
                 </div>
               </div>
             </div>
+            <div class="detail-item full-width" *ngIf="(selectedApplication.provideMyNumber === '提供する' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('provideMyNumber')?.value === '提供する')) && (selectedApplication.myNumberCardFileUrl || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentMyNumberCardFile))">
+              <span class="detail-label">マイナンバーカード <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
+              <!-- 表示モード -->
+              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+                <a *ngIf="selectedApplication.myNumberCardFileUrl" [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                </a>
+                <span *ngIf="!selectedApplication.myNumberCardFileUrl">-</span>
+              </span>
+              <!-- 編集モード -->
+              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+                <input 
+                  type="file" 
+                  class="form-input"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  (change)="onFileSelected($event, 'dependentMyNumberCard')"
+                >
+                <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
+                <div *ngIf="selectedApplication.myNumberCardFileUrl && !dependentMyNumberCardFile" class="file-info" style="margin-top: 0.5rem;">
+                  <span>既存ファイル: </span>
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                  </a>
+                </div>
+              </div>
+            </div>
             <div class="detail-item full-width" *ngIf="selectedApplication.provideMyNumber === '提供しない' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('provideMyNumber')?.value === '提供しない')">
               <span class="detail-label">未提供理由 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
               <!-- 表示モード -->
@@ -3993,6 +4023,21 @@
             </div>
           </div>
         </section>
+        
+        <!-- マイナンバーカード -->
+        <section class="detail-section" *ngIf="selectedApplication.myNumberCardFileUrl">
+          <h3 class="section-title">マイナンバーカード</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">マイナンバーカード:</span>
+              <span class="detail-value">
+                <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                  {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                </a>
+              </span>
+            </div>
+          </div>
+        </section>
       </ng-container>
       
       <!-- 氏名変更申請の詳細 -->
@@ -4328,6 +4373,30 @@
                       <span class="my-number-separator">-</span>
                       <input type="text" formControlName="myNumberPart3" class="form-input my-number-part" maxlength="4" placeholder="0000">
                     </div>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl || (isInEditMode() && myNumberCardFile)">
+                <span class="detail-label">マイナンバーカード:</span>
+                <span class="detail-value" *ngIf="isInViewMode() && selectedApplication.myNumberCardFileUrl">
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                  </a>
+                </span>
+                <span class="detail-value" *ngIf="isInViewMode() && !selectedApplication.myNumberCardFileUrl">-</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    class="form-input"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'myNumberCard')"
+                  >
+                  <div *ngIf="myNumberCardFile" class="file-name">{{ myNumberCardFile.name }}</div>
+                  <div *ngIf="selectedApplication.myNumberCardFileUrl && !myNumberCardFile" class="file-info" style="margin-top: 0.5rem;">
+                    <span>既存ファイル: </span>
+                    <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                      {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                    </a>
                   </div>
                 </div>
               </div>
