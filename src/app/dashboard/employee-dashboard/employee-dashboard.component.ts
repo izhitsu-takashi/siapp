@@ -3109,7 +3109,6 @@ export class EmployeeDashboardComponent {
       });
     } else if (application.applicationType === '住所変更申請') {
       this.addressChangeForm = this.createAddressChangeForm();
-      this.sameAsNewAddress = application.residentAddress?.sameAsNewAddress || false;
       this.sameAsOldAddress = application.residentAddress?.sameAsOldAddress || false;
       this.sameAsNewAddress = application.residentAddress?.sameAsNewAddress || false;
       
@@ -3133,6 +3132,7 @@ export class EmployeeDashboardComponent {
       }
     } else if (application.applicationType === '氏名変更申請') {
       this.nameChangeForm = this.createNameChangeForm();
+      this.nameChangeIdDocumentFile = null; // ファイルをリセット
       this.nameChangeForm.patchValue({
         changeDate: application.changeDate || '',
         newLastName: application.newName?.lastName || '',

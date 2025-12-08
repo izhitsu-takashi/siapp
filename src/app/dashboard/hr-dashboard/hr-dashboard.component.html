@@ -2688,14 +2688,6 @@
               <span class="detail-label">住所（ヨミガナ）:</span>
               <span class="detail-value">{{ selectedApplication.newAddress.addressKana || '-' }}</span>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">世帯主の続柄（本人/親族）:</span>
-              <span class="detail-value">{{ selectedApplication.newAddress.householdHead || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">世帯主氏名:</span>
-              <span class="detail-value">{{ selectedApplication.newAddress.householdHeadName || '-' }}</span>
-            </div>
           </div>
         </section>
         
@@ -2722,14 +2714,6 @@
             <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
               <span class="detail-label">住所（ヨミガナ）:</span>
               <span class="detail-value">{{ selectedApplication.residentAddress.addressKana || '-' }}</span>
-            </div>
-            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
-              <span class="detail-label">世帯主の続柄（本人/親族）:</span>
-              <span class="detail-value">{{ selectedApplication.residentAddress.householdHead || '-' }}</span>
-            </div>
-            <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
-              <span class="detail-label">世帯主氏名:</span>
-              <span class="detail-value">{{ selectedApplication.residentAddress.householdHeadName || '-' }}</span>
             </div>
           </div>
         </section>
