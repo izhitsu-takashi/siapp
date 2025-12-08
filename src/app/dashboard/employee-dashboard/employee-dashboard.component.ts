@@ -1198,6 +1198,8 @@ export class EmployeeDashboardComponent {
         // 既存の新入社員データから氏名とメールアドレスを取得して設定
         this.loadOnboardingEmployeeDataForApplication();
       }
+      // デバッグ用：フォームを有効化（何回でも申請できるようにする）
+      this.onboardingApplicationForm.enable();
       this.showApplicationModal = true;
     } else if (applicationType === '扶養家族追加') {
       this.dependentApplicationForm = this.createDependentApplicationForm();
@@ -1235,13 +1237,9 @@ export class EmployeeDashboardComponent {
     }
     this.showApplicationModal = false;
     this.currentApplicationType = '';
-    // 入社時申請フォームのdisabled状態を解除
+    // デバッグ用：入社時申請フォームのdisabled状態を解除（何回でも申請できるようにする）
     if (this.onboardingApplicationForm) {
-      this.onboardingApplicationForm.get('lastName')?.enable();
-      this.onboardingApplicationForm.get('firstName')?.enable();
-      this.onboardingApplicationForm.get('lastNameKana')?.enable();
-      this.onboardingApplicationForm.get('firstNameKana')?.enable();
-      this.onboardingApplicationForm.get('email')?.enable();
+      this.onboardingApplicationForm.enable();
     }
     this.dependentApplicationForm = this.createDependentApplicationForm();
     this.dependentRemovalForm = this.createDependentRemovalForm();
@@ -2240,6 +2238,11 @@ export class EmployeeDashboardComponent {
   
   // 入社時申請を送信
   async submitOnboardingApplication() {
+    // 既に申請中の場合は処理を中断
+    if (this.isSubmittingOnboardingApplication) {
+      return;
+    }
+    
     if (this.onboardingApplicationForm.valid) {
       this.isSubmittingOnboardingApplication = true;
       // フォームを無効化
@@ -2381,9 +2384,6 @@ export class EmployeeDashboardComponent {
         // 入社時申請の情報を新入社員詳細情報に反映
         await this.updateOnboardingEmployeeDataFromApplication(applicationData);
         
-        // モーダルを閉じる
-        this.closeApplicationModal();
-        
         // 申請一覧を再読み込み
         await this.loadApplications();
         
@@ -2395,13 +2395,21 @@ export class EmployeeDashboardComponent {
         // 人事からの依頼を再読み込み（入社時申請メッセージを更新）
         await this.loadHrRequests();
         
+        // 申請完了メッセージを表示
         alert('入社時申請を送信しました');
+        
+        // 申請フラグをリセットしてからモーダルを閉じる
+        this.isSubmittingOnboardingApplication = false;
+        // モーダルを強制的に閉じる
+        this.showApplicationModal = false;
+        this.currentApplicationType = '';
+        // フォームを有効化（デバッグ用）
+        this.onboardingApplicationForm.enable();
       } catch (error) {
         console.error('Error submitting onboarding application:', error);
         alert('申請の送信に失敗しました');
-      } finally {
+        // エラー時もフラグをリセット
         this.isSubmittingOnboardingApplication = false;
-        // フォームを再度有効化
         this.onboardingApplicationForm.enable();
       }
     } else {
