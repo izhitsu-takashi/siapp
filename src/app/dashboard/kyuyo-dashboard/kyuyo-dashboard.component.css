@@ -759,6 +759,12 @@
 .history-container .table-container {
   max-height: 70vh;
   overflow-y: auto;
+  min-height: auto;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .salary-form,
