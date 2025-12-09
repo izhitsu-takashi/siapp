@@ -188,6 +188,11 @@
   flex-wrap: wrap;
 }
 
+/* ダッシュボードページが含まれる場合、content-areaのmax-widthを無効化して他のページに影響しないようにする */
+.main-content:has(.dashboard-page) .content-area {
+  max-width: none;
+}
+
 /* ダッシュボードページ */
 .dashboard-page {
   padding: 2rem 0rem;
@@ -196,6 +201,7 @@
   gap: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
 }
 
 /* ダッシュボードページヘッダー */
