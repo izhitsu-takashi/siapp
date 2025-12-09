@@ -3046,7 +3046,7 @@ export class KyuyoDashboardComponent {
         bonusByFiscalYear.get(fiscalYear)!.push(bonus);
       });
       
-      // 各年度について、4回目以降の賞与が支給された月を特定
+      // 各年度について、4回目以降の賞与が支給されたすべての月を時系列順に処理
       for (const [fiscalYear, bonuses] of bonusByFiscalYear.entries()) {
         // 時系列順にソート
         const sortedBonuses = bonuses.sort((a: any, b: any) => {
@@ -3058,61 +3058,113 @@ export class KyuyoDashboardComponent {
           return aId.localeCompare(bId);
         });
         
-        // 4回目以降の賞与が支給された月を特定
+        // 4回目以降の賞与が支給された月を特定（同じ月は1回だけ処理）
         if (sortedBonuses.length >= 4) {
-          // 4回目の賞与が支給された月
-          const fourthBonus = sortedBonuses[3];
-          const fourthBonusYear = fourthBonus['year'];
-          const fourthBonusMonth = fourthBonus['month'];
+          // 4回目以降の賞与が支給された月を時系列順に取得（重複を除去）
+          const bonusMonths = new Map<string, { year: number; month: number; index: number }>();
           
-          console.log(`[随時改定再計算] ${fiscalYear}年度で4回目以降の賞与が支給されたため、${fourthBonusYear}年${fourthBonusMonth}月を給与変更月として随時改定処理を実行します。`);
-          
-          // その時点での給与額を取得
-          const relevantSalaries = salaryHistory
-            .filter((s: any) => s['employeeNumber'] === employeeNumber)
-            .filter((s: any) => {
-              const salaryYear = Number(s['year']);
-              const salaryMonth = Number(s['month']);
-              if (salaryYear < fourthBonusYear) return true;
-              if (salaryYear === fourthBonusYear && salaryMonth <= fourthBonusMonth) return true;
-              return false;
-            })
-            .sort((a: any, b: any) => {
-              const aYear = Number(a['year']);
-              const bYear = Number(b['year']);
-              const aMonth = Number(a['month']);
-              const bMonth = Number(b['month']);
-              if (aYear !== bYear) return bYear - aYear;
-              return bMonth - bMonth;
-            });
-          
-          let salaryAmount = 0;
-          if (relevantSalaries.length > 0) {
-            salaryAmount = Number(relevantSalaries[0]['amount']);
-          } else {
-            // 給与設定がない場合、入社時の給与見込み額から計算（給与と現物の合計）
-            const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
-            if (employeeData) {
-              const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
-              const expectedMonthlySalaryInKind = Number(employeeData.expectedMonthlySalaryInKind) || 0;
-              salaryAmount = expectedMonthlySalary + expectedMonthlySalaryInKind;
-              console.log(`[随時改定再計算] 給与設定がないため、入社時の給与見込み額（給与: ${expectedMonthlySalary}円 + 現物: ${expectedMonthlySalaryInKind}円 = 合計: ${salaryAmount}円）を使用します。`);
+          for (let i = 3; i < sortedBonuses.length; i++) {
+            const bonus = sortedBonuses[i];
+            const bonusYear = bonus['year'];
+            const bonusMonth = bonus['month'];
+            const key = `${bonusYear}_${bonusMonth}`;
+            
+            // 同じ月の最初の賞与（4回目以降）のインデックスを記録
+            if (!bonusMonths.has(key)) {
+              bonusMonths.set(key, { year: bonusYear, month: bonusMonth, index: i });
             }
           }
           
-          // 4回目以降の賞与が支給された月を給与変更月として随時改定処理を実行
-          await this.checkAndUpdateStandardMonthlySalary(
-            employeeNumber,
-            fourthBonusYear,
-            fourthBonusMonth,
-            salaryAmount,
-            salaryHistory,
-            bonusList,
-            fourthBonusYear,
-            fourthBonusMonth
-          );
+          // 時系列順にソート
+          const sortedBonusMonths = Array.from(bonusMonths.values()).sort((a, b) => {
+            if (a.year !== b.year) return a.year - b.year;
+            return a.month - b.month;
+          });
           
-          console.log(`[随時改定再計算] ${fourthBonusYear}年${fourthBonusMonth}月（4回目以降の賞与支給月）について随時改定を計算完了`);
+          // 各月について、その時点での報酬加算額を使用して随時改定を実行
+          // さらに、その月以前の月（3か月前まで）で随時改定が行われた場合、それらも再計算する
+          for (const bonusMonth of sortedBonusMonths) {
+            const bonusYear = bonusMonth.year;
+            const bonusMonthNum = bonusMonth.month;
+            
+            // その月以前の月（3か月前まで）で随時改定が行われた可能性がある月を特定
+            const monthsToRecalculate: { year: number; month: number }[] = [];
+            
+            // その月を給与変更月として随時改定を実行
+            monthsToRecalculate.push({ year: bonusYear, month: bonusMonthNum });
+            
+            // その月以前の月（3か月前まで）も再計算する
+            for (let offset = 1; offset <= 3; offset++) {
+              let targetYear = bonusYear;
+              let targetMonth = bonusMonthNum - offset;
+              
+              // 月が0以下になった場合の処理
+              while (targetMonth <= 0) {
+                targetMonth += 12;
+                targetYear -= 1;
+              }
+              
+              // その月が4回目以降の賞与が支給された月より前の場合、再計算対象に追加
+              if (targetYear < bonusYear || (targetYear === bonusYear && targetMonth < bonusMonthNum)) {
+                monthsToRecalculate.push({ year: targetYear, month: targetMonth });
+              }
+            }
+            
+            // 各月について、その時点での報酬加算額を使用して随時改定を実行
+            for (const monthToRecalc of monthsToRecalculate) {
+              const changeYear = monthToRecalc.year;
+              const changeMonth = monthToRecalc.month;
+              
+              console.log(`[随時改定再計算] ${fiscalYear}年度で4回目以降の賞与が支給されたため、${changeYear}年${changeMonth}月を給与変更月として随時改定処理を実行します。`);
+              
+              // その時点での給与額を取得
+              const relevantSalaries = salaryHistory
+                .filter((s: any) => s['employeeNumber'] === employeeNumber)
+                .filter((s: any) => {
+                  const salaryYear = Number(s['year']);
+                  const salaryMonth = Number(s['month']);
+                  if (salaryYear < changeYear) return true;
+                  if (salaryYear === changeYear && salaryMonth <= changeMonth) return true;
+                  return false;
+                })
+                .sort((a: any, b: any) => {
+                  const aYear = Number(a['year']);
+                  const bYear = Number(b['year']);
+                  const aMonth = Number(a['month']);
+                  const bMonth = Number(b['month']);
+                  if (aYear !== bYear) return bYear - aYear;
+                  return bMonth - bMonth;
+                });
+              
+              let salaryAmount = 0;
+              if (relevantSalaries.length > 0) {
+                salaryAmount = Number(relevantSalaries[0]['amount']);
+              } else {
+                // 給与設定がない場合、入社時の給与見込み額から計算（給与と現物の合計）
+                const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+                if (employeeData) {
+                  const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
+                  const expectedMonthlySalaryInKind = Number(employeeData.expectedMonthlySalaryInKind) || 0;
+                  salaryAmount = expectedMonthlySalary + expectedMonthlySalaryInKind;
+                  console.log(`[随時改定再計算] 給与設定がないため、入社時の給与見込み額（給与: ${expectedMonthlySalary}円 + 現物: ${expectedMonthlySalaryInKind}円 = 合計: ${salaryAmount}円）を使用します。`);
+                }
+              }
+              
+              // その時点での報酬加算額を使用して随時改定処理を実行
+              // 各月の報酬加算額は、その月の時点での賞与を使用して計算される（checkAndUpdateStandardMonthlySalary内で修正済み）
+              // asOfYear, asOfMonthは指定しない（各月の時点での賞与を使用するため）
+              await this.checkAndUpdateStandardMonthlySalary(
+                employeeNumber,
+                changeYear,
+                changeMonth,
+                salaryAmount,
+                salaryHistory,
+                bonusList
+              );
+              
+              console.log(`[随時改定再計算] ${changeYear}年${changeMonth}月について随時改定を計算完了`);
+            }
+          }
         }
       }
       
@@ -3256,14 +3308,15 @@ export class KyuyoDashboardComponent {
         }
         
         // 報酬加算額を計算して加算
-        // asOfYear, asOfMonthが指定されている場合、その時点までの賞与のみを考慮
+        // 各月の報酬加算額は、その月の時点での賞与を使用して計算する
+        // asOfYear, asOfMonthが指定されている場合でも、各月の時点での賞与を使用する
         const rewardAddition = await this.calculateMonthlyRewardAddition(
           employeeNumber,
           targetYear,
           targetMonth,
           actualBonusList,
-          asOfYear,
-          asOfMonth
+          targetYear,  // その月の時点での賞与を使用
+          targetMonth  // その月の時点での賞与を使用
         );
         
         console.log(`[随時改定] ${targetYear}年${targetMonth}月: 給与額=${monthlySalary}円, 報酬加算額=${rewardAddition}円, 合計=${monthlySalary + rewardAddition}円`);
