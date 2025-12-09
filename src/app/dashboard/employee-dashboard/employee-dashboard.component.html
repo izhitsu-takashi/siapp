@@ -36,9 +36,6 @@
       <div class="content-area">
         <!-- 情報照会ページ -->
         <ng-container *ngIf="currentTab === '情報照会'">
-          <div class="page-header">
-            <h2 class="page-title">社員情報</h2>
-          </div>
 
           <form [formGroup]="settingsForm" class="settings-form">
             
@@ -750,10 +747,6 @@
 
         <!-- 各種申請ページ -->
         <ng-container *ngIf="currentTab === '各種申請'">
-          <div class="page-header">
-            <h2 class="page-title">各種申請</h2>
-          </div>
-          
           <div class="application-grid">
             <button 
               *ngIf="!hasOnboardingApplication"
@@ -944,10 +937,6 @@
 
         <!-- パスワード変更ページ -->
         <ng-container *ngIf="currentTab === 'パスワード変更'">
-          <div class="page-header">
-            <h2 class="page-title">パスワード変更</h2>
-          </div>
-          
           <form [formGroup]="passwordChangeForm" (ngSubmit)="changePassword()" class="settings-form">
             <section class="form-section">
               <h3 class="section-title">パスワード変更</h3>
@@ -1008,9 +997,6 @@
         <!-- その他のタブ -->
         <!-- 保険・扶養ページ -->
         <ng-container *ngIf="currentTab === '保険・扶養'">
-          <div class="page-header">
-            <h2 class="page-title">保険・扶養情報</h2>
-          </div>
           <div class="insurance-dependents-page">
             
             <!-- 保険者種別情報 -->
@@ -1167,9 +1153,6 @@
 
         <!-- ナレッジページ -->
         <ng-container *ngIf="currentTab === 'ナレッジ'">
-          <div class="page-header">
-            <h2 class="page-title">ナレッジ - AIアシスタント</h2>
-          </div>
           <div class="knowledge-page">
             
             <!-- チャットエリア -->
@@ -1264,7 +1247,6 @@
 
         <!-- その他のページ -->
         <ng-container *ngIf="currentTab !== '情報照会' && currentTab !== '各種申請' && currentTab !== 'メインページ' && currentTab !== '保険・扶養' && currentTab !== 'パスワード変更' && currentTab !== 'ナレッジ'">
-          <h2 class="page-title">{{ currentTab }}のページです</h2>
         </ng-container>
       </div>
     </main>
