@@ -134,7 +134,7 @@
   flex-direction: column;
   height: calc(100vh - 70px);
   overflow: hidden;
-  padding-top: 0;
+  padding: 0rem 4rem 1rem 4rem;
 }
 
 .main-content:has(.dashboard-page) .content-area {
@@ -360,7 +360,7 @@
 }
 
 .status-label {
-  font-size: 0.7rem;
+  font-size: clamp(0.4rem, 1.2vw, 0.7rem);
   color: #666;
   margin-bottom: 0.3rem;
   font-weight: 600;
@@ -368,7 +368,7 @@
 }
 
 .status-count {
-  font-size: 1.4rem;
+  font-size: clamp(0.8rem, 2.5vw, 1.8rem);
   font-weight: 700;
   line-height: 1;
   margin-top: 0.25rem;
@@ -2697,12 +2697,12 @@
   }
 
   .status-label {
-    font-size: 0.65rem;
+    font-size: clamp(0.35rem, 1vw, 0.55rem);
     margin-bottom: 0.2rem;
   }
 
   .status-count {
-    font-size: 1.2rem;
+    font-size: clamp(0.7rem, 2vw, 1.3rem);
   }
 }
 
@@ -2761,11 +2761,11 @@
   }
 
   .status-label {
-    font-size: 0.6rem;
+    font-size: clamp(0.3rem, 0.9vw, 0.45rem);
   }
 
   .status-count {
-    font-size: 1rem;
+    font-size: clamp(0.6rem, 1.8vw, 1rem);
   }
 }
 
