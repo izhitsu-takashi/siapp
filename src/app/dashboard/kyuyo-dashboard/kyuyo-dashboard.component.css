@@ -119,7 +119,7 @@
 .main-content {
   flex: 1;
   background: #ffffff;
-  padding: 2rem;
+  padding: 0rem 2rem 2rem 2rem;
   overflow-y: auto;
 }
 
@@ -152,32 +152,8 @@
 }
 
 /* 社会保険料ページ */
-.insurance-list-page {
-  padding: 2rem;
-}
-
-.insurance-list-page .page-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
-}
 
 /* 休業・任意保険者ページ */
-.leave-voluntary-page {
-  padding: 2rem;
-}
-
-.leave-voluntary-page .page-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
-}
 
 .leave-voluntary-page .filter-controls {
   margin-bottom: 2rem;
@@ -523,20 +499,6 @@
 }
 
 /* 設定ページ */
-.settings-page {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.settings-page .page-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #56ab2f;
-}
 
 .settings-container {
   background: #f8f9fa;
@@ -1068,10 +1030,6 @@
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
-  .settings-page {
-    padding: 1rem;
-  }
-
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -1079,9 +1037,6 @@
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
-  .insurance-list-page {
-    padding: 1rem;
-  }
 
   .insurance-table {
     font-size: 0.85rem;
