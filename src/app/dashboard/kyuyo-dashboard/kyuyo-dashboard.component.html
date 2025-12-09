@@ -586,6 +586,7 @@
                         min="0"
                         max="100"
                         placeholder="例: 5.0"
+                        readonly
                       >
                     </div>
                     <div class="form-group">
@@ -599,19 +600,22 @@
                         min="0"
                         max="100"
                         placeholder="例: 1.0"
+                        readonly
                       >
                     </div>
                     <div class="form-group">
                       <label for="pensionInsuranceRate">厚生年金保険料率 (%)</label>
                       <input 
-                        type="number" 
+                        type="text" 
                         id="pensionInsuranceRate" 
                         formControlName="pensionInsuranceRate" 
                         class="form-input"
-                        step="0.01"
-                        min="0"
-                        max="100"
                         placeholder="例: 9.15"
+                        pattern="[0-9]+(\.[0-9]+)?"
+                        (keydown)="onPensionInsuranceRateKeydown($event)"
+                        (input)="onPensionInsuranceRateInput($event)"
+                        (compositionstart)="onPensionInsuranceRateCompositionStart($event)"
+                        (compositionend)="onPensionInsuranceRateCompositionEnd($event)"
                       >
                     </div>
                   </div>

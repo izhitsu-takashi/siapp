@@ -201,6 +201,14 @@
 
 .leave-voluntary-page .table-container {
   margin-top: 2rem;
+  min-height: auto;
+  padding: 0;
+}
+
+.leave-voluntary-page .table-container .insurance-table {
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .leave-voluntary-page .end-voluntary-button {
