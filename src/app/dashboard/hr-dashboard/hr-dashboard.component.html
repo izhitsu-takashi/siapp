@@ -48,7 +48,7 @@
                   </div>
                 </div>
                 <div class="status-cards">
-                  <div class="status-card" (click)="navigateToEmployeeManagement()">
+                  <div class="status-card" (click)="navigateToEmployeeManagement('必須情報不足')">
                     <div class="status-label">必須情報不足</div>
                     <div class="status-count" 
                          [class.count-zero]="getEmployeeStatusCount('必須情報不足') === 0"
@@ -57,7 +57,7 @@
                       {{ getEmployeeStatusCount('必須情報不足') }}
                     </div>
                   </div>
-                  <div class="status-card" (click)="navigateToEmployeeManagement()">
+                  <div class="status-card" (click)="navigateToEmployeeManagement('扶養者情報不足')">
                     <div class="status-label">扶養者情報不足</div>
                     <div class="status-count" 
                          [class.count-zero]="getEmployeeStatusCount('扶養者情報不足') === 0"
@@ -66,7 +66,7 @@
                       {{ getEmployeeStatusCount('扶養者情報不足') }}
                     </div>
                   </div>
-                  <div class="status-card" (click)="navigateToEmployeeManagement()">
+                  <div class="status-card" (click)="navigateToEmployeeManagement('入力完了')">
                     <div class="status-label">入力完了</div>
                     <div class="status-count" 
                          [class.count-zero]="getEmployeeStatusCount('入力完了') === 0"
@@ -538,18 +538,20 @@
         <!-- 入社手続きページ -->
         <ng-container *ngIf="currentTab === '入社手続き'">
           <div class="onboarding-page">
-            <h2 class="page-title">入社手続き</h2>
-            <div class="header-buttons">
-              <button 
-                *ngIf="hasReadyEmployees()" 
-                class="onboarding-process-button" 
-                (click)="openOnboardingProcessModal()"
-              >
-                入社処理実行
-              </button>
-              <button class="add-employee-button" (click)="openAddModal()">
-                社員を追加
-              </button>
+            <div class="page-header-with-button">
+              <h2 class="page-title">入社手続き</h2>
+              <div class="header-buttons">
+                <button 
+                  *ngIf="hasReadyEmployees()" 
+                  class="onboarding-process-button" 
+                  (click)="openOnboardingProcessModal()"
+                >
+                  入社処理実行
+                </button>
+                <button class="add-employee-button" (click)="openAddModal()">
+                  社員を追加
+                </button>
+              </div>
             </div>
 
             <div class="filter-section">
@@ -942,7 +944,28 @@
         <!-- 社員情報管理ページ -->
         <ng-container *ngIf="currentTab === '社員情報管理'">
           <div class="employee-management-page">
-            <h2 class="page-title">社員情報管理</h2>
+            <div class="page-header-with-button">
+              <h2 class="page-title">社員情報管理</h2>
+              <button 
+                type="button" 
+                class="add-employee-button"
+                (click)="openAddEmployeeModal()"
+              >
+                社員を追加
+              </button>
+            </div>
+            
+            <div class="filter-section">
+              <label for="employeeStatusFilter">ステータスフィルター:</label>
+              <select 
+                id="employeeStatusFilter" 
+                [(ngModel)]="employeeStatusFilter" 
+                (change)="onEmployeeStatusFilterChange()"
+                class="status-filter-select"
+              >
+                <option *ngFor="let status of employeeStatuses" [value]="status">{{ status }}</option>
+              </select>
+            </div>
 
             <!-- 社員一覧テーブル -->
             <div class="table-container">
@@ -958,7 +981,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let employee of employees" (click)="openEmployeeEditModal(employee.employeeNumber)" class="employee-row">
+                <tr *ngFor="let employee of filteredEmployees" (click)="openEmployeeEditModal(employee.employeeNumber)" class="employee-row">
                   <td>{{ employee.employeeNumber }}</td>
                   <td>{{ employee.name }}</td>
                   <td>{{ employee.email }}</td>
@@ -975,7 +998,7 @@
                     </span>
                   </td>
                 </tr>
-                <tr *ngIf="employees.length === 0">
+                <tr *ngIf="filteredEmployees.length === 0">
                   <td colspan="6" class="empty-message">社員データがありません</td>
                 </tr>
               </tbody>

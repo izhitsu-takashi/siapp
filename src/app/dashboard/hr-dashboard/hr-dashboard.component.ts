@@ -459,6 +459,10 @@ export class HrDashboardComponent {
   applicationStatusFilter: string = 'すべて';
   applicationStatuses = ['すべて', '承認待ち', '確認中', '差し戻し', '再申請', '承認済み'];
   
+  // 社員情報管理用フィルター
+  employeeStatusFilter: string = 'すべて';
+  employeeStatuses = ['すべて', '必須情報不足', '扶養者情報不足', '入力完了'];
+  
   // 保険証管理用データ
   insuranceCards: any[] = [];
   filteredInsuranceCards: any[] = [];
@@ -2116,7 +2120,8 @@ export class HrDashboardComponent {
       
       // 文書作成用の全従業員データも読み込む（新入社員を除外）
       this.allEmployeesForDocument = completedEmployees;
-      this.filteredEmployees = this.employees;
+      // フィルターとソートを適用
+      this.filterAndSortEmployees();
     } catch (error) {
       console.error('Error loading employees:', error);
       this.employees = [];
@@ -5655,11 +5660,73 @@ export class HrDashboardComponent {
     }).length;
   }
 
-  // 社員情報管理ページに遷移
-  navigateToEmployeeManagement() {
+  // 社員情報管理表のフィルターとソート
+  filterAndSortEmployees() {
+    // ステータスの優先度順（必須情報不足→扶養者情報不足→入力完了）
+    const statusPriority: { [key: string]: number } = {
+      '必須情報不足': 1,
+      '扶養者情報不足': 2,
+      '入力完了': 3
+    };
+    
+    // フィルター適用
+    let filtered = this.employees;
+    if (this.employeeStatusFilter !== 'すべて') {
+      filtered = this.employees.filter(emp => {
+        return emp.status === this.employeeStatusFilter;
+      });
+    }
+    
+    // 優先度順にソート（必須情報不足→扶養者情報不足→入力完了）
+    this.filteredEmployees = filtered.sort((a, b) => {
+      // 退職済みの社員は下に表示
+      const aIsResigned = a.employmentStatus === '退職' || a.employmentStatus === '退職済み';
+      const bIsResigned = b.employmentStatus === '退職' || b.employmentStatus === '退職済み';
+      
+      if (aIsResigned && !bIsResigned) {
+        return 1; // aを後ろに
+      }
+      if (!aIsResigned && bIsResigned) {
+        return -1; // bを後ろに
+      }
+      
+      // どちらも在籍中、またはどちらも退職済みの場合
+      // まずステータスの優先度でソート
+      const statusA = a.status || '';
+      const statusB = b.status || '';
+      const priorityA = statusPriority[statusA] || 999;
+      const priorityB = statusPriority[statusB] || 999;
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // ステータスが同じ場合は社員番号でソート
+      const numA = parseInt(a.employeeNumber.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.employeeNumber.replace(/\D/g, '')) || 0;
+      if (numA !== numB) {
+        return numA - numB;
+      }
+      return a.employeeNumber.localeCompare(b.employeeNumber);
+    });
+  }
+  
+  // 社員情報管理表のステータスフィルター変更
+  onEmployeeStatusFilterChange() {
+    this.filterAndSortEmployees();
+  }
+  
+  // 社員情報管理ページに遷移してフィルターを適用
+  navigateToEmployeeManagement(status?: string) {
     this.currentTab = '社員情報管理';
+    // ステータスが指定されている場合はフィルターを設定
+    if (status) {
+      this.employeeStatusFilter = status;
+    }
     // 社員一覧を再読み込み
-    this.loadEmployees().catch(err => {
+    this.loadEmployees().then(() => {
+      // フィルターを適用
+      this.filterAndSortEmployees();
+    }).catch(err => {
       console.error('Error in loadEmployees:', err);
     });
   }

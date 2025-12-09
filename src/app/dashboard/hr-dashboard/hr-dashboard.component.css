@@ -152,7 +152,7 @@
   font-weight: 600;
   color: #333;
   margin: 0;
-  padding: 2rem 0;
+  padding: 0rem 0 1rem 0;
 }
 
 .page-description {
@@ -175,14 +175,6 @@
   margin: 0 auto;
 }
 
-.employee-management-page .page-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
-}
 
 /* 入社手続きページ */
 .onboarding-page {
@@ -191,19 +183,11 @@
   margin: 0 auto;
 }
 
-.onboarding-page .page-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
-}
 
 .onboarding-page .header-buttons {
   display: flex;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin: 0;
   flex-wrap: wrap;
 }
 
@@ -420,13 +404,13 @@
   box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
 }
 
-.application-management-page .page-title {
+.page-header-with-button .page-title {
   font-size: 1.8rem;
   font-weight: 600;
   color: #333;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
+  margin: 0;
+  padding: 0;
+  border-bottom: none;
 }
 
 .application-management-page .page-description {
