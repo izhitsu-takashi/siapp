@@ -89,6 +89,13 @@ export class EmployeeDashboardComponent {
   isEditModeForReapplication = false;
   isSubmittingReapplication = false; // 再申請送信中フラグ
   isSubmittingOnboardingApplication = false; // 入社時申請送信中フラグ
+  isSubmittingDependentApplication = false; // 扶養家族追加申請送信中フラグ
+  isSubmittingDependentRemovalApplication = false; // 扶養削除申請送信中フラグ
+  isSubmittingAddressChangeApplication = false; // 住所変更申請送信中フラグ
+  isSubmittingNameChangeApplication = false; // 氏名変更申請送信中フラグ
+  isSubmittingMyNumberChangeApplication = false; // マイナンバー変更申請送信中フラグ
+  isSubmittingMaternityLeaveApplication = false; // 産前産後休業申請送信中フラグ
+  isSubmittingResignationApplication = false; // 退職申請送信中フラグ
   
   // 保険・扶養ページ用データ
   insuranceData: any = {
@@ -1872,6 +1879,7 @@ export class EmployeeDashboardComponent {
   
   async submitDependentApplication() {
     if (this.dependentApplicationForm.valid) {
+      this.isSubmittingDependentApplication = true;
       try {
         // 基礎年金番号を結合
         const basicPensionNumberParts = [
@@ -1999,6 +2007,8 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting application:', error);
         alert('申請中にエラーが発生しました');
+      } finally {
+        this.isSubmittingDependentApplication = false;
       }
     } else {
       // フォームのエラーを表示
@@ -2009,6 +2019,7 @@ export class EmployeeDashboardComponent {
   
   async submitDependentRemovalApplication() {
     if (this.dependentRemovalForm.valid) {
+      this.isSubmittingDependentRemovalApplication = true;
       try {
         const formValue = this.dependentRemovalForm.value;
         
@@ -2057,6 +2068,8 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting application:', error);
         alert('申請中にエラーが発生しました');
+      } finally {
+        this.isSubmittingDependentRemovalApplication = false;
       }
     } else {
       // フォームのエラーを表示
@@ -2067,6 +2080,7 @@ export class EmployeeDashboardComponent {
   
   async submitAddressChangeApplication() {
     if (this.addressChangeForm.valid) {
+      this.isSubmittingAddressChangeApplication = true;
       try {
         const formValue = this.addressChangeForm.value;
         
@@ -2129,6 +2143,8 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting application:', error);
         alert('申請中にエラーが発生しました');
+      } finally {
+        this.isSubmittingAddressChangeApplication = false;
       }
     } else {
       // フォームのエラーを表示
@@ -2139,6 +2155,7 @@ export class EmployeeDashboardComponent {
   
   async submitNameChangeApplication() {
     if (this.nameChangeForm.valid) {
+      this.isSubmittingNameChangeApplication = true;
       try {
         const formValue = this.nameChangeForm.value;
         
@@ -2183,6 +2200,8 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting application:', error);
         alert('申請中にエラーが発生しました');
+      } finally {
+        this.isSubmittingNameChangeApplication = false;
       }
     } else {
       // フォームのエラーを表示
@@ -2193,6 +2212,7 @@ export class EmployeeDashboardComponent {
   
   async submitMyNumberChangeApplication() {
     if (this.myNumberChangeForm.valid) {
+      this.isSubmittingMyNumberChangeApplication = true;
       try {
         const formValue = this.myNumberChangeForm.value;
         
@@ -2235,6 +2255,8 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting application:', error);
         alert('申請中にエラーが発生しました');
+      } finally {
+        this.isSubmittingMyNumberChangeApplication = false;
       }
     } else {
       // フォームのエラーを表示
@@ -2245,6 +2267,7 @@ export class EmployeeDashboardComponent {
   
   async submitMaternityLeaveApplication() {
     if (this.maternityLeaveForm.valid) {
+      this.isSubmittingMaternityLeaveApplication = true;
       try {
         const formValue = this.maternityLeaveForm.value;
         
@@ -2277,6 +2300,8 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting application:', error);
         alert('申請中にエラーが発生しました');
+      } finally {
+        this.isSubmittingMaternityLeaveApplication = false;
       }
     } else {
       // フォームのエラーを表示
@@ -2339,6 +2364,7 @@ export class EmployeeDashboardComponent {
 
   async submitResignationApplication() {
     if (this.resignationForm.valid) {
+      this.isSubmittingResignationApplication = true;
       try {
         const formValue = this.resignationForm.getRawValue(); // disabledフィールドも取得
         
@@ -2388,6 +2414,8 @@ export class EmployeeDashboardComponent {
       } catch (error) {
         console.error('Error submitting application:', error);
         alert('申請中にエラーが発生しました');
+      } finally {
+        this.isSubmittingResignationApplication = false;
       }
     } else {
       // フォームのエラーを表示

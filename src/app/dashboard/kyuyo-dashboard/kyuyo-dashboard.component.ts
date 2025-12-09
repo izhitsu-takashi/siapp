@@ -2470,6 +2470,25 @@ export class KyuyoDashboardComponent {
     this.salaryYear = Number(this.salaryYear);
     this.salaryMonth = Number(this.salaryMonth);
     
+    // 社員の入社日を取得して、入社月以降の給与しか設定できないようにする
+    try {
+      const employeeData = await this.firestoreService.getEmployeeData(this.selectedSalaryEmployee);
+      if (employeeData && employeeData.socialInsuranceAcquisitionDate) {
+        const acquisitionDate = new Date(employeeData.socialInsuranceAcquisitionDate);
+        const acquisitionYear = acquisitionDate.getFullYear();
+        const acquisitionMonth = acquisitionDate.getMonth() + 1;
+        
+        // 選択された年月が入社月より前の場合はエラー
+        if (this.salaryYear < acquisitionYear || (this.salaryYear === acquisitionYear && this.salaryMonth < acquisitionMonth)) {
+          alert(`入社月（${acquisitionYear}年${acquisitionMonth}月）以降の給与しか設定できません。`);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting employee data:', error);
+      // エラーが発生しても処理は続行（入社日が取得できない場合のフォールバック）
+    }
+    
     // その社員の最新の給与設定年月を取得（手動設定された給与のみ）
     const employeeSalaries = this.salaryHistory.filter((s: any) => 
       s['employeeNumber'] === this.selectedSalaryEmployee && s['isManual'] === true
@@ -3526,6 +3545,25 @@ export class KyuyoDashboardComponent {
     // 年月を数値型に変換（selectから文字列型で来る可能性があるため）
     this.bonusYear = Number(this.bonusYear);
     this.bonusMonth = Number(this.bonusMonth);
+    
+    // 社員の入社日を取得して、入社月以降の賞与しか設定できないようにする
+    try {
+      const employeeData = await this.firestoreService.getEmployeeData(this.selectedBonusEmployee);
+      if (employeeData && employeeData.socialInsuranceAcquisitionDate) {
+        const acquisitionDate = new Date(employeeData.socialInsuranceAcquisitionDate);
+        const acquisitionYear = acquisitionDate.getFullYear();
+        const acquisitionMonth = acquisitionDate.getMonth() + 1;
+        
+        // 選択された年月が入社月より前の場合はエラー
+        if (this.bonusYear < acquisitionYear || (this.bonusYear === acquisitionYear && this.bonusMonth < acquisitionMonth)) {
+          alert(`入社月（${acquisitionYear}年${acquisitionMonth}月）以降の賞与しか設定できません。`);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting employee data:', error);
+      // エラーが発生しても処理は続行（入社日が取得できない場合のフォールバック）
+    }
     
     // 設定年月が2028年12月を超えている場合はエラー
     if (this.bonusYear > 2028 || (this.bonusYear === 2028 && this.bonusMonth > 12)) {

@@ -2338,8 +2338,10 @@
       
       <!-- 送信ボタン -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="dependentApplicationForm.invalid">申請</button>
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingDependentApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="dependentApplicationForm.invalid || isSubmittingDependentApplication">
+          {{ isSubmittingDependentApplication ? '申請中です' : '申請' }}
+        </button>
       </div>
     </form>
   </div>
@@ -2416,9 +2418,9 @@
       
       <!-- 送信ボタン -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="dependentRemovalForm.invalid || dependentsData.length === 0">
-          申請
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingDependentRemovalApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="dependentRemovalForm.invalid || dependentsData.length === 0 || isSubmittingDependentRemovalApplication">
+          {{ isSubmittingDependentRemovalApplication ? '申請中です' : '申請' }}
         </button>
       </div>
     </form>
@@ -2560,9 +2562,9 @@
       
       <!-- 送信ボタン -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="addressChangeForm.invalid">
-          申請
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingAddressChangeApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="addressChangeForm.invalid || isSubmittingAddressChangeApplication">
+          {{ isSubmittingAddressChangeApplication ? '申請中です' : '申請' }}
         </button>
       </div>
     </form>
@@ -2668,9 +2670,9 @@
       
       <!-- 送信ボタン -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="nameChangeForm.invalid">
-          申請
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingNameChangeApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="nameChangeForm.invalid || isSubmittingNameChangeApplication">
+          {{ isSubmittingNameChangeApplication ? '申請中です' : '申請' }}
         </button>
       </div>
     </form>
@@ -2767,9 +2769,9 @@
       </section>
       
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="myNumberChangeForm.invalid">
-          申請
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingMyNumberChangeApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="myNumberChangeForm.invalid || isSubmittingMyNumberChangeApplication">
+          {{ isSubmittingMyNumberChangeApplication ? '申請中です' : '申請' }}
         </button>
       </div>
     </form>
@@ -2870,9 +2872,9 @@
       
       <!-- 送信ボタン -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="maternityLeaveForm.invalid">
-          申請
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingMaternityLeaveApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="maternityLeaveForm.invalid || isSubmittingMaternityLeaveApplication">
+          {{ isSubmittingMaternityLeaveApplication ? '申請中です' : '申請' }}
         </button>
       </div>
     </form>
@@ -3068,9 +3070,9 @@
       
       <!-- 送信ボタン -->
       <div class="form-actions">
-        <button type="button" class="cancel-button" (click)="closeApplicationModal()">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="resignationForm.invalid">
-          申請
+        <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingResignationApplication">キャンセル</button>
+        <button type="submit" class="submit-button" [disabled]="resignationForm.invalid || isSubmittingResignationApplication">
+          {{ isSubmittingResignationApplication ? '申請中です' : '申請' }}
         </button>
       </div>
     </form>
