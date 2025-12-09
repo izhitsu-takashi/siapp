@@ -198,7 +198,7 @@ export class KyuyoDashboardComponent {
       // 保険料率設定
       healthInsuranceRate: [{value: 0, disabled: true}], // 編集無効
       nursingInsuranceRate: [{value: 0, disabled: true}], // 編集無効
-      pensionInsuranceRate: [0, [Validators.required]],
+      pensionInsuranceRate: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
       // 詳細設定
       treatBonusAsReward: [true] // 年4回以上の賞与を報酬と扱うか
     });
@@ -402,6 +402,154 @@ export class KyuyoDashboardComponent {
   // 健康保険種別が変更されたときの処理
   
   // 都道府県が選択されたときの処理
+  // IME入力中フラグ
+  private isPensionInsuranceRateComposing = false;
+  
+  // IME入力開始時（全角文字入力を防ぐ）
+  onPensionInsuranceRateCompositionStart(event: CompositionEvent) {
+    this.isPensionInsuranceRateComposing = true;
+    event.preventDefault(); // IME入力をブロック
+  }
+  
+  // IME入力終了時
+  onPensionInsuranceRateCompositionEnd(event: CompositionEvent) {
+    this.isPensionInsuranceRateComposing = false;
+    // IME入力で入力された文字を削除
+    const input = event.target as HTMLInputElement;
+    const previousValue = input.getAttribute('data-previous-value') || '';
+    input.value = previousValue;
+    this.settingsForm.get('pensionInsuranceRate')?.setValue(previousValue === '' ? 0 : parseFloat(previousValue) || 0, { emitEvent: false });
+  }
+  
+  // 厚生年金保険料率のキー入力制限（「e」や「-」、全角文字をブロック）
+  onPensionInsuranceRateKeydown(event: KeyboardEvent) {
+    // 編集キー（Backspace、Delete、Tab、矢印キーなど）は常に許可
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (allowedKeys.includes(event.key)) {
+      return;
+    }
+    
+    // Ctrlキーとの組み合わせ（コピー、ペーストなど）は許可
+    if (event.ctrlKey && (event.key === 'a' || event.key === 'c' || event.key === 'v' || event.key === 'x')) {
+      return;
+    }
+    
+    // IME入力中はすべての入力をブロック
+    if (this.isPensionInsuranceRateComposing) {
+      event.preventDefault();
+      return;
+    }
+    
+    // 「e」「E」「-」「+」をブロック
+    if (event.key === 'e' || event.key === 'E' || event.key === '-' || event.key === '+') {
+      event.preventDefault();
+      return;
+    }
+    
+    // 全角文字をブロック（全角数字、全角スペースなど）
+    const isFullWidth = /[０-９]/.test(event.key) || /[　]/.test(event.key);
+    if (isFullWidth) {
+      event.preventDefault();
+      return;
+    }
+    
+    // 半角数字、小数点は許可
+    const isNumber = /^[0-9]$/.test(event.key);
+    const isDecimal = event.key === '.' || event.code === 'Period' || event.code === 'NumpadDecimal';
+    
+    if (!isNumber && !isDecimal) {
+      event.preventDefault();
+    }
+  }
+  
+  // 厚生年金保険料率の入力制限（0-100の範囲に制限、小数点以下第二位まで）
+  onPensionInsuranceRateInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let inputValue = input.value;
+    
+    // 前回の値を保存（全角文字が検出された場合に戻すため）
+    const previousValue = input.getAttribute('data-previous-value') || '';
+    
+    // 空の場合は何もしない（入力途中の可能性があるため）
+    if (inputValue === '' || inputValue === '-' || inputValue === '.') {
+      input.setAttribute('data-previous-value', inputValue);
+      return;
+    }
+    
+    // 全角文字が含まれているかチェック（半角数字と小数点は除外）
+    const hasFullWidthNumber = /[０-９]/.test(inputValue);
+    const hasFullWidthSpace = /[　]/.test(inputValue);
+    // 半角数字と小数点を除いた文字列に全角文字が含まれているかチェック
+    const cleanedValue = inputValue.replace(/[0-9.]/g, '');
+    const hasOtherFullWidth = cleanedValue.length > 0 && /[^\x00-\x7F]/.test(cleanedValue);
+    
+    // 全角文字が含まれている場合は、前回の値に戻す
+    if (hasFullWidthNumber || hasFullWidthSpace || hasOtherFullWidth) {
+      input.value = previousValue;
+      this.settingsForm.get('pensionInsuranceRate')?.setValue(previousValue === '' ? 0 : parseFloat(previousValue) || 0, { emitEvent: false });
+      return;
+    }
+    
+    // 負の符号が含まれている場合は削除
+    if (inputValue.startsWith('-')) {
+      inputValue = inputValue.replace(/^-+/, '');
+      input.value = inputValue;
+    }
+    
+    // 小数点以下第二位までに制限
+    if (inputValue.includes('.')) {
+      const parts = inputValue.split('.');
+      if (parts.length > 2) {
+        // 複数の小数点がある場合は最初の小数点のみ残す
+        inputValue = parts[0] + '.' + parts.slice(1).join('');
+      }
+      const decimalPart = parts[1];
+      if (decimalPart && decimalPart.length > 2) {
+        // 小数点以下が2桁を超える場合は2桁に制限
+        inputValue = parts[0] + '.' + decimalPart.substring(0, 2);
+        input.value = inputValue;
+      }
+    }
+    
+    // 小数点のみ、または小数点で終わる場合は許可（入力途中）
+    if (inputValue === '.' || inputValue.endsWith('.')) {
+      return;
+    }
+    
+    // 数値に変換を試みる
+    let value = parseFloat(inputValue);
+    
+    // 数値でない場合は何もしない（入力途中の可能性があるため）
+    if (isNaN(value)) {
+      return;
+    }
+    
+    // 0未満の場合は0に、100超の場合は100に制限
+    if (value < 0) {
+      value = 0;
+      input.value = '0';
+      input.setAttribute('data-previous-value', '0');
+      this.settingsForm.get('pensionInsuranceRate')?.setValue(0, { emitEvent: false });
+    } else if (value > 100) {
+      value = 100;
+      input.value = '100';
+      input.setAttribute('data-previous-value', '100');
+      this.settingsForm.get('pensionInsuranceRate')?.setValue(100, { emitEvent: false });
+    } else {
+      // 有効な範囲内の場合は、小数点以下第二位までに丸めてフォームに設定
+      const roundedValue = Math.round(value * 100) / 100;
+      if (inputValue !== roundedValue.toString() && !inputValue.endsWith('.')) {
+        // 入力値と丸めた値が異なる場合（小数点以下第三位以降が入力された場合）のみ更新
+        input.value = roundedValue.toString();
+        input.setAttribute('data-previous-value', roundedValue.toString());
+        this.settingsForm.get('pensionInsuranceRate')?.setValue(roundedValue, { emitEvent: false });
+      } else {
+        // 前回の値を更新（次回のチェック用）
+        input.setAttribute('data-previous-value', inputValue);
+      }
+    }
+  }
+  
   onPrefectureChange() {
     const prefecture = this.settingsForm.get('prefecture')?.value;
     if (prefecture && this.kenpoRates.length > 0) {
