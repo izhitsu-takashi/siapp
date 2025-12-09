@@ -261,7 +261,7 @@
                     class="form-input"
                   >
                     <option value="">選択してください</option>
-                    <option *ngFor="let emp of employees" [value]="emp.employeeNumber">
+                    <option *ngFor="let emp of sortedEmployeesForRequest" [value]="emp.employeeNumber">
                       {{ emp.employeeNumber }} - {{ emp.name }}
                     </option>
                   </select>
@@ -2772,23 +2772,31 @@
         <section class="detail-section" *ngIf="selectedApplication.newAddress">
           <h3 class="section-title">新しい住所</h3>
           <div class="detail-grid">
-            <div class="detail-item">
+            <div class="detail-item full-width">
+              <span class="detail-label">海外に在住:</span>
+              <span class="detail-value">{{ selectedApplication.isOverseasResident ? 'はい' : 'いいえ' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident">
               <span class="detail-label">郵便番号:</span>
               <span class="detail-value">{{ selectedApplication.newAddress.postalCode || '-' }}</span>
             </div>
-            <div class="detail-item full-width">
+            <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident">
               <span class="detail-label">住所:</span>
               <span class="detail-value">{{ selectedApplication.newAddress.address || '-' }}</span>
             </div>
-            <div class="detail-item full-width">
+            <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident">
               <span class="detail-label">住所（ヨミガナ）:</span>
               <span class="detail-value">{{ selectedApplication.newAddress.addressKana || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedApplication.isOverseasResident">
+              <span class="detail-label">海外住所:</span>
+              <span class="detail-value">{{ selectedApplication.newAddress.overseasAddress || '-' }}</span>
             </div>
           </div>
         </section>
         
         <!-- 新しい住民票住所 -->
-        <section class="detail-section" *ngIf="selectedApplication.residentAddress">
+        <section class="detail-section" *ngIf="selectedApplication.residentAddress && !selectedApplication.isOverseasResident">
           <h3 class="section-title">新しい住民票住所</h3>
           <div class="detail-grid">
             <div class="detail-item">

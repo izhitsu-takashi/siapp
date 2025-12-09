@@ -1544,6 +1544,9 @@ export class EmployeeDashboardComponent {
   createAddressChangeForm(): FormGroup {
     return this.fb.group({
       moveDate: ['', Validators.required],
+      // 海外在住
+      isOverseasResident: [false],
+      overseasAddress: [''],
       // 新しい住所
       newPostalCode: ['', [Validators.required, Validators.pattern(/^[0-9]{7}$/)]],
       newAddress: ['', Validators.required],
@@ -1695,6 +1698,43 @@ export class EmployeeDashboardComponent {
     return null;
   }
   
+  
+  // 住所変更申請の海外在住チェックボックスの変更処理
+  onAddressChangeOverseasResidentChange(event: any) {
+    const isOverseas = event.target.checked;
+    const form = this.addressChangeForm;
+    
+    const postalCodeControl = form.get('newPostalCode');
+    const addressControl = form.get('newAddress');
+    const addressKanaControl = form.get('newAddressKana');
+    const overseasAddressControl = form.get('overseasAddress');
+    
+    if (isOverseas) {
+      // 海外在住の場合：郵便番号、住所、住所（ヨミガナ）のバリデーションを削除
+      postalCodeControl?.clearValidators();
+      addressControl?.clearValidators();
+      addressKanaControl?.clearValidators();
+      // 海外住所のバリデーションを追加
+      overseasAddressControl?.setValidators([Validators.required]);
+      // 値をクリア
+      postalCodeControl?.setValue('');
+      addressControl?.setValue('');
+      addressKanaControl?.setValue('');
+    } else {
+      // 国内在住の場合：郵便番号、住所のバリデーションを追加
+      postalCodeControl?.setValidators([Validators.required, Validators.pattern(/^[0-9]{7}$/)]);
+      addressControl?.setValidators([Validators.required]);
+      // 海外住所のバリデーションを削除
+      overseasAddressControl?.clearValidators();
+      overseasAddressControl?.setValue('');
+    }
+    
+    // バリデーションを更新
+    postalCodeControl?.updateValueAndValidity();
+    addressControl?.updateValueAndValidity();
+    addressKanaControl?.updateValueAndValidity();
+    overseasAddressControl?.updateValueAndValidity();
+  }
   
   // 変更前住所と同じチェックボックスの変更処理
   onSameAsOldAddressChange(event: any) {
@@ -2184,10 +2224,12 @@ export class EmployeeDashboardComponent {
           employeeNumber: this.employeeNumber,
           applicationType: '住所変更申請',
           moveDate: formValue.moveDate,
+          isOverseasResident: formValue.isOverseasResident || false,
           newAddress: {
-            postalCode: formValue.newPostalCode,
-            address: formValue.newAddress,
-            addressKana: formValue.newAddressKana || ''
+            postalCode: formValue.isOverseasResident ? '' : (formValue.newPostalCode || ''),
+            address: formValue.isOverseasResident ? '' : (formValue.newAddress || ''),
+            addressKana: formValue.isOverseasResident ? '' : (formValue.newAddressKana || ''),
+            overseasAddress: formValue.isOverseasResident ? (formValue.overseasAddress || '') : ''
           },
           residentAddress: {
             sameAsOldAddress: this.sameAsOldAddress,
@@ -3378,13 +3420,20 @@ export class EmployeeDashboardComponent {
       
       this.addressChangeForm.patchValue({
         moveDate: application.moveDate || '',
+        isOverseasResident: application.isOverseasResident || false,
         newPostalCode: application.newAddress?.postalCode || '',
         newAddress: application.newAddress?.address || '',
         newAddressKana: application.newAddress?.addressKana || '',
+        overseasAddress: application.newAddress?.overseasAddress || '',
         residentPostalCode: application.residentAddress?.postalCode || '',
         residentAddress: application.residentAddress?.address || '',
         residentAddressKana: application.residentAddress?.addressKana || ''
       });
+      
+      // 海外在住の場合、バリデーションを更新
+      if (application.isOverseasResident) {
+        this.onAddressChangeOverseasResidentChange({ target: { checked: true } });
+      }
       
       // チェックボックスの状態に応じてコントロールを更新
       if (this.sameAsOldAddress) {
@@ -3619,9 +3668,9 @@ export class EmployeeDashboardComponent {
             residentAddressKana = this.currentAddressInfo.addressKana || '';
           } else if (this.sameAsNewAddress) {
             // 変更後の住所と同じ
-            residentPostalCode = formValue.newPostalCode || '';
-            residentAddress = formValue.newAddress || '';
-            residentAddressKana = formValue.newAddressKana || '';
+            residentPostalCode = formValue.isOverseasResident ? '' : (formValue.newPostalCode || '');
+            residentAddress = formValue.isOverseasResident ? '' : (formValue.newAddress || '');
+            residentAddressKana = formValue.isOverseasResident ? '' : (formValue.newAddressKana || '');
           } else {
             // 手動入力
             residentPostalCode = formValue.residentPostalCode || '';
@@ -3630,11 +3679,15 @@ export class EmployeeDashboardComponent {
           }
           
           applicationData = {
+            employeeNumber: this.employeeNumber,
+            applicationType: '住所変更申請',
             moveDate: formValue.moveDate,
+            isOverseasResident: formValue.isOverseasResident || false,
             newAddress: {
-              postalCode: formValue.newPostalCode,
-              address: formValue.newAddress,
-              addressKana: formValue.newAddressKana || ''
+              postalCode: formValue.isOverseasResident ? '' : (formValue.newPostalCode || ''),
+              address: formValue.isOverseasResident ? '' : (formValue.newAddress || ''),
+              addressKana: formValue.isOverseasResident ? '' : (formValue.newAddressKana || ''),
+              overseasAddress: formValue.isOverseasResident ? (formValue.overseasAddress || '') : ''
             },
             residentAddress: {
               sameAsOldAddress: this.sameAsOldAddress,
@@ -3642,9 +3695,7 @@ export class EmployeeDashboardComponent {
               postalCode: residentPostalCode,
               address: residentAddress,
               addressKana: residentAddressKana
-            },
-            employeeNumber: this.employeeNumber,
-            applicationType: '住所変更申請'
+            }
           };
         }
       } else if (this.selectedApplication.applicationType === '氏名変更申請') {

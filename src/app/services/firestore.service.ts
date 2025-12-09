@@ -897,15 +897,23 @@ export class FirestoreService {
       }
 
       // 住所情報を更新（undefinedをnullまたは空文字列に変換）
+      const isOverseasResident = addressData.isOverseasResident ?? employeeData.isOverseasResident ?? false;
+      const skipResidentAddress = addressData.skipResidentAddress ?? employeeData.skipResidentAddress ?? false;
+      const residentAddressSkipReason = addressData.residentAddressSkipReason ?? employeeData.residentAddressSkipReason ?? '';
+      
       const updatedData: any = {
         ...employeeData,
-        postalCode: addressData.newAddress?.postalCode ?? employeeData.postalCode ?? '',
-        currentAddress: addressData.newAddress?.address ?? employeeData.currentAddress ?? '',
-        currentAddressKana: addressData.newAddress?.addressKana ?? employeeData.currentAddressKana ?? '',
+        isOverseasResident: isOverseasResident,
+        postalCode: isOverseasResident ? '' : (addressData.newAddress?.postalCode ?? employeeData.postalCode ?? ''),
+        currentAddress: isOverseasResident ? '' : (addressData.newAddress?.address ?? employeeData.currentAddress ?? ''),
+        currentAddressKana: isOverseasResident ? '' : (addressData.newAddress?.addressKana ?? employeeData.currentAddressKana ?? ''),
+        overseasAddress: isOverseasResident ? (addressData.newAddress?.overseasAddress ?? employeeData.overseasAddress ?? '') : '',
         currentHouseholdHead: addressData.newAddress?.householdHead ?? employeeData.currentHouseholdHead ?? '',
         currentHouseholdHeadName: addressData.newAddress?.householdHeadName ?? employeeData.currentHouseholdHeadName ?? '',
-        residentAddress: addressData.residentAddress?.address ?? employeeData.residentAddress ?? '',
-        residentAddressKana: addressData.residentAddress?.addressKana ?? employeeData.residentAddressKana ?? '',
+        skipResidentAddress: skipResidentAddress,
+        residentAddressSkipReason: skipResidentAddress ? residentAddressSkipReason : '',
+        residentAddress: skipResidentAddress ? '' : (addressData.residentAddress?.address ?? employeeData.residentAddress ?? ''),
+        residentAddressKana: skipResidentAddress ? '' : (addressData.residentAddress?.addressKana ?? employeeData.residentAddressKana ?? ''),
         residentHouseholdHead: addressData.residentAddress?.householdHead ?? employeeData.residentHouseholdHead ?? '',
         residentHouseholdHeadName: addressData.residentAddress?.householdHeadName ?? employeeData.residentHouseholdHeadName ?? '',
         updatedAt: new Date()

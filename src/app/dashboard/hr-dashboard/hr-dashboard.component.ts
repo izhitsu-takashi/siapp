@@ -489,7 +489,7 @@ export class HrDashboardComponent {
     '氏名変更申請',
     '産前産後休業申請',
     '退職申請',
-    '保険証再発行申請'
+    'マイナンバー変更申請'
   ];
   
   // 入社手続き用フィルター
@@ -1723,10 +1723,20 @@ export class HrDashboardComponent {
         try {
           const employeeNumber = this.selectedApplication.employeeNumber;
           if (employeeNumber && this.selectedApplication.newAddress) {
-            await this.firestoreService.updateEmployeeAddress(employeeNumber, {
+            const isOverseasResident = this.selectedApplication.isOverseasResident || false;
+            const addressUpdateData: any = {
+              isOverseasResident: isOverseasResident,
               newAddress: this.selectedApplication.newAddress,
               residentAddress: this.selectedApplication.residentAddress
-            });
+            };
+            
+            // 海外在住の場合は、住民票住所を記載しないに設定
+            if (isOverseasResident) {
+              addressUpdateData.skipResidentAddress = true;
+              addressUpdateData.residentAddressSkipReason = '海外在住';
+            }
+            
+            await this.firestoreService.updateEmployeeAddress(employeeNumber, addressUpdateData);
             
             // 社員情報編集モーダルが開いている場合、住所情報を再読み込み
             if (this.showEmployeeEditModal && this.selectedEmployeeNumber === employeeNumber) {
@@ -5737,6 +5747,20 @@ export class HrDashboardComponent {
     const insuredCount = this.insuranceCards.filter(card => card.status === status).length;
     const dependentCount = this.dependentInsuranceCards.filter(card => card.status === status).length;
     return insuredCount + dependentCount;
+  }
+  
+  // 申請要求モーダル用の社員リスト（社員番号順）
+  get sortedEmployeesForRequest(): Employee[] {
+    return [...this.employees].sort((a, b) => {
+      // 社員番号を数値として比較（数値部分のみ）
+      const numA = parseInt(a.employeeNumber.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.employeeNumber.replace(/\D/g, '')) || 0;
+      if (numA !== numB) {
+        return numA - numB;
+      }
+      // 数値部分が同じ場合は文字列として比較
+      return a.employeeNumber.localeCompare(b.employeeNumber);
+    });
   }
   
   // 申請要求モーダルを開く

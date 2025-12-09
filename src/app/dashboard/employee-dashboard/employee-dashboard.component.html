@@ -2485,7 +2485,17 @@
       <section class="form-section">
         <h3 class="section-title">新しい住所</h3>
         <div class="form-grid">
-          <div class="form-group">
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                formControlName="isOverseasResident"
+                (change)="onAddressChangeOverseasResidentChange($event)"
+              >
+              海外に在住
+            </label>
+          </div>
+          <div class="form-group" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
             <label for="newPostalCode">郵便番号 <span class="required">*</span></label>
             <input 
               type="text" 
@@ -2506,7 +2516,7 @@
               </span>
             </div>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
             <label for="newAddress">住所 <span class="required">*</span></label>
             <textarea 
               id="newAddress" 
@@ -2518,7 +2528,7 @@
               住所を入力してください
             </div>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
             <label for="newAddressKana">住所（ヨミガナ）</label>
             <textarea 
               id="newAddressKana" 
@@ -2527,11 +2537,24 @@
               rows="2"
             ></textarea>
           </div>
+          <div class="form-group full-width" *ngIf="addressChangeForm.get('isOverseasResident')?.value">
+            <label for="overseasAddress">海外住所 <span class="required">*</span></label>
+            <textarea 
+              id="overseasAddress" 
+              formControlName="overseasAddress" 
+              class="form-input"
+              rows="3"
+              placeholder="例: 15 Ocean Road　Sydney NSW 2000　Australia"
+            ></textarea>
+            <div *ngIf="addressChangeForm.get('overseasAddress')?.invalid && addressChangeForm.get('overseasAddress')?.touched" class="error-message">
+              海外住所を入力してください
+            </div>
+          </div>
         </div>
       </section>
       
       <!-- 新しい住民票住所欄 -->
-      <section class="form-section">
+      <section class="form-section" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
         <h3 class="section-title">新しい住民票住所</h3>
         <div class="form-group">
           <label class="checkbox-label">
@@ -3842,7 +3865,20 @@
           <section class="detail-section">
             <h3 class="section-title">新しい住所</h3>
             <div class="detail-grid">
-              <div class="detail-item">
+              <div class="detail-item full-width">
+                <span class="detail-label">海外に在住:</span>
+                <div class="detail-edit-input">
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      formControlName="isOverseasResident"
+                      (change)="onAddressChangeOverseasResidentChange($event)"
+                    >
+                    海外に在住
+                  </label>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
                 <span class="detail-label">郵便番号 <span class="required">*</span>:</span>
                 <div class="detail-edit-input">
                   <input 
@@ -3864,7 +3900,7 @@
                   </div>
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
                 <span class="detail-label">住所 <span class="required">*</span>:</span>
                 <div class="detail-edit-input">
                   <textarea formControlName="newAddress" class="form-input" rows="2"></textarea>
@@ -3873,17 +3909,31 @@
                   </div>
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
                 <span class="detail-label">住所（ヨミガナ）:</span>
                 <div class="detail-edit-input">
                   <textarea formControlName="newAddressKana" class="form-input" rows="2"></textarea>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="addressChangeForm.get('isOverseasResident')?.value">
+                <span class="detail-label">海外住所 <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <textarea 
+                    formControlName="overseasAddress" 
+                    class="form-input" 
+                    rows="3"
+                    placeholder="例: 15 Ocean Road　Sydney NSW 2000　Australia"
+                  ></textarea>
+                  <div *ngIf="addressChangeForm.get('overseasAddress')?.invalid && addressChangeForm.get('overseasAddress')?.touched" class="error-message">
+                    海外住所を入力してください
+                  </div>
                 </div>
               </div>
             </div>
           </section>
           
           <!-- 新しい住民票住所 -->
-          <section class="detail-section">
+          <section class="detail-section" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
             <h3 class="section-title">新しい住民票住所</h3>
             <div class="form-group">
               <label class="checkbox-label">
@@ -3953,38 +4003,50 @@
           <section class="detail-section" *ngIf="selectedApplication.newAddress">
             <h3 class="section-title">新しい住所</h3>
             <div class="detail-grid">
-              <div class="detail-item">
+              <div class="detail-item full-width">
+                <span class="detail-label">海外に在住:</span>
+                <span class="detail-value">{{ selectedApplication.isOverseasResident ? 'はい' : 'いいえ' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">郵便番号:</span>
                 <span class="detail-value">{{ selectedApplication.newAddress.postalCode || '-' }}</span>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">住所:</span>
                 <span class="detail-value">{{ selectedApplication.newAddress.address || '-' }}</span>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.isOverseasResident">
                 <span class="detail-label">住所（ヨミガナ）:</span>
                 <span class="detail-value">{{ selectedApplication.newAddress.addressKana || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.isOverseasResident">
+                <span class="detail-label">海外住所:</span>
+                <span class="detail-value">{{ selectedApplication.newAddress.overseasAddress || '-' }}</span>
               </div>
             </div>
           </section>
           
           <!-- 新しい住民票住所 -->
-          <section class="detail-section" *ngIf="selectedApplication.residentAddress">
+          <section class="detail-section" *ngIf="selectedApplication.residentAddress && !selectedApplication.isOverseasResident">
             <h3 class="section-title">新しい住民票住所</h3>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="detail-label">現住所と同じ:</span>
+                <span class="detail-label">変更前住所と同じ:</span>
+                <span class="detail-value">{{ selectedApplication.residentAddress.sameAsOldAddress ? 'はい' : 'いいえ' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">変更後の住所と同じ:</span>
                 <span class="detail-value">{{ selectedApplication.residentAddress.sameAsNewAddress ? 'はい' : 'いいえ' }}</span>
               </div>
-              <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
                 <span class="detail-label">郵便番号:</span>
                 <span class="detail-value">{{ selectedApplication.residentAddress.postalCode || '-' }}</span>
               </div>
-              <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
                 <span class="detail-label">住所:</span>
                 <span class="detail-value">{{ selectedApplication.residentAddress.address || '-' }}</span>
               </div>
-              <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsNewAddress">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
                 <span class="detail-label">住所（ヨミガナ）:</span>
                 <span class="detail-value">{{ selectedApplication.residentAddress.addressKana || '-' }}</span>
               </div>
