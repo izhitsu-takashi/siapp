@@ -542,6 +542,114 @@ export class FirestoreService {
     }
   }
 
+  /**
+   * パスワード再発行メールを送信する
+   * Firebase Functionsのエンドポイントを呼び出す
+   */
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    try {
+      // 本番環境のURLを使用
+      const appUrl = 'https://siapp-kadai3.web.app';
+      
+      // Firebase Functionsのエンドポイントを呼び出す
+      const functionsUrl = 'https://us-central1-kensyu10117.cloudfunctions.net/sendPasswordResetEmail';
+      
+      const response = await fetch(functionsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          appUrl: appUrl
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'メール送信に失敗しました');
+      }
+
+      const result = await response.json();
+      console.log('Password reset email send result:', result);
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * パスワード再発行トークンの有効性を確認
+   */
+  async verifyPasswordResetToken(token: string, email: string): Promise<boolean> {
+    try {
+      const tokenRef = doc(this.db, 'passwordResets', token);
+      const tokenDoc = await getDoc(tokenRef);
+
+      if (!tokenDoc.exists()) {
+        return false;
+      }
+
+      const tokenData = tokenDoc.data();
+
+      // メールアドレスが一致するか確認
+      if (tokenData['email'] !== email) {
+        return false;
+      }
+
+      // 既に使用されているか確認
+      if (tokenData['used'] === true) {
+        return false;
+      }
+
+      // 有効期限を確認
+      const expiresAt = tokenData['expiresAt']?.toDate();
+      if (!expiresAt || expiresAt < new Date()) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error verifying password reset token:', error);
+      return false;
+    }
+  }
+
+  /**
+   * パスワードを更新し、トークンを無効化
+   */
+  async resetPassword(token: string, email: string, newPassword: string): Promise<void> {
+    try {
+      // トークンの有効性を再確認
+      const isValid = await this.verifyPasswordResetToken(token, email);
+      if (!isValid) {
+        throw new Error('無効なトークンです。');
+      }
+
+      // メールアドレスから社員情報を取得
+      const employee = await this.getEmployeeByEmail(email);
+      if (!employee || !employee.employeeNumber) {
+        throw new Error('社員情報が見つかりません。');
+      }
+
+      // パスワードを更新
+      await this.saveEmployeeData(employee.employeeNumber, {
+        ...employee,
+        password: newPassword,
+        isInitialPassword: false,
+      });
+
+      // トークンを無効化
+      const tokenRef = doc(this.db, 'passwordResets', token);
+      await updateDoc(tokenRef, {
+        used: true,
+      });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      throw error;
+    }
+  }
+
   async resubmitApplication(applicationId: string, applicationData: any, newStatus: string = '承認待ち'): Promise<void> {
     try {
       const applicationsCollection = collection(this.db, 'applications');

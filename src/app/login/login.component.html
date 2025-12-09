@@ -125,6 +125,10 @@
         <span *ngIf="!isLoading">ログイン</span>
         <span *ngIf="isLoading">ログイン中...</span>
       </button>
+      
+      <div *ngIf="loginType === 'employee'" class="forgot-password-link">
+        <a routerLink="/forgot-password" class="forgot-password">パスワードを忘れた場合</a>
+      </div>
     </form>
   </div>
 </div>

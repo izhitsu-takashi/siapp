@@ -149,6 +149,164 @@ export const sendOnboardingEmail = onRequest(async (request, response) => {
   }
 });
 
+// パスワード再発行メール送信関数
+export const sendPasswordResetEmail = onRequest(async (request, response) => {
+  // CORS設定（すべてのレスポンスで設定）
+  const setCorsHeaders = () => {
+    response.set("Access-Control-Allow-Origin", "*");
+    response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    response.set("Access-Control-Allow-Headers", "Content-Type");
+  };
+
+  // CORSヘッダーを設定
+  setCorsHeaders();
+
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    setCorsHeaders();
+    response.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  try {
+    const {email, appUrl} = request.body;
+
+    if (!email || !appUrl) {
+      setCorsHeaders();
+      response.status(400).send("Missing required parameters");
+      return;
+    }
+
+    // パスワード再発行用のトークンを生成
+    const resetToken = admin.firestore()
+      .collection("passwordResets").doc().id;
+    const resetUrl =
+      `${appUrl}/reset-password?token=${resetToken}` +
+      `&email=${encodeURIComponent(email)}`;
+
+    // トークンをFirestoreに保存（24時間有効）
+    const db = admin.firestore();
+    await db.collection("passwordResets").doc(resetToken).set({
+      email: email,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      used: false,
+    });
+
+    // メール本文を作成
+    const emailText =
+      "パスワード再発行のご案内\n\n" +
+      "以下のURLからパスワード再発行を行ってください。\n" +
+      `${resetUrl}\n\n` +
+      "このリンクは24時間有効です。\n" +
+      "もしこのメールに心当たりがない場合は、無視してください。";
+    const emailHtml =
+      "<div style=\"font-family: Arial, sans-serif; " +
+      "max-width: 600px; margin: 0 auto;\">" +
+      "<h2 style=\"color: #333;\">パスワード再発行のご案内</h2>" +
+      "<p>以下のURLからパスワード再発行を行ってください。</p>" +
+      `<p><a href="${resetUrl}" ` +
+      "style=\"color: #667eea; text-decoration: none; " +
+      "background: #f0f0f0; padding: 10px 20px; " +
+      "border-radius: 5px; display: inline-block; " +
+      "margin: 20px 0;\">パスワード再発行</a></p>" +
+      "<p style=\"color: #666; font-size: 14px;\">" +
+      "または、以下のURLをコピーしてブラウザに貼り付けてください：</p>" +
+      "<p style=\"color: #666; font-size: 12px; " +
+      "word-break: break-all;\">" + resetUrl + "</p>" +
+      "<p style=\"color: #999; font-size: 12px; " +
+      "margin-top: 20px;\">このリンクは24時間有効です。</p>" +
+      "<p style=\"color: #999; font-size: 12px;\">" +
+      "もしこのメールに心当たりがない場合は、無視してください。</p>" +
+      "<hr style=\"border: none; border-top: 1px solid #eee; " +
+      "margin: 20px 0;\">" +
+      "<p style=\"color: #666; font-size: 12px;\">" +
+      "このメールは自動送信されています。</p>" +
+      "</div>";
+
+    // メール送信の設定
+    const smtpHost = "smtp.gmail.com";
+    const smtpPort = 587;
+    const smtpUser = "takashi.izhitsu@pathoslogos.co.jp";
+    const smtpPassword = "fzmh wgnl zzse wczo";
+    const smtpFrom = "takashi.izhitsu@pathoslogos.co.jp";
+
+    // nodemailerを使用してメール送信
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: false, // 587番ポートはTLSを使用
+        auth: {
+          user: smtpUser,
+          pass: smtpPassword,
+        },
+      });
+
+      const mailOptions = {
+        from: smtpFrom,
+        to: email,
+        subject: "パスワード再発行のご案内",
+        text: emailText,
+        html: emailHtml,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      logger.info("Password reset email sent successfully", {
+        to: email,
+      });
+
+      setCorsHeaders();
+      response.status(200).send({
+        success: true,
+        message: "Email sent successfully",
+        method: "smtp",
+      });
+    } catch (mailError) {
+      logger.error("Error sending email via SMTP:", mailError);
+
+      // SMTP送信に失敗した場合、Firestoreのmailコレクションに保存（フォールバック）
+      try {
+        const db = admin.firestore();
+        const mailCollection = db.collection("mail");
+        await mailCollection.add({
+          to: email,
+          message: {
+            subject: "パスワード再発行のご案内",
+            text: emailText,
+            html: emailHtml,
+          },
+        });
+
+        logger.info("Email queued via Firestore (fallback)");
+        setCorsHeaders();
+        response.status(200).send({
+          success: true,
+          message: "Email queued via Trigger Email extension (fallback)",
+          method: "firestore-fallback",
+        });
+      } catch (firestoreError) {
+        logger.error("Error saving to Firestore:", firestoreError);
+        setCorsHeaders();
+        response.status(500).send({
+          success: false,
+          error: "Failed to send email via both SMTP and Firestore",
+        });
+      }
+    }
+  } catch (error) {
+    logger.error("Error sending password reset email:", error);
+    // エラー時もCORSヘッダーを設定
+    setCorsHeaders();
+    response.status(500).send({success: false, error: "Failed to send email"});
+  }
+});
+
 // Gemini AIチャット関数
 export const chatWithGemini = onRequest(
   {
