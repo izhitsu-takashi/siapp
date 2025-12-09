@@ -155,28 +155,28 @@
 .main-page-layout {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: clamp(0.75rem, 1.5vw, 2rem);
 }
 
 .main-page-top {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: clamp(0.75rem, 1.5vw, 2rem);
 }
 
 .info-card {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: clamp(0.75rem, 1.5vw, 1.5rem);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card-title {
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 1.2vw, 1.2rem);
   font-weight: 600;
   color: #333;
-  margin: 0 0 1rem 0;
-  padding-bottom: 0.75rem;
+  margin: 0 0 clamp(0.5rem, 1vw, 1rem) 0;
+  padding-bottom: clamp(0.5rem, 0.75vw, 0.75rem);
   border-bottom: 2px solid #667eea;
   display: flex;
   align-items: center;
@@ -187,13 +187,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 8px;
+  min-width: clamp(20px, 2vw, 24px);
+  height: clamp(20px, 2vw, 24px);
+  padding: 0 clamp(6px, 0.8vw, 8px);
   background-color: #e53e3e;
   color: white;
   border-radius: 12px;
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 0.85vw, 0.85rem);
   font-weight: 700;
   line-height: 1;
   box-shadow: 0 2px 4px rgba(229, 62, 62, 0.3);
@@ -202,44 +202,45 @@
 .info-content {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: clamp(0.5rem, 0.75vw, 0.75rem);
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.5rem, 1vw, 1rem);
 }
 
 .info-label {
   font-weight: 500;
   color: #666;
-  min-width: 100px;
-  font-size: 0.9rem;
+  min-width: clamp(80px, 10vw, 100px);
+  font-size: clamp(0.75rem, 0.9vw, 0.9rem);
 }
 
 .info-value {
   color: #333;
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 0.9vw, 0.9rem);
 }
 
 .no-data {
   color: #999;
   font-style: italic;
   text-align: center;
-  padding: 2rem 0;
+  padding: clamp(1rem, 2vw, 2rem) 0;
+  font-size: clamp(0.75rem, 0.9vw, 0.9rem);
 }
 
 .request-content {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-height: 400px;
+  gap: clamp(0.5rem, 1vw, 1rem);
+  max-height: clamp(200px, 40vh, 400px);
   overflow-y: auto;
 }
 
 .request-item {
-  padding: 1rem;
+  padding: clamp(0.5rem, 1vw, 1rem);
   background: #f8f9fa;
   border-radius: 8px;
   border-left: 4px solid #667eea;
@@ -249,35 +250,35 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: clamp(0.25rem, 0.5vw, 0.5rem);
 }
 
 .request-title {
   font-weight: 600;
   color: #333;
-  font-size: 0.95rem;
+  font-size: clamp(0.8rem, 0.95vw, 0.95rem);
 }
 
 .request-date {
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 0.85vw, 0.85rem);
   color: #666;
 }
 
 .request-message {
   color: #666;
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 0.9vw, 0.9rem);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .application-list-section {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: clamp(0.75rem, 1.5vw, 1.5rem);
 }
 
 .application-list-section .table-container {
-  max-height: calc(5 * 3.5rem + 3rem); /* 5行分の高さ + ヘッダー */
+  max-height: calc(5 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 5行分の高さ + ヘッダー */
   overflow-y: auto;
   overflow-x: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -290,15 +291,15 @@
 }
 
 .section-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: clamp(0.75rem, 1.5vw, 1.5rem);
 }
 
 .section-title {
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 1.2vw, 1.2rem);
   font-weight: 600;
   color: #333;
   margin: 0;
-  padding-bottom: 0.75rem;
+  padding-bottom: clamp(0.5rem, 0.75vw, 0.75rem);
   border-bottom: 2px solid #667eea;
 }
 
@@ -316,10 +317,10 @@
 }
 
 .application-table th {
-  padding: 1rem;
+  padding: clamp(0.5rem, 1vw, 1rem);
   text-align: left;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: clamp(0.8rem, 0.95vw, 0.95rem);
 }
 
 .application-table tbody tr {
@@ -336,9 +337,75 @@
 }
 
 .application-table td {
-  padding: 1rem;
+  padding: clamp(0.5rem, 1vw, 1rem);
   color: #333;
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 0.9vw, 0.9rem);
+}
+
+/* メインページ専用のpage-headerとpage-titleのスタイル調整 */
+.main-content:has(.main-page-layout) .page-header {
+  margin-bottom: clamp(0.5rem, 1vw, 1rem);
+  padding-bottom: clamp(0.25rem, 0.5vw, 0.5rem);
+}
+
+.main-content:has(.main-page-layout) .page-title {
+  font-size: clamp(1rem, 1.5vw, 1.5rem);
+  padding: clamp(0.5rem, 1vw, 1rem) 0;
+  margin: 0;
+}
+
+/* メインページ専用のメディアクエリ */
+@media (max-width: 768px) {
+  .main-page-top {
+    grid-template-columns: 1fr;
+    gap: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .main-page-layout {
+    gap: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .application-list-section .table-container {
+    max-height: calc(4 * clamp(2rem, 3vw, 2.5rem) + clamp(1.5rem, 2.5vw, 2rem));
+  }
+}
+
+@media (max-width: 480px) {
+  .main-page-top {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .main-page-layout {
+    gap: 0.5rem;
+  }
+
+  .info-card {
+    padding: 0.75rem;
+  }
+
+  .application-list-section {
+    padding: 0.75rem;
+  }
+
+  .application-list-section .table-container {
+    max-height: calc(3 * 2rem + 1.5rem);
+  }
+
+  .application-table th,
+  .application-table td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .info-label {
+    min-width: 70px;
+    font-size: 0.7rem;
+  }
+
+  .info-value {
+    font-size: 0.7rem;
+  }
 }
 
 .application-row {
@@ -415,9 +482,9 @@
 
 .status-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: clamp(0.2rem, 0.25vw, 0.25rem) clamp(0.5rem, 0.75vw, 0.75rem);
   border-radius: 12px;
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 0.85vw, 0.85rem);
   font-weight: 500;
 }
 

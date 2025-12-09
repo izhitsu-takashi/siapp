@@ -1686,24 +1686,12 @@
                 >
               </div>
               <div class="form-group full-width">
-                <label>
-                  <input 
-                    type="checkbox" 
-                    [checked]="sameAsCurrentAddressForEmergency"
-                    (change)="onSameAddressForEmergencyChange($event)"
-                    class="checkbox-input"
-                  >
-                  現住所と同じ
-                </label>
-              </div>
-              <div class="form-group full-width">
                 <label for="hr-emergencyAddress">住所</label>
                 <textarea 
                   id="hr-emergencyAddress" 
                   formControlName="address" 
                   class="form-input" 
                   rows="2"
-                  [readonly]="sameAsCurrentAddressForEmergency"
                 ></textarea>
               </div>
               <div class="form-group full-width">
@@ -1713,7 +1701,6 @@
                   formControlName="addressKana" 
                   class="form-input" 
                   rows="2"
-                  [readonly]="sameAsCurrentAddressForEmergency"
                 ></textarea>
               </div>
             </div>
@@ -3692,24 +3679,12 @@
               >
             </div>
             <div class="form-group full-width">
-              <label>
-                <input 
-                  type="checkbox" 
-                  [checked]="onboardingSameAsCurrentAddressForEmergency"
-                  (change)="onOnboardingSameAddressForEmergencyChange($event)"
-                  class="checkbox-input"
-                >
-                現住所と同じ
-              </label>
-            </div>
-            <div class="form-group full-width">
               <label for="onboarding-emergencyAddress">住所</label>
               <textarea 
                 id="onboarding-emergencyAddress" 
                 formControlName="address" 
                 class="form-input" 
                 rows="2"
-                [readonly]="onboardingSameAsCurrentAddressForEmergency"
               ></textarea>
             </div>
             <div class="form-group full-width">
@@ -3719,7 +3694,6 @@
                 formControlName="addressKana" 
                 class="form-input" 
                 rows="2"
-                [readonly]="onboardingSameAsCurrentAddressForEmergency"
               ></textarea>
             </div>
           </div>
