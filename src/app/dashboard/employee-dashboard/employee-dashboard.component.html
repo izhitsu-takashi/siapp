@@ -342,23 +342,55 @@
               <h3 class="section-title">現住所と連絡先</h3>
               <div class="form-grid">
                 <div class="form-group full-width">
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      formControlName="isOverseasResident"
+                      [readonly]="!isEditMode"
+                    >
+                    海外に在住
+                  </label>
+                </div>
+                <div class="form-group" *ngIf="!settingsForm.get('isOverseasResident')?.value">
+                  <label for="postalCode">郵便番号</label>
+                  <input 
+                    type="text" 
+                    id="postalCode" 
+                    formControlName="postalCode" 
+                    class="form-input"
+                    maxlength="7"
+                    [readonly]="!isEditMode"
+                  >
+                </div>
+                <div class="form-group full-width" *ngIf="!settingsForm.get('isOverseasResident')?.value">
                   <label for="currentAddress">現住所</label>
                   <textarea 
                     id="currentAddress" 
                     formControlName="currentAddress" 
                     class="form-input" 
                     rows="2"
-                    [readonly]="true"
+                    [readonly]="!isEditMode"
                   ></textarea>
                 </div>
-                <div class="form-group full-width">
+                <div class="form-group full-width" *ngIf="!settingsForm.get('isOverseasResident')?.value">
                   <label for="currentAddressKana">現住所（ヨミガナ）</label>
                   <textarea 
                     id="currentAddressKana" 
                     formControlName="currentAddressKana" 
                     class="form-input" 
                     rows="2"
-                    [readonly]="true"
+                    [readonly]="!isEditMode"
+                  ></textarea>
+                </div>
+                <div class="form-group full-width" *ngIf="settingsForm.get('isOverseasResident')?.value">
+                  <label for="overseasAddress">住所（海外）</label>
+                  <textarea 
+                    id="overseasAddress" 
+                    formControlName="overseasAddress" 
+                    class="form-input" 
+                    rows="2"
+                    placeholder="海外住所を入力してください"
+                    [readonly]="!isEditMode"
                   ></textarea>
                 </div>
                 <div class="form-group">
@@ -368,19 +400,8 @@
                     id="phoneNumber" 
                     formControlName="phoneNumber" 
                     class="form-input"
-                    [readonly]="true"
+                    [readonly]="!isEditMode"
                   >
-                </div>
-                <div class="form-group">
-                  <label for="currentHouseholdHead">世帯主（本人/親族）</label>
-                  <select 
-                    id="currentHouseholdHead" 
-                    formControlName="currentHouseholdHead" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-                  </select>
                 </div>
               </div>
             </section>
@@ -393,13 +414,55 @@
                   <label class="checkbox-label">
                     <input 
                       type="checkbox" 
-                      [checked]="sameAsCurrentAddress" 
-                      [disabled]="true"
+                      formControlName="skipResidentAddress"
+                      [disabled]="!isEditMode || settingsForm.get('isOverseasResident')?.value"
+                    >
+                    住民票住所を記載しない
+                  </label>
+                </div>
+                <div class="form-group full-width" *ngIf="settingsForm.get('skipResidentAddress')?.value">
+                  <label for="residentAddressSkipReason">理由</label>
+                  <input 
+                    type="text" 
+                    id="residentAddressSkipReason" 
+                    formControlName="residentAddressSkipReason" 
+                    class="form-input"
+                    [readonly]="true"
+                  >
+                </div>
+                <div class="form-group full-width" *ngIf="settingsForm.get('skipResidentAddress')?.value && settingsForm.get('residentAddressSkipReason')?.value === 'その他'">
+                  <label for="residentAddressSkipReasonOther">理由（その他）</label>
+                  <input 
+                    type="text" 
+                    id="residentAddressSkipReasonOther" 
+                    formControlName="residentAddressSkipReasonOther" 
+                    class="form-input"
+                    [readonly]="true"
+                  >
+                </div>
+                <div class="form-group full-width" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      formControlName="sameAsCurrentAddress"
+                      (change)="onSameAddressChange($event)"
+                      [disabled]="!isEditMode"
                     >
                     住所（現住所と同じ）
                   </label>
                 </div>
-                <div class="form-group full-width">
+                <div class="form-group" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
+                  <label for="residentPostalCode">郵便番号</label>
+                  <input 
+                    type="text" 
+                    id="residentPostalCode" 
+                    formControlName="residentPostalCode" 
+                    class="form-input"
+                    maxlength="7"
+                    [readonly]="!isEditMode || sameAsCurrentAddress"
+                  >
+                </div>
+                <div class="form-group full-width" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
                   <label for="residentAddress">住所</label>
                   <textarea 
                     id="residentAddress" 
@@ -409,7 +472,7 @@
                     [readonly]="!isEditMode || sameAsCurrentAddress"
                   ></textarea>
                 </div>
-                <div class="form-group full-width">
+                <div class="form-group full-width" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
                   <label for="residentAddressKana">住所（ヨミガナ）</label>
                   <textarea 
                     id="residentAddressKana" 
@@ -418,17 +481,6 @@
                     rows="2"
                     [readonly]="!isEditMode || sameAsCurrentAddress"
                   ></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="residentHouseholdHead">世帯主（本人/親族）</label>
-                  <select 
-                    id="residentHouseholdHead" 
-                    formControlName="residentHouseholdHead" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let type of householdHeadTypes" [value]="type">{{ type }}</option>
-                  </select>
                 </div>
               </div>
             </section>
@@ -1727,7 +1779,7 @@
           <div class="form-grid">
             <div class="form-group full-width">
               <label for="onboarding-emergencyAddress">住所</label>
-              <label class="checkbox-label" style="display: block; margin-bottom: 0.5rem;">
+              <label class="checkbox-label" style="display: block; margin-bottom: 0.5rem;" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value">
                 <input 
                   type="checkbox" 
                   formControlName="sameAsCurrentAddressForEmergency"
@@ -1742,7 +1794,7 @@
                 rows="2"
               ></textarea>
             </div>
-            <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value || !onboardingApplicationForm.get('sameAsCurrentAddressForEmergency')?.value">
+            <div class="form-group full-width" *ngIf="!onboardingApplicationForm.get('isOverseasResident')?.value || !onboardingApplicationForm.get('emergencyContact.sameAsCurrentAddressForEmergency')?.value">
               <label for="onboarding-emergencyAddressKana">住所（ヨミガナ）</label>
               <textarea 
                 id="onboarding-emergencyAddressKana" 
@@ -4696,7 +4748,7 @@
                   </div>
                 </div>
               </div>
-              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl || (isInEditMode() && myNumberCardFile)">
+              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl || isInEditMode()">
                 <span class="detail-label">マイナンバーカード:</span>
                 <span class="detail-value" *ngIf="isInViewMode() && selectedApplication.myNumberCardFileUrl">
                   <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">

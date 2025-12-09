@@ -490,25 +490,49 @@ export class EmployeeDashboardComponent {
       this.hasPensionHistory = data.pensionHistoryStatus === '有';
     }
 
+    // 海外在住情報を設定
+    // isOverseasResidentがundefinedでも、overseasAddressに値がある場合はtrueと推論
+    const isOverseasResidentValue = data.isOverseasResident !== undefined 
+      ? data.isOverseasResident 
+      : (data.overseasAddress && data.overseasAddress.trim() !== '' ? true : false);
+    
+    this.settingsForm.patchValue({
+      isOverseasResident: isOverseasResidentValue,
+      overseasAddress: data.overseasAddress || '',
+      postalCode: data.postalCode || ''
+    });
+
     // 住民票住所が現住所と同じかチェック
     if (data.sameAsCurrentAddress !== undefined) {
       this.sameAsCurrentAddress = data.sameAsCurrentAddress;
       if (this.sameAsCurrentAddress && data.currentAddress) {
         // データから直接値を取得（保存された値を使用）
         this.settingsForm.patchValue({
+          residentPostalCode: data.residentPostalCode || data.postalCode || '',
           residentAddress: data.residentAddress || data.currentAddress,
-          residentAddressKana: data.residentAddressKana || data.currentAddressKana || '',
-          residentHouseholdHead: data.residentHouseholdHead || data.currentHouseholdHead || ''
+          residentAddressKana: data.residentAddressKana || data.currentAddressKana || ''
         });
       } else if (data.residentAddress) {
         // sameAsCurrentAddressがfalseの場合、保存された住民票住所を使用
         this.settingsForm.patchValue({
+          residentPostalCode: data.residentPostalCode || '',
           residentAddress: data.residentAddress,
-          residentAddressKana: data.residentAddressKana || '',
-          residentHouseholdHead: data.residentHouseholdHead || ''
+          residentAddressKana: data.residentAddressKana || ''
         });
       }
     }
+    
+    // 住民票住所を記載しない情報を設定
+    // skipResidentAddressがundefinedでも、residentAddressSkipReasonが「海外在住」の場合はtrueと推論
+    const skipResidentAddressValue = data.skipResidentAddress !== undefined
+      ? data.skipResidentAddress
+      : (data.residentAddressSkipReason === '海外在住' ? true : false);
+    
+    this.settingsForm.patchValue({
+      skipResidentAddress: skipResidentAddressValue,
+      residentAddressSkipReason: data.residentAddressSkipReason || '',
+      residentAddressSkipReasonOther: data.residentAddressSkipReasonOther || ''
+    });
 
     // 緊急連絡先住所が現住所と同じかチェック
     if (data.sameAsCurrentAddressForEmergency !== undefined) {
@@ -536,9 +560,17 @@ export class EmployeeDashboardComponent {
     // ネストされたフォームグループを個別に設定
     if (formData.emergencyContact) {
       // sameAsCurrentAddressForEmergencyがtrueの場合、現住所の値を緊急連絡先住所にコピー
-      if (this.sameAsCurrentAddressForEmergency && data.currentAddress) {
-        formData.emergencyContact.address = formData.emergencyContact.address || data.currentAddress;
-        formData.emergencyContact.addressKana = formData.emergencyContact.addressKana || data.currentAddressKana || '';
+      if (this.sameAsCurrentAddressForEmergency) {
+        const isOverseasResident = data.isOverseasResident || false;
+        if (isOverseasResident) {
+          // 海外在住の場合はoverseasAddressを使用
+          formData.emergencyContact.address = formData.emergencyContact.address || data.overseasAddress || '';
+          formData.emergencyContact.addressKana = ''; // 海外住所にはヨミガナがない
+        } else {
+          // 国内在住の場合はcurrentAddressとcurrentAddressKanaを使用
+          formData.emergencyContact.address = formData.emergencyContact.address || data.currentAddress || '';
+          formData.emergencyContact.addressKana = formData.emergencyContact.addressKana || data.currentAddressKana || '';
+        }
       }
       this.settingsForm.get('emergencyContact')?.patchValue(formData.emergencyContact);
       delete formData.emergencyContact;
@@ -554,9 +586,18 @@ export class EmployeeDashboardComponent {
     
     // sameAsCurrentAddressがtrueの場合、住民票住所フィールドを無効化
     if (this.sameAsCurrentAddress) {
+      this.settingsForm.get('residentPostalCode')?.disable();
       this.settingsForm.get('residentAddress')?.disable();
       this.settingsForm.get('residentAddressKana')?.disable();
-      this.settingsForm.get('residentHouseholdHead')?.disable();
+    }
+    
+    // 海外在住の場合、住民票住所を記載しないチェックを自動的に入れて固定
+    if (data.isOverseasResident) {
+      this.settingsForm.patchValue({
+        skipResidentAddress: true,
+        residentAddressSkipReason: '海外在住'
+      });
+      this.settingsForm.get('skipResidentAddress')?.disable();
     }
     
     // sameAsCurrentAddressForEmergencyがtrueの場合、緊急連絡先住所フィールドを無効化
@@ -591,24 +632,24 @@ export class EmployeeDashboardComponent {
   onSameAddressChange(event: any) {
     this.sameAsCurrentAddress = event.target.checked;
     if (this.sameAsCurrentAddress) {
+      const postalCode = this.settingsForm.get('postalCode')?.value || '';
       const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
       const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
-      const currentHouseholdHead = this.settingsForm.get('currentHouseholdHead')?.value || '';
       this.settingsForm.patchValue({
+        residentPostalCode: postalCode,
         residentAddress: currentAddress,
-        residentAddressKana: currentAddressKana,
-        residentHouseholdHead: currentHouseholdHead
+        residentAddressKana: currentAddressKana
       });
       // 住民票住所フィールドを無効化
+      this.settingsForm.get('residentPostalCode')?.disable();
       this.settingsForm.get('residentAddress')?.disable();
       this.settingsForm.get('residentAddressKana')?.disable();
-      this.settingsForm.get('residentHouseholdHead')?.disable();
     } else {
       // 住民票住所フィールドを有効化（編集モードの場合のみ）
       if (this.isEditMode) {
+        this.settingsForm.get('residentPostalCode')?.enable();
         this.settingsForm.get('residentAddress')?.enable();
         this.settingsForm.get('residentAddressKana')?.enable();
-        this.settingsForm.get('residentHouseholdHead')?.enable();
       }
     }
   }
@@ -616,12 +657,23 @@ export class EmployeeDashboardComponent {
   onSameAddressForEmergencyChange(event: any) {
     this.sameAsCurrentAddressForEmergency = event.target.checked;
     if (this.sameAsCurrentAddressForEmergency) {
-      const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
-      const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
-      this.settingsForm.get('emergencyContact')?.patchValue({
-        address: currentAddress,
-        addressKana: currentAddressKana
-      });
+      const isOverseasResident = this.settingsForm.get('isOverseasResident')?.value || false;
+      if (isOverseasResident) {
+        // 海外在住の場合はoverseasAddressを使用
+        const overseasAddress = this.settingsForm.get('overseasAddress')?.value || '';
+        this.settingsForm.get('emergencyContact')?.patchValue({
+          address: overseasAddress,
+          addressKana: '' // 海外住所にはヨミガナがない
+        });
+      } else {
+        // 国内在住の場合はcurrentAddressとcurrentAddressKanaを使用
+        const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
+        const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
+        this.settingsForm.get('emergencyContact')?.patchValue({
+          address: currentAddress,
+          addressKana: currentAddressKana
+        });
+      }
       // 緊急連絡先住所フィールドを無効化
       this.settingsForm.get('emergencyContact.address')?.disable();
       this.settingsForm.get('emergencyContact.addressKana')?.disable();
@@ -1002,13 +1054,20 @@ export class EmployeeDashboardComponent {
       position: [''],
       
       // 現住所と連絡先
+      isOverseasResident: [false],
+      postalCode: [''],
       currentAddress: [''],
       currentAddressKana: [''],
+      overseasAddress: [''],
       phoneNumber: [''],
       currentHouseholdHead: [''],
       
       // 住民票住所
+      skipResidentAddress: [false],
+      residentAddressSkipReason: [''],
+      residentAddressSkipReasonOther: [''],
       sameAsCurrentAddress: [false],
+      residentPostalCode: [''],
       residentAddress: [''],
       residentAddressKana: [''],
       residentHouseholdHead: [''],
@@ -1197,26 +1256,45 @@ export class EmployeeDashboardComponent {
           myNumber: myNumber || null,
           basicPensionNumber: basicPensionNumber || null,
           sameAsCurrentAddress: this.sameAsCurrentAddress,
-          sameAsCurrentAddressForEmergency: this.sameAsCurrentAddressForEmergency
+          sameAsCurrentAddressForEmergency: this.sameAsCurrentAddressForEmergency,
+          // 海外在住情報を明示的に保存（getRawValue()を使用してdisabled状態のフィールドも含める）
+          isOverseasResident: this.settingsForm.get('isOverseasResident')?.value || false,
+          overseasAddress: this.settingsForm.get('overseasAddress')?.value || '',
+          postalCode: this.settingsForm.get('postalCode')?.value || '',
+          skipResidentAddress: this.settingsForm.get('skipResidentAddress')?.value || false,
+          residentAddressSkipReason: this.settingsForm.get('residentAddressSkipReason')?.value || '',
+          residentAddressSkipReasonOther: this.settingsForm.get('residentAddressSkipReasonOther')?.value || '',
+          residentPostalCode: this.settingsForm.get('residentPostalCode')?.value || ''
         };
 
         // sameAsCurrentAddressがtrueの場合、現住所の値を住民票住所にコピー
         if (this.sameAsCurrentAddress) {
+          const postalCode = this.settingsForm.get('postalCode')?.value || '';
           const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
           const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
-          const currentHouseholdHead = this.settingsForm.get('currentHouseholdHead')?.value || '';
+          formData.residentPostalCode = postalCode;
           formData.residentAddress = currentAddress;
           formData.residentAddressKana = currentAddressKana;
-          formData.residentHouseholdHead = currentHouseholdHead;
         }
 
         // sameAsCurrentAddressForEmergencyがtrueの場合、現住所の値を緊急連絡先住所にコピー
         if (this.sameAsCurrentAddressForEmergency) {
-          const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
-          const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
-          if (formData.emergencyContact) {
-            formData.emergencyContact.address = currentAddress;
-            formData.emergencyContact.addressKana = currentAddressKana;
+          const isOverseasResident = this.settingsForm.get('isOverseasResident')?.value || false;
+          if (isOverseasResident) {
+            // 海外在住の場合はoverseasAddressを使用
+            const overseasAddress = this.settingsForm.get('overseasAddress')?.value || '';
+            if (formData.emergencyContact) {
+              formData.emergencyContact.address = overseasAddress;
+              formData.emergencyContact.addressKana = ''; // 海外住所にはヨミガナがない
+            }
+          } else {
+            // 国内在住の場合はcurrentAddressとcurrentAddressKanaを使用
+            const currentAddress = this.settingsForm.get('currentAddress')?.value || '';
+            const currentAddressKana = this.settingsForm.get('currentAddressKana')?.value || '';
+            if (formData.emergencyContact) {
+              formData.emergencyContact.address = currentAddress;
+              formData.emergencyContact.addressKana = currentAddressKana;
+            }
           }
         }
 
@@ -1375,8 +1453,8 @@ export class EmployeeDashboardComponent {
       // 履歴書・職務経歴書（ファイル入力はフォームから分離）
       
       // 緊急連絡先
-      sameAsCurrentAddressForEmergency: [false],
       emergencyContact: this.fb.group({
+        sameAsCurrentAddressForEmergency: [false],
         name: [''],
         nameKana: ['', this.katakanaValidator],
         relationship: [''],
@@ -2490,16 +2568,27 @@ export class EmployeeDashboardComponent {
             ? (formValue.currentAddressKana || '') 
             : (formValue.residentAddressKana || ''),
           // 緊急連絡先
-          sameAsCurrentAddressForEmergency: formValue.sameAsCurrentAddressForEmergency || false,
           emergencyContact: (() => {
             const emergencyContact = formValue.emergencyContact || {};
+            const sameAsCurrentAddressForEmergency = emergencyContact.sameAsCurrentAddressForEmergency || false;
             // 現住所と同じにチェックされている場合、現住所をコピー
-            if (formValue.sameAsCurrentAddressForEmergency) {
-              return {
-                ...emergencyContact,
-                address: formValue.currentAddress || '',
-                addressKana: formValue.currentAddressKana || ''
-              };
+            if (sameAsCurrentAddressForEmergency) {
+              const isOverseasResident = formValue.isOverseasResident || false;
+              if (isOverseasResident) {
+                // 海外在住の場合はoverseasAddressを使用
+                return {
+                  ...emergencyContact,
+                  address: formValue.overseasAddress || '',
+                  addressKana: '' // 海外住所にはヨミガナがない
+                };
+              } else {
+                // 国内在住の場合はcurrentAddressとcurrentAddressKanaを使用
+                return {
+                  ...emergencyContact,
+                  address: formValue.currentAddress || '',
+                  addressKana: formValue.currentAddressKana || ''
+                };
+              }
             }
             return emergencyContact;
           })(),
@@ -3207,13 +3296,13 @@ export class EmployeeDashboardComponent {
         dependentStatus: application.dependentStatus || '',
         qualificationCertificateRequired: application.qualificationCertificateRequired || '',
         pensionFundMembership: application.pensionFundMembership || '',
-        sameAsCurrentAddressForEmergency: application.sameAsCurrentAddressForEmergency || false
       });
       
       // ネストされたフォームグループを個別に設定
       const emergencyContactGroup = this.onboardingApplicationForm.get('emergencyContact') as FormGroup;
       if (emergencyContactGroup && application.emergencyContact) {
         emergencyContactGroup.patchValue({
+          sameAsCurrentAddressForEmergency: application.sameAsCurrentAddressForEmergency || false,
           name: application.emergencyContact.name || '',
           nameKana: application.emergencyContact.nameKana || '',
           relationship: application.emergencyContact.relationship || '',
@@ -3249,6 +3338,12 @@ export class EmployeeDashboardComponent {
       
       // 緊急連絡先が現住所と同じ場合の処理
       if (application.sameAsCurrentAddressForEmergency) {
+        const emergencyContactGroup = this.onboardingApplicationForm.get('emergencyContact') as FormGroup;
+        if (emergencyContactGroup) {
+          emergencyContactGroup.patchValue({
+            sameAsCurrentAddressForEmergency: true
+          });
+        }
         this.onSameAsCurrentAddressForEmergencyChange({ target: { checked: true } });
       }
       

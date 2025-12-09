@@ -1452,6 +1452,29 @@
           <h3 class="section-title">現住所と連絡先</h3>
           <div class="form-grid">
             <div class="form-group full-width">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  formControlName="isOverseasResident"
+                >
+                海外に在住
+              </label>
+            </div>
+            <div class="form-group" *ngIf="!employeeEditForm.get('isOverseasResident')?.value">
+              <label for="hr-postalCode">郵便番号</label>
+              <input 
+                type="text" 
+                id="hr-postalCode" 
+                formControlName="postalCode" 
+                class="form-input"
+                placeholder="例: 1234567"
+                maxlength="7"
+                pattern="[0-9]{7}"
+                title="7桁の数字を入力してください"
+              >
+              <small class="form-hint">7桁の数字で入力してください</small>
+            </div>
+            <div class="form-group full-width" *ngIf="!employeeEditForm.get('isOverseasResident')?.value">
               <label for="hr-currentAddress">現住所 <span class="required">*</span></label>
               <textarea 
                 id="hr-currentAddress" 
@@ -1460,11 +1483,20 @@
                 rows="2"
               ></textarea>
             </div>
-            <div class="form-group full-width">
+            <div class="form-group full-width" *ngIf="!employeeEditForm.get('isOverseasResident')?.value">
               <label for="hr-currentAddressKana">現住所（ヨミガナ） <span class="required">*</span></label>
               <textarea 
                 id="hr-currentAddressKana" 
                 formControlName="currentAddressKana" 
+                class="form-input" 
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-group full-width" *ngIf="employeeEditForm.get('isOverseasResident')?.value">
+              <label for="hr-overseasAddress">住所（海外）</label>
+              <textarea 
+                id="hr-overseasAddress" 
+                formControlName="overseasAddress" 
                 class="form-input" 
                 rows="2"
               ></textarea>
@@ -1491,13 +1523,56 @@
               <label class="checkbox-label">
                 <input 
                   type="checkbox" 
+                  formControlName="skipResidentAddress"
+                >
+                住民票住所を記載しない
+              </label>
+            </div>
+            <div class="form-group full-width" *ngIf="employeeEditForm.get('skipResidentAddress')?.value">
+              <label for="hr-residentAddressSkipReason">理由</label>
+              <input 
+                type="text" 
+                id="hr-residentAddressSkipReason" 
+                formControlName="residentAddressSkipReason" 
+                class="form-input"
+                readonly
+              >
+            </div>
+            <div class="form-group full-width" *ngIf="employeeEditForm.get('skipResidentAddress')?.value && employeeEditForm.get('residentAddressSkipReason')?.value === 'その他'">
+              <label for="hr-residentAddressSkipReasonOther">理由（その他）</label>
+              <input 
+                type="text" 
+                id="hr-residentAddressSkipReasonOther" 
+                formControlName="residentAddressSkipReasonOther" 
+                class="form-input"
+                readonly
+              >
+            </div>
+            <div class="form-group full-width" *ngIf="!employeeEditForm.get('skipResidentAddress')?.value">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
                   [checked]="sameAsCurrentAddress" 
                   (change)="onSameAddressChange($event)"
                 >
                 住所（現住所と同じ）
               </label>
             </div>
-            <div class="form-group full-width">
+            <div class="form-group" *ngIf="!employeeEditForm.get('skipResidentAddress')?.value">
+              <label for="hr-residentPostalCode">郵便番号</label>
+              <input 
+                type="text" 
+                id="hr-residentPostalCode" 
+                formControlName="residentPostalCode" 
+                class="form-input"
+                placeholder="例: 1234567"
+                maxlength="7"
+                pattern="[0-9]{7}"
+                title="7桁の数字を入力してください"
+                [readonly]="sameAsCurrentAddress"
+              >
+            </div>
+            <div class="form-group full-width" *ngIf="!employeeEditForm.get('skipResidentAddress')?.value">
               <label for="hr-residentAddress">住所 <span class="required">*</span></label>
               <textarea 
                 id="hr-residentAddress" 
@@ -1507,7 +1582,7 @@
                 [readonly]="sameAsCurrentAddress"
               ></textarea>
             </div>
-            <div class="form-group full-width">
+            <div class="form-group full-width" *ngIf="!employeeEditForm.get('skipResidentAddress')?.value">
               <label for="hr-residentAddressKana">住所（ヨミガナ） <span class="required">*</span></label>
               <textarea 
                 id="hr-residentAddressKana" 

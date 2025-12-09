@@ -292,6 +292,35 @@ export class HrDashboardComponent {
             // ステータス関連のフィールドを除外
             const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = employeeData;
             
+            // 海外在住情報を明示的に保持
+            // isOverseasResidentがundefinedでも、overseasAddressに値がある場合はtrueと推論
+            if (employeeData.isOverseasResident !== undefined) {
+              employeeDataWithoutStatus.isOverseasResident = employeeData.isOverseasResident;
+            } else if (employeeData.overseasAddress && employeeData.overseasAddress.trim() !== '') {
+              employeeDataWithoutStatus.isOverseasResident = true;
+            }
+            if (employeeData.overseasAddress !== undefined) {
+              employeeDataWithoutStatus.overseasAddress = employeeData.overseasAddress;
+            }
+            if (employeeData.postalCode !== undefined) {
+              employeeDataWithoutStatus.postalCode = employeeData.postalCode;
+            }
+            // skipResidentAddressがundefinedでも、residentAddressSkipReasonが「海外在住」の場合はtrueと推論
+            if (employeeData.skipResidentAddress !== undefined) {
+              employeeDataWithoutStatus.skipResidentAddress = employeeData.skipResidentAddress;
+            } else if (employeeData.residentAddressSkipReason === '海外在住') {
+              employeeDataWithoutStatus.skipResidentAddress = true;
+            }
+            if (employeeData.residentAddressSkipReason !== undefined) {
+              employeeDataWithoutStatus.residentAddressSkipReason = employeeData.residentAddressSkipReason;
+            }
+            if (employeeData.residentAddressSkipReasonOther !== undefined) {
+              employeeDataWithoutStatus.residentAddressSkipReasonOther = employeeData.residentAddressSkipReasonOther;
+            }
+            if (employeeData.residentPostalCode !== undefined) {
+              employeeDataWithoutStatus.residentPostalCode = employeeData.residentPostalCode;
+            }
+            
             // 申請データから添付資料のURLを取得
             try {
               const applications = await this.firestoreService.getEmployeeApplicationsByType('入社時申請');
@@ -2352,12 +2381,19 @@ export class HrDashboardComponent {
       position: [''],
       
       // 現住所と連絡先
+      isOverseasResident: [false], // 海外に在住チェックボックス
+      postalCode: ['', [Validators.pattern(/^\d{7}$/)]], // 郵便番号（数字7桁）
       currentAddress: ['', Validators.required],
       currentAddressKana: ['', Validators.required],
+      overseasAddress: [''], // 海外住所
       phoneNumber: ['', [Validators.required, Validators.pattern(/^\d{1,11}$/)]],
       
       // 住民票住所
       sameAsCurrentAddress: [false],
+      skipResidentAddress: [false], // 住民票住所を記載しないチェックボックス
+      residentAddressSkipReason: [''], // 住民票住所を記載しない理由
+      residentAddressSkipReasonOther: [''], // その他の理由
+      residentPostalCode: ['', [Validators.pattern(/^\d{7}$/)]], // 住民票住所の郵便番号（数字7桁）
       residentAddress: ['', Validators.required],
       residentAddressKana: ['', Validators.required],
       
@@ -2455,6 +2491,17 @@ export class HrDashboardComponent {
     try {
       const data = await this.firestoreService.getEmployeeData(employeeNumber);
       if (data) {
+        console.log('=== 社員情報編集モーダル: データ読み込み ===');
+        console.log('社員番号:', employeeNumber);
+        console.log('取得したデータ全体:', data);
+        console.log('isOverseasResident:', data.isOverseasResident);
+        console.log('overseasAddress:', data.overseasAddress);
+        console.log('postalCode:', data.postalCode);
+        console.log('skipResidentAddress:', data.skipResidentAddress);
+        console.log('residentAddressSkipReason:', data.residentAddressSkipReason);
+        console.log('residentAddressSkipReasonOther:', data.residentAddressSkipReasonOther);
+        console.log('residentPostalCode:', data.residentPostalCode);
+        console.log('==========================================');
         this.populateEmployeeEditForm(data);
         
         // 社員データから被扶養者情報を取得（優先）
@@ -2564,18 +2611,22 @@ export class HrDashboardComponent {
       this.sameAsCurrentAddress = data.sameAsCurrentAddress;
       if (this.sameAsCurrentAddress && data.currentAddress) {
         this.employeeEditForm.patchValue({
+          residentPostalCode: data.residentPostalCode || data.postalCode || '',
           residentAddress: data.residentAddress || data.currentAddress,
           residentAddressKana: data.residentAddressKana || data.currentAddressKana || ''
         });
         // コントロールを無効化
+        this.employeeEditForm.get('residentPostalCode')?.disable();
         this.employeeEditForm.get('residentAddress')?.disable();
         this.employeeEditForm.get('residentAddressKana')?.disable();
       } else if (data.residentAddress) {
         this.employeeEditForm.patchValue({
+          residentPostalCode: data.residentPostalCode || '',
           residentAddress: data.residentAddress,
           residentAddressKana: data.residentAddressKana || ''
         });
         // コントロールを有効化
+        this.employeeEditForm.get('residentPostalCode')?.enable();
         this.employeeEditForm.get('residentAddress')?.enable();
         this.employeeEditForm.get('residentAddressKana')?.enable();
       }
@@ -2695,6 +2746,50 @@ export class HrDashboardComponent {
     delete formData.dependents; // 既に読み込んだので削除
     delete formData.name; // 古い形式のnameは削除（既に分割済み）
     delete formData.nameKana; // 古い形式のnameKanaは削除（既に分割済み）
+    
+    console.log('=== populateEmployeeEditForm: formData作成後 ===');
+    console.log('formData.isOverseasResident:', formData.isOverseasResident);
+    console.log('formData.overseasAddress:', formData.overseasAddress);
+    console.log('formData.postalCode:', formData.postalCode);
+    console.log('formData.skipResidentAddress:', formData.skipResidentAddress);
+    
+    // 海外在住情報を明示的に保持（formDataに含まれるようにする）
+    // isOverseasResidentがundefinedでも、overseasAddressに値がある場合はtrueと推論
+    if (data.isOverseasResident !== undefined) {
+      formData.isOverseasResident = data.isOverseasResident;
+    } else if (data.overseasAddress && data.overseasAddress.trim() !== '') {
+      // overseasAddressに値がある場合は、isOverseasResidentをtrueに推論
+      formData.isOverseasResident = true;
+      console.log('overseasAddressに値があるため、isOverseasResidentをtrueに推論');
+    }
+    if (data.overseasAddress !== undefined) {
+      formData.overseasAddress = data.overseasAddress;
+    }
+    if (data.postalCode !== undefined) {
+      formData.postalCode = data.postalCode;
+    }
+    // skipResidentAddressがundefinedでも、residentAddressSkipReasonが「海外在住」の場合はtrueと推論
+    if (data.skipResidentAddress !== undefined) {
+      formData.skipResidentAddress = data.skipResidentAddress;
+    } else if (data.residentAddressSkipReason === '海外在住') {
+      formData.skipResidentAddress = true;
+      console.log('residentAddressSkipReasonが「海外在住」のため、skipResidentAddressをtrueに推論');
+    }
+    if (data.residentAddressSkipReason !== undefined) {
+      formData.residentAddressSkipReason = data.residentAddressSkipReason;
+    }
+    if (data.residentAddressSkipReasonOther !== undefined) {
+      formData.residentAddressSkipReasonOther = data.residentAddressSkipReasonOther;
+    }
+    if (data.residentPostalCode !== undefined) {
+      formData.residentPostalCode = data.residentPostalCode;
+    }
+    
+    console.log('=== populateEmployeeEditForm: 海外在住情報追加後 ===');
+    console.log('formData.isOverseasResident:', formData.isOverseasResident);
+    console.log('formData.overseasAddress:', formData.overseasAddress);
+    console.log('formData.postalCode:', formData.postalCode);
+    console.log('formData.skipResidentAddress:', formData.skipResidentAddress);
 
     // ネストされたフォームグループを個別に設定
     if (formData.emergencyContact) {
@@ -2727,31 +2822,33 @@ export class HrDashboardComponent {
     this.existingMyNumberCardFileName = data.myNumberCardFile || null;
     
     // 入社時申請の情報を設定（海外在住、住民票住所を記載しない理由、年金基金加入、坑内員）
-    if (data.isOverseasResident !== undefined) {
-      this.employeeEditForm.patchValue({
-        isOverseasResident: data.isOverseasResident
-      });
-    }
-    if (data.overseasAddress) {
-      this.employeeEditForm.patchValue({
-        overseasAddress: data.overseasAddress
-      });
-    }
-    if (data.skipResidentAddress !== undefined) {
-      this.employeeEditForm.patchValue({
-        skipResidentAddress: data.skipResidentAddress
-      });
-    }
-    if (data.residentAddressSkipReason) {
-      this.employeeEditForm.patchValue({
-        residentAddressSkipReason: data.residentAddressSkipReason
-      });
-    }
-    if (data.residentAddressSkipReasonOther) {
-      this.employeeEditForm.patchValue({
-        residentAddressSkipReasonOther: data.residentAddressSkipReasonOther
-      });
-    }
+    // 海外在住情報を明示的に設定
+    // isOverseasResidentがundefinedでも、overseasAddressに値がある場合はtrueと推論
+    const isOverseasResidentValue = data.isOverseasResident !== undefined 
+      ? data.isOverseasResident 
+      : (data.overseasAddress && data.overseasAddress.trim() !== '' ? true : false);
+    // skipResidentAddressがundefinedでも、residentAddressSkipReasonが「海外在住」の場合はtrueと推論
+    const skipResidentAddressValue = data.skipResidentAddress !== undefined
+      ? data.skipResidentAddress
+      : (data.residentAddressSkipReason === '海外在住' ? true : false);
+    
+    const overseasData = {
+      isOverseasResident: isOverseasResidentValue,
+      overseasAddress: data.overseasAddress || '',
+      postalCode: data.postalCode || '',
+      skipResidentAddress: skipResidentAddressValue,
+      residentAddressSkipReason: data.residentAddressSkipReason || '',
+      residentAddressSkipReasonOther: data.residentAddressSkipReasonOther || '',
+      residentPostalCode: data.residentPostalCode || ''
+    };
+    console.log('=== populateEmployeeEditForm: 海外在住情報をpatchValue ===');
+    console.log('patchValueするデータ:', overseasData);
+    this.employeeEditForm.patchValue(overseasData);
+    console.log('=== populateEmployeeEditForm: patchValue後のフォーム値 ===');
+    console.log('employeeEditForm.isOverseasResident:', this.employeeEditForm.get('isOverseasResident')?.value);
+    console.log('employeeEditForm.overseasAddress:', this.employeeEditForm.get('overseasAddress')?.value);
+    console.log('employeeEditForm.postalCode:', this.employeeEditForm.get('postalCode')?.value);
+    console.log('employeeEditForm.skipResidentAddress:', this.employeeEditForm.get('skipResidentAddress')?.value);
     if (data.pensionFundMembership) {
       this.employeeEditForm.patchValue({
         pensionFundMembership: data.pensionFundMembership
@@ -2829,24 +2926,29 @@ export class HrDashboardComponent {
     this.sameAsCurrentAddress = isChecked;
     
     // フォームコントロールのdisable/enableを使用（[disabled]属性の警告を回避）
+    const residentPostalCodeControl = this.employeeEditForm.get('residentPostalCode');
     const residentAddressControl = this.employeeEditForm.get('residentAddress');
     const residentAddressKanaControl = this.employeeEditForm.get('residentAddressKana');
     
     if (isChecked) {
       // 現住所の値を住民票住所にコピー
+      const postalCode = this.employeeEditForm.get('postalCode')?.value || '';
       const currentAddress = this.employeeEditForm.get('currentAddress')?.value || '';
       const currentAddressKana = this.employeeEditForm.get('currentAddressKana')?.value || '';
       
       this.employeeEditForm.patchValue({
+        residentPostalCode: postalCode,
         residentAddress: currentAddress,
         residentAddressKana: currentAddressKana
       });
       
       // コントロールを無効化
+      residentPostalCodeControl?.disable();
       residentAddressControl?.disable();
       residentAddressKanaControl?.disable();
     } else {
       // コントロールを有効化
+      residentPostalCodeControl?.enable();
       residentAddressControl?.enable();
       residentAddressKanaControl?.enable();
     }
@@ -4416,23 +4518,39 @@ export class HrDashboardComponent {
       });
     }
     
-    // 緊急連絡先住所が現住所と同じかチェック
-    this.onboardingSameAsCurrentAddressForEmergency = data.sameAsCurrentAddressForEmergency || false;
-    if (this.onboardingSameAsCurrentAddressForEmergency) {
-      const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
-      const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
-      this.onboardingEmployeeEditForm.get('emergencyContact')?.patchValue({
-        address: currentAddress,
-        addressKana: currentAddressKana
-      });
-      this.onboardingEmployeeEditForm.get('emergencyContact.address')?.disable();
-      this.onboardingEmployeeEditForm.get('emergencyContact.addressKana')?.disable();
-    }
-    
-    // ネストされたフォームグループを設定
+    // ネストされたフォームグループを設定（緊急連絡先は先に設定）
     if (data.emergencyContact) {
       this.onboardingEmployeeEditForm.get('emergencyContact')?.patchValue(data.emergencyContact);
       delete data.emergencyContact;
+    }
+    
+    // 緊急連絡先住所が現住所と同じかチェック
+    this.onboardingSameAsCurrentAddressForEmergency = data.sameAsCurrentAddressForEmergency || false;
+    if (this.onboardingSameAsCurrentAddressForEmergency) {
+      const isOverseasResident = data.isOverseasResident || false;
+      let address = '';
+      let addressKana = '';
+      
+      if (isOverseasResident) {
+        // 海外在住の場合はoverseasAddressを使用
+        address = this.onboardingEmployeeEditForm.get('overseasAddress')?.value || data.overseasAddress || '';
+        addressKana = ''; // 海外住所にはヨミガナがない
+      } else {
+        // 国内在住の場合はcurrentAddressとcurrentAddressKanaを使用
+        address = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+        addressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+      }
+      
+      // データベースに保存されている値が空の場合のみ、フォームの値から再計算
+      const currentEmergencyAddress = this.onboardingEmployeeEditForm.get('emergencyContact.address')?.value || '';
+      if (!currentEmergencyAddress) {
+        this.onboardingEmployeeEditForm.get('emergencyContact')?.patchValue({
+          address: address,
+          addressKana: addressKana
+        });
+      }
+      this.onboardingEmployeeEditForm.get('emergencyContact.address')?.disable();
+      this.onboardingEmployeeEditForm.get('emergencyContact.addressKana')?.disable();
     }
     
     if (data.bankAccount) {
@@ -4773,7 +4891,15 @@ export class HrDashboardComponent {
           sameAsCurrentAddress: this.onboardingSameAsCurrentAddress,
           sameAsCurrentAddressForEmergency: this.onboardingSameAsCurrentAddressForEmergency,
           expectedMonthlySalary: formValue.expectedMonthlySalary || null,
-          expectedMonthlySalaryInKind: formValue.expectedMonthlySalaryInKind || null
+          expectedMonthlySalaryInKind: formValue.expectedMonthlySalaryInKind || null,
+          // 海外在住情報を明示的に保存
+          isOverseasResident: this.onboardingEmployeeEditForm.get('isOverseasResident')?.value || false,
+          overseasAddress: this.onboardingEmployeeEditForm.get('overseasAddress')?.value || '',
+          postalCode: this.onboardingEmployeeEditForm.get('postalCode')?.value || '',
+          skipResidentAddress: this.onboardingEmployeeEditForm.get('skipResidentAddress')?.value || false,
+          residentAddressSkipReason: this.onboardingEmployeeEditForm.get('residentAddressSkipReason')?.value || '',
+          residentAddressSkipReasonOther: this.onboardingEmployeeEditForm.get('residentAddressSkipReasonOther')?.value || '',
+          residentPostalCode: this.onboardingEmployeeEditForm.get('residentPostalCode')?.value || ''
         };
         
         // 配偶者情報の分割フィールドを削除
@@ -4797,12 +4923,24 @@ export class HrDashboardComponent {
 
         // sameAsCurrentAddressForEmergencyがtrueの場合、緊急連絡先住所を現住所で上書き
         if (this.onboardingSameAsCurrentAddressForEmergency) {
-          const currentAddress = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
-          const currentAddressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+          const isOverseasResident = this.onboardingEmployeeEditForm.get('isOverseasResident')?.value || false;
+          let address = '';
+          let addressKana = '';
+          
+          if (isOverseasResident) {
+            // 海外在住の場合はoverseasAddressを使用
+            address = this.onboardingEmployeeEditForm.get('overseasAddress')?.value || '';
+            addressKana = ''; // 海外住所にはヨミガナがない
+          } else {
+            // 国内在住の場合はcurrentAddressとcurrentAddressKanaを使用
+            address = this.onboardingEmployeeEditForm.get('currentAddress')?.value || '';
+            addressKana = this.onboardingEmployeeEditForm.get('currentAddressKana')?.value || '';
+          }
+          
           formData.emergencyContact = {
             ...formData.emergencyContact,
-            address: currentAddress,
-            addressKana: currentAddressKana
+            address: address,
+            addressKana: addressKana
           };
         }
 
@@ -4996,6 +5134,35 @@ export class HrDashboardComponent {
         if (employeeData) {
           // ステータスとコメントを除いて通常の社員データとして保存
           const { status, statusComment, createdAt, updatedAt, ...employeeDataWithoutStatus } = employeeData;
+          
+          // 海外在住情報を明示的に保持
+          // isOverseasResidentがundefinedでも、overseasAddressに値がある場合はtrueと推論
+          if (employeeData.isOverseasResident !== undefined) {
+            employeeDataWithoutStatus.isOverseasResident = employeeData.isOverseasResident;
+          } else if (employeeData.overseasAddress && employeeData.overseasAddress.trim() !== '') {
+            employeeDataWithoutStatus.isOverseasResident = true;
+          }
+          if (employeeData.overseasAddress !== undefined) {
+            employeeDataWithoutStatus.overseasAddress = employeeData.overseasAddress;
+          }
+          if (employeeData.postalCode !== undefined) {
+            employeeDataWithoutStatus.postalCode = employeeData.postalCode;
+          }
+          // skipResidentAddressがundefinedでも、residentAddressSkipReasonが「海外在住」の場合はtrueと推論
+          if (employeeData.skipResidentAddress !== undefined) {
+            employeeDataWithoutStatus.skipResidentAddress = employeeData.skipResidentAddress;
+          } else if (employeeData.residentAddressSkipReason === '海外在住') {
+            employeeDataWithoutStatus.skipResidentAddress = true;
+          }
+          if (employeeData.residentAddressSkipReason !== undefined) {
+            employeeDataWithoutStatus.residentAddressSkipReason = employeeData.residentAddressSkipReason;
+          }
+          if (employeeData.residentAddressSkipReasonOther !== undefined) {
+            employeeDataWithoutStatus.residentAddressSkipReasonOther = employeeData.residentAddressSkipReasonOther;
+          }
+          if (employeeData.residentPostalCode !== undefined) {
+            employeeDataWithoutStatus.residentPostalCode = employeeData.residentPostalCode;
+          }
           
           // 入社時申請からマイナンバーカードの情報を取得
           try {
