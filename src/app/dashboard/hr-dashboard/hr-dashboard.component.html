@@ -303,7 +303,6 @@
         <!-- 設定ページ -->
         <ng-container *ngIf="currentTab === '設定'">
           <div class="settings-page">
-            <h2 class="page-title">設定</h2>
             
             <form [formGroup]="settingsForm">
               <!-- 企業情報設定 -->
@@ -472,17 +471,6 @@
         <!-- 申請管理ページ -->
         <ng-container *ngIf="currentTab === '申請管理'">
           <div class="application-management-page">
-            <div class="page-header-with-button">
-              <h2 class="page-title">申請管理</h2>
-              <button 
-                type="button" 
-                class="request-application-button"
-                (click)="openApplicationRequestModal()"
-              >
-                申請を要求
-              </button>
-            </div>
-            
             <div class="filter-section">
               <label for="applicationStatusFilter">ステータスフィルター:</label>
               <select 
@@ -493,6 +481,15 @@
               >
                 <option *ngFor="let status of applicationStatuses" [value]="status">{{ status }}</option>
               </select>
+              <div class="header-buttons">
+                <button 
+                  type="button" 
+                  class="request-application-button"
+                  (click)="openApplicationRequestModal()"
+                >
+                  申請を要求
+                </button>
+              </div>
             </div>
             
             <div class="table-container">
@@ -538,8 +535,16 @@
         <!-- 入社手続きページ -->
         <ng-container *ngIf="currentTab === '入社手続き'">
           <div class="onboarding-page">
-            <div class="page-header-with-button">
-              <h2 class="page-title">入社手続き</h2>
+            <div class="filter-section">
+              <label for="onboardingStatusFilter">ステータスフィルター:</label>
+              <select 
+                id="onboardingStatusFilter" 
+                [(ngModel)]="onboardingStatusFilter" 
+                (change)="onOnboardingStatusFilterChange()"
+                class="status-filter-select"
+              >
+                <option *ngFor="let status of onboardingStatuses" [value]="status">{{ status }}</option>
+              </select>
               <div class="header-buttons">
                 <button 
                   *ngIf="hasReadyEmployees()" 
@@ -552,18 +557,6 @@
                   社員を追加
                 </button>
               </div>
-            </div>
-
-            <div class="filter-section">
-              <label for="onboardingStatusFilter">ステータスフィルター:</label>
-              <select 
-                id="onboardingStatusFilter" 
-                [(ngModel)]="onboardingStatusFilter" 
-                (change)="onOnboardingStatusFilterChange()"
-                class="status-filter-select"
-              >
-                <option *ngFor="let status of onboardingStatuses" [value]="status">{{ status }}</option>
-              </select>
             </div>
 
             <!-- 新入社員一覧表 -->
@@ -944,10 +937,6 @@
         <!-- 社員情報管理ページ -->
         <ng-container *ngIf="currentTab === '社員情報管理'">
           <div class="employee-management-page">
-            <div class="page-header-with-button">
-              <h2 class="page-title">社員情報管理</h2>
-            </div>
-            
             <div class="filter-section">
               <label for="employeeStatusFilter">ステータスフィルター:</label>
               <select 

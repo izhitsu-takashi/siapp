@@ -425,9 +425,28 @@
   align-items: center;
   gap: 1rem;
   margin-bottom: 1.5rem;
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   background: #f8f9fa;
   border-radius: 6px;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+
+.filter-section > label {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.filter-section > select {
+  flex-shrink: 0;
+  min-width: 200px;
+}
+
+.filter-section .header-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .filter-section label {
