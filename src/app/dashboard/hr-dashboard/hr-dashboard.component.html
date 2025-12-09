@@ -1484,13 +1484,16 @@
               ></textarea>
             </div>
             <div class="form-group full-width" *ngIf="employeeEditForm.get('isOverseasResident')?.value">
-              <label for="hr-overseasAddress">住所（海外）</label>
+              <label for="hr-overseasAddress">住所（海外） <span class="required">*</span></label>
               <textarea 
                 id="hr-overseasAddress" 
                 formControlName="overseasAddress" 
                 class="form-input" 
                 rows="2"
               ></textarea>
+              <div *ngIf="employeeEditForm.get('overseasAddress')?.invalid && employeeEditForm.get('overseasAddress')?.touched" class="error-message">
+                海外住所を入力してください
+              </div>
             </div>
             <div class="form-group">
               <label for="hr-phoneNumber">電話番号（ハイフンなし最大11桁） <span class="required">*</span></label>

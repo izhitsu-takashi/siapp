@@ -2483,6 +2483,72 @@ export class HrDashboardComponent {
       socialInsuranceLossDateControl?.updateValueAndValidity();
     });
 
+    // 住民票住所のバリデーションを更新する関数
+    const updateResidentAddressValidation = () => {
+      const sameAsCurrent = form.get('sameAsCurrentAddress')?.value;
+      const skipResident = form.get('skipResidentAddress')?.value;
+      const isOverseas = form.get('isOverseasResident')?.value;
+      const residentAddressControl = form.get('residentAddress');
+      const residentAddressKanaControl = form.get('residentAddressKana');
+      const residentPostalCodeControl = form.get('residentPostalCode');
+      
+      // sameAsCurrentAddressがtrue、またはskipResidentAddressがtrue、またはisOverseasResidentがtrueの場合、住民票住所は必須ではない
+      if (sameAsCurrent || skipResident || isOverseas) {
+        residentAddressControl?.clearValidators();
+        residentAddressKanaControl?.clearValidators();
+        residentPostalCodeControl?.clearValidators();
+      } else {
+        // それ以外の場合、住民票住所は必須
+        residentAddressControl?.setValidators([Validators.required]);
+        residentAddressKanaControl?.setValidators([Validators.required]);
+        residentPostalCodeControl?.setValidators([Validators.pattern(/^\d{7}$/)]);
+      }
+      
+      residentAddressControl?.updateValueAndValidity();
+      residentAddressKanaControl?.updateValueAndValidity();
+      residentPostalCodeControl?.updateValueAndValidity();
+    };
+
+    // 海外に在住のチェックが変更されたときに、住所フィールドのバリデーションを更新
+    form.get('isOverseasResident')?.valueChanges.subscribe(isOverseas => {
+      const postalCodeControl = form.get('postalCode');
+      const currentAddressControl = form.get('currentAddress');
+      const currentAddressKanaControl = form.get('currentAddressKana');
+      const overseasAddressControl = form.get('overseasAddress');
+      
+      if (isOverseas) {
+        // 海外在住の場合：国内住所は必須ではない、海外住所は必須
+        postalCodeControl?.clearValidators();
+        currentAddressControl?.clearValidators();
+        currentAddressKanaControl?.clearValidators();
+        overseasAddressControl?.setValidators([Validators.required]);
+      } else {
+        // 国内在住の場合：国内住所は必須、海外住所は必須ではない
+        postalCodeControl?.setValidators([Validators.pattern(/^\d{7}$/)]);
+        currentAddressControl?.setValidators([Validators.required]);
+        currentAddressKanaControl?.setValidators([Validators.required]);
+        overseasAddressControl?.clearValidators();
+      }
+      
+      postalCodeControl?.updateValueAndValidity();
+      currentAddressControl?.updateValueAndValidity();
+      currentAddressKanaControl?.updateValueAndValidity();
+      overseasAddressControl?.updateValueAndValidity();
+      
+      // 住民票住所のバリデーションも更新
+      updateResidentAddressValidation();
+    });
+
+    // sameAsCurrentAddressが変更されたときに、住民票住所のバリデーションを更新
+    form.get('sameAsCurrentAddress')?.valueChanges.subscribe(() => {
+      updateResidentAddressValidation();
+    });
+
+    // skipResidentAddressが変更されたときに、住民票住所のバリデーションを更新
+    form.get('skipResidentAddress')?.valueChanges.subscribe(() => {
+      updateResidentAddressValidation();
+    });
+
     return form;
   }
 
@@ -2849,6 +2915,56 @@ export class HrDashboardComponent {
     console.log('employeeEditForm.overseasAddress:', this.employeeEditForm.get('overseasAddress')?.value);
     console.log('employeeEditForm.postalCode:', this.employeeEditForm.get('postalCode')?.value);
     console.log('employeeEditForm.skipResidentAddress:', this.employeeEditForm.get('skipResidentAddress')?.value);
+    
+    // 海外在住の状態に基づいてバリデーションを更新
+    const isOverseas = this.employeeEditForm.get('isOverseasResident')?.value;
+    const postalCodeControl = this.employeeEditForm.get('postalCode');
+    const currentAddressControl = this.employeeEditForm.get('currentAddress');
+    const currentAddressKanaControl = this.employeeEditForm.get('currentAddressKana');
+    const overseasAddressControl = this.employeeEditForm.get('overseasAddress');
+    
+    if (isOverseas) {
+      // 海外在住の場合：国内住所は必須ではない、海外住所は必須
+      postalCodeControl?.clearValidators();
+      currentAddressControl?.clearValidators();
+      currentAddressKanaControl?.clearValidators();
+      overseasAddressControl?.setValidators([Validators.required]);
+    } else {
+      // 国内在住の場合：国内住所は必須、海外住所は必須ではない
+      postalCodeControl?.setValidators([Validators.pattern(/^\d{7}$/)]);
+      currentAddressControl?.setValidators([Validators.required]);
+      currentAddressKanaControl?.setValidators([Validators.required]);
+      overseasAddressControl?.clearValidators();
+    }
+    
+    postalCodeControl?.updateValueAndValidity();
+    currentAddressControl?.updateValueAndValidity();
+    currentAddressKanaControl?.updateValueAndValidity();
+    overseasAddressControl?.updateValueAndValidity();
+    
+    // 住民票住所のバリデーションを更新
+    const sameAsCurrent = this.employeeEditForm.get('sameAsCurrentAddress')?.value;
+    const skipResident = this.employeeEditForm.get('skipResidentAddress')?.value;
+    const residentAddressControl = this.employeeEditForm.get('residentAddress');
+    const residentAddressKanaControl = this.employeeEditForm.get('residentAddressKana');
+    const residentPostalCodeControl = this.employeeEditForm.get('residentPostalCode');
+    
+    // sameAsCurrentAddressがtrue、またはskipResidentAddressがtrue、またはisOverseasがtrueの場合、住民票住所は必須ではない
+    if (sameAsCurrent || skipResident || isOverseas) {
+      residentAddressControl?.clearValidators();
+      residentAddressKanaControl?.clearValidators();
+      residentPostalCodeControl?.clearValidators();
+    } else {
+      // それ以外の場合、住民票住所は必須
+      residentAddressControl?.setValidators([Validators.required]);
+      residentAddressKanaControl?.setValidators([Validators.required]);
+      residentPostalCodeControl?.setValidators([Validators.pattern(/^\d{7}$/)]);
+    }
+    
+    residentAddressControl?.updateValueAndValidity();
+    residentAddressKanaControl?.updateValueAndValidity();
+    residentPostalCodeControl?.updateValueAndValidity();
+    
     if (data.pensionFundMembership) {
       this.employeeEditForm.patchValue({
         pensionFundMembership: data.pensionFundMembership
@@ -2946,12 +3062,32 @@ export class HrDashboardComponent {
       residentPostalCodeControl?.disable();
       residentAddressControl?.disable();
       residentAddressKanaControl?.disable();
+      
+      // バリデーションを削除
+      residentAddressControl?.clearValidators();
+      residentAddressKanaControl?.clearValidators();
+      residentPostalCodeControl?.clearValidators();
     } else {
       // コントロールを有効化
       residentPostalCodeControl?.enable();
       residentAddressControl?.enable();
       residentAddressKanaControl?.enable();
+      
+      // バリデーションを設定（skipResidentAddressとisOverseasResidentの状態を確認）
+      const skipResident = this.employeeEditForm.get('skipResidentAddress')?.value;
+      const isOverseas = this.employeeEditForm.get('isOverseasResident')?.value;
+      
+      if (!skipResident && !isOverseas) {
+        // skipResidentAddressとisOverseasResidentがfalseの場合のみ必須
+        residentAddressControl?.setValidators([Validators.required]);
+        residentAddressKanaControl?.setValidators([Validators.required]);
+        residentPostalCodeControl?.setValidators([Validators.pattern(/^\d{7}$/)]);
+      }
     }
+    
+    residentAddressControl?.updateValueAndValidity();
+    residentAddressKanaControl?.updateValueAndValidity();
+    residentPostalCodeControl?.updateValueAndValidity();
   }
 
 
@@ -5371,13 +5507,7 @@ export class HrDashboardComponent {
       // 業務情報
       employeeNumber: employeeData.employeeNumber,
       employmentType: employeeData.employmentType,
-      // 現住所と連絡先
-      currentAddress: employeeData.currentAddress,
-      currentAddressKana: employeeData.currentAddressKana,
       phoneNumber: employeeData.phoneNumber,
-      // 住民票住所（現住所と同じの場合は現住所を使用）
-      residentAddress: employeeData.sameAsCurrentAddress ? employeeData.currentAddress : employeeData.residentAddress,
-      residentAddressKana: employeeData.sameAsCurrentAddress ? employeeData.currentAddressKana : employeeData.residentAddressKana,
       // 社会保険
       healthInsuranceNumber: employeeData.healthInsuranceNumber,
       pensionInsuranceNumber: employeeData.pensionInsuranceNumber,
@@ -5395,6 +5525,30 @@ export class HrDashboardComponent {
       multipleWorkplaceAcquisition: employeeData.multipleWorkplaceAcquisition,
       reemploymentAfterRetirement: employeeData.reemploymentAfterRetirement
     };
+
+    // 海外在住のチェック
+    const isOverseasResident = employeeData.isOverseasResident || (employeeData.overseasAddress && employeeData.overseasAddress.trim() !== '');
+    
+    // 現住所と連絡先の必須チェック
+    if (isOverseasResident) {
+      // 海外在住の場合：海外住所が必須
+      requiredFields['overseasAddress'] = employeeData.overseasAddress;
+    } else {
+      // 国内在住の場合：国内住所が必須
+      requiredFields['currentAddress'] = employeeData.currentAddress;
+      requiredFields['currentAddressKana'] = employeeData.currentAddressKana;
+    }
+
+    // 住民票住所の必須チェック
+    const sameAsCurrentAddress = employeeData.sameAsCurrentAddress;
+    const skipResidentAddress = employeeData.skipResidentAddress || (employeeData.residentAddressSkipReason === '海外在住');
+    
+    // sameAsCurrentAddressがtrue、またはskipResidentAddressがtrue、またはisOverseasResidentがtrueの場合、住民票住所は必須ではない
+    if (!sameAsCurrentAddress && !skipResidentAddress && !isOverseasResident) {
+      // 住民票住所は必須
+      requiredFields['residentAddress'] = employeeData.residentAddress;
+      requiredFields['residentAddressKana'] = employeeData.residentAddressKana;
+    }
 
     // 条件付き必須項目のチェック
     const employmentStatus = employeeData.employmentStatus;
