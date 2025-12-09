@@ -771,50 +771,44 @@ export class PdfEditService {
     const expectedMonthlySalaryInKind = parseFloat(employeeData.expectedMonthlySalaryInKind) || 0;
     const totalSalary = expectedMonthlySalary + expectedMonthlySalaryInKind;
     
-    // 給与：(110,292)
-    if (expectedMonthlySalary > 0) {
-      const salaryStr = String(Math.floor(expectedMonthlySalary));
-      let xPos = 110;
-      for (let i = 0; i < salaryStr.length; i++) {
-        page.drawText(salaryStr[i], {
-          x: xPos,
-          y: y(292),
-          size: fontSize,
-          font: font,
-        });
-        xPos += 5; // 次の文字の左端位置（間隔5座標分）
-      }
+    // 給与：(110,292) - 0円の場合も「0」と記入
+    const salaryStr = String(Math.floor(expectedMonthlySalary));
+    let xPos = 110;
+    for (let i = 0; i < salaryStr.length; i++) {
+      page.drawText(salaryStr[i], {
+        x: xPos,
+        y: y(292),
+        size: fontSize,
+        font: font,
+      });
+      xPos += 5; // 次の文字の左端位置（間隔5座標分）
     }
     
-    // 現物：(110,305)
-    if (expectedMonthlySalaryInKind > 0) {
-      const inKindStr = String(Math.floor(expectedMonthlySalaryInKind));
-      let xPos = 110;
-      for (let i = 0; i < inKindStr.length; i++) {
-        page.drawText(inKindStr[i], {
-          x: xPos,
-          y: y(305),
-          size: fontSize,
-          font: font,
-        });
-        xPos += 5; // 次の文字の左端位置（間隔5座標分）
-      }
+    // 現物：(110,305) - 0円の場合も「0」と記入
+    const inKindStr = String(Math.floor(expectedMonthlySalaryInKind));
+    xPos = 110;
+    for (let i = 0; i < inKindStr.length; i++) {
+      page.drawText(inKindStr[i], {
+        x: xPos,
+        y: y(305),
+        size: fontSize,
+        font: font,
+      });
+      xPos += 5; // 次の文字の左端位置（間隔5座標分）
     }
     
-    // 給与と現物の合計額(数字の間隔を13座標分開ける、この要素だけx座標右詰め）：(318,305)
-    if (totalSalary > 0) {
-      const totalStr = String(Math.floor(totalSalary));
-      // 右詰め：最後の文字の右端が318になるように計算
-      let xPos = 318 - (totalStr.length * 13);
-      for (let i = 0; i < totalStr.length; i++) {
-        page.drawText(totalStr[i], {
-          x: xPos,
-          y: y(305),
-          size: fontSize,
-          font: font,
-        });
-        xPos += 13; // 次の文字の左端位置（間隔13座標分）
-      }
+    // 給与と現物の合計額(数字の間隔を13座標分開ける、この要素だけx座標右詰め）：(318,305) - 0円の場合も「0」と記入
+    const totalStr = String(Math.floor(totalSalary));
+    // 右詰め：最後の文字の右端が318になるように計算
+    xPos = 318 - (totalStr.length * 13);
+    for (let i = 0; i < totalStr.length; i++) {
+      page.drawText(totalStr[i], {
+        x: xPos,
+        y: y(305),
+        size: fontSize,
+        font: font,
+      });
+      xPos += 13; // 次の文字の左端位置（間隔13座標分）
     }
     
     // ⑱備考(条件に当てはまれば指定の位置に直径4座標分の丸を付ける)
