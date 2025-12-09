@@ -703,44 +703,7 @@
                     </button>
                   </div>
                 </section>
-              </div>
 
-              <!-- 詳細設定 -->
-              <div class="settings-container">
-                <h3 class="container-title">詳細設定</h3>
-                
-                <section class="settings-section">
-                  <div class="form-group">
-                    <label>年4回以上の賞与を報酬と扱うか</label>
-                    <div class="radio-group">
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          formControlName="treatBonusAsReward" 
-                          [value]="true"
-                        >
-                        <span>はい</span>
-                      </label>
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          formControlName="treatBonusAsReward" 
-                          [value]="false"
-                        >
-                        <span>いいえ</span>
-                      </label>
-                    </div>
-                    <div class="form-description">
-                      <p>「はい」を選択した場合、7月から翌年6月までの間に賞与が4回以上支給された場合、4回目以降の賞与は賞与設定履歴表に表示されず、報酬加算額の計算が行われます。「いいえ」を選択した場合、賞与に特別な処理は行わず、毎回通常の賞与として加算されます。</p>
-                    </div>
-                  </div>
-                  <div class="section-actions">
-                    <button type="button" class="save-section-button" (click)="saveDetailSettings()">
-                      詳細設定を保存
-                    </button>
-                  </div>
-                </section>
-                
                 <!-- 保険料を現金で徴収する社員を設定 -->
                 <section class="settings-section">
                   <h4 class="section-title">保険料を現金で徴収する社員を設定</h4>
