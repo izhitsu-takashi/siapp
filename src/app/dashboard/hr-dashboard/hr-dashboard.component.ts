@@ -388,6 +388,9 @@ export class HrDashboardComponent {
       this.readyEmployees = this.onboardingEmployees.filter(emp => emp.status === '準備完了');
       this.selectedEmployeeNumbers.clear();
 
+      // UIを更新
+      this.cdr.detectChanges();
+
       // モーダルを閉じる
       this.closeOnboardingProcessModal();
 
@@ -399,8 +402,22 @@ export class HrDashboardComponent {
     } catch (error) {
       console.error('Error executing onboarding process:', error);
       alert('入社処理の実行中にエラーが発生しました');
+      // エラーが発生した場合でも再読み込みを実行
+      try {
+        await this.loadOnboardingEmployees();
+        this.cdr.detectChanges();
+      } catch (reloadError) {
+        console.error('Error reloading onboarding employees:', reloadError);
+      }
     } finally {
       this.isProcessingOnboarding = false;
+      // 念のため、finallyブロックでも再読み込みを実行
+      try {
+        await this.loadOnboardingEmployees();
+        this.cdr.detectChanges();
+      } catch (reloadError) {
+        console.error('Error reloading onboarding employees in finally:', reloadError);
+      }
     }
   }
   
