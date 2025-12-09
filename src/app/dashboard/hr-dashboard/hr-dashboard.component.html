@@ -45,9 +45,6 @@
                       <span class="section-icon">👥</span>
                       社員情報管理表
                     </h3>
-                    <p class="section-description">
-                      社員情報の入力状況を確認できます。必須情報不足や扶養者情報不足の社員を優先的に対応してください。
-                    </p>
                   </div>
                 </div>
                 <div class="status-cards">
@@ -89,9 +86,6 @@
                       <span class="section-icon">📋</span>
                       申請管理表
                     </h3>
-                    <p class="section-description">
-                      従業員から提出された各種申請のステータスを確認できます。承認待ちや確認中の申請を優先的に処理してください。
-                    </p>
                   </div>
                 </div>
                 <div class="status-cards">
@@ -114,7 +108,7 @@
                     </div>
                   </div>
                   <div class="status-card" (click)="navigateToApplicationManagement('却下・差し戻し')">
-                    <div class="status-label">却下・差し戻し</div>
+                    <div class="status-label">差し戻し</div>
                     <div class="status-count" 
                          [class.count-zero]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) === 0"
                          [class.count-red]="(getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し')) > 0"
@@ -151,9 +145,6 @@
                       <span class="section-icon">👔</span>
                       入社手続き表
                     </h3>
-                    <p class="section-description">
-                      新入社員の入社手続きの進捗状況を確認できます。準備完了になった社員は入社処理を実行してください。
-                    </p>
                   </div>
                 </div>
                 <div class="status-cards">

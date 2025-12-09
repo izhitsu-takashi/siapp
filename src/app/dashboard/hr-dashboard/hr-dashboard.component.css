@@ -119,13 +119,31 @@
 .main-content {
   flex: 1;
   background: #ffffff;
-  padding: 2rem;
+  padding: 0rem 2rem 2rem 2rem;
   overflow-y: auto;
 }
 
 .content-area {
   max-width: 1200px;
-  margin: 0 auto;
+
+}
+
+/* ダッシュボードページ専用のメインコンテンツスタイル */
+.main-content:has(.dashboard-page) {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 70px);
+  overflow: hidden;
+  padding-top: 0;
+}
+
+.main-content:has(.dashboard-page) .content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .page-title {
@@ -195,42 +213,45 @@
 
 /* ダッシュボードページ */
 .dashboard-page {
-  padding: 2rem 0rem;
+  padding: 1rem 0rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ダッシュボードページヘッダー */
 .dashboard-header-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 2.5rem;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
   color: white;
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
 }
 
 .dashboard-main-title {
-  font-size: 2rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .dashboard-icon {
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .dashboard-description {
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.8rem;
+  line-height: 1.5;
   margin: 0;
   opacity: 0.95;
   max-width: 800px;
@@ -238,11 +259,16 @@
 
 .dashboard-section {
   background: white;
-  border-radius: 16px;
-  padding: 2.5rem;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid #f0f0f0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .dashboard-section:hover {
@@ -252,52 +278,56 @@
 
 /* セクションヘッダー */
 .section-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
   border-bottom: 2px solid #f0f0f0;
+  flex-shrink: 0;
 }
 
 .section-header-left {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .dashboard-section .section-title {
-  font-size: 1.75rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #333;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   padding-bottom: 0;
+  padding-top: 0;
   border-bottom: none;
 }
 
 .section-icon {
-  font-size: 1.75rem;
+  font-size: 1rem;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .section-description {
-  font-size: 0.95rem;
+  font-size: 0.7rem;
   color: #666;
-  line-height: 1.6;
+  line-height: 1.3;
   margin: 0;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .status-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .status-card {
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
   text-align: center;
   transition: all 0.3s ease;
   border: 2px solid #e9ecef;
@@ -330,15 +360,15 @@
 }
 
 .status-label {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #666;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.3rem;
   font-weight: 600;
   letter-spacing: 0.3px;
 }
 
 .status-count {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   font-weight: 700;
   line-height: 1;
   margin-top: 0.25rem;
@@ -2607,6 +2637,136 @@
   margin-top: 0.5rem;
   font-size: 0.85rem;
   color: #666;
+}
+
+/* ダッシュボードページ専用のレスポンシブ対応 */
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 0.5rem 0rem;
+    gap: 0.75rem;
+  }
+
+  .dashboard-header-section {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .dashboard-main-title {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .dashboard-icon {
+    font-size: 1.25rem;
+  }
+
+  .dashboard-description {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  .dashboard-section {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .section-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .dashboard-section .section-title {
+    font-size: 0.9rem;
+  }
+
+  .section-icon {
+    font-size: 0.9rem;
+  }
+
+  .section-description {
+    font-size: 0.65rem;
+    margin-top: 0.15rem;
+  }
+
+  .status-cards {
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  .status-card {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .status-label {
+    font-size: 0.65rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .status-count {
+    font-size: 1.2rem;
+  }
+}
+
+/* より小さい画面用 */
+@media (max-width: 480px) {
+  .dashboard-page {
+    padding: 0.25rem 0rem;
+    gap: 0.5rem;
+  }
+
+  .dashboard-header-section {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .dashboard-main-title {
+    font-size: 0.9rem;
+  }
+
+  .dashboard-icon {
+    font-size: 1rem;
+  }
+
+  .dashboard-description {
+    font-size: 0.65rem;
+    display: none; /* 非常に小さい画面では説明文を非表示 */
+  }
+
+  .dashboard-section {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .section-header {
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .dashboard-section .section-title {
+    font-size: 0.85rem;
+  }
+
+  .section-icon {
+    font-size: 0.85rem;
+  }
+
+  .section-description {
+    display: none; /* 非常に小さい画面では説明文を非表示 */
+  }
+
+  .status-cards {
+    gap: 0.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  }
+
+  .status-card {
+    padding: 0.3rem 0.4rem;
+  }
+
+  .status-label {
+    font-size: 0.6rem;
+  }
+
+  .status-count {
+    font-size: 1rem;
+  }
 }
 
 /* レスポンシブ対応 */
