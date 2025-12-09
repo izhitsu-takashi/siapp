@@ -2141,6 +2141,17 @@
             <label for="dependentOccupation">職業</label>
             <input type="text" id="dependentOccupation" formControlName="occupation" class="form-input">
           </div>
+          <div class="form-group full-width">
+            <label for="dependentIdentityDoc">身元確認書類添付</label>
+            <input 
+              type="file" 
+              id="dependentIdentityDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'identityDoc')"
+            >
+            <div *ngIf="dependentIdentityDocFile" class="file-name">{{ dependentIdentityDocFile.name }}</div>
+          </div>
         </div>
       </section>
       
@@ -2229,17 +2240,6 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="dependentMyNumberCard">マイナンバーカード添付</label>
-            <input 
-              type="file" 
-              id="dependentMyNumberCard" 
-              class="form-input"
-              accept=".pdf,.jpg,.jpeg,.png"
-              (change)="onFileSelected($event, 'dependentMyNumberCard')"
-            >
-            <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
-          </div>
-          <div class="form-group">
             <label for="dependentMyNumberDoc">番号確認書類添付</label>
             <input 
               type="file" 
@@ -2249,17 +2249,6 @@
               (change)="onDependentFileSelected($event, 'myNumberDoc')"
             >
             <div *ngIf="dependentMyNumberDocFile" class="file-name">{{ dependentMyNumberDocFile.name }}</div>
-          </div>
-          <div class="form-group">
-            <label for="dependentIdentityDoc">身元確認書類添付</label>
-            <input 
-              type="file" 
-              id="dependentIdentityDoc" 
-              class="form-input"
-              accept=".pdf,.jpg,.jpeg,.png"
-              (change)="onDependentFileSelected($event, 'identityDoc')"
-            >
-            <div *ngIf="dependentIdentityDocFile" class="file-name">{{ dependentIdentityDocFile.name }}</div>
           </div>
         </div>
         
