@@ -1139,15 +1139,19 @@
                         <span class="dependent-label">添付書類:</span>
                         <div class="dependent-value">
                           <div *ngIf="dependent.basicPensionNumberDocFileUrl" style="margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500; margin-right: 0.5rem;">基礎年金番号確認書類:</span>
                             <a [href]="dependent.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.basicPensionNumberDocFileUrl, dependent.basicPensionNumberDocFileName) }}</a>
                           </div>
                           <div *ngIf="dependent.myNumberDocFileUrl" style="margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500; margin-right: 0.5rem;">マイナンバー確認書類:</span>
                             <a [href]="dependent.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberDocFileUrl, dependent.myNumberDocFileName) }}</a>
                           </div>
                           <div *ngIf="dependent.identityDocFileUrl" style="margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500; margin-right: 0.5rem;">身元確認書類:</span>
                             <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
                           </div>
                           <div *ngIf="dependent.disabilityCardFileUrl">
+                            <span style="font-weight: 500; margin-right: 0.5rem;">障がい者手帳の画像:</span>
                             <a [href]="dependent.disabilityCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.disabilityCardFileUrl, dependent.disabilityCardFileName) }}</a>
                           </div>
                         </div>
@@ -1170,9 +1174,6 @@
             <h2 class="page-title">ナレッジ - AIアシスタント</h2>
           </div>
           <div class="knowledge-page">
-            <p class="knowledge-description">
-              人事・給与システムに関するご質問にお答えします。わからないことがあれば、お気軽にお尋ねください。
-            </p>
             
             <!-- チャットエリア -->
             <div class="chat-container">
