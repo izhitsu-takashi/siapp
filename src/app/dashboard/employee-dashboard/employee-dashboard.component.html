@@ -4659,6 +4659,30 @@
                   <input type="email" formControlName="email" class="form-input" readonly style="background: #f5f5f5;">
                 </div>
               </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">本人確認書類:</span>
+                <span class="detail-value" *ngIf="isInViewMode() && selectedApplication.idDocumentFileUrl">
+                  <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.idDocumentFile || '本人確認書類を開く' }}
+                  </a>
+                </span>
+                <span class="detail-value" *ngIf="isInViewMode() && !selectedApplication.idDocumentFileUrl">-</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    class="form-input"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'idDocument')"
+                  >
+                  <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
+                  <div *ngIf="selectedApplication.idDocumentFileUrl && !idDocumentFile" class="file-info" style="margin-top: 0.5rem;">
+                    <span>既存ファイル: </span>
+                    <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">
+                      {{ selectedApplication.idDocumentFile || '本人確認書類を開く' }}
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
           
@@ -4912,6 +4936,61 @@
             </div>
           </section>
           
+          <!-- 履歴書・職務経歴書 -->
+          <section class="detail-section">
+            <h3 class="section-title">履歴書・職務経歴書</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">履歴書:</span>
+                <span class="detail-value" *ngIf="isInViewMode() && selectedApplication.resumeFileUrl">
+                  <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.resumeFile || '履歴書を開く' }}
+                  </a>
+                </span>
+                <span class="detail-value" *ngIf="isInViewMode() && !selectedApplication.resumeFileUrl">-</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'resume')"
+                    class="form-input"
+                  >
+                  <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
+                  <div *ngIf="selectedApplication.resumeFileUrl && !resumeFile" class="file-info" style="margin-top: 0.5rem;">
+                    <span>既存ファイル: </span>
+                    <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">
+                      {{ selectedApplication.resumeFile || '履歴書を開く' }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">職務経歴書:</span>
+                <span class="detail-value" *ngIf="isInViewMode() && selectedApplication.careerHistoryFileUrl">
+                  <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.careerHistoryFile || '職務経歴書を開く' }}
+                  </a>
+                </span>
+                <span class="detail-value" *ngIf="isInViewMode() && !selectedApplication.careerHistoryFileUrl">-</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'careerHistory')"
+                    class="form-input"
+                  >
+                  <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
+                  <div *ngIf="selectedApplication.careerHistoryFileUrl && !careerHistoryFile" class="file-info" style="margin-top: 0.5rem;">
+                    <span>既存ファイル: </span>
+                    <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">
+                      {{ selectedApplication.careerHistoryFile || '職務経歴書を開く' }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
           <!-- 口座情報 -->
           <section class="detail-section">
             <h3 class="section-title">口座情報</h3>
@@ -5022,6 +5101,30 @@
                   <textarea formControlName="pensionHistory" class="form-input" rows="4"></textarea>
                 </div>
               </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">基礎年金番号がわかる書類:</span>
+                <span class="detail-value" *ngIf="isInViewMode() && selectedApplication.basicPensionNumberDocFileUrl">
+                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.basicPensionNumberDocFile || '基礎年金番号がわかる書類を開く' }}
+                  </a>
+                </span>
+                <span class="detail-value" *ngIf="isInViewMode() && !selectedApplication.basicPensionNumberDocFileUrl">-</span>
+                <div *ngIf="isInEditMode()" class="detail-edit-input">
+                  <input 
+                    type="file" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onFileSelected($event, 'basicPensionNumberDoc')"
+                    class="form-input"
+                  >
+                  <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
+                  <div *ngIf="selectedApplication.basicPensionNumberDocFileUrl && !basicPensionNumberDocFile" class="file-info" style="margin-top: 0.5rem;">
+                    <span>既存ファイル: </span>
+                    <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
+                      {{ selectedApplication.basicPensionNumberDocFile || '基礎年金番号がわかる書類を開く' }}
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
           
@@ -5111,105 +5214,6 @@
               </div>
             </div>
           </section>
-          
-          <!-- 添付資料 -->
-          <section class="detail-section">
-            <h3 class="section-title">添付資料</h3>
-            <div class="detail-grid">
-              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.resumeFileUrl">
-                <span class="detail-label">履歴書:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">履歴書を開く</a>
-                </span>
-              </div>
-              <div class="detail-item full-width" *ngIf="isInEditMode()">
-                <span class="detail-label">履歴書:</span>
-                <div class="detail-edit-input">
-                  <input 
-                    type="file" 
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'resume')"
-                    class="form-input"
-                  >
-                  <div *ngIf="resumeFile" class="file-info">
-                    選択済み: {{ resumeFile.name }}
-                  </div>
-                  <div *ngIf="selectedApplication.resumeFileUrl && !resumeFile" class="file-info">
-                    現在のファイル: <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">履歴書を開く</a>
-                  </div>
-                </div>
-              </div>
-              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.careerHistoryFileUrl">
-                <span class="detail-label">職務経歴書:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">職務経歴書を開く</a>
-                </span>
-              </div>
-              <div class="detail-item full-width" *ngIf="isInEditMode()">
-                <span class="detail-label">職務経歴書:</span>
-                <div class="detail-edit-input">
-                  <input 
-                    type="file" 
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'careerHistory')"
-                    class="form-input"
-                  >
-                  <div *ngIf="careerHistoryFile" class="file-info">
-                    選択済み: {{ careerHistoryFile.name }}
-                  </div>
-                  <div *ngIf="selectedApplication.careerHistoryFileUrl && !careerHistoryFile" class="file-info">
-                    現在のファイル: <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">職務経歴書を開く</a>
-                  </div>
-                </div>
-              </div>
-              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.basicPensionNumberDocFileUrl">
-                <span class="detail-label">基礎年金番号がわかる書類:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">基礎年金番号がわかる書類を開く</a>
-                </span>
-              </div>
-              <div class="detail-item full-width" *ngIf="isInEditMode()">
-                <span class="detail-label">基礎年金番号がわかる書類:</span>
-                <div class="detail-edit-input">
-                  <input 
-                    type="file" 
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'basicPensionNumberDoc')"
-                    class="form-input"
-                  >
-                  <div *ngIf="basicPensionNumberDocFile" class="file-info">
-                    選択済み: {{ basicPensionNumberDocFile.name }}
-                  </div>
-                  <div *ngIf="selectedApplication.basicPensionNumberDocFileUrl && !basicPensionNumberDocFile" class="file-info">
-                    現在のファイル: <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">基礎年金番号がわかる書類を開く</a>
-                  </div>
-                </div>
-              </div>
-              <div class="detail-item full-width" *ngIf="isInViewMode() && selectedApplication.idDocumentFileUrl">
-                <span class="detail-label">本人確認書類:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
-                </span>
-              </div>
-              <div class="detail-item full-width" *ngIf="isInEditMode()">
-                <span class="detail-label">本人確認書類:</span>
-                <div class="detail-edit-input">
-                  <input 
-                    type="file" 
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    (change)="onFileSelected($event, 'idDocument')"
-                    class="form-input"
-                  >
-                  <div *ngIf="idDocumentFile" class="file-info">
-                    選択済み: {{ idDocumentFile.name }}
-                  </div>
-                  <div *ngIf="selectedApplication.idDocumentFileUrl && !idDocumentFile" class="file-info">
-                    現在のファイル: <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
         </form>
         
         <!-- 表示モード（編集モードでない場合） -->
@@ -5238,6 +5242,18 @@
                 <span class="detail-label">メールアドレス:</span>
                 <span class="detail-value">{{ selectedApplication.email || '-' }}</span>
               </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.idDocumentFileUrl">
+                <span class="detail-label">本人確認書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.idDocumentFile || '本人確認書類を開く' }}
+                  </a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="!selectedApplication.idDocumentFileUrl">
+                <span class="detail-label">本人確認書類:</span>
+                <span class="detail-value">-</span>
+              </div>
             </div>
           </section>
           
@@ -5248,6 +5264,18 @@
               <div class="detail-item full-width">
                 <span class="detail-label">マイナンバー:</span>
                 <span class="detail-value">{{ selectedApplication.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl">
+                <span class="detail-label">マイナンバーカード:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
+                  </a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="!selectedApplication.myNumberCardFileUrl">
+                <span class="detail-label">マイナンバーカード:</span>
+                <span class="detail-value">-</span>
               </div>
             </div>
           </section>
@@ -5341,6 +5369,37 @@
             </div>
           </section>
           
+          <!-- 履歴書・職務経歴書 -->
+          <section class="detail-section">
+            <h3 class="section-title">履歴書・職務経歴書</h3>
+            <div class="detail-grid">
+              <div class="detail-item full-width" *ngIf="selectedApplication.resumeFileUrl">
+                <span class="detail-label">履歴書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.resumeFile || '履歴書を開く' }}
+                  </a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="!selectedApplication.resumeFileUrl">
+                <span class="detail-label">履歴書:</span>
+                <span class="detail-value">-</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.careerHistoryFileUrl">
+                <span class="detail-label">職務経歴書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.careerHistoryFile || '職務経歴書を開く' }}
+                  </a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="!selectedApplication.careerHistoryFileUrl">
+                <span class="detail-label">職務経歴書:</span>
+                <span class="detail-value">-</span>
+              </div>
+            </div>
+          </section>
+          
           <!-- 口座情報 -->
           <section class="detail-section">
             <h3 class="section-title">口座情報</h3>
@@ -5384,6 +5443,18 @@
                 <span class="detail-label">厚生年金加入履歴（詳細）:</span>
                 <span class="detail-value">{{ selectedApplication.pensionHistory || '-' }}</span>
               </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.basicPensionNumberDocFileUrl">
+                <span class="detail-label">基礎年金番号がわかる書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
+                    {{ selectedApplication.basicPensionNumberDocFile || '基礎年金番号がわかる書類を開く' }}
+                  </a>
+                </span>
+              </div>
+              <div class="detail-item full-width" *ngIf="!selectedApplication.basicPensionNumberDocFileUrl">
+                <span class="detail-label">基礎年金番号がわかる書類:</span>
+                <span class="detail-value">-</span>
+              </div>
             </div>
           </section>
           
@@ -5405,37 +5476,6 @@
               <div class="detail-item">
                 <span class="detail-label">資格確認書発行要否:</span>
                 <span class="detail-value">{{ selectedApplication.qualificationCertificateRequired || '-' }}</span>
-              </div>
-            </div>
-          </section>
-          
-          <!-- 添付資料 -->
-          <section class="detail-section" *ngIf="selectedApplication.resumeFileUrl || selectedApplication.careerHistoryFileUrl || selectedApplication.basicPensionNumberDocFileUrl || selectedApplication.idDocumentFileUrl">
-            <h3 class="section-title">添付資料</h3>
-            <div class="detail-grid">
-              <div class="detail-item full-width" *ngIf="selectedApplication.resumeFileUrl">
-                <span class="detail-label">履歴書:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.resumeFileUrl" target="_blank" class="file-link">履歴書を開く</a>
-                </span>
-              </div>
-              <div class="detail-item full-width" *ngIf="selectedApplication.careerHistoryFileUrl">
-                <span class="detail-label">職務経歴書:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.careerHistoryFileUrl" target="_blank" class="file-link">職務経歴書を開く</a>
-                </span>
-              </div>
-              <div class="detail-item full-width" *ngIf="selectedApplication.basicPensionNumberDocFileUrl">
-                <span class="detail-label">基礎年金番号がわかる書類:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">基礎年金番号がわかる書類を開く</a>
-                </span>
-              </div>
-              <div class="detail-item full-width" *ngIf="selectedApplication.idDocumentFileUrl">
-                <span class="detail-label">本人確認書類:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.idDocumentFileUrl" target="_blank" class="file-link">本人確認書類を開く</a>
-                </span>
               </div>
             </div>
           </section>
