@@ -445,8 +445,9 @@
 
 .insurance-table th.name-column,
 .insurance-table td.name-column {
-  min-width: 150px;
-  width: 150px;
+  min-width: 100px;
+  width: 100px;
+  max-width: 100px;
 }
 
 .insurance-table tbody tr {
