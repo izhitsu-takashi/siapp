@@ -140,8 +140,6 @@ export class EmployeeDashboardComponent {
   employmentStatuses = ['在籍', '退職'];
   paymentTypes = ['月給', '日給', '時給', '年俸'];
   positions = ['一般', '主任', '係長', '課長', '部長', 'その他'];
-  offices = ['本社', '支社A', '支社B', '支社C'];
-  workContents = ['営業', '開発', '事務', '管理', 'その他'];
   spouseOptions = ['有', '無'];
 
   // チャット機能用
@@ -1044,8 +1042,6 @@ export class EmployeeDashboardComponent {
       
       // 業務情報
       employeeNumber: ['', Validators.required],
-      office: [''],
-      workContent: [''],
       employmentType: [''],
       paymentType: [''],
       
