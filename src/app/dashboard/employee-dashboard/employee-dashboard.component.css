@@ -734,6 +734,10 @@
     padding: 1rem;
   }
 
+  .main-content:has(.knowledge-page) {
+    padding-bottom: 0;
+  }
+
   .page-title {
     font-size: 1.5rem;
     padding: 1rem 0;
@@ -1870,9 +1874,16 @@ select.form-input {
 }
 
 /* ナレッジページ - チャットUI */
+.main-content:has(.knowledge-page) {
+  padding-bottom: 0;
+}
+
 .knowledge-page {
   max-width: 1200px;
   margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .knowledge-description {
@@ -1885,9 +1896,9 @@ select.form-input {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 300px);
-  min-height: 500px;
-  max-height: 800px;
+  height: calc(100vh - 70px - 4rem - 1rem); /* ヘッダー(70px) + メインコンテンツパディング上下(4rem) + 余白(1rem) */
+  min-height: 400px;
+  max-height: calc(100vh - 70px - 4rem - 1rem);
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -2168,20 +2179,24 @@ select.form-input {
 
 .chat-input-wrapper {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
+  align-items: flex-end;
 }
 
 .chat-input {
-  width: 100%;
-  padding: 0.75rem;
+  flex: 1;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-family: inherit;
   resize: none;
   outline: none;
   transition: border-color 0.2s;
+  height: calc(0.9rem * 1.5 + 1rem); /* フォントサイズ * 行の高さ + 上下パディング */
+  line-height: 1.5;
+  overflow-y: auto;
 }
 
 .chat-input:focus {
@@ -2196,8 +2211,10 @@ select.form-input {
 
 .chat-actions {
   display: flex;
+  flex-direction: row;
   gap: 0.5rem;
-  justify-content: flex-end;
+  align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .chat-send-button,
@@ -2243,24 +2260,64 @@ select.form-input {
 }
 
 /* レスポンシブ対応 */
-@media (max-width: 768px) {
-
+/* 超大画面（1440px以上） */
+@media (min-width: 1440px) {
   .chat-container {
-    height: calc(100vh - 250px);
-    min-height: 400px;
+    height: calc(100vh - 70px - 4rem - 1rem);
+    max-height: calc(100vh - 70px - 4rem - 1rem);
+  }
+}
+
+/* 大画面（1200px - 1439px） */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .chat-container {
+    height: calc(100vh - 70px - 4rem - 1rem);
+    max-height: calc(100vh - 70px - 4rem - 1rem);
+  }
+}
+
+/* 中〜大画面（1024px - 1199px） */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .chat-container {
+    height: calc(100vh - 70px - 4rem - 1rem);
+    max-height: calc(100vh - 70px - 4rem - 1rem);
+  }
+}
+
+/* 中画面（769px - 1023px） */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .chat-container {
+    height: calc(100vh - 70px - 4rem - 1rem);
+    max-height: calc(100vh - 70px - 4rem - 1rem);
+  }
+}
+
+/* タブレット（768px以下） */
+@media (max-width: 768px) {
+  .chat-container {
+    height: calc(100vh - 70px - 2rem - 1rem);
+    min-height: 300px;
+    max-height: calc(100vh - 70px - 2rem - 1rem);
   }
 
   .message-content {
     max-width: 85%;
   }
 
+  .chat-input-wrapper {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
   .chat-actions {
-    flex-direction: column;
+    flex-direction: row;
+    flex-shrink: 0;
   }
 
   .chat-send-button,
   .chat-clear-button {
-    width: 100%;
+    width: auto;
+    min-width: 80px;
   }
 
   .template-questions-grid {
@@ -2276,6 +2333,52 @@ select.form-input {
 
   .template-question-icon {
     font-size: 1.2rem;
+  }
+}
+
+/* スマートフォン（480px以下） */
+@media (max-width: 480px) {
+  .chat-container {
+    height: calc(100vh - 70px - 2rem - 0.5rem);
+    min-height: 250px;
+    max-height: calc(100vh - 70px - 2rem - 0.5rem);
+  }
+
+  .chat-messages {
+    padding: 1rem;
+  }
+
+  .chat-input-container {
+    padding: 0.75rem;
+  }
+
+  .chat-input-wrapper {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .chat-actions {
+    flex-direction: row;
+    flex-shrink: 0;
+    gap: 0.5rem;
+  }
+
+  .chat-send-button,
+  .chat-clear-button {
+    width: auto;
+    min-width: 70px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .template-questions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .template-question-button {
+    min-height: 60px;
+    font-size: 0.75rem;
   }
 }
 
