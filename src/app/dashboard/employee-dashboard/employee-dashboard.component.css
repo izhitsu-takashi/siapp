@@ -205,6 +205,18 @@
   gap: clamp(0.5rem, 0.75vw, 0.75rem);
 }
 
+.my-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 0.75vw, 0.75rem);
+}
+
+.info-row-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.5rem, 1vw, 1rem);
+}
+
 .info-row {
   display: flex;
   align-items: center;
@@ -274,7 +286,7 @@
 .application-list-section {
   background: white;
   border-radius: 12px;
-  padding: clamp(0.75rem, 1.5vw, 1.5rem);
+  padding: 0 clamp(0.75rem, 1.5vw, 1.5rem) clamp(0.75rem, 1.5vw, 1.5rem);
 }
 
 .application-list-section .table-container {
@@ -385,7 +397,7 @@
   }
 
   .application-list-section {
-    padding: 0.75rem;
+    padding: 0 0.75rem 0.75rem;
   }
 
   .application-list-section .table-container {
@@ -636,7 +648,7 @@
   }
 
   .application-list-section {
-    padding: 1rem;
+    padding: 0 1rem 1rem;
   }
 
   .application-table {
@@ -679,7 +691,7 @@
 }
 
 .section-title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #333;
   margin: 0 0 1.5rem 0;
@@ -1143,7 +1155,7 @@ select.form-input {
   }
 
   .application-list-section {
-    padding: 1rem;
+    padding: 0 1rem 1rem;
   }
 
   .application-table {

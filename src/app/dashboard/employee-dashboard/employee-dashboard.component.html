@@ -837,30 +837,36 @@
               <!-- 自分の情報欄 -->
               <div class="info-card my-info-card">
                 <h3 class="card-title">自分の情報</h3>
-                <div class="info-content" *ngIf="employeeData">
-                  <div class="info-row">
-                    <span class="info-label">社員番号:</span>
-                    <span class="info-value">{{ employeeData.employeeNumber || employeeNumber }}</span>
+                <div class="info-content my-info-grid" *ngIf="employeeData">
+                  <div class="info-row-pair">
+                    <div class="info-row">
+                      <span class="info-label">社員番号:</span>
+                      <span class="info-value">{{ employeeData.employeeNumber || employeeNumber }}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">氏名:</span>
+                      <span class="info-value">{{ (employeeData.lastName || '') + (employeeData.firstName || '') || employeeData.name || employeeName }}</span>
+                    </div>
                   </div>
-                  <div class="info-row">
-                    <span class="info-label">氏名:</span>
-                    <span class="info-value">{{ (employeeData.lastName || '') + (employeeData.firstName || '') || employeeData.name || employeeName }}</span>
+                  <div class="info-row-pair">
+                    <div class="info-row">
+                      <span class="info-label">部署:</span>
+                      <span class="info-value">{{ employeeData.department || '-' }}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">役職:</span>
+                      <span class="info-value">{{ employeeData.position || '-' }}</span>
+                    </div>
                   </div>
-                  <div class="info-row">
-                    <span class="info-label">部署:</span>
-                    <span class="info-value">{{ employeeData.department || '-' }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">役職:</span>
-                    <span class="info-value">{{ employeeData.position || '-' }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">雇用形態:</span>
-                    <span class="info-value">{{ employeeData.employmentType || '-' }}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">在籍状況:</span>
-                    <span class="info-value">{{ employeeData.employmentStatus || '在籍' }}</span>
+                  <div class="info-row-pair">
+                    <div class="info-row">
+                      <span class="info-label">雇用形態:</span>
+                      <span class="info-value">{{ employeeData.employmentType || '-' }}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">在籍状況:</span>
+                      <span class="info-value">{{ employeeData.employmentStatus || '在籍' }}</span>
+                    </div>
                   </div>
                 </div>
                 <div class="info-content" *ngIf="!employeeData">
