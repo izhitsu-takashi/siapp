@@ -2962,7 +2962,7 @@
           >
           <div *ngIf="resignationForm.get('lastWorkDate')?.invalid && resignationForm.get('lastWorkDate')?.touched" class="error-message">
             <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['required']">最終出社日を入力してください</span>
-            <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['lastWorkDateAfterResignation']">最終出社日は退職日より前の日付を入力してください</span>
+            <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['lastWorkDateAfterResignation']">最終出社日は退職日当日以前の日付を入力してください</span>
           </div>
         </div>
       </section>
@@ -4501,7 +4501,7 @@
                   <input type="date" formControlName="lastWorkDate" class="form-input" [max]="maxLastWorkDate">
                   <div *ngIf="resignationForm.get('lastWorkDate')?.invalid && resignationForm.get('lastWorkDate')?.touched" class="error-message">
                     <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['required']">最終出社日を入力してください</span>
-                    <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['futureDate']">最終出社日は退職日以前の日付を入力してください</span>
+                    <span *ngIf="resignationForm.get('lastWorkDate')?.errors?.['lastWorkDateAfterResignation']">最終出社日は退職日当日以前の日付を入力してください</span>
                   </div>
                 </div>
               </div>

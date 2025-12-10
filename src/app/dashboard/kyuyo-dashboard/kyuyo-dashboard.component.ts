@@ -1760,9 +1760,24 @@ export class KyuyoDashboardComponent {
                 // 任意継続終了日の月の最終日を計算
                 const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
                 
-                // 選択された年月が退職日の翌日が属する月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
-                if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
-                  isVoluntaryContinuation = true;
+                // 任意継続期間が月の途中からスタートする場合の処理
+                // 退職日の翌日が属する月の場合は通常の標準報酬月額で保険料を計算
+                // その次の月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
+                const nextMonth = new Date(voluntaryStartMonth);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                
+                // 退職日の翌日が月の1日の場合（任意継続開始日が月の始まりの場合）は、その月から任意継続被保険者として扱う
+                // それ以外の場合（月の途中からスタート）は、その月は通常の標準報酬月額で計算し、次の月から任意継続被保険者として扱う
+                if (nextDay.getDate() === 1) {
+                  // 月の1日からスタートの場合
+                  if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
+                    isVoluntaryContinuation = true;
+                  }
+                } else {
+                  // 月の途中からスタートの場合
+                  if (selectedDate >= nextMonth && selectedDate <= endDateMonth) {
+                    isVoluntaryContinuation = true;
+                  }
                 }
               }
             }
@@ -1835,6 +1850,7 @@ export class KyuyoDashboardComponent {
               grade = standardChange.grade;
             } else if (isVoluntaryContinuation) {
               // 任意継続被保険者の場合、退職時の標準報酬月額を使用（最大32万円）
+              // 32万円以下の場合はその値を採用し、32万円を超える場合は32万円に制限
               // 退職時の固定的賃金を再取得
               const relevantSalariesForResignation = this.salaryHistory
                 .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
@@ -1851,7 +1867,7 @@ export class KyuyoDashboardComponent {
               standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
               grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
               
-              // 最大32万円に制限
+              // 最大32万円に制限（32万円以下の場合はその値を採用）
               if (standardMonthlySalary > 320000) {
                 standardMonthlySalary = 320000;
                 // 32万円に対応する等級を再計算
@@ -2143,9 +2159,24 @@ export class KyuyoDashboardComponent {
                   // 任意継続終了日の月の最終日を計算
                   const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
                   
-                  // 選択された年月が退職日の翌日が属する月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
-                  if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
-                    isVoluntaryContinuation = true;
+                  // 任意継続期間が月の途中からスタートする場合の処理
+                  // 退職日の翌日が属する月の場合は通常の標準報酬月額で保険料を計算
+                  // その次の月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
+                  const nextMonth = new Date(voluntaryStartMonth);
+                  nextMonth.setMonth(nextMonth.getMonth() + 1);
+                  
+                  // 退職日の翌日が月の1日の場合（任意継続開始日が月の始まりの場合）は、その月から任意継続被保険者として扱う
+                  // それ以外の場合（月の途中からスタート）は、その月は通常の標準報酬月額で計算し、次の月から任意継続被保険者として扱う
+                  if (nextDay.getDate() === 1) {
+                    // 月の1日からスタートの場合
+                    if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
+                      isVoluntaryContinuation = true;
+                    }
+                  } else {
+                    // 月の途中からスタートの場合
+                    if (selectedDate >= nextMonth && selectedDate <= endDateMonth) {
+                      isVoluntaryContinuation = true;
+                    }
                   }
                 }
               }
@@ -2306,6 +2337,35 @@ export class KyuyoDashboardComponent {
         // 任意継続被保険者かどうか
         const isVoluntaryContinuation = emp.healthInsuranceType === '任意継続被保険者' && 
                                        (emp.employmentStatus === '退職' || emp.employmentStatus === '退職済み');
+        
+        // 任意継続被保険者で、任意継続終了日が設定されていない場合、デフォルト値を設定（退職日の翌日から2年後）
+        if (isVoluntaryContinuation && !emp.voluntaryInsuranceEndDate && emp.resignationDate) {
+          try {
+            let resignationDate: Date;
+            if (emp.resignationDate instanceof Date) {
+              resignationDate = emp.resignationDate;
+            } else if (emp.resignationDate && typeof emp.resignationDate.toDate === 'function') {
+              resignationDate = emp.resignationDate.toDate();
+            } else if (typeof emp.resignationDate === 'string') {
+              resignationDate = new Date(emp.resignationDate);
+            } else {
+              resignationDate = new Date(emp.resignationDate);
+            }
+            
+            if (resignationDate && !isNaN(resignationDate.getTime())) {
+              const nextDay = new Date(resignationDate);
+              nextDay.setDate(nextDay.getDate() + 1);
+              
+              // 2年後を計算
+              const twoYearsLater = new Date(nextDay);
+              twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
+              
+              emp.voluntaryInsuranceEndDate = twoYearsLater;
+            }
+          } catch (error) {
+            console.error('Error calculating default voluntary insurance end date:', error);
+          }
+        }
         
         return hasMaternityLeave || isVoluntaryContinuation;
       });
@@ -2550,7 +2610,15 @@ export class KyuyoDashboardComponent {
         dateObj = date;
       } else if (typeof date === 'string') {
         dateObj = new Date(date);
+      } else if (date && typeof date === 'object' && date.seconds) {
+        // Firestore Timestamp形式の場合
+        dateObj = new Date(date.seconds * 1000);
       } else {
+        return '-';
+      }
+      
+      // 日付が有効かチェック
+      if (!dateObj || isNaN(dateObj.getTime())) {
         return '-';
       }
       
@@ -2560,6 +2628,7 @@ export class KyuyoDashboardComponent {
       
       return `${year}/${month}/${day}`;
     } catch (error) {
+      console.error('Error formatting date:', error, date);
       return '-';
     }
   }

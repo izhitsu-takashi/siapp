@@ -69,7 +69,7 @@ export class EmployeeDashboardComponent {
   };
   // 退職日の最小日付（今日）
   minResignationDate: string = '';
-  // 最終出社日の最大日付（退職日より前）
+  // 最終出社日の最大日付（退職日当日まで）
   maxLastWorkDate: string = '';
   
   // 氏名変更申請用ファイル
@@ -1660,16 +1660,18 @@ export class EmployeeDashboardComponent {
       postResignationInsurance: ['', Validators.required]
     });
     
-    // 退職日が変更されたときに、最終出社日の最大日付を更新
+    // 退職日が変更されたときに、最終出社日の最大日付を更新し、自動で最終出社日も設定
     form.get('resignationDate')?.valueChanges.subscribe(resignationDate => {
       if (resignationDate) {
-        // 退職日の前日を計算
+        // 退職日当日まで選択可能にする
         const date = new Date(resignationDate);
-        date.setDate(date.getDate() - 1);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         this.maxLastWorkDate = `${year}-${month}-${day}`;
+        
+        // 退職日を選んだら、自動で最終出社日もその日に設定
+        form.get('lastWorkDate')?.patchValue(resignationDate, { emitEvent: false });
       } else {
         this.maxLastWorkDate = '';
       }
@@ -1680,7 +1682,7 @@ export class EmployeeDashboardComponent {
     return form;
   }
   
-  // 最終出社日のバリデーター（退職日より前であることを確認）
+  // 最終出社日のバリデーター（退職日当日まで許可）
   lastWorkDateValidator(control: any): { [key: string]: any } | null {
     if (!control.value) {
       return null; // requiredバリデーターで処理
@@ -1694,7 +1696,8 @@ export class EmployeeDashboardComponent {
     const lastWorkDate = new Date(control.value);
     const resignationDate = new Date(resignationDateControl.value);
     
-    if (lastWorkDate >= resignationDate) {
+    // 退職日当日まで許可（退職日より後は不可）
+    if (lastWorkDate > resignationDate) {
       return { 'lastWorkDateAfterResignation': true };
     }
     

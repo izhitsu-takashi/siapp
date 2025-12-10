@@ -1029,6 +1029,20 @@ export class FirestoreService {
       // 退職後の社会保険加入が「社会保険を任意継続する」の場合のみ、保険者種別を「任意継続被保険者」に変更
       const isContinuingInsurance = resignationData.postResignationInsurance === '社会保険を任意継続する';
       
+      // 任意継続被保険者の場合、任意継続終了日を計算（退職日の翌日から2年後）
+      let voluntaryInsuranceEndDate = null;
+      if (isContinuingInsurance && resignationData.resignationDate) {
+        const resignationDate = new Date(resignationData.resignationDate);
+        const nextDay = new Date(resignationDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        // 2年後を計算
+        const twoYearsLater = new Date(nextDay);
+        twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
+        
+        voluntaryInsuranceEndDate = twoYearsLater;
+      }
+      
       // 年齢を計算（介護保険被保険者種別の判定に使用）
       let age: number | null = null;
       if (employeeData.birthDate) {
@@ -1064,6 +1078,8 @@ export class FirestoreService {
         // 保険者種別は「社会保険を任意継続する」が選択された場合のみ「任意継続被保険者」に変更
         healthInsuranceType: isContinuingInsurance ? '任意継続被保険者' : (employeeData.healthInsuranceType || ''),
         nursingInsuranceType: nursingInsuranceType,
+        // 任意継続終了日（任意継続被保険者の場合のみ設定）
+        voluntaryInsuranceEndDate: voluntaryInsuranceEndDate || employeeData.voluntaryInsuranceEndDate || null,
         // 保険証情報
         insuranceCardCollectionDate: resignationData.lastWorkDate || employeeData.insuranceCardCollectionDate || '',
         insuranceCardDistributionStatus: '回収済み',
