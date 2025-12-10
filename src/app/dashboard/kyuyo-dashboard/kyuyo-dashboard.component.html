@@ -35,10 +35,6 @@
         <!-- 社会保険料ページ -->
         <ng-container *ngIf="currentTab === '社会保険料'">
           <div class="insurance-list-page">
-            <div class="page-header">
-              <h2 class="page-title">社会保険料一覧</h2>
-            </div>
-            
             <!-- フィルターと切り替え -->
             <div class="insurance-list-controls">
               <div class="filter-group">
@@ -186,10 +182,6 @@
 
         <!-- 給与ページ -->
         <ng-container *ngIf="currentTab === '給与'">
-          <div class="page-header">
-            <h2 class="page-title">給与設定</h2>
-          </div>
-
           <!-- 給与設定フォーム -->
           <div class="form-container">
             <form class="salary-form" (ngSubmit)="saveSalary()">
@@ -321,10 +313,6 @@
 
         <!-- 賞与ページ -->
         <ng-container *ngIf="currentTab === '賞与'">
-          <div class="page-header">
-            <h2 class="page-title">賞与設定</h2>
-          </div>
-
           <!-- 賞与設定フォーム -->
           <div class="form-container">
             <form class="bonus-form" (ngSubmit)="saveBonus()">
@@ -448,10 +436,6 @@
         <!-- 休業・任意保険者ページ -->
         <ng-container *ngIf="currentTab === '休業・任意保険者'">
           <div class="leave-voluntary-page">
-            <div class="page-header">
-              <h2 class="page-title">休業・任意保険者一覧</h2>
-            </div>
-            
             <!-- フィルター -->
             <div class="filter-controls">
               <div class="filter-group">
@@ -552,10 +536,6 @@
         <!-- 設定ページ -->
         <ng-container *ngIf="currentTab === '設定'">
           <div class="settings-page">
-            <div class="page-header">
-              <h2 class="page-title">設定</h2>
-            </div>
-            
             <form [formGroup]="settingsForm">
               <!-- 保険料率設定欄 -->
               <div class="settings-container">
