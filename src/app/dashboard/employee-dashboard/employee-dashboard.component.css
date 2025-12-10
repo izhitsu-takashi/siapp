@@ -290,10 +290,103 @@
 }
 
 .application-list-section .table-container {
-  max-height: calc(5 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 5行分の高さ + ヘッダー */
+  max-height: calc(3 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3行分の高さ + ヘッダー */
   overflow-y: auto;
   overflow-x: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 申請一覧表のレスポンシブデザイン - 大画面対応 */
+/* 超大画面（1440px以上） */
+@media (min-width: 1440px) {
+  .main-page-top {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 2vw, 2.5rem);
+  }
+
+  .main-page-layout {
+    gap: clamp(1rem, 2vw, 2.5rem);
+  }
+
+  .info-card {
+    padding: clamp(1rem, 2vw, 2rem);
+  }
+
+  .application-list-section {
+    padding: 0 clamp(1rem, 2vw, 2rem) clamp(1rem, 2vw, 2rem);
+  }
+
+  .application-list-section .table-container {
+    max-height: calc(3.5 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3.5行分の高さ + ヘッダー */
+  }
+
+  .section-header {
+    margin-bottom: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .application-table th {
+    padding: clamp(0.75rem, 1.2vw, 1.2rem);
+    font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+  }
+
+  .application-table td {
+    padding: clamp(0.75rem, 1.2vw, 1.2rem);
+    font-size: clamp(0.85rem, 1vw, 1rem);
+  }
+}
+
+/* 大画面（1200px - 1439px） */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .main-page-top {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 1.5vw, 2rem);
+  }
+
+  .main-page-layout {
+    gap: clamp(0.75rem, 1.5vw, 2rem);
+  }
+
+  .info-card {
+    padding: clamp(0.75rem, 1.5vw, 1.5rem);
+  }
+
+  .application-list-section {
+    padding: 0 clamp(0.75rem, 1.5vw, 1.5rem) clamp(0.75rem, 1.5vw, 1.5rem);
+  }
+
+  .application-list-section .table-container {
+    max-height: calc(3.5 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3.5行分の高さ + ヘッダー */
+  }
+
+  .section-header {
+    margin-bottom: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .application-table th {
+    padding: clamp(0.6rem, 1vw, 1.1rem);
+    font-size: clamp(0.85rem, 1vw, 1rem);
+  }
+
+  .application-table td {
+    padding: clamp(0.6rem, 1vw, 1.1rem);
+    font-size: clamp(0.8rem, 0.95vw, 0.95rem);
+  }
+}
+
+/* 中〜大画面（1024px - 1199px） */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .main-page-top {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(0.75rem, 1.5vw, 2rem);
+  }
+
+  .main-page-layout {
+    gap: clamp(0.75rem, 1.5vw, 2rem);
+  }
+
+  .application-list-section .table-container {
+    max-height: calc(3 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3行分の高さ + ヘッダー */
+  }
 }
 
 .application-list-section .table-container thead {
@@ -355,6 +448,10 @@
 }
 
 /* メインページ専用のpage-headerとpage-titleのスタイル調整 */
+.main-content:has(.main-page-layout) {
+  overflow-y: visible;
+}
+
 .main-content:has(.main-page-layout) .page-header {
   margin-bottom: clamp(0.5rem, 1vw, 1rem);
   padding-bottom: clamp(0.25rem, 0.5vw, 0.5rem);
@@ -367,6 +464,7 @@
 }
 
 /* メインページ専用のメディアクエリ */
+/* タブレット（768px以下） */
 @media (max-width: 768px) {
   .main-page-top {
     grid-template-columns: 1fr;
@@ -377,8 +475,19 @@
     gap: clamp(0.5rem, 1vw, 1rem);
   }
 
+  .application-table .col-application-id {
+    display: none;
+  }
+
   .application-list-section .table-container {
-    max-height: calc(4 * clamp(2rem, 3vw, 2.5rem) + clamp(1.5rem, 2.5vw, 2rem));
+    max-height: calc(3 * clamp(2rem, 3vw, 2.5rem) + clamp(1.5rem, 2.5vw, 2rem)); /* 3行分の高さ + ヘッダー */
+  }
+}
+
+/* 中画面（769px - 1023px） */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .application-list-section .table-container {
+    max-height: calc(3 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3行分の高さ + ヘッダー */
   }
 }
 
@@ -402,6 +511,11 @@
 
   .application-list-section .table-container {
     max-height: calc(3 * 2rem + 1.5rem);
+  }
+
+  .application-table .col-application-id,
+  .application-table .col-application-date {
+    display: none;
   }
 
   .application-table th,

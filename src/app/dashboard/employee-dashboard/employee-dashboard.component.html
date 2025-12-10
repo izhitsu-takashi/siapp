@@ -904,17 +904,17 @@
                 <table class="application-table">
                   <thead>
                     <tr>
-                      <th>申請ID</th>
-                      <th>申請種類</th>
-                      <th>ステータス</th>
-                      <th>申請日</th>
+                      <th class="col-application-id">申請ID</th>
+                      <th class="col-application-type">申請種類</th>
+                      <th class="col-status">ステータス</th>
+                      <th class="col-application-date">申請日</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let application of applications" class="application-row" (click)="openApplicationDetail(application)">
-                      <td>{{ application.applicationId }}</td>
-                      <td>{{ application.applicationType }}</td>
-                      <td>
+                      <td class="col-application-id">{{ application.applicationId }}</td>
+                      <td class="col-application-type">{{ application.applicationType }}</td>
+                      <td class="col-status">
                         <span class="status-badge"
                               [class.status-pending]="application.status === '承認待ち'"
                               [class.status-reviewing]="application.status === '確認中'"
@@ -929,7 +929,7 @@
                           <small>{{ application.statusComment }}</small>
                         </div>
                       </td>
-                      <td>{{ getApplicationDate(application) | date:'yyyy/MM/dd' }}</td>
+                      <td class="col-application-date">{{ getApplicationDate(application) | date:'yyyy/MM/dd' }}</td>
                     </tr>
                     <tr *ngIf="applications.length === 0">
                       <td colspan="4" class="empty-message">申請履歴がありません</td>
