@@ -183,7 +183,7 @@
 
 .leave-voluntary-page .table-container .insurance-table {
   margin: 0;
-  box-shadow: none;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 0;
 }
 
@@ -395,12 +395,16 @@
 }
 
 .table-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
   overflow-x: auto;
+  overflow-y: hidden;
   position: relative;
   min-height: 200px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .loading-message {
@@ -412,11 +416,16 @@
 
 .insurance-table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   background: white;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  table-layout: auto;
 }
 
 .insurance-table thead {

@@ -8,7 +8,7 @@
       <span class="user-info">
         <span class="user-name">{{ userName }}</span>
       </span>
-      <button class="logout-button" (click)="logout()" [disabled]="isSavingSalary">ログアウト</button>
+      <button class="logout-button" (click)="logout()" [disabled]="isSavingSalary || isSavingBonus">ログアウト</button>
     </div>
   </header>
 
@@ -21,7 +21,7 @@
           *ngFor="let tab of tabs"
           class="sidebar-item"
           [class.active]="currentTab === tab.name"
-          [disabled]="isSavingSalary"
+          [disabled]="isSavingSalary || isSavingBonus"
           (click)="switchTab(tab.name)"
         >
           {{ tab.name }}
