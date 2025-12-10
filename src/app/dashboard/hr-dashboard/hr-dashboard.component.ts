@@ -1409,6 +1409,16 @@ export class HrDashboardComponent {
         ''
       );
       
+      // 退職申請が取り消された場合、ログを出力（従業員側の申請一覧は自動的に更新される）
+      if (this.selectedApplication.applicationType === '退職申請') {
+        console.log('[退職申請取り消し] 退職申請が取り消されました:', {
+          employeeNumber: this.selectedApplication.employeeNumber,
+          applicationId: this.selectedApplication.id,
+          applicationStatus: '取り消し',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       // 申請一覧を更新
       await this.loadAllApplications();
       
@@ -1533,6 +1543,16 @@ export class HrDashboardComponent {
         status,
         status === '差し戻し' ? comment : ''
       );
+      
+      // 退職申請が取り消された場合、ログを出力（従業員側の申請一覧は自動的に更新される）
+      if (status === '取り消し' && this.selectedApplication.applicationType === '退職申請') {
+        console.log('[退職申請取り消し] 退職申請が取り消されました:', {
+          employeeNumber: this.selectedApplication.employeeNumber,
+          applicationId: this.selectedApplication.id,
+          applicationStatus: status,
+          timestamp: new Date().toISOString()
+        });
+      }
       
       // 扶養家族追加申請が承認済みになった場合、扶養家族情報を社員情報に追加
       if (status === '承認済み' && this.selectedApplication.applicationType === '扶養家族追加') {

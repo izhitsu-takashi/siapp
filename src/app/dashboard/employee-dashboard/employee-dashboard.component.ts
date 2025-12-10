@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './employee-dashboard.component.html',
   styleUrl: './employee-dashboard.component.css'
 })
-export class EmployeeDashboardComponent {
+export class EmployeeDashboardComponent implements OnDestroy {
   currentTab: string = 'メインページ';
   
   tabs = [
@@ -35,6 +35,23 @@ export class EmployeeDashboardComponent {
   applications: any[] = [];
   hasOnboardingApplication: boolean = false; // 入社時申請が提出されているか
   isOnboardingCompleted: boolean = false; // 入社処理が完了しているか（新入社員コレクションに存在しない）
+  applicationsUnsubscribe: any = null; // 申請一覧のリアルタイムリスナー
+  
+  // 退職申請が存在するかどうかをチェック（取り消しステータスは除外）
+  hasResignationApplication(): boolean {
+    const hasResignation = this.applications.some((app: any) => 
+      app.applicationType === '退職申請' && app.status !== '取り消し'
+    );
+    console.log('[退職申請ボタン] チェック結果:', {
+      hasResignation,
+      applications: this.applications.filter((app: any) => app.applicationType === '退職申請').map((app: any) => ({
+        id: app.id,
+        applicationType: app.applicationType,
+        status: app.status
+      }))
+    });
+    return hasResignation;
+  }
   
   // 申請モーダル用
   showApplicationModal = false;
@@ -247,7 +264,86 @@ export class EmployeeDashboardComponent {
       ]).catch(err => {
         console.error('Error loading initial data:', err);
       });
+      
+      // 申請一覧をリアルタイムで監視
+      this.setupApplicationsListener();
     }
+  }
+  
+  // 申請一覧をリアルタイムで監視
+  setupApplicationsListener() {
+    // 既存のリスナーを解除
+    if (this.applicationsUnsubscribe) {
+      this.applicationsUnsubscribe();
+    }
+    
+    // 新しいリスナーを設定
+    this.applicationsUnsubscribe = this.firestoreService.subscribeEmployeeApplications(
+      this.employeeNumber,
+      (applications) => {
+        console.log('[申請一覧リアルタイム更新] 申請一覧が更新されました:', {
+          employeeNumber: this.employeeNumber,
+          applicationsCount: applications.length,
+          resignationApplications: applications.filter((app: any) => app.applicationType === '退職申請').map((app: any) => ({
+            id: app.id,
+            status: app.status,
+            applicationType: app.applicationType
+          }))
+        });
+        
+        // FirestoreのTimestampをDateに変換
+        const mappedApplications = applications.map((app: any) => {
+          if (app.createdAt && typeof app.createdAt.toDate === 'function') {
+            app.createdAt = app.createdAt.toDate();
+          }
+          return app;
+        });
+        
+        // 承認済みと取り消しステータスの申請を下に表示するようにソート
+        this.applications = mappedApplications.sort((a: any, b: any) => {
+          const aIsApproved = a.status === '承認済み' || a.status === '承認';
+          const bIsApproved = b.status === '承認済み' || b.status === '承認';
+          const aIsCancelled = a.status === '取り消し';
+          const bIsCancelled = b.status === '取り消し';
+          
+          // 取り消しステータスの申請は一番下に表示
+          if (aIsCancelled && !bIsCancelled) {
+            return 1; // aを後ろに
+          }
+          if (!aIsCancelled && bIsCancelled) {
+            return -1; // bを後ろに
+          }
+          
+          // 承認済みの申請は下に表示（取り消しよりは上）
+          if (aIsApproved && !bIsApproved && !bIsCancelled) {
+            return 1; // aを後ろに
+          }
+          if (!aIsApproved && bIsApproved && !aIsCancelled) {
+            return -1; // bを後ろに
+          }
+          
+          // どちらも承認済み、またはどちらも承認済みでない場合は、申請IDでソート（古い順）
+          const idA = a.applicationId || 0;
+          const idB = b.applicationId || 0;
+          return idA - idB;
+        });
+        
+        // 取り消しステータスの申請を一番下に移動
+        const cancelledApplications = this.applications.filter((app: any) => app.status === '取り消し');
+        const otherApplications = this.applications.filter((app: any) => app.status !== '取り消し');
+        this.applications = [...otherApplications, ...cancelledApplications];
+        
+        console.log('[申請一覧リアルタイム更新] 更新後の申請一覧:', {
+          totalCount: this.applications.length,
+          resignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請').length,
+          activeResignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請' && app.status !== '取り消し').length,
+          hasResignationApplication: this.hasResignationApplication()
+        });
+        
+        // 変更検知をトリガー
+        this.cdr.detectChanges();
+      }
+    );
   }
 
   async loadEmployeeData() {
@@ -2986,7 +3082,20 @@ export class EmployeeDashboardComponent {
 
   async loadApplications() {
     try {
+      console.log('[申請一覧読み込み] 申請一覧を読み込み開始:', {
+        employeeNumber: this.employeeNumber
+      });
+      
       const applications = await this.firestoreService.getEmployeeApplications(this.employeeNumber);
+      console.log('[申請一覧読み込み] Firestoreから取得した申請:', {
+        count: applications.length,
+        resignationApplications: applications.filter((app: any) => app.applicationType === '退職申請').map((app: any) => ({
+          id: app.id,
+          status: app.status,
+          applicationType: app.applicationType
+        }))
+      });
+      
       // FirestoreのTimestampをDateに変換
       const mappedApplications = applications.map((app: any) => {
         if (app.createdAt && typeof app.createdAt.toDate === 'function') {
@@ -3028,10 +3137,26 @@ export class EmployeeDashboardComponent {
       const cancelledApplications = this.applications.filter((app: any) => app.status === '取り消し');
       const otherApplications = this.applications.filter((app: any) => app.status !== '取り消し');
       this.applications = [...otherApplications, ...cancelledApplications];
+      
+      console.log('[申請一覧読み込み] 読み込み完了:', {
+        totalCount: this.applications.length,
+        resignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請').length,
+        activeResignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請' && app.status !== '取り消し').length,
+        hasResignationApplication: this.hasResignationApplication()
+      });
+      
+      // 変更検知をトリガー
+      this.cdr.detectChanges();
     } catch (error) {
       console.error('Error loading applications:', error);
       this.applications = [];
     }
+  }
+  
+  // 申請一覧を手動で再読み込み
+  async refreshApplications() {
+    console.log('[申請一覧手動更新] 申請一覧を手動で再読み込みします');
+    await this.loadApplications();
   }
   
   // パスワード変更
@@ -4308,6 +4433,14 @@ export class EmployeeDashboardComponent {
   // 申請モーダルを開く（チャットから）
   openApplicationFromChat(applicationType: string) {
     this.openApplicationModal(applicationType);
+  }
+  
+  ngOnDestroy() {
+    // 申請一覧のリアルタイムリスナーを解除
+    if (this.applicationsUnsubscribe) {
+      this.applicationsUnsubscribe();
+      this.applicationsUnsubscribe = null;
+    }
   }
 }
 

@@ -820,8 +820,8 @@
             <button 
               class="application-button" 
               (click)="openApplicationModal('退職申請')"
-              [disabled]="!isOnboardingCompleted"
-              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : ''"
+              [disabled]="!isOnboardingCompleted || hasResignationApplication()"
+              [title]="!isOnboardingCompleted ? '入社処理が完了するまで利用できません' : (hasResignationApplication() ? '既に退職申請が提出されています' : '')"
             >
               <span class="application-icon">🚪</span>
               <span class="application-label">退職申請</span>

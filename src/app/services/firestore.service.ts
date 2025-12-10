@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData, Timestamp, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -376,6 +376,36 @@ export class FirestoreService {
       console.error('Error getting employee applications:', error);
       throw error;
     }
+  }
+  
+  /**
+   * 社員番号に基づいて申請一覧をリアルタイムで監視する
+   */
+  subscribeEmployeeApplications(employeeNumber: string, callback: (applications: any[]) => void): Unsubscribe {
+    const applicationsCollection = collection(this.db, 'applications');
+    const q = query(applicationsCollection, where('employeeNumber', '==', employeeNumber));
+    
+    return onSnapshot(q, (querySnapshot) => {
+      const applications: any[] = [];
+      querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        applications.push({
+          id: doc.id,
+          ...data
+        });
+      });
+      
+      // 申請IDでソート（古い順）
+      applications.sort((a, b) => {
+        const idA = a.applicationId || 0;
+        const idB = b.applicationId || 0;
+        return idA - idB;
+      });
+      
+      callback(applications);
+    }, (error) => {
+      console.error('Error subscribing to employee applications:', error);
+    });
   }
 
   /**
