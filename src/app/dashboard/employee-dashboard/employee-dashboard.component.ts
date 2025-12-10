@@ -292,10 +292,13 @@ export class EmployeeDashboardComponent {
         };
         
         // 現在の連絡先情報を保存（退職申請で使用）
+        // 海外在住の場合はoverseasAddressを使用
+        const isOverseasResident = data.isOverseasResident || false;
         this.currentContactInfo = {
-          address: data.currentAddress || '',
+          address: isOverseasResident ? (data.overseasAddress || '') : (data.currentAddress || ''),
           phone: data.phoneNumber || '',
-          email: data.email || ''
+          email: data.email || '',
+          isOverseasResident: isOverseasResident
         };
       }
       // データ読み込み後、編集モードでない場合はフォームを無効化
@@ -2432,8 +2435,10 @@ export class EmployeeDashboardComponent {
     const addressControl = this.resignationForm.get('postResignationAddress');
     
     if (this.sameAsCurrentAddressForResignation) {
+      // 海外在住の場合はoverseasAddressを使用、そうでない場合はcurrentAddressを使用
+      const address = this.currentContactInfo.address || '';
       this.resignationForm.patchValue({
-        postResignationAddress: this.currentContactInfo.address || ''
+        postResignationAddress: address
       });
       addressControl?.clearValidators();
       addressControl?.disable();
@@ -2485,8 +2490,9 @@ export class EmployeeDashboardComponent {
         const formValue = this.resignationForm.getRawValue(); // disabledフィールドも取得
         
         // 退職後の連絡先情報を決定
+        // 変更なしの場合、海外在住の場合はoverseasAddressを使用、そうでない場合はcurrentAddressを使用
         const postResignationAddress = this.sameAsCurrentAddressForResignation 
-          ? this.currentContactInfo.address 
+          ? (this.currentContactInfo.address || '') 
           : (formValue.postResignationAddress || '');
         const postResignationPhone = this.sameAsCurrentPhoneForResignation 
           ? this.currentContactInfo.phone 
