@@ -5792,6 +5792,17 @@ export class HrDashboardComponent {
         return;
       }
       
+      // 重複チェック: 同じ社員に同じ申請種類の未対応の申請要求が既に存在するか確認
+      const existingRequests = await this.firestoreService.getApplicationRequestsByEmployee(employeeNumber);
+      const duplicateRequest = existingRequests.find(
+        (request: any) => request.applicationType === applicationType && request.status === '未対応'
+      );
+      
+      if (duplicateRequest) {
+        alert('この社員には既に同じ申請種類の未対応の申請要求が存在します。重複した申請要求は送信できません。');
+        return;
+      }
+      
       // Firestoreに申請要求を保存
       await this.firestoreService.saveApplicationRequest({
         employeeNumber: employeeNumber,
