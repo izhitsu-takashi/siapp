@@ -191,6 +191,10 @@
   text-align: center;
 }
 
+.leave-voluntary-page .table-container .insurance-table tbody td {
+  text-align: center;
+}
+
 .leave-voluntary-page .table-container .insurance-table thead th:nth-child(4) {
   min-width: 150px;
   width: 150px;

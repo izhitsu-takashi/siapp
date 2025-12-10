@@ -514,7 +514,7 @@
                     <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.resignationDate ? formatDate(item.resignationDate) : '-' }}</td>
                     <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.healthInsuranceType || '-' }}</td>
                     <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.nursingInsuranceType || '-' }}</td>
-                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ item.voluntaryInsuranceEndDate ? formatDate(item.voluntaryInsuranceEndDate) : '-' }}</td>
+                    <td (click)="openEmployeeInfoModal(item.employeeNumber)">{{ getVoluntaryEndDate(item) }}</td>
                     <td>
                       <button 
                         class="end-voluntary-button" 

@@ -1398,6 +1398,32 @@ export class KyuyoDashboardComponent {
     return item.employeeNumber || index.toString();
   }
   
+  // 任意継続終了日を取得（表示用）
+  getVoluntaryEndDate(item: any): string {
+    if (!item.voluntaryInsuranceEndDate) {
+      return '-';
+    }
+    
+    // 空のオブジェクトをチェック
+    if (typeof item.voluntaryInsuranceEndDate === 'object' && Object.keys(item.voluntaryInsuranceEndDate).length === 0) {
+      return '-';
+    }
+    
+    // 有効な日付形式かチェック
+    if (item.voluntaryInsuranceEndDate instanceof Date) {
+      return this.formatDate(item.voluntaryInsuranceEndDate);
+    } else if (typeof item.voluntaryInsuranceEndDate === 'string') {
+      return this.formatDate(item.voluntaryInsuranceEndDate);
+    } else if (typeof item.voluntaryInsuranceEndDate === 'object') {
+      // Firestore Timestamp形式かチェック
+      if (item.voluntaryInsuranceEndDate.seconds || item.voluntaryInsuranceEndDate._seconds || typeof item.voluntaryInsuranceEndDate.toDate === 'function') {
+        return this.formatDate(item.voluntaryInsuranceEndDate);
+      }
+    }
+    
+    return '-';
+  }
+  
   // 保険料を小数第2位まで表示（一番下の桁が0の場合は表示しない）
   formatInsuranceAmount(amount: number): string {
     if (!amount || amount === 0) {
@@ -1844,13 +1870,15 @@ export class KyuyoDashboardComponent {
               }
             }
             
-            if (useStandardChange) {
-              // 標準報酬月額変更が適用されている場合
+            if (useStandardChange && !isVoluntaryContinuation) {
+              // 標準報酬月額変更が適用されている場合（任意継続被保険者以外）
               standardMonthlySalary = standardChange.monthlyStandard;
               grade = standardChange.grade;
             } else if (isVoluntaryContinuation) {
               // 任意継続被保険者の場合、退職時の標準報酬月額を使用（最大32万円）
               // 32万円以下の場合はその値を採用し、32万円を超える場合は32万円に制限
+              // 標準報酬月額変更情報があっても、32万円の上限を優先する
+              
               // 退職時の固定的賃金を再取得
               const relevantSalariesForResignation = this.salaryHistory
                 .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
@@ -1868,6 +1896,7 @@ export class KyuyoDashboardComponent {
               grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
               
               // 最大32万円に制限（32万円以下の場合はその値を採用）
+              // 標準報酬月額変更情報があっても、32万円の上限を優先する
               if (standardMonthlySalary > 320000) {
                 standardMonthlySalary = 320000;
                 // 32万円に対応する等級を再計算
@@ -1876,6 +1905,10 @@ export class KyuyoDashboardComponent {
                   grade = maxStandardInfo.grade;
                 }
               }
+            } else if (useStandardChange) {
+              // 標準報酬月額変更が適用されている場合（任意継続被保険者以外）
+              standardMonthlySalary = standardChange.monthlyStandard;
+              grade = standardChange.grade;
             } else {
               // 標準報酬月額変更情報が適用されていない場合、入社時の見込み給与から等級を計算
               // （入社時決定による等級を使用）
@@ -2338,32 +2371,93 @@ export class KyuyoDashboardComponent {
         const isVoluntaryContinuation = emp.healthInsuranceType === '任意継続被保険者' && 
                                        (emp.employmentStatus === '退職' || emp.employmentStatus === '退職済み');
         
+        // 任意継続被保険者の場合、デバッグログを出力
+        if (isVoluntaryContinuation) {
+          console.log('[任意継続被保険者一覧] 社員を確認:', {
+            employeeNumber: emp.employeeNumber,
+            name: emp.name,
+            healthInsuranceType: emp.healthInsuranceType,
+            employmentStatus: emp.employmentStatus,
+            resignationDate: emp.resignationDate,
+            resignationDateType: typeof emp.resignationDate,
+            voluntaryInsuranceEndDate: emp.voluntaryInsuranceEndDate,
+            voluntaryInsuranceEndDateType: typeof emp.voluntaryInsuranceEndDate,
+            hasVoluntaryInsuranceEndDate: !!emp.voluntaryInsuranceEndDate
+          });
+        }
+        
         // 任意継続被保険者で、任意継続終了日が設定されていない場合、デフォルト値を設定（退職日の翌日から2年後）
         if (isVoluntaryContinuation && !emp.voluntaryInsuranceEndDate && emp.resignationDate) {
           try {
-            let resignationDate: Date;
+            // 退職日を取得（様々な形式に対応）
+            let resignationDateStr = '';
+            
             if (emp.resignationDate instanceof Date) {
-              resignationDate = emp.resignationDate;
+              const year = emp.resignationDate.getFullYear();
+              const month = String(emp.resignationDate.getMonth() + 1).padStart(2, '0');
+              const day = String(emp.resignationDate.getDate()).padStart(2, '0');
+              resignationDateStr = `${year}-${month}-${day}`;
             } else if (emp.resignationDate && typeof emp.resignationDate.toDate === 'function') {
-              resignationDate = emp.resignationDate.toDate();
+              const date = emp.resignationDate.toDate();
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              resignationDateStr = `${year}-${month}-${day}`;
             } else if (typeof emp.resignationDate === 'string') {
-              resignationDate = new Date(emp.resignationDate);
-            } else {
-              resignationDate = new Date(emp.resignationDate);
+              // 文字列形式の場合、YYYY-MM-DD形式に統一
+              const dateParts = emp.resignationDate.split(/[-/]/);
+              if (dateParts.length === 3) {
+                const year = dateParts[0].padStart(4, '0');
+                const month = dateParts[1].padStart(2, '0');
+                const day = dateParts[2].padStart(2, '0');
+                resignationDateStr = `${year}-${month}-${day}`;
+              } else {
+                resignationDateStr = emp.resignationDate;
+              }
+            } else if (emp.resignationDate && typeof emp.resignationDate === 'object') {
+              // Firestore Timestamp形式の場合
+              let timestamp: number | null = null;
+              if (emp.resignationDate.seconds) {
+                timestamp = emp.resignationDate.seconds * 1000;
+              } else if (emp.resignationDate._seconds) {
+                timestamp = emp.resignationDate._seconds * 1000;
+              }
+              
+              if (timestamp) {
+                const date = new Date(timestamp);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                resignationDateStr = `${year}-${month}-${day}`;
+              }
             }
             
-            if (resignationDate && !isNaN(resignationDate.getTime())) {
-              const nextDay = new Date(resignationDate);
-              nextDay.setDate(nextDay.getDate() + 1);
-              
-              // 2年後を計算
-              const twoYearsLater = new Date(nextDay);
-              twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
-              
-              emp.voluntaryInsuranceEndDate = twoYearsLater;
+            // 退職日から2年後の日付を計算
+            if (resignationDateStr) {
+              const dateParts = resignationDateStr.split('-');
+              if (dateParts.length === 3) {
+                const year = parseInt(dateParts[0], 10);
+                const month = parseInt(dateParts[1], 10) - 1; // 月は0ベース
+                const day = parseInt(dateParts[2], 10);
+                
+                // 退職日の翌日
+                const nextDay = new Date(year, month, day + 1);
+                
+                // 2年後を計算
+                const twoYearsLater = new Date(nextDay);
+                twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
+                
+                // 日付を設定
+                emp.voluntaryInsuranceEndDate = twoYearsLater;
+                console.log('Set voluntary insurance end date:', emp.employeeNumber, 'resignationDate:', resignationDateStr, 'endDate:', twoYearsLater);
+              } else {
+                console.warn('Could not parse resignation date string:', emp.employeeNumber, resignationDateStr);
+              }
+            } else {
+              console.warn('Could not get resignation date string:', emp.employeeNumber, emp.resignationDate);
             }
           } catch (error) {
-            console.error('Error calculating default voluntary insurance end date:', error);
+            console.error('Error calculating default voluntary insurance end date:', error, 'employee:', emp.employeeNumber, 'resignationDate:', emp.resignationDate);
           }
         }
         
@@ -2469,7 +2563,22 @@ export class KyuyoDashboardComponent {
   async loadBonusData() {
     try {
       await this.loadEmployees();
-      this.bonusEmployees = this.employees;
+      
+      // 全社員データを取得して退職済み社員を除外
+      const allEmployees = await this.firestoreService.getAllEmployees();
+      
+      // 退職済み社員を除外（賞与設定は在籍者のみ）
+      this.bonusEmployees = this.employees.filter((emp: any) => {
+        // 全社員データから該当する社員を取得
+        const fullEmployeeData = allEmployees.find((e: any) => e.employeeNumber === emp.employeeNumber);
+        if (!fullEmployeeData) {
+          return false; // データが見つからない場合は除外
+        }
+        
+        // 退職済み社員を除外
+        const employmentStatus = fullEmployeeData.employmentStatus || '在籍';
+        return employmentStatus !== '退職' && employmentStatus !== '退職済み';
+      });
       
       // 賞与設定履歴を読み込む（Firestoreから）
       const bonuses = await this.firestoreService.getBonusHistory();
@@ -2602,19 +2711,51 @@ export class KyuyoDashboardComponent {
   // 日付をフォーマット（YYYY/MM/DD形式）
   formatDate(date: any): string {
     if (!date) return '-';
+    
+    // 空のオブジェクトをチェック
+    if (typeof date === 'object' && Object.keys(date).length === 0) {
+      return '-';
+    }
+    
     try {
-      let dateObj: Date;
+      let dateObj: Date | null = null;
+      
       if (date.toDate && typeof date.toDate === 'function') {
+        // Firestore Timestamp形式の場合
         dateObj = date.toDate();
       } else if (date instanceof Date) {
         dateObj = date;
       } else if (typeof date === 'string') {
-        dateObj = new Date(date);
-      } else if (date && typeof date === 'object' && date.seconds) {
-        // Firestore Timestamp形式の場合
-        dateObj = new Date(date.seconds * 1000);
-      } else {
-        return '-';
+        // 文字列形式の場合
+        // まず、YYYY-MM-DD形式を直接パース（タイムゾーンの問題を避けるため）
+        const dateParts = date.split(/[-/]/);
+        if (dateParts.length === 3) {
+          const year = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1; // 月は0ベース
+          const day = parseInt(dateParts[2], 10);
+          dateObj = new Date(year, month, day);
+          // 無効な日付の場合は、new Date()を試す
+          if (isNaN(dateObj.getTime())) {
+            dateObj = new Date(date);
+          }
+        } else {
+          dateObj = new Date(date);
+        }
+      } else if (date && typeof date === 'object') {
+        // Firestore Timestamp形式（オブジェクト）の場合
+        if (date.seconds) {
+          dateObj = new Date(date.seconds * 1000);
+        } else if (date._seconds) {
+          dateObj = new Date(date._seconds * 1000);
+        } else if (typeof date.toDate === 'function') {
+          dateObj = date.toDate();
+        } else if (date.getTime && typeof date.getTime === 'function') {
+          // Dateオブジェクトのような場合
+          dateObj = new Date(date.getTime());
+        } else {
+          // 空のオブジェクトや無効なオブジェクトの場合はスキップ
+          return '-';
+        }
       }
       
       // 日付が有効かチェック

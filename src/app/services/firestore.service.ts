@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -1029,18 +1029,80 @@ export class FirestoreService {
       // 退職後の社会保険加入が「社会保険を任意継続する」の場合のみ、保険者種別を「任意継続被保険者」に変更
       const isContinuingInsurance = resignationData.postResignationInsurance === '社会保険を任意継続する';
       
+      console.log('[退職申請承認] 任意継続被保険者チェック:', {
+        employeeNumber,
+        postResignationInsurance: resignationData.postResignationInsurance,
+        isContinuingInsurance,
+        resignationDate: resignationData.resignationDate
+      });
+      
       // 任意継続被保険者の場合、任意継続終了日を計算（退職日の翌日から2年後）
       let voluntaryInsuranceEndDate = null;
       if (isContinuingInsurance && resignationData.resignationDate) {
-        const resignationDate = new Date(resignationData.resignationDate);
-        const nextDay = new Date(resignationDate);
-        nextDay.setDate(nextDay.getDate() + 1);
+        console.log('[退職申請承認] 任意継続終了日を計算開始:', {
+          employeeNumber,
+          resignationDate: resignationData.resignationDate,
+          resignationDateType: typeof resignationData.resignationDate
+        });
         
-        // 2年後を計算
-        const twoYearsLater = new Date(nextDay);
-        twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
+        // 退職日をDateオブジェクトに変換
+        let resignationDate: Date;
+        if (resignationData.resignationDate instanceof Date) {
+          resignationDate = resignationData.resignationDate;
+        } else if (typeof resignationData.resignationDate === 'string') {
+          // 文字列形式の場合、YYYY-MM-DD形式を直接パース
+          const dateParts = resignationData.resignationDate.split(/[-/]/);
+          if (dateParts.length === 3) {
+            const year = parseInt(dateParts[0], 10);
+            const month = parseInt(dateParts[1], 10) - 1; // 月は0ベース
+            const day = parseInt(dateParts[2], 10);
+            resignationDate = new Date(year, month, day);
+          } else {
+            resignationDate = new Date(resignationData.resignationDate);
+          }
+        } else {
+          resignationDate = new Date(resignationData.resignationDate);
+        }
         
-        voluntaryInsuranceEndDate = twoYearsLater;
+        console.log('[退職申請承認] 退職日をDateオブジェクトに変換:', {
+          employeeNumber,
+          original: resignationData.resignationDate,
+          parsed: resignationDate,
+          isValid: !isNaN(resignationDate.getTime())
+        });
+        
+        if (!isNaN(resignationDate.getTime())) {
+          const nextDay = new Date(resignationDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          
+          // 2年後を計算
+          const twoYearsLater = new Date(nextDay);
+          twoYearsLater.setFullYear(twoYearsLater.getFullYear() + 2);
+          
+          // Firestore Timestamp形式に変換
+          voluntaryInsuranceEndDate = Timestamp.fromDate(twoYearsLater);
+          
+          console.log('[退職申請承認] 任意継続終了日を計算完了:', {
+            employeeNumber,
+            resignationDate: resignationDate.toISOString(),
+            nextDay: nextDay.toISOString(),
+            twoYearsLater: twoYearsLater.toISOString(),
+            voluntaryInsuranceEndDate: voluntaryInsuranceEndDate.toDate().toISOString(),
+            voluntaryInsuranceEndDateType: typeof voluntaryInsuranceEndDate,
+            isTimestamp: voluntaryInsuranceEndDate instanceof Timestamp
+          });
+        } else {
+          console.error('[退職申請承認] 退職日のパースに失敗:', {
+            employeeNumber,
+            resignationDate: resignationData.resignationDate
+          });
+        }
+      } else {
+        console.log('[退職申請承認] 任意継続終了日を計算しない:', {
+          employeeNumber,
+          isContinuingInsurance,
+          hasResignationDate: !!resignationData.resignationDate
+        });
       }
       
       // 年齢を計算（介護保険被保険者種別の判定に使用）
@@ -1090,8 +1152,19 @@ export class FirestoreService {
       const cleanedData = this.removeUndefinedValues(updatedData);
 
       // 社員データを更新
+      console.log('[退職申請承認] 社員データを更新:', {
+        employeeNumber,
+        voluntaryInsuranceEndDate: cleanedData.voluntaryInsuranceEndDate,
+        voluntaryInsuranceEndDateType: typeof cleanedData.voluntaryInsuranceEndDate,
+        isDate: cleanedData.voluntaryInsuranceEndDate instanceof Date,
+        healthInsuranceType: cleanedData.healthInsuranceType,
+        resignationDate: cleanedData.resignationDate
+      });
+      
       const docRef = doc(this.db, 'employees', employeeNumber);
       await setDoc(docRef, cleanedData, { merge: true });
+      
+      console.log('[退職申請承認] 社員データ更新完了:', employeeNumber);
     } catch (error) {
       console.error('Error updating employee resignation:', error);
       throw error;
