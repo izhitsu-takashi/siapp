@@ -2,10 +2,13 @@
   <div class="login-form-container">
     <h1 class="app-title">SIApp</h1>
     
-    <div class="login-type-tabs">
+    <div class="login-type-tabs" 
+         [class.tabs-employee]="loginType === 'employee'"
+         [class.tabs-roumu]="loginType === 'roumu'"
+         [class.tabs-kyuyo]="loginType === 'kyuyo'">
       <button
         type="button"
-        class="tab-button"
+        class="tab-button tab-button-employee"
         [class.active]="loginType === 'employee'"
         (click)="switchLoginType('employee')"
       >
@@ -13,7 +16,7 @@
       </button>
       <button
         type="button"
-        class="tab-button"
+        class="tab-button tab-button-roumu"
         [class.active]="loginType === 'roumu'"
         (click)="switchLoginType('roumu')"
       >
@@ -21,7 +24,7 @@
       </button>
       <button
         type="button"
-        class="tab-button"
+        class="tab-button tab-button-kyuyo"
         [class.active]="loginType === 'kyuyo'"
         (click)="switchLoginType('kyuyo')"
       >
@@ -120,6 +123,9 @@
       <button
         type="submit"
         class="login-button"
+        [class.login-button-employee]="loginType === 'employee'"
+        [class.login-button-roumu]="loginType === 'roumu'"
+        [class.login-button-kyuyo]="loginType === 'kyuyo'"
         [disabled]="loginForm.invalid || isLoading"
       >
         <span *ngIf="!isLoading">ログイン</span>

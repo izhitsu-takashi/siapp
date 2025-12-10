@@ -74,14 +74,42 @@
   white-space: nowrap;
 }
 
-.tab-button:hover {
+/* 従業員タブボタンのホバー色 */
+.tab-button-employee:hover {
   color: #667eea;
   background: rgba(102, 126, 234, 0.05);
 }
 
-.tab-button.active {
+/* 労務担当者タブボタンのホバー色 */
+.tab-button-roumu:hover {
+  color: #f5576c;
+  background: rgba(245, 87, 108, 0.05);
+}
+
+/* 給与担当者タブボタンのホバー色 */
+.tab-button-kyuyo:hover {
+  color: #56ab2f;
+  background: rgba(86, 171, 47, 0.05);
+}
+
+/* 従業員タブのアクティブスタイル */
+.tabs-employee .tab-button-employee.active {
   color: #667eea;
   border-bottom-color: #667eea;
+  font-weight: 600;
+}
+
+/* 労務担当者タブのアクティブスタイル */
+.tabs-roumu .tab-button-roumu.active {
+  color: #f5576c;
+  border-bottom-color: #f5576c;
+  font-weight: 600;
+}
+
+/* 給与担当者タブのアクティブスタイル */
+.tabs-kyuyo .tab-button-kyuyo.active {
+  color: #56ab2f;
+  border-bottom-color: #56ab2f;
   font-weight: 600;
 }
 
@@ -151,7 +179,6 @@
 .login-button {
   width: 100%;
   padding: clamp(0.625rem, 2vh, 0.875rem);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 6px;
@@ -163,9 +190,34 @@
   flex-shrink: 0;
 }
 
-.login-button:hover:not(:disabled) {
+/* 従業員ログインボタン（紫系） */
+.login-button-employee {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-button-employee:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* 労務担当者ログインボタン（ピンク/赤系） */
+.login-button-roumu {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.login-button-roumu:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
+/* 給与担当者ログインボタン（緑系） */
+.login-button-kyuyo {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+}
+
+.login-button-kyuyo:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(86, 171, 47, 0.4);
 }
 
 .login-button:disabled {
