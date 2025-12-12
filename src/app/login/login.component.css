@@ -114,7 +114,7 @@
 }
 
 .form-title {
-  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-size: clamp(1rem, 3vw, 1.5rem);
   font-weight: 600;
   margin-bottom: clamp(0.75rem, 2vh, 1.5rem);
   color: #333;
@@ -132,6 +132,7 @@
 
 .form-group {
   margin-bottom: clamp(0.75rem, 2vh, 1.25rem);
+  padding: 0 4rem;
   flex-shrink: 0;
 }
 
@@ -177,7 +178,7 @@
 }
 
 .login-button {
-  width: 100%;
+  width: 70%;
   padding: clamp(0.625rem, 2vh, 0.875rem);
   color: white;
   border: none;
@@ -188,6 +189,7 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   margin-top: clamp(0.5rem, 1.5vh, 1rem);
   flex-shrink: 0;
+  margin: 0.5rem auto;
 }
 
 /* 従業員ログインボタン（紫系） */
@@ -320,7 +322,7 @@
   }
 
   .form-title {
-    margin-bottom: 0.75rem;
+    margin: 1rem 0;
   }
 
   .form-group {

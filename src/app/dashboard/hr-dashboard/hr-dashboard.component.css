@@ -204,7 +204,7 @@
   gap: 1rem;
   max-width: 1400px;
   margin: 0 auto;
-  width: 100%;
+  width: 85%;
   height: 100%;
   overflow: hidden;
 }
@@ -671,7 +671,7 @@
 .modal-content {
   background: white;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0;
   width: 100%;
   max-width: 1000px;
   max-height: 90vh;
@@ -1442,19 +1442,123 @@
 }
 
 .employee-edit-modal .modal-actions {
-  padding: 1.5rem;
-  margin: 0 -1.5rem -1.5rem -1.5rem;
+  padding: 0 1.25rem;
+  margin: 0;
   flex-shrink: 0;
   z-index: 10;
   position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
-  width: calc(100% + 3rem);
+  width: 100%;
   background: white;
   border-top: 1px solid #e0e0e0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  align-self: stretch;
+  max-width: 100%;
+  border-radius: 0 0 10px 10px;
+}
+
+/* モーダルのコンパクトレスポンシブ調整（特大画面未満） */
+@media (max-width: 1199px) {
+  .modal-overlay {
+    padding: 0.75rem;
+  }
+
+  .modal-content,
+  .employee-edit-modal {
+    max-height: calc(100vh - 1.5rem);
+    border-radius: 10px;
+  }
+
+  .modal-header,
+  .employee-edit-modal .modal-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .modal-title {
+    font-size: 1.1rem;
+  }
+
+  .modal-body,
+  .add-employee-form,
+  .employee-edit-form {
+    padding: 0.85rem 1rem;
+    padding-bottom: 0;
+  }
+
+  .modal-actions,
+  .employee-edit-modal .modal-actions {
+    padding: 1rem 0;
+    margin: 0;
+    border-top: 1px solid #e0e0e0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    padding: 0.6rem 0.6rem 0.5rem;
+  }
+
+  .form-grid {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+}
+
+/* モーダルの大画面向けレスポンシブ調整（1200px〜1919px） */
+@media (min-width: 1200px) and (max-width: 1919px) {
+  .modal-overlay {
+    padding: 1rem;
+  }
+
+  .modal-content,
+  .employee-edit-modal {
+    max-height: calc(100vh - 2rem);
+    border-radius: 12px;
+  }
+
+  .modal-header,
+  .employee-edit-modal .modal-header {
+    padding: 1.1rem 1.35rem;
+  }
+
+  .modal-title {
+    font-size: 1.3rem;
+  }
+
+  .modal-body,
+  .add-employee-form,
+  .employee-edit-form {
+    padding: 1.1rem 1.35rem;
+    padding-bottom: 0;
+  }
+
+  .modal-actions,
+  .employee-edit-modal .modal-actions {
+    padding: 1.2rem 1.2rem;
+    margin: 0 -3rem;
+    border-top: 1px solid #e0e0e0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    padding: 0.7rem 0.75rem 0.6rem;
+  }
+
+  .form-grid {
+    padding: 1rem;
+    gap: 0.9rem;
+  }
 }
 
 .form-section {
@@ -1471,8 +1575,8 @@
   font-size: 1.2rem;
   font-weight: 600;
   color: #333;
-  margin-bottom: 1rem;
-  padding: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.75rem 0.65rem;
 }
 
 .form-grid {
@@ -1931,11 +2035,17 @@
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   border-top: 1px solid #e0e0e0;
   flex-shrink: 0;
   background: white;
   margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  align-self: stretch;
+  max-width: 100%;
+  border-radius: 0 0 8px 8px;
 }
 
 /* 申請要求モーダル専用スタイル */
