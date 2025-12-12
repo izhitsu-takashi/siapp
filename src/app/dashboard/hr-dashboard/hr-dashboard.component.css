@@ -1412,6 +1412,9 @@
 }
 
 .employee-edit-modal {
+  --form-pad-x: 0;
+  --form-pad-y: 1.5rem;
+  --content-pad-x: 1.5rem;
   max-width: 1200px;
   max-height: calc(100vh - 2rem);
   display: flex;
@@ -1421,12 +1424,20 @@
 }
 
 .employee-edit-form {
-  padding: 1.5rem;
+  padding: var(--form-pad-y) var(--form-pad-x);
   padding-bottom: 0;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   margin-bottom: 0;
+}
+
+.employee-edit-form > .form-section,
+.employee-edit-form > .hr-only-section,
+.employee-edit-form > .nested-form {
+  padding-left: var(--content-pad-x);
+  padding-right: var(--content-pad-x);
+  box-sizing: border-box;
 }
 
 .employee-edit-form.form-disabled {
@@ -1442,15 +1453,15 @@
 }
 
 .employee-edit-modal .modal-actions {
-  padding: 0 1.25rem;
-  margin: 0;
+  padding: 1rem var(--content-pad-x);
+  margin: 0 calc(-1 * var(--content-pad-x));
   flex-shrink: 0;
   z-index: 10;
   position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
-  width: 100%;
+  width: auto;
   background: white;
   border-top: 1px solid #e0e0e0;
   border-left: none;
@@ -1465,6 +1476,12 @@
 
 /* モーダルのコンパクトレスポンシブ調整（特大画面未満） */
 @media (max-width: 1199px) {
+  .employee-edit-modal {
+    --form-pad-x: 0;
+    --form-pad-y: 0.85rem;
+    --content-pad-x: 1rem;
+  }
+
   .modal-overlay {
     padding: 0.75rem;
   }
@@ -1487,14 +1504,17 @@
   .modal-body,
   .add-employee-form,
   .employee-edit-form {
-    padding: 0.85rem 1rem;
+    padding: var(--form-pad-y) var(--form-pad-x);
     padding-bottom: 0;
   }
 
   .modal-actions,
   .employee-edit-modal .modal-actions {
-    padding: 1rem 0;
-    margin: 0;
+    padding: 1rem var(--content-pad-x);
+    margin: 0 calc(-1 * var(--content-pad-x));
+    left: 0;
+    right: 0;
+    width: auto;
     border-top: 1px solid #e0e0e0;
     border-left: none;
     border-right: none;
@@ -1514,6 +1534,12 @@
 
 /* モーダルの大画面向けレスポンシブ調整（1200px〜1919px） */
 @media (min-width: 1200px) and (max-width: 1919px) {
+  .employee-edit-modal {
+    --form-pad-x: 0;
+    --form-pad-y: 1.1rem;
+    --content-pad-x: 1.35rem;
+  }
+
   .modal-overlay {
     padding: 1rem;
   }
@@ -1536,14 +1562,17 @@
   .modal-body,
   .add-employee-form,
   .employee-edit-form {
-    padding: 1.1rem 1.35rem;
+    padding: var(--form-pad-y) var(--form-pad-x);
     padding-bottom: 0;
   }
 
   .modal-actions,
   .employee-edit-modal .modal-actions {
-    padding: 1.2rem 1.2rem;
-    margin: 0 -3rem;
+    padding: 1rem var(--content-pad-x);
+    margin: 0 calc(-1 * var(--content-pad-x));
+    left: 0;
+    right: 0;
+    width: auto;
     border-top: 1px solid #e0e0e0;
     border-left: none;
     border-right: none;
