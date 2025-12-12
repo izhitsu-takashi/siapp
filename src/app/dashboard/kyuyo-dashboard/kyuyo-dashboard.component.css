@@ -632,6 +632,153 @@
   border-top: 1px solid #e0e0e0;
 }
 
+/* 設定ページ レスポンシブ調整（中画面） */
+@media (max-width: 1199px) {
+  .settings-container {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .settings-container .container-title {
+    font-size: 1.3rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .settings-section {
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-left-width: 3px;
+  }
+
+  .settings-section .section-title {
+    font-size: 1.05rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.85rem;
+    padding: 0.75rem 0;
+  }
+
+  .section-actions {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+  }
+}
+
+/* 設定ページ レスポンシブ調整（小画面） */
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .settings-container .container-title {
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .settings-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .settings-section .section-title {
+    font-size: 1rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+  }
+
+  .section-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+}
+
+/* 設定ページ レスポンシブ調整（大画面 1200-1919px） */
+@media (min-width: 1200px) and (max-width: 1919px) {
+  .settings-container {
+    padding: 2.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .settings-container .container-title {
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.7rem;
+  }
+
+  .settings-section {
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    border-left-width: 4px;
+  }
+
+  .settings-section .section-title {
+    font-size: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.1rem;
+    padding: 1rem 0;
+  }
+
+  .section-actions {
+    margin-top: 1.4rem;
+    padding-top: 1.4rem;
+  }
+}
+
+/* 設定ページ レスポンシブ調整（特大画面 1920px〜） */
+@media (min-width: 1920px) {
+  .settings-container {
+    padding: 2.5rem;
+    margin-bottom: 2.25rem;
+  }
+
+  .settings-container .container-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .settings-section {
+    padding: 2rem;
+    margin-bottom: 1.75rem;
+    border-left-width: 5px;
+  }
+
+  .settings-section .section-title {
+    font-size: 1.35rem;
+    margin-bottom: 1.35rem;
+    padding-bottom: 0.7rem;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    padding: 1rem 0;
+  }
+
+  .section-actions {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+  }
+}
+
 .save-section-button {
   background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
   color: white;
@@ -680,9 +827,11 @@
 
 .file-management-actions {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   padding: 1rem 0;
+  align-items: center;
 }
 
 .download-button,
