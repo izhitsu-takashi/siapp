@@ -36,713 +36,420 @@
       <div class="content-area">
         <!-- 情報照会ページ -->
         <ng-container *ngIf="currentTab === '情報照会'">
+          <form [formGroup]="settingsForm" class="settings-form" style="display: none;">
+            <!-- フォームは非表示にするが、データバインディングのために残す -->
+          </form>
 
-          <form [formGroup]="settingsForm" class="settings-form">
-            
+          <div class="info-inquiry-layout">
             <!-- 基本情報欄 -->
-            <section class="form-section">
-              <h3 class="section-title">基本情報</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="lastName">姓</label>
-                  <input 
-                    type="text" 
-                    id="lastName" 
-                    formControlName="lastName" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="firstName">名</label>
-                  <input 
-                    type="text" 
-                    id="firstName" 
-                    formControlName="firstName" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="lastNameKana">姓（ヨミガナ）</label>
-                  <input 
-                    type="text" 
-                    id="lastNameKana" 
-                    formControlName="lastNameKana" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="firstNameKana">名（ヨミガナ）</label>
-                  <input 
-                    type="text" 
-                    id="firstNameKana" 
-                    formControlName="firstNameKana" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="birthDate">生年月日</label>
-                  <div class="birth-date-container">
-                    <input 
-                      type="date" 
-                      id="birthDate" 
-                      formControlName="birthDate" 
-                      class="form-input"
-                      [readonly]="true"
-                      (change)="onBirthDateChange()"
-                    >
-                    <span *ngIf="age !== null" class="age-display">（{{ age }}歳）</span>
+            <section class="info-card">
+              <h3 class="card-title">基本情報</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">姓:</span>
+                    <span class="info-value">{{ getFormValue('lastName') }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">名:</span>
+                    <span class="info-value">{{ getFormValue('firstName') }}</span>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label for="gender">戸籍上の性別</label>
-                  <select 
-                    id="gender" 
-                    formControlName="gender" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="email">メールアドレス</label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    formControlName="email" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group full-width">
-                  <label>本人確認書類添付</label>
-                  <div *ngIf="employeeData?.idDocumentFileUrl" class="file-info">
-                    <a [href]="employeeData.idDocumentFileUrl" target="_blank" class="file-link">
-                      {{ employeeData.idDocumentFile || '本人確認書類を開く' }}
-                    </a>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">姓（ヨミガナ）:</span>
+                    <span class="info-value">{{ getFormValue('lastNameKana') }}</span>
                   </div>
-                  <div *ngIf="!employeeData?.idDocumentFileUrl" class="file-info">
-                    <span class="no-file-message">添付ファイルがありません</span>
+                  <div class="info-row">
+                    <span class="info-label">名（ヨミガナ）:</span>
+                    <span class="info-value">{{ getFormValue('firstNameKana') }}</span>
+                  </div>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">生年月日:</span>
+                    <span class="info-value">
+                      {{ formatDateForDisplay(settingsForm.get('birthDate')?.value) }}
+                      <span *ngIf="age !== null">（{{ age }}歳）</span>
+                    </span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">戸籍上の性別:</span>
+                    <span class="info-value">{{ getFormValue('gender') }}</span>
+                  </div>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">メールアドレス:</span>
+                    <span class="info-value">{{ getFormValue('email') }}</span>
+                  </div>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">本人確認書類添付:</span>
+                    <span class="info-value">
+                      <a *ngIf="employeeData?.idDocumentFileUrl" [href]="employeeData.idDocumentFileUrl" target="_blank" class="file-link">
+                        {{ employeeData.idDocumentFile || '本人確認書類を開く' }}
+                      </a>
+                      <span *ngIf="!employeeData?.idDocumentFileUrl" class="no-data">添付ファイルがありません</span>
+                    </span>
                   </div>
                 </div>
               </div>
             </section>
 
             <!-- マイナンバー欄 -->
-            <section class="form-section">
-              <h3 class="section-title">マイナンバー</h3>
-              <div class="form-grid">
-                <div class="form-group full-width">
-                  <!-- <label for="myNumberPart1">マイナンバー</label> -->
-                  <div class="my-number-container">
-                    <div class="my-number-inputs">
-                      <input 
-                        type="text" 
-                        id="myNumberPart1" 
-                        [value]="getMyNumberDisplayValue(1)"
-                        class="form-input my-number-part"
-                        [readonly]="true"
-                        maxlength="4"
-                        (input)="formatMyNumberInput($event, 1)"
-                        placeholder="0000"
+            <section class="info-card">
+              <h3 class="card-title">マイナンバー</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">マイナンバー:</span>
+                    <span class="info-value">
+                      {{ getMyNumberFullDisplay() }}
+                      <button 
+                        type="button" 
+                        class="toggle-button-small" 
+                        (click)="toggleMyNumber()"
+                        style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem;"
                       >
-                      <span class="my-number-separator">-</span>
-                      <input 
-                        type="text" 
-                        id="myNumberPart2" 
-                        [value]="getMyNumberDisplayValue(2)"
-                        class="form-input my-number-part"
-                        [readonly]="true"
-                        maxlength="4"
-                        (input)="formatMyNumberInput($event, 2)"
-                        placeholder="0000"
-                      >
-                      <span class="my-number-separator">-</span>
-                      <input 
-                        type="text" 
-                        id="myNumberPart3" 
-                        [value]="getMyNumberDisplayValue(3)"
-                        class="form-input my-number-part"
-                        [readonly]="true"
-                        maxlength="4"
-                        (input)="formatMyNumberInput($event, 3)"
-                        placeholder="0000"
-                      >
-                    </div>
-                    <button 
-                      type="button" 
-                      class="toggle-button" 
-                      (click)="toggleMyNumber()"
-                    >
-                      {{ showMyNumber ? '非表示' : '表示' }}
-                    </button>
+                        {{ showMyNumber ? '非表示' : '表示' }}
+                      </button>
+                    </span>
                   </div>
                 </div>
-                <div class="form-group full-width">
-                  <label>マイナンバーカード添付</label>
-                  <div *ngIf="employeeData?.myNumberCardFileUrl" class="file-info">
-                    <a [href]="employeeData.myNumberCardFileUrl" target="_blank" class="file-link">
-                      {{ employeeData.myNumberCardFile || 'マイナンバーカードを開く' }}
-                    </a>
-                  </div>
-                  <div *ngIf="!employeeData?.myNumberCardFileUrl" class="file-info">
-                    <span class="no-file-message">添付ファイルがありません</span>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">マイナンバーカード添付:</span>
+                    <span class="info-value">
+                      <a *ngIf="employeeData?.myNumberCardFileUrl" [href]="employeeData.myNumberCardFileUrl" target="_blank" class="file-link">
+                        {{ employeeData.myNumberCardFile || 'マイナンバーカードを開く' }}
+                      </a>
+                      <span *ngIf="!employeeData?.myNumberCardFileUrl" class="no-data">添付ファイルがありません</span>
+                    </span>
                   </div>
                 </div>
               </div>
             </section>
 
             <!-- 入退社情報欄 -->
-            <section class="form-section">
-              <h3 class="section-title">入退社情報</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="employmentStatus">在籍状況</label>
-                  <select 
-                    id="employmentStatus" 
-                    formControlName="employmentStatus" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let status of employmentStatuses" [value]="status">{{ status }}</option>
-                  </select>
+            <section class="info-card">
+              <h3 class="card-title">入退社情報</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">在籍状況:</span>
+                    <span class="info-value">{{ getFormValue('employmentStatus') }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">入社年月日:</span>
+                    <span class="info-value">{{ formatDateForDisplay(settingsForm.get('joinDate')?.value) }}</span>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="joinDate">入社年月日</label>
-                  <input 
-                    type="date" 
-                    id="joinDate" 
-                    formControlName="joinDate" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="resignationDate">退職年月日</label>
-                  <input 
-                    type="date" 
-                    id="resignationDate" 
-                    formControlName="resignationDate" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group full-width">
-                  <label for="resignationReason">退職事由</label>
-                  <textarea 
-                    id="resignationReason" 
-                    formControlName="resignationReason" 
-                    class="form-input" 
-                    rows="3"
-                    [readonly]="true"
-                  ></textarea>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">退職年月日:</span>
+                    <span class="info-value">{{ formatDateForDisplay(settingsForm.get('resignationDate')?.value) }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">退職事由:</span>
+                    <span class="info-value">{{ getFormValue('resignationReason') }}</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             <!-- 業務情報欄 -->
-            <section class="form-section">
-              <h3 class="section-title">業務情報</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="employeeNumber">社員番号</label>
-                  <input 
-                    type="text" 
-                    id="employeeNumber" 
-                    formControlName="employeeNumber" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
+            <section class="info-card">
+              <h3 class="card-title">業務情報</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">社員番号:</span>
+                    <span class="info-value">{{ getFormValue('employeeNumber') }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">雇用形態:</span>
+                    <span class="info-value">{{ getFormValue('employmentType') }}</span>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="employmentType">雇用形態</label>
-                  <select 
-                    id="employmentType" 
-                    formControlName="employmentType" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let type of employmentTypes" [value]="type">{{ type }}</option>
-                  </select>
-                </div>
-                <!-- <div class="form-group">
-                  <label for="paymentType">給与支給形態</label>
-                  <select 
-                    id="paymentType" 
-                    formControlName="paymentType" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
-                  </select>
-                </div> -->
               </div>
             </section>
 
             <!-- 部署・役職情報 -->
-            <section class="form-section">
-              <h3 class="section-title">部署・役職情報</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="department">部署</label>
-                  <select 
-                    id="department" 
-                    formControlName="department" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="position">役職</label>
-                  <select 
-                    id="position" 
-                    formControlName="position" 
-                    class="form-input"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let pos of positions" [value]="pos">{{ pos }}</option>
-                  </select>
+            <section class="info-card">
+              <h3 class="card-title">部署・役職情報</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">部署:</span>
+                    <span class="info-value">{{ getFormValue('department') }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">役職:</span>
+                    <span class="info-value">{{ getFormValue('position') }}</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             <!-- 現住所と連絡先欄 -->
-            <section class="form-section">
-              <h3 class="section-title">現住所と連絡先</h3>
-              <div class="form-grid">
-                <div class="form-group full-width">
-                  <label class="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      formControlName="isOverseasResident"
-                      [readonly]="!isEditMode"
-                    >
-                    海外に在住
-                  </label>
+            <section class="info-card">
+              <h3 class="card-title">現住所と連絡先</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">海外に在住:</span>
+                    <span class="info-value">{{ settingsForm.get('isOverseasResident')?.value ? 'はい' : 'いいえ' }}</span>
+                  </div>
                 </div>
-                <div class="form-group" *ngIf="!settingsForm.get('isOverseasResident')?.value">
-                  <label for="postalCode">郵便番号</label>
-                  <input 
-                    type="text" 
-                    id="postalCode" 
-                    formControlName="postalCode" 
-                    class="form-input"
-                    maxlength="7"
-                    [readonly]="!isEditMode"
-                  >
+                <div class="info-row-pair" *ngIf="!settingsForm.get('isOverseasResident')?.value">
+                  <div class="info-row">
+                    <span class="info-label">郵便番号:</span>
+                    <span class="info-value">{{ getFormValue('postalCode') }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">電話番号:</span>
+                    <span class="info-value">{{ getFormValue('phoneNumber') }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="!settingsForm.get('isOverseasResident')?.value">
-                  <label for="currentAddress">現住所</label>
-                  <textarea 
-                    id="currentAddress" 
-                    formControlName="currentAddress" 
-                    class="form-input" 
-                    rows="2"
-                    [readonly]="!isEditMode"
-                  ></textarea>
+                <div class="info-row-pair" *ngIf="!settingsForm.get('isOverseasResident')?.value">
+                  <div class="info-row full-width">
+                    <span class="info-label">現住所:</span>
+                    <span class="info-value">{{ getFormValue('currentAddress') }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="!settingsForm.get('isOverseasResident')?.value">
-                  <label for="currentAddressKana">現住所（ヨミガナ）</label>
-                  <textarea 
-                    id="currentAddressKana" 
-                    formControlName="currentAddressKana" 
-                    class="form-input" 
-                    rows="2"
-                    [readonly]="!isEditMode"
-                  ></textarea>
+                <div class="info-row-pair" *ngIf="!settingsForm.get('isOverseasResident')?.value">
+                  <div class="info-row full-width">
+                    <span class="info-label">現住所（ヨミガナ）:</span>
+                    <span class="info-value">{{ getFormValue('currentAddressKana') }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="settingsForm.get('isOverseasResident')?.value">
-                  <label for="overseasAddress">住所（海外）</label>
-                  <textarea 
-                    id="overseasAddress" 
-                    formControlName="overseasAddress" 
-                    class="form-input" 
-                    rows="2"
-                    placeholder="海外住所を入力してください"
-                    [readonly]="!isEditMode"
-                  ></textarea>
+                <div class="info-row-pair" *ngIf="settingsForm.get('isOverseasResident')?.value">
+                  <div class="info-row full-width">
+                    <span class="info-label">住所（海外）:</span>
+                    <span class="info-value">{{ getFormValue('overseasAddress') }}</span>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="phoneNumber">電話番号</label>
-                  <input 
-                    type="tel" 
-                    id="phoneNumber" 
-                    formControlName="phoneNumber" 
-                    class="form-input"
-                    [readonly]="!isEditMode"
-                  >
+                <div class="info-row-pair" *ngIf="settingsForm.get('isOverseasResident')?.value">
+                  <div class="info-row">
+                    <span class="info-label">電話番号:</span>
+                    <span class="info-value">{{ getFormValue('phoneNumber') }}</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             <!-- 住民票住所欄 -->
-            <section class="form-section">
-              <h3 class="section-title">住民票住所</h3>
-              <div class="form-grid">
-                <div class="form-group full-width">
-                  <label class="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      formControlName="skipResidentAddress"
-                      [disabled]="!isEditMode || settingsForm.get('isOverseasResident')?.value"
-                    >
-                    住民票住所を記載しない
-                  </label>
+            <section class="info-card">
+              <h3 class="card-title">住民票住所</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">住民票住所を記載しない:</span>
+                    <span class="info-value">{{ settingsForm.get('skipResidentAddress')?.value ? 'はい' : 'いいえ' }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="settingsForm.get('skipResidentAddress')?.value">
-                  <label for="residentAddressSkipReason">理由</label>
-                  <input 
-                    type="text" 
-                    id="residentAddressSkipReason" 
-                    formControlName="residentAddressSkipReason" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
+                <div class="info-row-pair" *ngIf="settingsForm.get('skipResidentAddress')?.value">
+                  <div class="info-row full-width">
+                    <span class="info-label">理由:</span>
+                    <span class="info-value">{{ getFormValue('residentAddressSkipReason') }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="settingsForm.get('skipResidentAddress')?.value && settingsForm.get('residentAddressSkipReason')?.value === 'その他'">
-                  <label for="residentAddressSkipReasonOther">理由（その他）</label>
-                  <input 
-                    type="text" 
-                    id="residentAddressSkipReasonOther" 
-                    formControlName="residentAddressSkipReasonOther" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
+                <div class="info-row-pair" *ngIf="settingsForm.get('skipResidentAddress')?.value && settingsForm.get('residentAddressSkipReason')?.value === 'その他'">
+                  <div class="info-row full-width">
+                    <span class="info-label">理由（その他）:</span>
+                    <span class="info-value">{{ getFormValue('residentAddressSkipReasonOther') }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
-                  <label class="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      formControlName="sameAsCurrentAddress"
-                      (change)="onSameAddressChange($event)"
-                      [disabled]="!isEditMode"
-                    >
-                    住所（現住所と同じ）
-                  </label>
+                <div class="info-row-pair" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
+                  <div class="info-row full-width">
+                    <span class="info-label">現住所と同じ:</span>
+                    <span class="info-value">{{ settingsForm.get('sameAsCurrentAddress')?.value ? 'はい' : 'いいえ' }}</span>
+                  </div>
                 </div>
-                <div class="form-group" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
-                  <label for="residentPostalCode">郵便番号</label>
-                  <input 
-                    type="text" 
-                    id="residentPostalCode" 
-                    formControlName="residentPostalCode" 
-                    class="form-input"
-                    maxlength="7"
-                    [readonly]="!isEditMode || sameAsCurrentAddress"
-                  >
+                <div class="info-row-pair" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
+                  <div class="info-row">
+                    <span class="info-label">郵便番号:</span>
+                    <span class="info-value">{{ getFormValue('residentPostalCode') }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
-                  <label for="residentAddress">住所</label>
-                  <textarea 
-                    id="residentAddress" 
-                    formControlName="residentAddress" 
-                    class="form-input" 
-                    rows="2"
-                    [readonly]="!isEditMode || sameAsCurrentAddress"
-                  ></textarea>
+                <div class="info-row-pair" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
+                  <div class="info-row full-width">
+                    <span class="info-label">住所:</span>
+                    <span class="info-value">{{ getFormValue('residentAddress') }}</span>
+                  </div>
                 </div>
-                <div class="form-group full-width" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
-                  <label for="residentAddressKana">住所（ヨミガナ）</label>
-                  <textarea 
-                    id="residentAddressKana" 
-                    formControlName="residentAddressKana" 
-                    class="form-input" 
-                    rows="2"
-                    [readonly]="!isEditMode || sameAsCurrentAddress"
-                  ></textarea>
+                <div class="info-row-pair" *ngIf="!settingsForm.get('skipResidentAddress')?.value">
+                  <div class="info-row full-width">
+                    <span class="info-label">住所（ヨミガナ）:</span>
+                    <span class="info-value">{{ getFormValue('residentAddressKana') }}</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             <!-- 履歴書・職務経歴書欄 -->
-            <section class="form-section">
-              <h3 class="section-title">履歴書・職務経歴書</h3>
-              <div class="form-grid">
-                <div class="form-group full-width">
-                  <label>履歴書添付</label>
-                  <div *ngIf="employeeData?.resumeFileUrl" class="file-info">
-                    <a [href]="employeeData.resumeFileUrl" target="_blank" class="file-link">
-                      {{ employeeData.resumeFile || '履歴書を開く' }}
-                    </a>
-                  </div>
-                  <div *ngIf="!employeeData?.resumeFileUrl" class="file-info">
-                    <span class="no-file-message">添付ファイルがありません</span>
+            <section class="info-card">
+              <h3 class="card-title">履歴書・職務経歴書</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">履歴書添付:</span>
+                    <span class="info-value">
+                      <a *ngIf="employeeData?.resumeFileUrl" [href]="employeeData.resumeFileUrl" target="_blank" class="file-link">
+                        {{ employeeData.resumeFile || '履歴書を開く' }}
+                      </a>
+                      <span *ngIf="!employeeData?.resumeFileUrl" class="no-data">添付ファイルがありません</span>
+                    </span>
                   </div>
                 </div>
-                <div class="form-group full-width">
-                  <label>職務経歴書添付</label>
-                  <div *ngIf="employeeData?.careerHistoryFileUrl" class="file-info">
-                    <a [href]="employeeData.careerHistoryFileUrl" target="_blank" class="file-link">
-                      {{ employeeData.careerHistoryFile || '職務経歴書を開く' }}
-                    </a>
-                  </div>
-                  <div *ngIf="!employeeData?.careerHistoryFileUrl" class="file-info">
-                    <span class="no-file-message">添付ファイルがありません</span>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">職務経歴書添付:</span>
+                    <span class="info-value">
+                      <a *ngIf="employeeData?.careerHistoryFileUrl" [href]="employeeData.careerHistoryFileUrl" target="_blank" class="file-link">
+                        {{ employeeData.careerHistoryFile || '職務経歴書を開く' }}
+                      </a>
+                      <span *ngIf="!employeeData?.careerHistoryFileUrl" class="no-data">添付ファイルがありません</span>
+                    </span>
                   </div>
                 </div>
               </div>
             </section>
 
             <!-- 緊急連絡先欄 -->
-            <section class="form-section">
-              <h3 class="section-title">緊急連絡先</h3>
-              <div formGroupName="emergencyContact" class="nested-form">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="emergencyName">氏名</label>
-                    <input 
-                      type="text" 
-                      id="emergencyName" 
-                      formControlName="name" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+            <section class="info-card">
+              <h3 class="card-title">緊急連絡先</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">氏名:</span>
+                    <span class="info-value">{{ getFormValue('emergencyContact.name') }}</span>
                   </div>
-                  <div class="form-group">
-                    <label for="emergencyNameKana">氏名（ヨミガナ）</label>
-                    <input 
-                      type="text" 
-                      id="emergencyNameKana" 
-                      formControlName="nameKana" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+                  <div class="info-row">
+                    <span class="info-label">氏名（ヨミガナ）:</span>
+                    <span class="info-value">{{ getFormValue('emergencyContact.nameKana') }}</span>
                   </div>
-                  <div class="form-group">
-                    <label for="emergencyRelationship">続柄</label>
-                    <input 
-                      type="text" 
-                      id="emergencyRelationship" 
-                      formControlName="relationship" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">続柄:</span>
+                    <span class="info-value">{{ getFormValue('emergencyContact.relationship') }}</span>
                   </div>
-                  <div class="form-group">
-                    <label for="emergencyPhone">緊急連絡先電話番号</label>
-                    <input 
-                      type="tel" 
-                      id="emergencyPhone" 
-                      formControlName="phone" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+                  <div class="info-row">
+                    <span class="info-label">緊急連絡先電話番号:</span>
+                    <span class="info-value">{{ getFormValue('emergencyContact.phone') }}</span>
                   </div>
-                  <div class="form-group full-width">
-                    <label for="emergencyAddress">住所</label>
-                    <label style="display: block; margin-bottom: 0.5rem;">
-                      <input 
-                        type="checkbox" 
-                        [checked]="sameAsCurrentAddressForEmergency"
-                        (change)="onSameAddressForEmergencyChange($event)"
-                        [disabled]="true"
-                        class="checkbox-input"
-                      >
-                      現住所と同じ
-                    </label>
-                    <textarea 
-                      id="emergencyAddress" 
-                      formControlName="address" 
-                      class="form-input" 
-                      rows="2"
-                      [readonly]="!isEditMode || sameAsCurrentAddressForEmergency"
-                    ></textarea>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">現住所と同じ:</span>
+                    <span class="info-value">{{ sameAsCurrentAddressForEmergency ? 'はい' : 'いいえ' }}</span>
                   </div>
-                  <div class="form-group full-width">
-                    <label for="emergencyAddressKana">住所（ヨミガナ）</label>
-                    <textarea 
-                      id="emergencyAddressKana" 
-                      formControlName="addressKana" 
-                      class="form-input" 
-                      rows="2"
-                      [readonly]="!isEditMode || sameAsCurrentAddressForEmergency"
-                    ></textarea>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">住所:</span>
+                    <span class="info-value">{{ getFormValue('emergencyContact.address') }}</span>
+                  </div>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">住所（ヨミガナ）:</span>
+                    <span class="info-value">{{ getFormValue('emergencyContact.addressKana') }}</span>
                   </div>
                 </div>
               </div>
             </section>
 
             <!-- 口座情報欄 -->
-            <section class="form-section">
-              <h3 class="section-title">口座情報</h3>
-              <div formGroupName="bankAccount" class="nested-form">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="bankName">銀行名</label>
-                    <input 
-                      type="text" 
-                      id="bankName" 
-                      formControlName="bankName" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+            <section class="info-card">
+              <h3 class="card-title">口座情報</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">銀行名:</span>
+                    <span class="info-value">{{ getFormValue('bankAccount.bankName') }}</span>
                   </div>
-                  <div class="form-group">
-                    <label for="accountType">預金種別</label>
-                    <select 
-                      id="accountType" 
-                      formControlName="accountType" 
-                      class="form-input"
-                    >
-                      <option value="">選択してください</option>
-                      <option value="普通">普通</option>
-                      <option value="当座">当座</option>
-                      <option value="貯蓄">貯蓄</option>
-                    </select>
+                  <div class="info-row">
+                    <span class="info-label">預金種別:</span>
+                    <span class="info-value">{{ getFormValue('bankAccount.accountType') }}</span>
                   </div>
-                  <div class="form-group">
-                    <label for="accountHolder">名義（カタカナ）</label>
-                    <input 
-                      type="text" 
-                      id="accountHolder" 
-                      formControlName="accountHolder" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">名義（カタカナ）:</span>
+                    <span class="info-value">{{ getFormValue('bankAccount.accountHolder') }}</span>
                   </div>
-                  <div class="form-group">
-                    <label for="branchName">支店名</label>
-                    <input 
-                      type="text" 
-                      id="branchName" 
-                      formControlName="branchName" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+                  <div class="info-row">
+                    <span class="info-label">支店名:</span>
+                    <span class="info-value">{{ getFormValue('bankAccount.branchName') }}</span>
                   </div>
-                  <div class="form-group">
-                    <label for="accountNumber">口座番号</label>
-                    <input 
-                      type="text" 
-                      id="accountNumber" 
-                      formControlName="accountNumber" 
-                      class="form-input"
-                      [readonly]="true"
-                    >
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">口座番号:</span>
+                    <span class="info-value">{{ getFormValue('bankAccount.accountNumber') }}</span>
                   </div>
                 </div>
               </div>
             </section>
 
             <!-- 社会保険欄 -->
-            <section class="form-section">
-              <h3 class="section-title">社会保険</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="healthInsuranceNumber">健康保険の被保険者整理番号</label>
-                  <input 
-                    type="text" 
-                    id="healthInsuranceNumber" 
-                    formControlName="healthInsuranceNumber" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="pensionInsuranceNumber">厚生年金保険の被保険者整理番号</label>
-                  <input 
-                    type="text" 
-                    id="pensionInsuranceNumber" 
-                    formControlName="pensionInsuranceNumber" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="basicPensionNumberPart1">基礎年金番号</label>
-                  <div class="basic-pension-number-container">
-                    <input 
-                      type="text" 
-                      id="basicPensionNumberPart1" 
-                      formControlName="basicPensionNumberPart1" 
-                      class="form-input basic-pension-part"
-                      maxlength="4"
-                      (input)="formatBasicPensionNumberInput($event, 1)"
-                      placeholder="0000"
-                      [readonly]="true"
-                    >
-                    <span class="basic-pension-separator">-</span>
-                    <input 
-                      type="text" 
-                      id="basicPensionNumberPart2" 
-                      formControlName="basicPensionNumberPart2" 
-                      class="form-input basic-pension-part"
-                      maxlength="6"
-                      (input)="formatBasicPensionNumberInput($event, 2)"
-                      placeholder="000000"
-                      [readonly]="true"
-                    >
+            <section class="info-card">
+              <h3 class="card-title">社会保険</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">健康保険の被保険者整理番号:</span>
+                    <span class="info-value">{{ getFormValue('healthInsuranceNumber') }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">厚生年金保険の被保険者整理番号:</span>
+                    <span class="info-value">{{ getFormValue('pensionInsuranceNumber') }}</span>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label for="pensionHistoryStatus">厚生年金加入履歴</label>
-                  <select 
-                    id="pensionHistoryStatus" 
-                    formControlName="pensionHistoryStatus" 
-                    class="form-input" 
-                    (change)="onPensionHistoryChange($event)"
-                  >
-                    <option value="">選択してください</option>
-                    <option *ngFor="let option of pensionHistoryOptions" [value]="option">{{ option }}</option>
-                  </select>
-                </div>
-                <div class="form-group full-width" *ngIf="hasPensionHistory">
-                  <label for="pensionHistory">厚生年金加入履歴（詳細）</label>
-                  <textarea 
-                    id="pensionHistory" 
-                    formControlName="pensionHistory" 
-                    class="form-input" 
-                    rows="4"
-                    [readonly]="true"
-                  ></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="socialInsuranceAcquisitionDate">社会保険の資格取得年月日</label>
-                  <input 
-                    type="date" 
-                    id="socialInsuranceAcquisitionDate" 
-                    formControlName="socialInsuranceAcquisitionDate" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="socialInsuranceLossDate">社会保険の資格喪失年月日</label>
-                  <input 
-                    type="date" 
-                    id="socialInsuranceLossDate" 
-                    formControlName="socialInsuranceLossDate" 
-                    class="form-input"
-                    [readonly]="true"
-                  >
-                </div>
-                <div class="form-group full-width">
-                  <label>基礎年金番号確認書類添付</label>
-                  <div *ngIf="employeeData?.basicPensionNumberDocFileUrl" class="file-info">
-                    <a [href]="employeeData.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
-                      {{ employeeData.basicPensionNumberDocFile || '基礎年金番号がわかる書類を開く' }}
-                    </a>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">基礎年金番号:</span>
+                    <span class="info-value">{{ getBasicPensionNumberDisplay() }}</span>
                   </div>
-                  <div *ngIf="!employeeData?.basicPensionNumberDocFileUrl" class="file-info">
-                    <span class="no-file-message">添付ファイルがありません</span>
+                  <div class="info-row">
+                    <span class="info-label">厚生年金加入履歴:</span>
+                    <span class="info-value">{{ getFormValue('pensionHistoryStatus') }}</span>
+                  </div>
+                </div>
+                <div class="info-row-pair" *ngIf="hasPensionHistory">
+                  <div class="info-row full-width">
+                    <span class="info-label">厚生年金加入履歴（詳細）:</span>
+                    <span class="info-value">{{ getFormValue('pensionHistory') }}</span>
+                  </div>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">社会保険の資格取得年月日:</span>
+                    <span class="info-value">{{ formatDateForDisplay(settingsForm.get('socialInsuranceAcquisitionDate')?.value) }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">社会保険の資格喪失年月日:</span>
+                    <span class="info-value">{{ formatDateForDisplay(settingsForm.get('socialInsuranceLossDate')?.value) }}</span>
+                  </div>
+                </div>
+                <div class="info-row-pair">
+                  <div class="info-row full-width">
+                    <span class="info-label">基礎年金番号確認書類添付:</span>
+                    <span class="info-value">
+                      <a *ngIf="employeeData?.basicPensionNumberDocFileUrl" [href]="employeeData.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
+                        {{ employeeData.basicPensionNumberDocFile || '基礎年金番号がわかる書類を開く' }}
+                      </a>
+                      <span *ngIf="!employeeData?.basicPensionNumberDocFileUrl" class="no-data">添付ファイルがありません</span>
+                    </span>
                   </div>
                 </div>
               </div>
             </section>
-
-            <!-- 送信ボタン -->
-            <div class="form-actions" *ngIf="isEditMode">
-              <button type="submit" class="submit-button" [disabled]="settingsForm.invalid || isSaving">
-                {{ isSaving ? '保存中...' : '保存' }}
-              </button>
-            </div>
-          </form>
+          </div>
         </ng-container>
 
         <!-- 各種申請ページ -->
@@ -1003,152 +710,189 @@
         <!-- その他のタブ -->
         <!-- 保険・扶養ページ -->
         <ng-container *ngIf="currentTab === '保険・扶養'">
-          <div class="insurance-dependents-page">
+          <div class="info-inquiry-layout">
             
             <!-- 保険者種別情報 -->
-            <section class="info-section">
-              <h3 class="section-title">保険者種別</h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-label">健康保険者種別:</span>
-                  <span class="info-value">{{ insuranceData?.healthInsuranceType || '未設定' }}</span>
+            <section class="info-card">
+              <h3 class="card-title">保険者種別</h3>
+              <div class="info-content">
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">健康保険者種別:</span>
+                    <span class="info-value">{{ insuranceData?.healthInsuranceType || '-' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">介護保険者種別:</span>
+                    <span class="info-value">{{ insuranceData?.nursingInsuranceType || '-' }}</span>
+                  </div>
                 </div>
-                <div class="info-item">
-                  <span class="info-label">介護保険者種別:</span>
-                  <span class="info-value">{{ insuranceData?.nursingInsuranceType || '未設定' }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">厚生年金保険者種別:</span>
-                  <span class="info-value">{{ insuranceData?.pensionInsuranceType || '未設定' }}</span>
+                <div class="info-row-pair">
+                  <div class="info-row">
+                    <span class="info-label">厚生年金保険者種別:</span>
+                    <span class="info-value">{{ insuranceData?.pensionInsuranceType || '-' }}</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             <!-- 扶養者情報 -->
-            <section class="info-section">
-              <h3 class="section-title">扶養者情報</h3>
-              <div class="dependents-list">
-                <div *ngIf="dependentsData.length === 0" class="no-data-message">
+            <section class="info-card">
+              <h3 class="card-title">扶養者情報</h3>
+              <div class="info-content">
+                <div *ngIf="dependentsData.length === 0" class="no-data">
                   扶養者が登録されていません。
                 </div>
                 <div *ngFor="let dependent of dependentsData; let i = index" class="dependent-card">
-                  <div class="dependent-header" (click)="toggleDependentExpanded(i)" style="cursor: pointer;">
-                    <h4 class="dependent-title">扶養者 {{ i + 1 }} <span class="expand-icon">{{ isDependentExpanded(i) ? '▼' : '▶' }}</span></h4>
+                  <div class="dependent-header" (click)="toggleDependentExpanded(i)" style="cursor: pointer; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem; transition: background 0.2s ease;">
+                    <h4 class="dependent-title" style="margin: 0; font-size: 1rem; font-weight: 600; color: #333; display: flex; align-items: center; justify-content: space-between;">
+                      <span>扶養者 {{ i + 1 }}</span>
+                      <span class="expand-icon" style="font-size: 0.75rem; color: #667eea;">{{ isDependentExpanded(i) ? '▼' : '▶' }}</span>
+                    </h4>
                   </div>
-                  <div class="dependent-info-grid" *ngIf="isDependentExpanded(i)">
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">氏名:</span>
-                      <span class="dependent-value">{{ dependent.name || '-' }}</span>
+                  <div class="info-content" *ngIf="isDependentExpanded(i)" style="padding-left: 0.5rem;">
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">氏名:</span>
+                        <span class="info-value">{{ dependent.name || '-' }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">氏名（ヨミガナ）:</span>
+                        <span class="info-value">{{ dependent.nameKana || '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">氏名（ヨミガナ）:</span>
-                      <span class="dependent-value">{{ dependent.nameKana || '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">続柄:</span>
+                        <span class="info-value">{{ dependent.relationship || '-' }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">生年月日:</span>
+                        <span class="info-value">{{ dependent.birthDate ? (dependent.birthDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">続柄:</span>
-                      <span class="dependent-value">{{ dependent.relationship || '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">性別:</span>
+                        <span class="info-value">{{ dependent.gender || '-' }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">電話番号:</span>
+                        <span class="info-value">{{ dependent.phoneNumber || '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">生年月日:</span>
-                      <span class="dependent-value">{{ dependent.birthDate ? (dependent.birthDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">職業:</span>
+                        <span class="info-value">{{ dependent.occupation || '-' }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">同居/別居:</span>
+                        <span class="info-value">{{ dependent.livingTogether || '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">性別:</span>
-                      <span class="dependent-value">{{ dependent.gender || '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">年間収入見込み額:</span>
+                        <span class="info-value">{{ dependent.annualIncome ? (dependent.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">月額収入見込み額:</span>
+                        <span class="info-value">{{ dependent.monthlyIncome ? (dependent.monthlyIncome | number:'1.0-0') + '円' : '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">電話番号:</span>
-                      <span class="dependent-value">{{ dependent.phoneNumber || '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">社会保険の扶養者となった日:</span>
+                        <span class="info-value">{{ dependent.dependentStartDate ? (dependent.dependentStartDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">マイナンバー:</span>
+                        <span class="info-value">{{ dependent.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">職業:</span>
-                      <span class="dependent-value">{{ dependent.occupation || '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row full-width">
+                        <span class="info-label">扶養に追加された理由:</span>
+                        <span class="info-value">{{ dependent.dependentReason || '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">年間収入見込み額:</span>
-                      <span class="dependent-value">{{ dependent.annualIncome ? (dependent.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">郵便番号:</span>
+                        <span class="info-value">{{ dependent.postalCode || '-' }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">住所変更年月日:</span>
+                        <span class="info-value">{{ dependent.addressChangeDate ? (dependent.addressChangeDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">月額収入見込み額:</span>
-                      <span class="dependent-value">{{ dependent.monthlyIncome ? (dependent.monthlyIncome | number:'1.0-0') + '円' : '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row full-width">
+                        <span class="info-label">住所:</span>
+                        <span class="info-value">{{ dependent.address || '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">社会保険の扶養者となった日:</span>
-                      <span class="dependent-value">{{ dependent.dependentStartDate ? (dependent.dependentStartDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row full-width">
+                        <span class="info-label">住所（ヨミガナ）:</span>
+                        <span class="info-value">{{ dependent.addressKana || '-' }}</span>
+                      </div>
                     </div>
-                    <div class="dependent-info-item full-width">
-                      <span class="dependent-label">扶養に追加された理由:</span>
-                      <span class="dependent-value">{{ dependent.dependentReason || '-' }}</span>
-                    </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">マイナンバー:</span>
-                      <span class="dependent-value">{{ dependent.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
-                    </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">同居/別居:</span>
-                      <span class="dependent-value">{{ dependent.livingTogether || '-' }}</span>
-                    </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">郵便番号:</span>
-                      <span class="dependent-value">{{ dependent.postalCode || '-' }}</span>
-                    </div>
-                    <div class="dependent-info-item full-width">
-                      <span class="dependent-label">住所:</span>
-                      <span class="dependent-value">{{ dependent.address || '-' }}</span>
-                    </div>
-                    <div class="dependent-info-item full-width">
-                      <span class="dependent-label">住所（ヨミガナ）:</span>
-                      <span class="dependent-value">{{ dependent.addressKana || '-' }}</span>
-                    </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">住所変更年月日:</span>
-                      <span class="dependent-value">{{ dependent.addressChangeDate ? (dependent.addressChangeDate | date:'yyyy年MM月dd日') : '-' }}</span>
-                    </div>
-                    <div class="dependent-info-item">
-                      <span class="dependent-label">基礎年金番号:</span>
-                      <span class="dependent-value">{{ dependent.basicPensionNumber || '-' }}</span>
+                    <div class="info-row-pair">
+                      <div class="info-row">
+                        <span class="info-label">基礎年金番号:</span>
+                        <span class="info-value">{{ dependent.basicPensionNumber || '-' }}</span>
+                      </div>
                     </div>
                     <ng-container *ngIf="dependent.disabilityCategory || dependent.disabilityCardType || dependent.disabilityCardIssueDate">
-                      <div class="dependent-info-item">
-                        <span class="dependent-label">障がい者区分:</span>
-                        <span class="dependent-value">{{ dependent.disabilityCategory || '-' }}</span>
+                      <div class="info-row-pair">
+                        <div class="info-row">
+                          <span class="info-label">障がい者区分:</span>
+                          <span class="info-value">{{ dependent.disabilityCategory || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">障がい者手帳の種類:</span>
+                          <span class="info-value">{{ dependent.disabilityCardType || '-' }}</span>
+                        </div>
                       </div>
-                      <div class="dependent-info-item">
-                        <span class="dependent-label">障がい者手帳の種類:</span>
-                        <span class="dependent-value">{{ dependent.disabilityCardType || '-' }}</span>
-                      </div>
-                      <div class="dependent-info-item">
-                        <span class="dependent-label">障がい者手帳の交付年月日:</span>
-                        <span class="dependent-value">{{ dependent.disabilityCardIssueDate ? (dependent.disabilityCardIssueDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                      <div class="info-row-pair">
+                        <div class="info-row">
+                          <span class="info-label">障がい者手帳の交付年月日:</span>
+                          <span class="info-value">{{ dependent.disabilityCardIssueDate ? (dependent.disabilityCardIssueDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                        </div>
                       </div>
                     </ng-container>
                     <!-- 添付書類 -->
                     <ng-container *ngIf="dependent.basicPensionNumberDocFileUrl || dependent.myNumberDocFileUrl || dependent.identityDocFileUrl || dependent.disabilityCardFileUrl">
-                      <div class="dependent-info-item full-width">
-                        <span class="dependent-label">添付書類:</span>
-                        <div class="dependent-value">
-                          <div *ngIf="dependent.basicPensionNumberDocFileUrl" style="margin-bottom: 0.5rem;">
-                            <span style="font-weight: 500; margin-right: 0.5rem;">基礎年金番号確認書類:</span>
-                            <a [href]="dependent.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.basicPensionNumberDocFileUrl, dependent.basicPensionNumberDocFileName) }}</a>
-                          </div>
-                          <div *ngIf="dependent.myNumberDocFileUrl" style="margin-bottom: 0.5rem;">
-                            <span style="font-weight: 500; margin-right: 0.5rem;">マイナンバー確認書類:</span>
-                            <a [href]="dependent.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberDocFileUrl, dependent.myNumberDocFileName) }}</a>
-                          </div>
-                          <div *ngIf="dependent.identityDocFileUrl" style="margin-bottom: 0.5rem;">
-                            <span style="font-weight: 500; margin-right: 0.5rem;">身元確認書類:</span>
-                            <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
-                          </div>
-                          <div *ngIf="dependent.disabilityCardFileUrl">
-                            <span style="font-weight: 500; margin-right: 0.5rem;">障がい者手帳の画像:</span>
-                            <a [href]="dependent.disabilityCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.disabilityCardFileUrl, dependent.disabilityCardFileName) }}</a>
+                      <div class="info-row-pair">
+                        <div class="info-row full-width">
+                          <span class="info-label">添付書類:</span>
+                          <div class="info-value" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div *ngIf="dependent.basicPensionNumberDocFileUrl">
+                              <span style="font-weight: 500; margin-right: 0.5rem;">基礎年金番号確認書類:</span>
+                              <a [href]="dependent.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.basicPensionNumberDocFileUrl, dependent.basicPensionNumberDocFileName) }}</a>
+                            </div>
+                            <div *ngIf="dependent.myNumberDocFileUrl">
+                              <span style="font-weight: 500; margin-right: 0.5rem;">マイナンバー確認書類:</span>
+                              <a [href]="dependent.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberDocFileUrl, dependent.myNumberDocFileName) }}</a>
+                            </div>
+                            <div *ngIf="dependent.identityDocFileUrl">
+                              <span style="font-weight: 500; margin-right: 0.5rem;">身元確認書類:</span>
+                              <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
+                            </div>
+                            <div *ngIf="dependent.disabilityCardFileUrl">
+                              <span style="font-weight: 500; margin-right: 0.5rem;">障がい者手帳の画像:</span>
+                              <a [href]="dependent.disabilityCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.disabilityCardFileUrl, dependent.disabilityCardFileName) }}</a>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </ng-container>
-                    <div class="dependent-info-item full-width" *ngIf="dependent.notes">
-                      <span class="dependent-label">備考:</span>
-                      <span class="dependent-value">{{ dependent.notes }}</span>
+                    <div class="info-row-pair" *ngIf="dependent.notes">
+                      <div class="info-row full-width">
+                        <span class="info-label">備考:</span>
+                        <span class="info-value">{{ dependent.notes }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>

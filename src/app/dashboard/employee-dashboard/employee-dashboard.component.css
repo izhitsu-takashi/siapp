@@ -1288,145 +1288,43 @@ select.form-input {
 }
 
 /* 保険・扶養ページ */
+/* 保険・扶養ページは情報照会ページと同じスタイルを使用 */
 .insurance-dependents-page {
-  max-width: 1200px;
-  margin: 0 auto;
+  /* 情報照会ページと同じレイアウトクラスを使用 */
 }
 
-.info-section {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.info-section .section-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-item .info-label {
-  font-weight: 600;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.info-item .info-value {
-  font-size: 1rem;
-  color: #333;
-  padding: 0.75rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-
-.dependents-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.no-data-message {
-  text-align: center;
-  padding: 3rem;
-  color: #999;
-  font-style: italic;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
+/* 扶養者情報カードのスタイル（情報照会ページと同じスタイルを使用） */
 .dependent-card {
-  background: white;
-  border: 1px solid #e0e0e0;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
   border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
 }
 
 .dependent-header {
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #f0f0f0;
   user-select: none;
+  transition: background 0.2s ease;
+}
+
+.dependent-header:hover {
+  background: #e8e8e8;
 }
 
 .dependent-title {
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
   font-weight: 600;
   color: #667eea;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
 }
 
 .expand-icon {
-  font-size: 0.8rem;
-  color: #999;
+  font-size: 0.75rem;
+  color: #667eea;
   transition: transform 0.2s;
-}
-
-.dependent-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.dependent-info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.dependent-info-item.full-width {
-  grid-column: 1 / -1;
-}
-
-.dependent-info-item .dependent-label {
-  font-weight: 600;
-  color: #666;
-  font-size: 0.85rem;
-}
-
-.dependent-info-item .dependent-value {
-  font-size: 0.95rem;
-  color: #333;
-  padding: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 4px;
-  word-break: break-word;
-}
-
-/* レスポンシブ対応（保険・扶養ページ） */
-@media (max-width: 768px) {
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dependent-info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dependent-info-item.full-width {
-    grid-column: 1;
-  }
 }
 
 /* 申請モーダル */
@@ -2380,6 +2278,117 @@ select.form-input {
   .template-question-button {
     min-height: 60px;
     font-size: 0.75rem;
+  }
+}
+
+/* 情報照会ページ専用スタイル */
+.info-inquiry-layout {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 2rem);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.info-inquiry-layout .info-card {
+  background: white;
+  border-radius: 12px;
+  padding: clamp(1rem, 2vw, 2rem);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
+.info-inquiry-layout .info-card .card-title {
+  font-size: clamp(1rem, 1.5vw, 1.5rem);
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 clamp(1rem, 1.5vw, 1.5rem) 0;
+  padding-bottom: clamp(0.5rem, 0.75vw, 0.75rem);
+  border-bottom: 2px solid #667eea;
+}
+
+.info-inquiry-layout .info-content {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 1vw, 1rem);
+}
+
+.info-inquiry-layout .info-row-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1rem, 1.5vw, 1.5rem);
+}
+
+.info-inquiry-layout .info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.5rem, 1vw, 1rem);
+  min-height: 2rem;
+}
+
+.info-inquiry-layout .info-row.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-inquiry-layout .info-label {
+  font-weight: 500;
+  color: #666;
+  min-width: clamp(120px, 15vw, 180px);
+  font-size: clamp(0.85rem, 1vw, 1rem);
+  flex-shrink: 0;
+}
+
+.info-inquiry-layout .info-value {
+  color: #333;
+  font-size: clamp(0.85rem, 1vw, 1rem);
+  word-break: break-word;
+  flex: 1;
+}
+
+.info-inquiry-layout .file-link {
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.info-inquiry-layout .file-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.info-inquiry-layout .toggle-button-small {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.info-inquiry-layout .toggle-button-small:hover {
+  background: #764ba2;
+}
+
+/* 情報照会ページのレスポンシブ対応 */
+@media (max-width: 768px) {
+  .info-inquiry-layout .info-row-pair {
+    grid-template-columns: 1fr;
+    gap: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .info-inquiry-layout .info-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .info-inquiry-layout .info-label {
+    min-width: auto;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  .info-inquiry-layout .info-row-pair {
+    gap: clamp(0.75rem, 1vw, 1rem);
   }
 }
 

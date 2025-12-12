@@ -1252,6 +1252,50 @@ export class EmployeeDashboardComponent implements OnDestroy {
     return this.showMyNumber ? value : '****';
   }
 
+  // 情報照会ページ用：日付をフォーマットするヘルパーメソッド
+  formatDateForDisplay(dateValue: string | Date | null | undefined): string {
+    if (!dateValue) return '-';
+    try {
+      const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+      if (isNaN(date.getTime())) return '-';
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}年${month}月${day}日`;
+    } catch {
+      return '-';
+    }
+  }
+
+  // 情報照会ページ用：フォームの値を取得するヘルパーメソッド
+  getFormValue(controlName: string): string {
+    const control = this.settingsForm.get(controlName);
+    const value = control?.value;
+    if (value === null || value === undefined || value === '') return '-';
+    return String(value);
+  }
+
+  // 情報照会ページ用：マイナンバー全体を表示用にフォーマット
+  getMyNumberFullDisplay(): string {
+    const part1 = this.settingsForm.get('myNumberPart1')?.value || '';
+    const part2 = this.settingsForm.get('myNumberPart2')?.value || '';
+    const part3 = this.settingsForm.get('myNumberPart3')?.value || '';
+    if (!part1 && !part2 && !part3) return '-';
+    if (this.showMyNumber) {
+      return `${part1}-${part2}-${part3}`;
+    } else {
+      return '****-****-****';
+    }
+  }
+
+  // 情報照会ページ用：基礎年金番号を表示用にフォーマット
+  getBasicPensionNumberDisplay(): string {
+    const part1 = this.settingsForm.get('basicPensionNumberPart1')?.value || '';
+    const part2 = this.settingsForm.get('basicPensionNumberPart2')?.value || '';
+    if (!part1 && !part2) return '-';
+    return `${part1}-${part2}`;
+  }
+
   onPensionHistoryChange(event: any) {
     this.hasPensionHistory = event.target.value === '有';
     if (!this.hasPensionHistory) {
