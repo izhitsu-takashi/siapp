@@ -1289,9 +1289,6 @@ select.form-input {
 
 /* 保険・扶養ページ */
 /* 保険・扶養ページは情報照会ページと同じスタイルを使用 */
-.insurance-dependents-page {
-  /* 情報照会ページと同じレイアウトクラスを使用 */
-}
 
 /* 扶養者情報カードのスタイル（情報照会ページと同じスタイルを使用） */
 .dependent-card {
@@ -2096,6 +2093,11 @@ select.form-input {
   height: calc(0.9rem * 1.5 + 1rem); /* フォントサイズ * 行の高さ + 上下パディング */
   line-height: 1.5;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.chat-input::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
 }
 
 .chat-input:focus {

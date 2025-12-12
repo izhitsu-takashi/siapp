@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, ChangeDetectorRef, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -163,6 +163,8 @@ export class EmployeeDashboardComponent implements OnDestroy {
   chatMessages: ChatMessage[] = [];
   chatInputMessage: string = '';
   isChatLoading: boolean = false;
+  @ViewChild('chatMessagesContainer') chatMessagesContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('chatInput') chatInputRef?: ElementRef<HTMLTextAreaElement>;
   
   // テンプレート質問
   templateQuestions = [
@@ -4382,6 +4384,35 @@ export class EmployeeDashboardComponent implements OnDestroy {
   }
 
   // チャット機能のメソッド
+  private scrollChatToBottom() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const container = this.chatMessagesContainer?.nativeElement;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  private scheduleChatScroll() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    setTimeout(() => this.scrollChatToBottom(), 0);
+  }
+
+  private focusChatInput() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    setTimeout(() => {
+      this.chatInputRef?.nativeElement.focus();
+    }, 0);
+  }
+
   async sendChatMessage() {
     if (!this.chatInputMessage.trim() || this.isChatLoading) {
       return;
@@ -4397,7 +4428,10 @@ export class EmployeeDashboardComponent implements OnDestroy {
       timestamp: new Date()
     });
 
+    this.scheduleChatScroll();
+
     this.isChatLoading = true;
+    this.scheduleChatScroll();
 
     try {
       const response = await this.chatService.sendMessage(userMessage);
@@ -4412,6 +4446,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
         timestamp: new Date(),
         applicationType: applicationType
       });
+      this.scheduleChatScroll();
     } catch (error: any) {
       console.error('Error sending chat message:', error);
       this.chatMessages.push({
@@ -4419,8 +4454,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
         content: '申し訳ございません。エラーが発生しました。もう一度お試しください。',
         timestamp: new Date()
       });
+      this.scheduleChatScroll();
     } finally {
       this.isChatLoading = false;
+      this.scheduleChatScroll();
+      this.focusChatInput();
     }
   }
 

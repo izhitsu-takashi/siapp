@@ -966,6 +966,7 @@
               <div class="chat-input-container">
                 <div class="chat-input-wrapper">
                   <textarea
+                    #chatInput
                     [(ngModel)]="chatInputMessage"
                     (keydown)="onChatInputKeydown($event)"
                     placeholder="メッセージを入力してください（Enterで送信、Shift+Enterで改行）"
