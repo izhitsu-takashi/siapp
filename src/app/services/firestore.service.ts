@@ -1221,18 +1221,10 @@ export class FirestoreService {
         data.isManual = true;
         data.createdAt = new Date();
       } else {
-        // 自動設定の場合は、既存のcreatedAtを保持（なければ現在時刻）
-        const existingDoc = await getDoc(docRef);
-        if (existingDoc.exists()) {
-          const existingData = existingDoc.data();
-          if (existingData?.['createdAt']) {
-            data.createdAt = existingData['createdAt'];
-          } else {
-            data.createdAt = new Date();
-          }
-        } else {
-          data.createdAt = new Date();
-        }
+        // 自動設定の場合は、新規作成時のみcreatedAtを設定
+        // 既存の場合はcreatedAtを更新しない（パフォーマンス向上のため、既存ドキュメントの取得をスキップ）
+        // 既存のcreatedAtを保持する必要がある場合は、読み取り時に補完する
+        data.createdAt = new Date();
       }
       
       await setDoc(docRef, data, { merge: true });

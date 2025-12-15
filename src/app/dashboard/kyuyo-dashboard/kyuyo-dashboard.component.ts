@@ -2896,31 +2896,47 @@ export class KyuyoDashboardComponent {
         }
       }
       
+      // 自動設定する年月のリストを作成
+      const salaryMonths: { year: number; month: number }[] = [];
+      let listYear = currentYear;
+      let listMonth = currentMonth;
+      while (listYear < 2028 || (listYear === 2028 && listMonth <= 12)) {
+        salaryMonths.push({ year: listYear, month: listMonth });
+        listMonth++;
+        if (listMonth > 12) {
+          listMonth = 1;
+          listYear++;
+        }
+      }
+      
+      // バッチサイズ（10件ずつ並列処理）
+      const batchSize = 10;
       let processedMonths = 0;
       this.salarySaveProgress = { message: '自動給与設定を保存しています...', progress: 10 };
       
-      while (currentYear < 2028 || (currentYear === 2028 && currentMonth <= 12)) {
-        await this.firestoreService.saveSalary(
-          this.selectedSalaryEmployee,
-          currentYear,
-          currentMonth,
-          this.salaryAmount,
-          false // isManual = false（自動設定）
+      // バッチごとに並列処理
+      for (let i = 0; i < salaryMonths.length; i += batchSize) {
+        const batch = salaryMonths.slice(i, i + batchSize);
+        
+        // バッチ内の給与設定を並列処理
+        await Promise.all(
+          batch.map(async (monthData) => {
+            await this.firestoreService.saveSalary(
+              this.selectedSalaryEmployee,
+              monthData.year,
+              monthData.month,
+              this.salaryAmount,
+              false // isManual = false（自動設定）
+            );
+          })
         );
         
-        processedMonths++;
+        processedMonths += batch.length;
         const progress = 10 + Math.floor((processedMonths / totalMonths) * 20); // 10-30%
         this.salarySaveProgress = { 
-          message: `自動給与設定を保存しています...`, 
+          message: `自動給与設定を保存しています... (${processedMonths}/${totalMonths})`, 
           progress: progress 
         };
-        
-        // 次の月に進む
-        currentMonth++;
-        if (currentMonth > 12) {
-          currentMonth = 1;
-          currentYear++;
-        }
       }
       
       console.log(`[給与設定] 給与設定完了。${this.salaryYear}年${this.salaryMonth}月から2028年12月まで設定しました。`);
@@ -2948,10 +2964,26 @@ export class KyuyoDashboardComponent {
       
       // 標準報酬月額の変更を検出して処理（随時改定）
       // 新しい給与設定を行った際、その社員のすべての随時改定を再計算
+      // データ取得を事前にキャッシュ（パフォーマンス向上）
       this.salarySaveProgress = { message: '随時改定を再計算しています...', progress: 40 };
+      
+      // 賞与一覧を事前に取得（随時改定の再計算で使用）
+      const allBonuses = await this.firestoreService.getBonusHistory();
+      const bonusList = allBonuses.map((bonus: any) => ({
+        ...bonus,
+        year: Number(bonus['year']),
+        month: Number(bonus['month']),
+        employeeNumber: bonus['employeeNumber']
+      }));
+      
+      // 社員データを事前に取得（随時改定の再計算で使用）
+      const employeeData = await this.firestoreService.getEmployeeData(this.selectedSalaryEmployee);
+      
       await this.recalculateAllZujijiKaitei(
         this.selectedSalaryEmployee,
-        sortedHistory
+        sortedHistory,
+        bonusList,
+        employeeData
       );
       
       // 定時改定の処理（2028年12月までのすべての年度で定時改定をチェック）
@@ -3170,7 +3202,9 @@ export class KyuyoDashboardComponent {
   // その社員のすべての随時改定を再計算
   async recalculateAllZujijiKaitei(
     employeeNumber: string,
-    salaryHistory: any[]
+    salaryHistory: any[],
+    bonusList?: any[],
+    employeeData?: any
   ) {
     try {
       console.log(`[随時改定再計算] 開始。社員番号: ${employeeNumber}`);
@@ -3195,15 +3229,19 @@ export class KyuyoDashboardComponent {
       })));
       
       // 賞与一覧を取得（報酬加算額の計算に必要）
-      const allBonuses = await this.firestoreService.getBonusHistory();
-      const bonusList = allBonuses.map((bonus: any) => ({
-        ...bonus,
-        year: Number(bonus['year']),
-        month: Number(bonus['month']),
-        employeeNumber: bonus['employeeNumber']
-      }));
+      // 事前に取得されていない場合のみ取得（パフォーマンス向上）
+      let actualBonusList = bonusList;
+      if (!actualBonusList) {
+        const allBonuses = await this.firestoreService.getBonusHistory();
+        actualBonusList = allBonuses.map((bonus: any) => ({
+          ...bonus,
+          year: Number(bonus['year']),
+          month: Number(bonus['month']),
+          employeeNumber: bonus['employeeNumber']
+        }));
+      }
       
-      console.log(`[随時改定再計算] 賞与一覧を取得しました。全件数: ${bonusList.length}, 該当社員の件数: ${bonusList.filter((b: any) => b['employeeNumber'] === employeeNumber).length}`);
+      console.log(`[随時改定再計算] 賞与一覧を取得しました。全件数: ${actualBonusList.length}, 該当社員の件数: ${actualBonusList.filter((b: any) => b['employeeNumber'] === employeeNumber).length}`);
       
       // 各給与設定月について、随時改定を再計算
       for (const salary of manualSalaries) {
@@ -3229,7 +3267,7 @@ export class KyuyoDashboardComponent {
       }
       
       // 賞与を4回以上支給したタイミングでの随時改定処理
-      const employeeBonuses = bonusList.filter((b: any) => b['employeeNumber'] === employeeNumber);
+      const employeeBonuses = actualBonusList.filter((b: any) => b['employeeNumber'] === employeeNumber);
       
       // 年度ごとに賞与をグループ化
       const bonusByFiscalYear = new Map<number, any[]>();
@@ -3347,10 +3385,14 @@ export class KyuyoDashboardComponent {
                 salaryAmount = Number(relevantSalaries[0]['amount']);
               } else {
                 // 給与設定がない場合、入社時の給与見込み額から計算（給与と現物の合計）
-                const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
-                if (employeeData) {
-                  const expectedMonthlySalary = Number(employeeData.expectedMonthlySalary) || 0;
-                  const expectedMonthlySalaryInKind = Number(employeeData.expectedMonthlySalaryInKind) || 0;
+                // 事前に取得された社員データを使用（パフォーマンス向上）
+                let actualEmployeeData = employeeData;
+                if (!actualEmployeeData) {
+                  actualEmployeeData = await this.firestoreService.getEmployeeData(employeeNumber);
+                }
+                if (actualEmployeeData) {
+                  const expectedMonthlySalary = Number(actualEmployeeData.expectedMonthlySalary) || 0;
+                  const expectedMonthlySalaryInKind = Number(actualEmployeeData.expectedMonthlySalaryInKind) || 0;
                   salaryAmount = expectedMonthlySalary + expectedMonthlySalaryInKind;
                   console.log(`[随時改定再計算] 給与設定がないため、入社時の給与見込み額（給与: ${expectedMonthlySalary}円 + 現物: ${expectedMonthlySalaryInKind}円 = 合計: ${salaryAmount}円）を使用します。`);
                 }
@@ -3365,7 +3407,7 @@ export class KyuyoDashboardComponent {
                 changeMonth,
                 salaryAmount,
                 salaryHistory,
-                bonusList
+                actualBonusList
               );
               
               console.log(`[随時改定再計算] ${changeYear}年${changeMonth}月について随時改定を計算完了`);
