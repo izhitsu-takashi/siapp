@@ -771,9 +771,13 @@
               <span class="info-label">雇用形態:</span>
               <span class="info-value">{{ selectedEmployeeInfo.employmentType || '-' }}</span>
             </div>
-            <div class="info-item" *ngIf="selectedEmployeeInfo.grade">
-              <span class="info-label">等級:</span>
-              <span class="info-value">{{ selectedEmployeeInfo.grade }}</span>
+            <div class="info-item" *ngIf="selectedEmployeeInfo.healthNursingGrade">
+              <span class="info-label">健康介護保険等級:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.healthNursingGrade }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedEmployeeInfo.pensionGrade">
+              <span class="info-label">厚生年金保険等級:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.pensionGrade }}</span>
             </div>
           </div>
         </div>
