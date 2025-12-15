@@ -3546,8 +3546,26 @@ export class KyuyoDashboardComponent {
       
       console.log(`[随時改定] 前の等級: ${previousGrade}, 新しい等級: ${newGrade}, 等級差: ${previousGrade !== null ? Math.abs(newGrade - previousGrade) : 'N/A'}`);
       
-      // 等級差が2以上の場合、3か月後から新等級を適用
-      if (previousGrade !== null && Math.abs(newGrade - previousGrade) >= 2) {
+      // 随時改定を適用する条件：
+      // 1. 等級差が2以上の場合
+      // 2. または、前の等級が2等級で新しい等級が1等級の場合（下限到達）
+      // 3. または、前の等級が49等級で新しい等級が50等級の場合（上限到達）
+      // 4. または、前の等級が1等級で新しい等級が2等級の場合（下限から離れる）
+      // 5. または、前の等級が50等級で新しい等級が49等級の場合（上限から離れる）
+      const gradeDifference = previousGrade !== null ? Math.abs(newGrade - previousGrade) : 0;
+      const isLowerBoundReached = previousGrade === 2 && newGrade === 1;
+      const isUpperBoundReached = previousGrade === 49 && newGrade === 50;
+      const isLowerBoundLeaving = previousGrade === 1 && newGrade === 2;
+      const isUpperBoundLeaving = previousGrade === 50 && newGrade === 49;
+      const shouldApplyRevision = previousGrade !== null && (
+        gradeDifference >= 2 || 
+        isLowerBoundReached || 
+        isUpperBoundReached ||
+        isLowerBoundLeaving ||
+        isUpperBoundLeaving
+      );
+      
+      if (shouldApplyRevision) {
         // 3か月後の年月を計算
         let effectiveYear = changeYear;
         let effectiveMonth = changeMonth + 3;
@@ -3556,7 +3574,20 @@ export class KyuyoDashboardComponent {
           effectiveYear += 1;
         }
         
-        console.log(`[随時改定] 等級差が2以上（${Math.abs(newGrade - previousGrade)}等級）のため、${effectiveYear}年${effectiveMonth}月から等級${newGrade}を適用します。`);
+        let reasonMessage = '';
+        if (isLowerBoundReached) {
+          reasonMessage = `等級の下限（1等級）に到達したため`;
+        } else if (isUpperBoundReached) {
+          reasonMessage = `等級の上限（50等級）に到達したため`;
+        } else if (isLowerBoundLeaving) {
+          reasonMessage = `等級の下限（1等級）から離れるため`;
+        } else if (isUpperBoundLeaving) {
+          reasonMessage = `等級の上限（50等級）から離れるため`;
+        } else {
+          reasonMessage = `等級差が2以上（${gradeDifference}等級）のため`;
+        }
+        
+        console.log(`[随時改定] ${reasonMessage}、${effectiveYear}年${effectiveMonth}月から等級${newGrade}を適用します。`);
         
         // 標準報酬月額変更情報を保存
         await this.firestoreService.saveStandardMonthlySalaryChange(
@@ -3569,7 +3600,7 @@ export class KyuyoDashboardComponent {
         
         console.log(`[随時改定] 標準報酬月額変更情報を保存しました。`);
       } else {
-        console.log(`[随時改定] 等級差が2未満のため、随時改定を適用しません。`);
+        console.log(`[随時改定] 等級差が2未満かつ上限・下限に到達していないため、随時改定を適用しません。`);
       }
       
       console.log(`[随時改定] 処理完了。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}`);
