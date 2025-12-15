@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData, Timestamp, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, QueryDocumentSnapshot, DocumentData, Timestamp, query, where, onSnapshot, Unsubscribe, writeBatch } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -1235,6 +1235,77 @@ export class FirestoreService {
   }
 
   /**
+   * 給与設定をバッチで保存（アトミックな処理）
+   * ブラウザ更新などで中断されても、中途半端な状態にならないようにする
+   * @param salaries 給与設定の配列 [{employeeNumber, year, month, amount, isManual}, ...]
+   * @param onProgress 進捗コールバック (current: number, total: number) => void
+   */
+  async saveSalariesBatch(
+    salaries: Array<{employeeNumber: string, year: number, month: number, amount: number, isManual: boolean}>,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<void> {
+    // Firestoreのバッチ書き込みは最大500件まで
+    const maxBatchSize = 500;
+    
+    // すべての給与設定を一度に処理するため、複数のバッチに分ける
+    // 各バッチはアトミックなので、1つのバッチ内ではすべて成功するか、すべて失敗するか
+    
+    // 既存ドキュメントの取得をスキップして、処理を高速化
+    // 自動設定の場合も常に新しいcreatedAtを設定（既存のcreatedAtを保持しない）
+    
+    const totalBatches = Math.ceil(salaries.length / maxBatchSize);
+    let savedCount = 0;
+    
+    // 各バッチを順次処理
+    for (let i = 0; i < salaries.length; i += maxBatchSize) {
+      const batch = writeBatch(this.db);
+      const batchSalaries = salaries.slice(i, i + maxBatchSize);
+      const batchNumber = Math.floor(i / maxBatchSize) + 1;
+      
+      // バッチを準備
+      for (const salary of batchSalaries) {
+        const docId = `${salary.employeeNumber}_${salary.year}_${salary.month}`;
+        const docRef = doc(this.db, 'salaries', docId);
+        const data: any = {
+          employeeNumber: salary.employeeNumber,
+          year: salary.year,
+          month: salary.month,
+          amount: salary.amount,
+          updatedAt: new Date()
+        };
+        
+        // 手動設定の場合のみ、isManualフラグとcreatedAtを設定
+        if (salary.isManual) {
+          data.isManual = true;
+          data.createdAt = new Date();
+        } else {
+          // 自動設定の場合も常に新しいcreatedAtを設定（処理を高速化）
+          data.createdAt = new Date();
+        }
+        
+        batch.set(docRef, data, { merge: true });
+      }
+      
+      // バッチをコミット（アトミックな処理）
+      try {
+        await batch.commit();
+        savedCount += batchSalaries.length;
+        
+        // 進捗を通知
+        if (onProgress) {
+          onProgress(savedCount, salaries.length);
+        }
+        
+        console.log(`[給与設定バッチ] ${batchNumber}/${totalBatches} バッチを保存しました (${savedCount}/${salaries.length}件)`);
+      } catch (error) {
+        console.error(`[給与設定バッチ] ${batchNumber}/${totalBatches} バッチの保存に失敗しました:`, error);
+        // エラーが発生した場合は、それまでのバッチは保存されているが、エラーをスロー
+        throw new Error(`給与設定の保存に失敗しました。${savedCount}件は保存されましたが、残りの${salaries.length - savedCount}件は保存されませんでした。`);
+      }
+    }
+  }
+
+  /**
    * 給与設定履歴を取得
    */
   async saveStandardMonthlySalaryChange(
@@ -1253,6 +1324,38 @@ export class FirestoreService {
       monthlyStandard,
       createdAt: new Date()
     }, { merge: true });
+  }
+
+  /**
+   * 標準報酬月額変更情報をバッチで保存（アトミックな処理）
+   * @param changes 標準報酬月額変更情報の配列 [{employeeNumber, effectiveYear, effectiveMonth, grade, monthlyStandard}, ...]
+   */
+  async saveStandardMonthlySalaryChangesBatch(
+    changes: Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}>
+  ): Promise<void> {
+    if (changes.length === 0) return;
+    
+    // Firestoreのバッチ書き込みは最大500件まで
+    const maxBatchSize = 500;
+    
+    for (let i = 0; i < changes.length; i += maxBatchSize) {
+      const batch = writeBatch(this.db);
+      const batchChanges = changes.slice(i, i + maxBatchSize);
+      
+      for (const change of batchChanges) {
+        const changeRef = doc(this.db, 'standardMonthlySalaryChanges', `${change.employeeNumber}_${change.effectiveYear}_${change.effectiveMonth}`);
+        batch.set(changeRef, {
+          employeeNumber: change.employeeNumber,
+          effectiveYear: change.effectiveYear,
+          effectiveMonth: change.effectiveMonth,
+          grade: change.grade,
+          monthlyStandard: change.monthlyStandard,
+          createdAt: new Date()
+        }, { merge: true });
+      }
+      
+      await batch.commit();
+    }
   }
 
   async deleteStandardMonthlySalaryChange(
@@ -1310,6 +1413,38 @@ export class FirestoreService {
       monthlyStandard,
       createdAt: new Date()
     }, { merge: true });
+  }
+
+  /**
+   * 厚生年金保険用標準報酬月額変更情報をバッチで保存（アトミックな処理）
+   * @param changes 厚生年金保険用標準報酬月額変更情報の配列 [{employeeNumber, effectiveYear, effectiveMonth, grade, monthlyStandard}, ...]
+   */
+  async savePensionStandardMonthlySalaryChangesBatch(
+    changes: Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}>
+  ): Promise<void> {
+    if (changes.length === 0) return;
+    
+    // Firestoreのバッチ書き込みは最大500件まで
+    const maxBatchSize = 500;
+    
+    for (let i = 0; i < changes.length; i += maxBatchSize) {
+      const batch = writeBatch(this.db);
+      const batchChanges = changes.slice(i, i + maxBatchSize);
+      
+      for (const change of batchChanges) {
+        const changeRef = doc(this.db, 'pensionStandardMonthlySalaryChanges', `${change.employeeNumber}_${change.effectiveYear}_${change.effectiveMonth}`);
+        batch.set(changeRef, {
+          employeeNumber: change.employeeNumber,
+          effectiveYear: change.effectiveYear,
+          effectiveMonth: change.effectiveMonth,
+          grade: change.grade,
+          monthlyStandard: change.monthlyStandard,
+          createdAt: new Date()
+        }, { merge: true });
+      }
+      
+      await batch.commit();
+    }
   }
 
   /**

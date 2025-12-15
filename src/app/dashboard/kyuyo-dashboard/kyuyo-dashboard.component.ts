@@ -104,6 +104,9 @@ export class KyuyoDashboardComponent {
     progress: 0
   };
 
+  // ブラウザ更新を防止するハンドラー
+  private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
+
   // 社員情報モーダル
   showEmployeeInfoModal = false;
   selectedEmployeeInfo: any = null;
@@ -2852,6 +2855,10 @@ export class KyuyoDashboardComponent {
     
     this.isSavingSalary = true;
     this.salarySaveProgress = { message: '給与設定を開始しています...', progress: 0 };
+    
+    // ブラウザ更新を防止
+    this.setBeforeUnloadHandler();
+    
     try {
       // 給与設定をFirestoreに保存（指定年月以降の2028年12月までの給与を設定）
       console.log(`[給与設定] 給与設定開始。社員番号: ${this.selectedSalaryEmployee}, 年: ${this.salaryYear}, 月: ${this.salaryMonth}, 金額: ${this.salaryAmount}`);
@@ -2863,15 +2870,8 @@ export class KyuyoDashboardComponent {
         return;
       }
       
-      // 最初に設定した年月のみを手動設定として記録
-      this.salarySaveProgress = { message: '手動給与設定を保存しています...', progress: 5 };
-      await this.firestoreService.saveSalary(
-        this.selectedSalaryEmployee,
-        this.salaryYear,
-        this.salaryMonth,
-        this.salaryAmount,
-        true // isManual = true（手動設定）
-      );
+      // 設定年月から2028年12月までのすべての給与設定を一度にバッチ保存（アトミックな処理）
+      this.salarySaveProgress = { message: '給与設定を準備しています...', progress: 5 };
       
       // 設定年月から2028年12月までの残りの月に給与を自動設定
       let currentYear = this.salaryYear;
@@ -2881,19 +2881,6 @@ export class KyuyoDashboardComponent {
       if (currentMonth > 12) {
         currentMonth = 1;
         currentYear++;
-      }
-      
-      // 自動設定する月数を計算
-      let totalMonths = 0;
-      let tempYear = currentYear;
-      let tempMonth = currentMonth;
-      while (tempYear < 2028 || (tempYear === 2028 && tempMonth <= 12)) {
-        totalMonths++;
-        tempMonth++;
-        if (tempMonth > 12) {
-          tempMonth = 1;
-          tempYear++;
-        }
       }
       
       // 自動設定する年月のリストを作成
@@ -2909,35 +2896,43 @@ export class KyuyoDashboardComponent {
         }
       }
       
-      // バッチサイズ（10件ずつ並列処理）
-      const batchSize = 10;
-      let processedMonths = 0;
-      this.salarySaveProgress = { message: '自動給与設定を保存しています...', progress: 10 };
+      // すべての給与設定を配列にまとめる（手動設定 + 自動設定）
+      const allSalaries: Array<{employeeNumber: string, year: number, month: number, amount: number, isManual: boolean}> = [
+        // 手動設定（最初の1件）
+        {
+          employeeNumber: this.selectedSalaryEmployee,
+          year: this.salaryYear,
+          month: this.salaryMonth,
+          amount: this.salaryAmount,
+          isManual: true
+        },
+        // 自動設定（残りのすべて）
+        ...salaryMonths.map(monthData => ({
+          employeeNumber: this.selectedSalaryEmployee,
+          year: monthData.year,
+          month: monthData.month,
+          amount: this.salaryAmount,
+          isManual: false
+        }))
+      ];
       
-      // バッチごとに並列処理
-      for (let i = 0; i < salaryMonths.length; i += batchSize) {
-        const batch = salaryMonths.slice(i, i + batchSize);
-        
-        // バッチ内の給与設定を並列処理
-        await Promise.all(
-          batch.map(async (monthData) => {
-            await this.firestoreService.saveSalary(
-              this.selectedSalaryEmployee,
-              monthData.year,
-              monthData.month,
-              this.salaryAmount,
-              false // isManual = false（自動設定）
-            );
-          })
-        );
-        
-        processedMonths += batch.length;
-        const progress = 10 + Math.floor((processedMonths / totalMonths) * 20); // 10-30%
-        this.salarySaveProgress = { 
-          message: `自動給与設定を保存しています... (${processedMonths}/${totalMonths})`, 
-          progress: progress 
-        };
-      }
+      // バッチ書き込みで一度に保存（各バッチはアトミック）
+      this.salarySaveProgress = { message: '給与設定を保存しています...', progress: 10 };
+      
+      const totalMonths = allSalaries.length;
+      await this.firestoreService.saveSalariesBatch(
+        allSalaries,
+        (current, total) => {
+          // 進捗を更新（10-30%の範囲）
+          const progress = 10 + Math.floor((current / total) * 20);
+          this.salarySaveProgress = { 
+            message: `給与設定を保存しています... (${current}/${total}件)`, 
+            progress: progress 
+          };
+        }
+      );
+      
+      this.salarySaveProgress = { message: `給与設定を保存しました (${totalMonths}件)`, progress: 30 };
       
       console.log(`[給与設定] 給与設定完了。${this.salaryYear}年${this.salaryMonth}月から2028年12月まで設定しました。`);
       
@@ -3105,12 +3100,25 @@ export class KyuyoDashboardComponent {
       // フォームをリセット
       this.selectedSalaryEmployee = '';
       this.salaryAmount = 0;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving salary:', error);
+      const errorMessage = error?.message || '給与の設定に失敗しました';
       this.salarySaveProgress = { message: 'エラーが発生しました', progress: 0 };
-      alert('給与の設定に失敗しました');
+      
+      // エラーメッセージを表示
+      if (errorMessage.includes('一部のみ保存')) {
+        alert(`給与設定の保存中にエラーが発生しました。\n\n${errorMessage}\n\nページを更新して、保存された給与設定を確認してください。`);
+      } else {
+        alert(`給与の設定に失敗しました。\n\n${errorMessage}`);
+      }
     } finally {
       this.isSavingSalary = false;
+      
+      // ブラウザ更新防止を解除（賞与設定が処理中でない場合のみ）
+      if (!this.isSavingBonus) {
+        this.removeBeforeUnloadHandler();
+      }
+      
       // 少し遅延してからプログレスをリセット（完了メッセージを表示するため）
       setTimeout(() => {
         this.salarySaveProgress = { message: '', progress: 0 };
@@ -3431,8 +3439,9 @@ export class KyuyoDashboardComponent {
     salaryHistory: any[],
     bonusList?: any[],
     asOfYear?: number,
-    asOfMonth?: number
-  ) {
+    asOfMonth?: number,
+    collectChanges?: boolean  // trueの場合、変更情報を保存せずに返す
+  ): Promise<Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}> | null> {
     try {
       console.log(`[随時改定] 処理開始。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}, 給与額: ${newSalary}円, asOfYear: ${asOfYear}, asOfMonth: ${asOfMonth}`);
       
@@ -3578,7 +3587,10 @@ export class KyuyoDashboardComponent {
       
       // 新しい標準報酬月額を計算
       const newStandardInfo = this.calculateStandardMonthlySalary(averageSalary);
-      if (!newStandardInfo) return;
+      if (!newStandardInfo) {
+        if (collectChanges) return [];
+        return null;
+      }
       
       const newGrade = newStandardInfo.grade;
       
@@ -3627,6 +3639,17 @@ export class KyuyoDashboardComponent {
         
         console.log(`[随時改定] ${reasonMessage}、${effectiveYear}年${effectiveMonth}月から等級${newGrade}を適用します。`);
         
+        // 変更情報を返すモードの場合、保存せずに変更情報を返す
+        if (collectChanges) {
+          return [{
+            employeeNumber,
+            effectiveYear,
+            effectiveMonth,
+            grade: newGrade,
+            monthlyStandard: newStandardInfo.monthlyStandard
+          }];
+        }
+        
         // 標準報酬月額変更情報を保存
         await this.firestoreService.saveStandardMonthlySalaryChange(
           employeeNumber,
@@ -3644,7 +3667,7 @@ export class KyuyoDashboardComponent {
       console.log(`[随時改定] 処理完了。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}`);
       
       // 厚生年金保険用の標準報酬月額変更も処理
-      await this.checkAndUpdatePensionStandardMonthlySalary(
+      const pensionChanges = await this.checkAndUpdatePensionStandardMonthlySalary(
         employeeNumber,
         changeYear,
         changeMonth,
@@ -3652,11 +3675,40 @@ export class KyuyoDashboardComponent {
         salaryHistory,
         bonusList,
         asOfYear,
-        asOfMonth
+        asOfMonth,
+        collectChanges
       );
+      
+      // 変更情報を返すモードの場合、健康介護保険と厚生年金保険の変更情報をまとめて返す
+      if (collectChanges) {
+        let healthChanges: Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}> = [];
+        if (shouldApplyRevision) {
+          // 3か月後の年月を計算
+          let effectiveYear = changeYear;
+          let effectiveMonth = changeMonth + 3;
+          while (effectiveMonth > 12) {
+            effectiveMonth -= 12;
+            effectiveYear += 1;
+          }
+          healthChanges = [{
+            employeeNumber,
+            effectiveYear,
+            effectiveMonth,
+            grade: newGrade,
+            monthlyStandard: newStandardInfo.monthlyStandard
+          }];
+        }
+        return [...healthChanges, ...(pensionChanges || [])];
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error checking standard monthly salary change:', error);
       // エラーが発生しても給与設定は保存されているので、処理を続行
+      if (collectChanges) {
+        return [];
+      }
+      return null;
     }
   }
 
@@ -3669,13 +3721,15 @@ export class KyuyoDashboardComponent {
     salaryHistory: any[],
     bonusList?: any[],
     asOfYear?: number,
-    asOfMonth?: number
-  ) {
+    asOfMonth?: number,
+    collectChanges?: boolean  // trueの場合、変更情報を保存せずに返す
+  ): Promise<Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}> | null> {
     try {
       // kouseinenkinReiwa7が存在しない場合は処理をスキップ
       if (!this.gradeTable || !this.gradeTable.kouseinenkinReiwa7) {
         console.log(`[厚生年金随時改定] kouseinenkinReiwa7が存在しないため、処理をスキップします。`);
-        return;
+        if (collectChanges) return [];
+        return null;
       }
 
       console.log(`[厚生年金随時改定] 処理開始。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}, 給与額: ${newSalary}円`);
@@ -3813,12 +3867,18 @@ export class KyuyoDashboardComponent {
       
       // 新しい厚生年金保険用標準報酬月額を計算
       const newPensionStandard = this.calculatePensionStandardMonthlySalary(averageSalary);
-      if (!newPensionStandard || newPensionStandard === 0) return;
+      if (!newPensionStandard || newPensionStandard === 0) {
+        if (collectChanges) return [];
+        return null;
+      }
       
       // 標準報酬月額から等級を逆引き
       const pensionGradeList = this.gradeTable.kouseinenkinReiwa7;
       const matchingNewGrade = pensionGradeList.find((item: any) => item.monthlyStandard === newPensionStandard);
-      if (!matchingNewGrade) return;
+      if (!matchingNewGrade) {
+        if (collectChanges) return [];
+        return null;
+      }
       
       const newPensionGrade = matchingNewGrade.grade;
       
@@ -3882,9 +3942,18 @@ export class KyuyoDashboardComponent {
       }
       
       console.log(`[厚生年金随時改定] 処理完了。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}`);
+      
+      if (collectChanges) {
+        return [];
+      }
+      return null;
     } catch (error) {
       console.error('Error checking pension standard monthly salary change:', error);
       // エラーが発生しても給与設定は保存されているので、処理を続行
+      if (collectChanges) {
+        return [];
+      }
+      return null;
     }
   }
 
@@ -3893,8 +3962,9 @@ export class KyuyoDashboardComponent {
     employeeNumber: string,
     changeYear: number,
     changeMonth: number,
-    salaryHistory: any[]
-  ) {
+    salaryHistory: any[],
+    collectChanges?: boolean  // trueの場合、変更情報を保存せずに返す
+  ): Promise<Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}> | null> {
     console.log(`[定時改定] メソッドが呼び出されました。社員番号: ${employeeNumber}, 変更年: ${changeYear}, 変更月: ${changeMonth}`);
     
     try {
@@ -3981,7 +4051,8 @@ export class KyuyoDashboardComponent {
         // 4月・5月の給与設定がない場合でも、入社時の給与見込み額を使用できる場合は処理を続行
         if (!hasAprilOrMaySalary && !canCalculateTeiji) {
           console.log(`[定時改定] 6月の給与設定がなく、4月・5月の給与設定もなく、入社情報も不足のため、処理をスキップします。`);
-          return;
+          // collectChangesパラメータはこの関数にはないので、nullを返す
+          return null;
         }
       }
       
@@ -4101,7 +4172,8 @@ export class KyuyoDashboardComponent {
       // 4月～6月の給与が全て取得できたかチェック
       if (salariesForAverage.length < 3) {
         console.log(`[定時改定] 4月～6月の給与が全て取得できませんでした。取得できた給与数: ${salariesForAverage.length}`);
-        return; // 4月～6月の給与が全て取得できない場合は処理しない
+        if (collectChanges) return [];
+        return null; // 4月～6月の給与が全て取得できない場合は処理しない
       }
       
       // 平均を計算
@@ -4113,14 +4185,16 @@ export class KyuyoDashboardComponent {
       // 平均が有効な数値でない場合は処理しない
       if (isNaN(averageSalary) || averageSalary <= 0) {
         console.log(`[定時改定] 平均給与が無効な値です: ${averageSalary}`);
-        return;
+        if (collectChanges) return [];
+        return null;
       }
       
       // 新しい標準報酬月額を計算
       const newStandardInfo = this.calculateStandardMonthlySalary(averageSalary);
       if (!newStandardInfo) {
         console.log(`[定時改定] 標準報酬月額の計算に失敗しました。平均給与: ${averageSalary}円`);
-        return;
+        if (collectChanges) return [];
+        return null;
       }
       
       const newGrade = newStandardInfo.grade;
@@ -4138,7 +4212,8 @@ export class KyuyoDashboardComponent {
       // 随時改定が適用されている場合は、定時改定をスキップ
       if (hasZujijiKaiteiInJulyToSeptember) {
         console.log(`[定時改定] 7月、8月、9月に随時改定が適用されているため、定時改定をスキップします。`);
-        return;
+        if (collectChanges) return [];
+        return null;
       }
       
       // 既に9月からの標準報酬月額変更情報が保存されているかチェック
@@ -4151,7 +4226,8 @@ export class KyuyoDashboardComponent {
       // 既に9月からの変更情報がある場合、等級が異なる場合のみ更新
       if (existingChange && existingChange.grade === newGrade) {
         console.log(`[定時改定] 既に同じ等級（${newGrade}）が設定されているため、処理をスキップします。`);
-        return; // 既に同じ等級が設定されている場合は処理しない
+        if (collectChanges) return [];
+        return null; // 既に同じ等級が設定されている場合は処理しない
       }
       
       // 9月から新等級を適用（4.5.6月の平均給与から算出した等級）
@@ -4159,6 +4235,17 @@ export class KyuyoDashboardComponent {
       const effectiveMonth = 9;
       
       console.log(`[定時改定] 9月から等級${newGrade}を適用します。標準報酬月額: ${newStandardInfo.monthlyStandard}円`);
+      
+      // 変更情報を返すモードの場合、保存せずに変更情報を返す
+      if (collectChanges) {
+        return [{
+          employeeNumber,
+          effectiveYear,
+          effectiveMonth,
+          grade: newGrade,
+          monthlyStandard: newStandardInfo.monthlyStandard
+        }];
+      }
       
       // 標準報酬月額変更情報を保存
       await this.firestoreService.saveStandardMonthlySalaryChange(
@@ -4170,9 +4257,15 @@ export class KyuyoDashboardComponent {
       );
       
       console.log(`[定時改定] 標準報酬月額変更情報を保存しました。`);
+      
+      return null;
     } catch (error) {
       console.error('Error checking standard monthly salary change by fiscal year:', error);
       // エラーが発生しても給与設定は保存されているので、処理を続行
+      if (collectChanges) {
+        return [];
+      }
+      return null;
     }
   }
 
@@ -4464,6 +4557,10 @@ export class KyuyoDashboardComponent {
     }
     
     this.isSavingBonus = true;
+    
+    // ブラウザ更新を防止
+    this.setBeforeUnloadHandler();
+    
     try {
       // 賞与設定をFirestoreに保存
       await this.firestoreService.saveBonus(
@@ -4608,7 +4705,12 @@ export class KyuyoDashboardComponent {
             employeeNumber: bonus['employeeNumber']
           }));
           
-          await this.checkAndUpdateStandardMonthlySalary(
+          // すべての標準報酬月額変更情報を蓄積
+          const allStandardChanges: Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}> = [];
+          const allPensionChanges: Array<{employeeNumber: string, effectiveYear: number, effectiveMonth: number, grade: number, monthlyStandard: number}> = [];
+          
+          // 随時改定処理（変更情報を収集）
+          const standardChanges = await this.checkAndUpdateStandardMonthlySalary(
             this.selectedBonusEmployee,
             this.bonusYear,
             this.bonusMonth,
@@ -4616,8 +4718,22 @@ export class KyuyoDashboardComponent {
             allSalaryHistory,
             bonusList,
             this.bonusYear,
-            this.bonusMonth
+            this.bonusMonth,
+            true  // collectChanges = true
           );
+          
+          if (standardChanges) {
+            // 健康介護保険と厚生年金保険の変更情報を分離（gradeで判定）
+            standardChanges.forEach((change: any) => {
+              // 健康介護保険の変更情報（gradeが1-50の範囲）
+              if (change.grade >= 1 && change.grade <= 50) {
+                allStandardChanges.push(change);
+              } else {
+                // 厚生年金保険の変更情報（gradeが1-32の範囲）
+                allPensionChanges.push(change);
+              }
+            });
+          }
           
           // 定時改定処理も実行（報酬加算額が考慮されるため、4月～6月の平均給与が変わる可能性がある）
           // 定時改定は、各年度の4月～6月の平均給与に基づいて9月から適用される
@@ -4694,12 +4810,16 @@ export class KyuyoDashboardComponent {
               // 6月の給与設定がある場合は6月として、ない場合は7月として処理
               const checkMonth = hasJuneSalary ? 6 : 7;
               console.log(`[賞与設定] ${fiscalYear}年度 - 定時改定処理を実行します（checkMonth: ${checkMonth}月）`);
-              await this.checkAndUpdateStandardMonthlySalaryByFiscalYear(
+              const teijiChanges = await this.checkAndUpdateStandardMonthlySalaryByFiscalYear(
                 this.selectedBonusEmployee,
                 fiscalYear,
                 checkMonth,
-                allSalaryHistory
+                allSalaryHistory,
+                true  // collectChanges = true
               );
+              if (teijiChanges) {
+                allStandardChanges.push(...teijiChanges);
+              }
             } else {
               // 4月、5月の給与設定があるかチェック
               const hasAprilOrMaySalary = allSalaryHistory.some((s: any) => {
@@ -4714,12 +4834,16 @@ export class KyuyoDashboardComponent {
               // 4月、5月の給与設定がある場合、または入社時の給与見込み額を使用できる場合、定時改定を計算
               if (hasAprilOrMaySalary || canCalculateTeiji) {
                 console.log(`[賞与設定] ${fiscalYear}年度 - 定時改定処理を実行します（${hasAprilOrMaySalary ? '4月・5月の給与設定あり' : '入社時の給与見込み額を使用'}）`);
-                await this.checkAndUpdateStandardMonthlySalaryByFiscalYear(
+                const teijiChanges = await this.checkAndUpdateStandardMonthlySalaryByFiscalYear(
                   this.selectedBonusEmployee,
                   fiscalYear,
                   6, // 6月として処理
-                  allSalaryHistory
+                  allSalaryHistory,
+                  true  // collectChanges = true
                 );
+                if (teijiChanges) {
+                  allStandardChanges.push(...teijiChanges);
+                }
               } else {
                 console.log(`[賞与設定] ${fiscalYear}年度 - 定時改定処理をスキップします（給与設定が不足、かつ入社情報が不足）`);
               }
@@ -4727,6 +4851,24 @@ export class KyuyoDashboardComponent {
           }
           
           console.log(`[賞与設定] 全年度の定時改定処理が完了しました。`);
+          
+          // すべての標準報酬月額変更情報を一度にバッチ書き込みで保存
+          if (allStandardChanges.length > 0 || allPensionChanges.length > 0) {
+            console.log(`[賞与設定] 標準報酬月額変更情報をバッチ保存します。健康介護保険: ${allStandardChanges.length}件、厚生年金保険: ${allPensionChanges.length}件`);
+            
+            try {
+              // 健康介護保険と厚生年金保険の変更情報を並列で保存
+              await Promise.all([
+                allStandardChanges.length > 0 ? this.firestoreService.saveStandardMonthlySalaryChangesBatch(allStandardChanges) : Promise.resolve(),
+                allPensionChanges.length > 0 ? this.firestoreService.savePensionStandardMonthlySalaryChangesBatch(allPensionChanges) : Promise.resolve()
+              ]);
+              
+              console.log(`[賞与設定] 標準報酬月額変更情報をバッチ保存しました。`);
+            } catch (error) {
+              console.error('[賞与設定] 標準報酬月額変更情報のバッチ保存に失敗しました:', error);
+              throw new Error(`標準報酬月額変更情報の保存に失敗しました。賞与設定は保存されましたが、標準報酬月額変更情報は保存されませんでした。`);
+            }
+          }
         } else {
           console.log(`[賞与設定] 年度賞与支給回数が4回未満（${fiscalYearBonusCount}回）のため、随時改定処理をスキップします。`);
         }
@@ -4739,11 +4881,51 @@ export class KyuyoDashboardComponent {
       // フォームをリセット
       this.selectedBonusEmployee = '';
       this.bonusAmount = 0;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving bonus:', error);
-      alert('賞与の設定に失敗しました');
+      const errorMessage = error?.message || '賞与の設定に失敗しました';
+      
+      // エラーメッセージを表示
+      if (errorMessage.includes('一部のみ保存')) {
+        alert(`賞与設定の保存中にエラーが発生しました。\n\n${errorMessage}\n\nページを更新して、保存された賞与設定を確認してください。`);
+      } else {
+        alert(`賞与の設定に失敗しました。\n\n${errorMessage}`);
+      }
     } finally {
       this.isSavingBonus = false;
+      
+      // ブラウザ更新防止を解除（給与設定が処理中でない場合のみ）
+      if (!this.isSavingSalary) {
+        this.removeBeforeUnloadHandler();
+      }
+    }
+  }
+
+  // ブラウザ更新を防止するハンドラーを設定
+  private setBeforeUnloadHandler(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    
+    // 既にハンドラーが設定されている場合はスキップ
+    if (this.beforeUnloadHandler) return;
+    
+    this.beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+      if (this.isSavingSalary || this.isSavingBonus) {
+        e.preventDefault();
+        e.returnValue = '給与設定または賞与設定の処理中です。ページを離れると処理が中断される可能性があります。';
+        return e.returnValue;
+      }
+    };
+    
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
+  }
+
+  // ブラウザ更新を防止するハンドラーを削除
+  private removeBeforeUnloadHandler(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = null;
     }
   }
 
