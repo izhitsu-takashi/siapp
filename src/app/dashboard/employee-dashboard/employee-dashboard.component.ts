@@ -115,6 +115,8 @@ export class EmployeeDashboardComponent implements OnDestroy {
   dependentsData: any[] = [];
   // 扶養者情報の展開状態
   dependentExpandedStates: boolean[] = [];
+  // 扶養者のマイナンバー表示状態（配列で管理：indexが扶養者のインデックス）
+  dependentMyNumberVisibleStates: boolean[] = [];
 
   // フォーム
   settingsForm: FormGroup;
@@ -397,39 +399,110 @@ export class EmployeeDashboardComponent implements OnDestroy {
         
         // 扶養者情報
         if (data.dependents && Array.isArray(data.dependents) && data.dependents.length > 0) {
-          this.dependentsData = data.dependents.map((dep: any) => ({
-            name: dep.name || '',
-            nameKana: dep.nameKana || '',
-            relationship: dep.relationship || '',
-            birthDate: dep.birthDate || '',
-            gender: dep.gender || '',
-            myNumber: dep.myNumber || '',
-            phoneNumber: dep.phoneNumber || '',
-            occupation: dep.occupation || '',
-            annualIncome: dep.annualIncome || '',
-            monthlyIncome: dep.monthlyIncome || '',
-            dependentStartDate: dep.dependentStartDate || '',
-            dependentReason: dep.dependentReason || '',
-            livingTogether: dep.livingTogether || '',
-            postalCode: dep.postalCode || '',
-            address: dep.address || '',
-            addressKana: dep.addressKana || '',
-            addressChangeDate: dep.addressChangeDate || '',
-            basicPensionNumber: dep.basicPensionNumber || '',
-            basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
-            myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
-            identityDocFileUrl: dep.identityDocFileUrl || '',
-            disabilityCategory: dep.disabilityCategory || '',
-            disabilityCardType: dep.disabilityCardType || '',
-            disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
-            disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
-            notes: dep.notes || ''
-          }));
+          this.dependentsData = data.dependents.map((dep: any) => {
+            // マイナンバーを分割
+            let myNumberPart1 = '';
+            let myNumberPart2 = '';
+            let myNumberPart3 = '';
+            if (dep.myNumber && dep.myNumber.length === 12) {
+              myNumberPart1 = dep.myNumber.substring(0, 4);
+              myNumberPart2 = dep.myNumber.substring(4, 8);
+              myNumberPart3 = dep.myNumber.substring(8, 12);
+            }
+            
+            // 基礎年金番号を分割
+            let basicPensionNumberPart1 = '';
+            let basicPensionNumberPart2 = '';
+            if (dep.basicPensionNumber) {
+              const basicPensionNumber = dep.basicPensionNumber.toString();
+              if (basicPensionNumber.length >= 4) {
+                basicPensionNumberPart1 = basicPensionNumber.substring(0, 4);
+                basicPensionNumberPart2 = basicPensionNumber.substring(4, 10) || '';
+              }
+            }
+            
+            // relationshipTypeを推測（既存データとの互換性を考慮）
+            let relationshipType = dep.relationshipType || '';
+            if (!relationshipType) {
+              if (dep.spouseType || dep.relationship === '妻' || dep.relationship === '夫') {
+                relationshipType = '配偶者';
+              } else if (dep.relationship) {
+                relationshipType = '配偶者以外';
+              }
+            }
+            
+            return {
+              name: dep.name || '',
+              nameKana: dep.nameKana || '',
+              lastName: dep.lastName || '',
+              firstName: dep.firstName || '',
+              lastNameKana: dep.lastNameKana || '',
+              firstNameKana: dep.firstNameKana || '',
+              relationship: dep.relationship || '',
+              relationshipType: relationshipType,
+              relationshipOther: dep.relationshipOther || '',
+              spouseType: dep.spouseType || '',
+              birthDate: dep.birthDate || '',
+              gender: dep.gender || '',
+              myNumber: dep.myNumber || '',
+              myNumberPart1: myNumberPart1,
+              myNumberPart2: myNumberPart2,
+              myNumberPart3: myNumberPart3,
+              phoneNumber: dep.phoneNumber || '',
+              phoneNumberType: dep.phoneNumberType || '',
+              phoneNumberOther: dep.phoneNumberOther || '',
+              occupation: dep.occupation || '',
+              occupationOther: dep.occupationOther || '',
+              studentYear: dep.studentYear || '',
+              annualIncome: dep.annualIncome || '',
+              monthlyIncome: dep.monthlyIncome || '',
+              monthlySupportAmount: dep.monthlySupportAmount || '',
+              dependentStartDate: dep.dependentStartDate || '',
+              dependentReason: dep.dependentReason || '',
+              dependentReasonOther: dep.dependentReasonOther || '',
+              livingTogether: dep.livingTogether || '',
+              postalCode: dep.postalCode || '',
+              address: dep.address || '',
+              addressKana: dep.addressKana || '',
+              addressChangeDate: dep.addressChangeDate || '',
+              basicPensionNumber: dep.basicPensionNumber || '',
+              basicPensionNumberPart1: basicPensionNumberPart1,
+              basicPensionNumberPart2: basicPensionNumberPart2,
+              basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
+              basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
+              myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
+              myNumberDocFileName: dep.myNumberDocFileName || '',
+              myNumberCardFileUrl: dep.myNumberCardFileUrl || '',
+              myNumberCardFileName: dep.myNumberCardFileName || '',
+              identityDocFileUrl: dep.identityDocFileUrl || '',
+              identityDocFileName: dep.identityDocFileName || '',
+              supportAmountDocFileUrl: dep.supportAmountDocFileUrl || '',
+              supportAmountDocFileName: dep.supportAmountDocFileName || '',
+              isForeignNational: dep.isForeignNational || '',
+              nationality: dep.nationality || '',
+              aliasName: dep.aliasName || '',
+              isOverseasResident: dep.isOverseasResident || '',
+              overseasSpecialRequirementDate: dep.overseasSpecialRequirementDate || '',
+              overseasReason: dep.overseasReason || '',
+              overseasReasonOther: dep.overseasReasonOther || '',
+              needsQualificationConfirmation: dep.needsQualificationConfirmation || '',
+              spouseAnnualIncome: dep.spouseAnnualIncome || '',
+              disabilityCategory: dep.disabilityCategory || '',
+              disabilityCardType: dep.disabilityCardType || '',
+              disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
+              disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
+              disabilityCardFileName: dep.disabilityCardFileName || '',
+              notes: dep.notes || ''
+            };
+          });
           // 展開状態を初期化（すべて折りたたみ）
           this.dependentExpandedStates = new Array(this.dependentsData.length).fill(false);
+          // マイナンバー表示状態を初期化（すべて非表示）
+          this.dependentMyNumberVisibleStates = new Array(this.dependentsData.length).fill(false);
         } else {
           this.dependentsData = [];
           this.dependentExpandedStates = [];
+          this.dependentMyNumberVisibleStates = [];
         }
       }
     } catch (error) {
@@ -442,6 +515,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
       };
       this.dependentsData = [];
       this.dependentExpandedStates = [];
+      this.dependentMyNumberVisibleStates = [];
     }
   }
 
@@ -456,6 +530,34 @@ export class EmployeeDashboardComponent implements OnDestroy {
   // 扶養者情報が展開されているかどうか
   isDependentExpanded(index: number): boolean {
     return this.dependentExpandedStates[index] === true;
+  }
+
+  // 扶養者のマイナンバー表示/非表示を切り替え
+  toggleDependentMyNumber(index: number) {
+    if (this.dependentMyNumberVisibleStates[index] === undefined) {
+      this.dependentMyNumberVisibleStates[index] = false;
+    }
+    this.dependentMyNumberVisibleStates[index] = !this.dependentMyNumberVisibleStates[index];
+  }
+
+  // 扶養者のマイナンバーが表示されているかどうか
+  isDependentMyNumberVisible(index: number): boolean {
+    return this.dependentMyNumberVisibleStates[index] === true;
+  }
+
+  // 扶養者のマイナンバー表示値を取得
+  getDependentMyNumberDisplay(dependent: any, index: number): string {
+    if (!dependent.myNumber || dependent.myNumber.length !== 12) {
+      return '-';
+    }
+    if (this.isDependentMyNumberVisible(index)) {
+      const part1 = dependent.myNumber.substring(0, 4);
+      const part2 = dependent.myNumber.substring(4, 8);
+      const part3 = dependent.myNumber.substring(8, 12);
+      return `${part1}-${part2}-${part3}`;
+    } else {
+      return '●●●●-●●●●-●●●●';
+    }
   }
   
   // 氏名を姓に分割するヘルパーメソッド

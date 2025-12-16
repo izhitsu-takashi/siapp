@@ -750,145 +750,372 @@
                     </h4>
                   </div>
                   <div class="info-content" *ngIf="isDependentExpanded(i)" style="padding-left: 0.5rem;">
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">氏名:</span>
-                        <span class="info-value">{{ dependent.name || '-' }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="info-label">氏名（ヨミガナ）:</span>
-                        <span class="info-value">{{ dependent.nameKana || '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">続柄:</span>
-                        <span class="info-value">{{ dependent.relationship || '-' }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="info-label">生年月日:</span>
-                        <span class="info-value">{{ dependent.birthDate ? (dependent.birthDate | date:'yyyy年MM月dd日') : '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">性別:</span>
-                        <span class="info-value">{{ dependent.gender || '-' }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="info-label">電話番号:</span>
-                        <span class="info-value">{{ dependent.phoneNumber || '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">職業:</span>
-                        <span class="info-value">{{ dependent.occupation || '-' }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="info-label">同居/別居:</span>
-                        <span class="info-value">{{ dependent.livingTogether || '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">年間収入見込み額:</span>
-                        <span class="info-value">{{ dependent.annualIncome ? (dependent.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="info-label">月額収入見込み額:</span>
-                        <span class="info-value">{{ dependent.monthlyIncome ? (dependent.monthlyIncome | number:'1.0-0') + '円' : '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">社会保険の扶養者となった日:</span>
-                        <span class="info-value">{{ dependent.dependentStartDate ? (dependent.dependentStartDate | date:'yyyy年MM月dd日') : '-' }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="info-label">マイナンバー:</span>
-                        <span class="info-value">{{ dependent.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row full-width">
-                        <span class="info-label">扶養に追加された理由:</span>
-                        <span class="info-value">{{ dependent.dependentReason || '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">郵便番号:</span>
-                        <span class="info-value">{{ dependent.postalCode || '-' }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="info-label">住所変更年月日:</span>
-                        <span class="info-value">{{ dependent.addressChangeDate ? (dependent.addressChangeDate | date:'yyyy年MM月dd日') : '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row full-width">
-                        <span class="info-label">住所:</span>
-                        <span class="info-value">{{ dependent.address || '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row full-width">
-                        <span class="info-label">住所（ヨミガナ）:</span>
-                        <span class="info-value">{{ dependent.addressKana || '-' }}</span>
-                      </div>
-                    </div>
-                    <div class="info-row-pair">
-                      <div class="info-row">
-                        <span class="info-label">基礎年金番号:</span>
-                        <span class="info-value">{{ dependent.basicPensionNumber || '-' }}</span>
-                      </div>
-                    </div>
-                    <ng-container *ngIf="dependent.disabilityCategory || dependent.disabilityCardType || dependent.disabilityCardIssueDate">
-                      <div class="info-row-pair">
+                    <!-- 配偶者の場合 -->
+                    <ng-container *ngIf="dependent.relationshipType === '配偶者'">
+                      <!-- 続柄（妻/夫） -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
                         <div class="info-row">
-                          <span class="info-label">障がい者区分:</span>
-                          <span class="info-value">{{ dependent.disabilityCategory || '-' }}</span>
-                        </div>
-                        <div class="info-row">
-                          <span class="info-label">障がい者手帳の種類:</span>
-                          <span class="info-value">{{ dependent.disabilityCardType || '-' }}</span>
+                          <span class="info-label">続柄（妻/夫）:</span>
+                          <span class="info-value">{{ dependent.spouseType || dependent.relationship || '-' }}</span>
                         </div>
                       </div>
-                      <div class="info-row-pair">
+                      
+                      <!-- 氏名 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
                         <div class="info-row">
-                          <span class="info-label">障がい者手帳の交付年月日:</span>
-                          <span class="info-value">{{ dependent.disabilityCardIssueDate ? (dependent.disabilityCardIssueDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                          <span class="info-label">姓:</span>
+                          <span class="info-value">{{ dependent.lastName || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">名:</span>
+                          <span class="info-value">{{ dependent.firstName || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">姓（フリガナ）:</span>
+                          <span class="info-value">{{ dependent.lastNameKana || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">名（フリガナ）:</span>
+                          <span class="info-value">{{ dependent.firstNameKana || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 生年月日 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">生年月日:</span>
+                          <span class="info-value">{{ dependent.birthDate ? (dependent.birthDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- マイナンバー -->
+                      <div class="info-row-pair" *ngIf="dependent.myNumber" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">マイナンバー:</span>
+                          <span class="info-value">{{ getDependentMyNumberDisplay(dependent, i) }}</span>
+                          <button type="button" (click)="toggleDependentMyNumber(i)" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            {{ isDependentMyNumberVisible(i) ? '非表示' : '表示' }}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <!-- 基礎年金番号 -->
+                      <div class="info-row-pair" *ngIf="dependent.basicPensionNumber" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">基礎年金番号:</span>
+                          <span class="info-value">{{ dependent.basicPensionNumber || '-' }}</span>
+                        </div>
+                        <div class="info-row full-width" *ngIf="dependent.basicPensionNumberDocFileUrl">
+                          <span class="info-label">基礎年金番号確認書類:</span>
+                          <span class="info-value">
+                            <a [href]="dependent.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.basicPensionNumberDocFileUrl, dependent.basicPensionNumberDocFileName) }}</a>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <!-- 外国籍か -->
+                      <div class="info-row-pair" *ngIf="dependent.isForeignNational" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">外国籍か:</span>
+                          <span class="info-value">{{ dependent.isForeignNational || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.isForeignNational === 'はい'">
+                          <span class="info-label">国籍:</span>
+                          <span class="info-value">{{ dependent.nationality || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.isForeignNational === 'はい'">
+                          <span class="info-label">通称名:</span>
+                          <span class="info-value">{{ dependent.aliasName || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 住所 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">住所（同居/別居）:</span>
+                          <span class="info-value">{{ dependent.livingTogether || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.livingTogether === '別居'">
+                          <span class="info-label">郵便番号:</span>
+                          <span class="info-value">{{ dependent.postalCode || '-' }}</span>
+                        </div>
+                        <div class="info-row full-width" *ngIf="dependent.livingTogether === '別居'">
+                          <span class="info-label">住所:</span>
+                          <span class="info-value">{{ dependent.address || '-' }}</span>
+                        </div>
+                        <div class="info-row full-width" *ngIf="dependent.livingTogether === '別居' && dependent.monthlySupportAmount">
+                          <span class="info-label">毎月の仕送り額:</span>
+                          <span class="info-value">{{ dependent.monthlySupportAmount ? (dependent.monthlySupportAmount | number:'1.0-0') + '円' : '-' }}</span>
+                        </div>
+                        <div class="info-row full-width" *ngIf="dependent.livingTogether === '別居' && dependent.supportAmountDocFileUrl">
+                          <span class="info-label">仕送り額証明書類:</span>
+                          <span class="info-value">
+                            <a [href]="dependent.supportAmountDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.supportAmountDocFileUrl, dependent.supportAmountDocFileName) }}</a>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <!-- 電話番号 -->
+                      <div class="info-row-pair" *ngIf="dependent.phoneNumber" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">電話番号の種類:</span>
+                          <span class="info-value">{{ dependent.phoneNumberType || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.phoneNumberType === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.phoneNumberOther || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">電話番号:</span>
+                          <span class="info-value">{{ dependent.phoneNumber || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 被扶養者になった日 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">被扶養者になった日:</span>
+                          <span class="info-value">{{ dependent.dependentStartDate ? (dependent.dependentStartDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 理由 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">理由:</span>
+                          <span class="info-value">{{ dependent.dependentReason || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.dependentReason === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.dependentReasonOther || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 職業 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">職業:</span>
+                          <span class="info-value">{{ dependent.occupation || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.occupation === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.occupationOther || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.occupation === '大学生'">
+                          <span class="info-label">何年生:</span>
+                          <span class="info-value">{{ dependent.studentYear || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 年収見込み額 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">年収見込み額:</span>
+                          <span class="info-value">{{ dependent.annualIncome ? (dependent.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 海外居住者または海外から国内に転入した -->
+                      <div class="info-row-pair" *ngIf="dependent.isOverseasResident" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">海外居住者または海外から国内に転入した:</span>
+                          <span class="info-value">{{ dependent.isOverseasResident || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.isOverseasResident === 'はい'">
+                          <span class="info-label">海外特例要件に該当した日:</span>
+                          <span class="info-value">{{ dependent.overseasSpecialRequirementDate ? (dependent.overseasSpecialRequirementDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.isOverseasResident === 'はい'">
+                          <span class="info-label">理由:</span>
+                          <span class="info-value">{{ dependent.overseasReason || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.isOverseasResident === 'はい' && dependent.overseasReason === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.overseasReasonOther || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 資格確認書発行が必要か -->
+                      <div class="info-row-pair" *ngIf="dependent.needsQualificationConfirmation" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">資格確認書発行が必要か:</span>
+                          <span class="info-value">{{ dependent.needsQualificationConfirmation || '-' }}</span>
                         </div>
                       </div>
                     </ng-container>
-                    <!-- 添付書類 -->
-                    <ng-container *ngIf="dependent.basicPensionNumberDocFileUrl || dependent.myNumberDocFileUrl || dependent.identityDocFileUrl || dependent.disabilityCardFileUrl">
-                      <div class="info-row-pair">
+                    
+                    <!-- 配偶者以外の場合 -->
+                    <ng-container *ngIf="dependent.relationshipType === '配偶者以外'">
+                      <!-- 続柄 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">続柄:</span>
+                          <span class="info-value">{{ dependent.relationship || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.relationship === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.relationshipOther || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 氏名 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">姓:</span>
+                          <span class="info-value">{{ dependent.lastName || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">名:</span>
+                          <span class="info-value">{{ dependent.firstName || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">姓（フリガナ）:</span>
+                          <span class="info-value">{{ dependent.lastNameKana || '-' }}</span>
+                        </div>
+                        <div class="info-row">
+                          <span class="info-label">名（フリガナ）:</span>
+                          <span class="info-value">{{ dependent.firstNameKana || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 身分証明書添付 -->
+                      <div class="info-row-pair" *ngIf="dependent.identityDocFileUrl" style="margin-bottom: 0.5rem;">
                         <div class="info-row full-width">
-                          <span class="info-label">添付書類:</span>
-                          <div class="info-value" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                            <div *ngIf="dependent.basicPensionNumberDocFileUrl">
-                              <span style="font-weight: 500; margin-right: 0.5rem;">基礎年金番号確認書類:</span>
-                              <a [href]="dependent.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.basicPensionNumberDocFileUrl, dependent.basicPensionNumberDocFileName) }}</a>
-                            </div>
-                            <div *ngIf="dependent.myNumberDocFileUrl">
-                              <span style="font-weight: 500; margin-right: 0.5rem;">マイナンバー確認書類:</span>
-                              <a [href]="dependent.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberDocFileUrl, dependent.myNumberDocFileName) }}</a>
-                            </div>
-                            <div *ngIf="dependent.identityDocFileUrl">
-                              <span style="font-weight: 500; margin-right: 0.5rem;">身元確認書類:</span>
-                              <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
-                            </div>
-                            <div *ngIf="dependent.disabilityCardFileUrl">
-                              <span style="font-weight: 500; margin-right: 0.5rem;">障がい者手帳の画像:</span>
-                              <a [href]="dependent.disabilityCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.disabilityCardFileUrl, dependent.disabilityCardFileName) }}</a>
-                            </div>
-                          </div>
+                          <span class="info-label">身分証明書添付:</span>
+                          <span class="info-value">
+                            <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <!-- 生年月日 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">生年月日:</span>
+                          <span class="info-value">{{ dependent.birthDate ? (dependent.birthDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- マイナンバー -->
+                      <div class="info-row-pair" *ngIf="dependent.myNumber" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">マイナンバー:</span>
+                          <span class="info-value">{{ getDependentMyNumberDisplay(dependent, i) }}</span>
+                          <button type="button" (click)="toggleDependentMyNumber(i)" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            {{ isDependentMyNumberVisible(i) ? '非表示' : '表示' }}
+                          </button>
+                        </div>
+                        <div class="info-row full-width" *ngIf="dependent.myNumberCardFileUrl">
+                          <span class="info-label">マイナンバーカード添付:</span>
+                          <span class="info-value">
+                            <a [href]="dependent.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberCardFileUrl, dependent.myNumberCardFileName) }}</a>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <!-- 性別 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">性別:</span>
+                          <span class="info-value">{{ dependent.gender || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 住所 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">住所（同居/別居）:</span>
+                          <span class="info-value">{{ dependent.livingTogether || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.livingTogether === '別居'">
+                          <span class="info-label">郵便番号:</span>
+                          <span class="info-value">{{ dependent.postalCode || '-' }}</span>
+                        </div>
+                        <div class="info-row full-width" *ngIf="dependent.livingTogether === '別居'">
+                          <span class="info-label">住所:</span>
+                          <span class="info-value">{{ dependent.address || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 海外居住者、または海外から国内に転入した -->
+                      <div class="info-row-pair" *ngIf="dependent.isOverseasResident" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">海外居住者、または海外から国内に転入した:</span>
+                          <span class="info-value">{{ dependent.isOverseasResident || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.isOverseasResident === 'はい'">
+                          <span class="info-label">理由:</span>
+                          <span class="info-value">{{ dependent.overseasReason || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.isOverseasResident === 'はい' && dependent.overseasReason === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.overseasReasonOther || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 被扶養者になった日 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">被扶養者になった日:</span>
+                          <span class="info-value">{{ dependent.dependentStartDate ? (dependent.dependentStartDate | date:'yyyy年MM月dd日') : '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 職業 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">職業:</span>
+                          <span class="info-value">{{ dependent.occupation || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.occupation === '大学生'">
+                          <span class="info-label">何年生:</span>
+                          <span class="info-value">{{ dependent.studentYear || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.occupation === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.occupationOther || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 年収見込み額 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">年収見込み額:</span>
+                          <span class="info-value">{{ dependent.annualIncome ? (dependent.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 理由 -->
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">理由:</span>
+                          <span class="info-value">{{ dependent.dependentReason || '-' }}</span>
+                        </div>
+                        <div class="info-row" *ngIf="dependent.dependentReason === 'その他'">
+                          <span class="info-label">その他:</span>
+                          <span class="info-value">{{ dependent.dependentReasonOther || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 資格確認書発行が必要か -->
+                      <div class="info-row-pair" *ngIf="dependent.needsQualificationConfirmation" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">資格確認書発行が必要か:</span>
+                          <span class="info-value">{{ dependent.needsQualificationConfirmation || '-' }}</span>
+                        </div>
+                      </div>
+                      
+                      <!-- 配偶者の年収 -->
+                      <div class="info-row-pair" *ngIf="dependent.spouseAnnualIncome" style="margin-bottom: 0.5rem;">
+                        <div class="info-row">
+                          <span class="info-label">配偶者の年収:</span>
+                          <span class="info-value">{{ dependent.spouseAnnualIncome ? (dependent.spouseAnnualIncome | number:'1.0-0') + '円' : '-' }}</span>
                         </div>
                       </div>
                     </ng-container>
-                    <div class="info-row-pair" *ngIf="dependent.notes">
+                    
+                    <!-- 備考 -->
+                    <div class="info-row-pair" *ngIf="dependent.notes" style="margin-bottom: 0.5rem;">
                       <div class="info-row full-width">
                         <span class="info-label">備考:</span>
                         <span class="info-value">{{ dependent.notes }}</span>
