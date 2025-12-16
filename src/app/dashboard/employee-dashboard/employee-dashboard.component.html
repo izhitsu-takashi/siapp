@@ -2007,30 +2007,56 @@
         <div *ngIf="dependentApplicationForm.get('relationshipType')?.invalid && dependentApplicationForm.get('relationshipType')?.touched" class="error-message">
           続柄を選択してください
         </div>
+        <!-- 配偶者を選択した場合の続柄（妻/夫） -->
+        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者'" class="form-group" style="margin-top: 1rem;">
+          <label for="spouseType">続柄（妻/夫） <span class="required">*</span></label>
+          <select 
+            id="spouseType" 
+            formControlName="spouseType" 
+            class="form-input"
+            (change)="onSpouseTypeChange()"
+          >
+            <option value="">選択してください</option>
+            <option value="妻">妻</option>
+            <option value="夫">夫</option>
+          </select>
+          <div *ngIf="dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
+            妻または夫を選択してください
+          </div>
+        </div>
+        <!-- 配偶者以外を選択した場合の続柄 -->
+        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者以外'" class="form-group" style="margin-top: 1rem;">
+          <label for="relationship">続柄 <span class="required">*</span></label>
+          <select 
+            id="relationship" 
+            formControlName="relationship" 
+            class="form-input"
+            (change)="onRelationshipChange(); dependentApplicationForm.get('relationship')?.updateValueAndValidity()"
+          >
+            <option value="">選択してください</option>
+            <option value="実子・養子">実子・養子</option>
+            <option value="実子・養子以外の子">実子・養子以外の子</option>
+            <option value="父母・養父母">父母・養父母</option>
+            <option value="義父母">義父母</option>
+            <option value="弟妹">弟妹</option>
+            <option value="兄姉">兄姉</option>
+            <option value="祖父母">祖父母</option>
+            <option value="曽祖父母">曽祖父母</option>
+            <option value="孫">孫</option>
+            <option value="その他">その他</option>
+          </select>
+          <div *ngIf="dependentApplicationForm.get('relationship')?.invalid && dependentApplicationForm.get('relationship')?.touched" class="error-message">
+            続柄を選択してください
+          </div>
+          <div *ngIf="dependentApplicationForm.get('relationship')?.value === 'その他'" class="form-group" style="margin-top: 0.5rem;">
+            <label for="relationshipOther">その他 <span class="required">*</span></label>
+            <input type="text" id="relationshipOther" formControlName="relationshipOther" class="form-input">
+          </div>
+        </div>
       </section>
       
       <!-- 配偶者の場合のフォーム -->
       <ng-container *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者'">
-        <!-- 続柄（妻or夫） -->
-        <section class="form-section">
-          <h3 class="section-title">続柄 <span class="required">*</span></h3>
-          <div class="form-group">
-            <label for="spouseType">続柄 <span class="required">*</span></label>
-            <select 
-              id="spouseType" 
-              formControlName="spouseType" 
-              class="form-input"
-              (change)="onSpouseTypeChange()"
-            >
-              <option value="">選択してください</option>
-              <option value="妻">妻</option>
-              <option value="夫">夫</option>
-            </select>
-            <div *ngIf="dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
-              妻または夫を選択してください
-            </div>
-          </div>
-        </section>
         
         <!-- 氏名 -->
         <section class="form-section">
@@ -2442,39 +2468,6 @@
       
       <!-- 配偶者以外の場合のフォーム -->
       <ng-container *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者以外'">
-        <!-- 続柄 -->
-        <section class="form-section">
-          <h3 class="section-title">続柄</h3>
-          <div class="form-group">
-            <label for="relationship">続柄 <span class="required">*</span></label>
-            <select 
-              id="relationship" 
-              formControlName="relationship" 
-              class="form-input"
-              (change)="onRelationshipChange(); dependentApplicationForm.get('relationship')?.updateValueAndValidity()"
-            >
-              <option value="">選択してください</option>
-              <option value="実子・養子">実子・養子</option>
-              <option value="実子・養子以外の子">実子・養子以外の子</option>
-              <option value="父母・養父母">父母・養父母</option>
-              <option value="義父母">義父母</option>
-              <option value="弟妹">弟妹</option>
-              <option value="兄姉">兄姉</option>
-              <option value="祖父母">祖父母</option>
-              <option value="曽祖父母">曽祖父母</option>
-              <option value="孫">孫</option>
-              <option value="その他">その他</option>
-            </select>
-            <div *ngIf="dependentApplicationForm.get('relationship')?.invalid && dependentApplicationForm.get('relationship')?.touched" class="error-message">
-              続柄を選択してください
-            </div>
-          </div>
-          <div *ngIf="dependentApplicationForm.get('relationship')?.value === 'その他'" class="form-group">
-            <label for="relationshipOther">その他 <span class="required">*</span></label>
-            <input type="text" id="relationshipOther" formControlName="relationshipOther" class="form-input">
-          </div>
-        </section>
-        
         <!-- 氏名 -->
         <section class="form-section">
           <h3 class="section-title">氏名</h3>
@@ -3779,6 +3772,18 @@
               <span class="detail-label">続柄種別:</span>
               <span class="detail-value">{{ selectedApplication.relationshipType || '-' }}</span>
             </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者'">
+              <span class="detail-label">続柄（妻/夫）:</span>
+              <span class="detail-value">{{ selectedApplication.spouseType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外'">
+              <span class="detail-label">続柄:</span>
+              <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外' && selectedApplication.relationship === 'その他'">
+              <span class="detail-label">その他:</span>
+              <span class="detail-value">{{ selectedApplication.relationshipOther || '-' }}</span>
+            </div>
           </div>
           <!-- 編集モード -->
           <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
@@ -3795,41 +3800,57 @@
             <div *ngIf="dependentApplicationForm.get('relationshipType')?.invalid && dependentApplicationForm.get('relationshipType')?.touched" class="error-message">
               続柄を選択してください
             </div>
+            <!-- 配偶者を選択した場合の続柄（妻/夫） -->
+            <div *ngIf="dependentApplicationForm?.get('relationshipType')?.value === '配偶者'" class="form-group" style="margin-top: 1rem;">
+              <label for="spouseType">続柄（妻/夫） <span class="required">*</span></label>
+              <select 
+                id="spouseType" 
+                formControlName="spouseType" 
+                class="form-input"
+                (change)="onSpouseTypeChange()"
+              >
+                <option value="">選択してください</option>
+                <option value="妻">妻</option>
+                <option value="夫">夫</option>
+              </select>
+              <div *ngIf="dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
+                妻または夫を選択してください
+              </div>
+            </div>
+            <!-- 配偶者以外を選択した場合の続柄 -->
+            <div *ngIf="dependentApplicationForm?.get('relationshipType')?.value === '配偶者以外'" class="form-group" style="margin-top: 1rem;">
+              <label for="relationship">続柄 <span class="required">*</span></label>
+              <select 
+                id="relationship" 
+                formControlName="relationship" 
+                class="form-input"
+                (change)="onRelationshipChange()"
+              >
+                <option value="">選択してください</option>
+                <option value="実子・養子">実子・養子</option>
+                <option value="実子・養子以外の子">実子・養子以外の子</option>
+                <option value="父母・養父母">父母・養父母</option>
+                <option value="義父母">義父母</option>
+                <option value="弟妹">弟妹</option>
+                <option value="兄姉">兄姉</option>
+                <option value="祖父母">祖父母</option>
+                <option value="曽祖父母">曽祖父母</option>
+                <option value="孫">孫</option>
+                <option value="その他">その他</option>
+              </select>
+              <div *ngIf="dependentApplicationForm.get('relationship')?.invalid && dependentApplicationForm.get('relationship')?.touched" class="error-message">
+                続柄を選択してください
+              </div>
+              <div *ngIf="dependentApplicationForm.get('relationship')?.value === 'その他'" class="form-group" style="margin-top: 0.5rem;">
+                <label for="relationshipOther">その他 <span class="required">*</span></label>
+                <input type="text" id="relationshipOther" formControlName="relationshipOther" class="form-input">
+              </div>
+            </div>
           </div>
         </section>
         
         <!-- 配偶者の場合のフォーム -->
         <ng-container *ngIf="(selectedApplication.relationshipType === '配偶者' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('relationshipType')?.value === '配偶者'))">
-          <!-- 続柄（妻or夫） -->
-          <section class="detail-section">
-            <h3 class="section-title">続柄 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
-            <!-- 表示モード -->
-            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-              <div class="detail-item">
-                <span class="detail-label">続柄:</span>
-                <span class="detail-value">{{ selectedApplication.spouseType || '-' }}</span>
-              </div>
-            </div>
-            <!-- 編集モード -->
-            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-              <div class="form-group">
-                <label for="spouseType">続柄 <span class="required">*</span></label>
-                <select 
-                  id="spouseType" 
-                  formControlName="spouseType" 
-                  class="form-input"
-                  (change)="onSpouseTypeChange()"
-                >
-                  <option value="">選択してください</option>
-                  <option value="妻">妻</option>
-                  <option value="夫">夫</option>
-                </select>
-                <div *ngIf="dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
-                  妻または夫を選択してください
-                </div>
-              </div>
-            </div>
-          </section>
           
           <!-- 氏名 -->
           <section class="detail-section">
@@ -4496,53 +4517,6 @@
         
         <!-- 配偶者以外の場合のフォーム -->
         <ng-container *ngIf="(selectedApplication.relationshipType === '配偶者以外' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('relationshipType')?.value === '配偶者以外'))">
-          <!-- 続柄 -->
-          <section class="detail-section">
-            <h3 class="section-title">続柄</h3>
-            <!-- 表示モード -->
-            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-              <div class="detail-item">
-                <span class="detail-label">続柄:</span>
-                <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
-              </div>
-              <div class="detail-item" *ngIf="selectedApplication.relationship === 'その他'">
-                <span class="detail-label">その他:</span>
-                <span class="detail-value">{{ selectedApplication.relationshipOther || '-' }}</span>
-              </div>
-            </div>
-            <!-- 編集モード -->
-            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-              <div class="form-group">
-                <label for="relationship">続柄 <span class="required">*</span></label>
-                <select 
-                  id="relationship" 
-                  formControlName="relationship" 
-                  class="form-input"
-                  (change)="onRelationshipChange()"
-                >
-                  <option value="">選択してください</option>
-                  <option value="実子・養子">実子・養子</option>
-                  <option value="実子・養子以外の子">実子・養子以外の子</option>
-                  <option value="父母・養父母">父母・養父母</option>
-                  <option value="義父母">義父母</option>
-                  <option value="弟妹">弟妹</option>
-                  <option value="兄姉">兄姉</option>
-                  <option value="祖父母">祖父母</option>
-                  <option value="曽祖父母">曽祖父母</option>
-                  <option value="孫">孫</option>
-                  <option value="その他">その他</option>
-                </select>
-                <div *ngIf="dependentApplicationForm.get('relationship')?.invalid && dependentApplicationForm.get('relationship')?.touched" class="error-message">
-                  続柄を選択してください
-                </div>
-              </div>
-              <div *ngIf="dependentApplicationForm.get('relationship')?.value === 'その他'" class="form-group">
-                <label for="relationshipOther">その他 <span class="required">*</span></label>
-                <input type="text" id="relationshipOther" formControlName="relationshipOther" class="form-input">
-              </div>
-            </div>
-          </section>
-          
           <!-- 氏名 -->
           <section class="detail-section">
             <h3 class="section-title">氏名</h3>
