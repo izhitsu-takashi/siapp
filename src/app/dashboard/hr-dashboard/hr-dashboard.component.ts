@@ -607,6 +607,8 @@ export class HrDashboardComponent {
   dependents: any[] = [];
   // 扶養者情報の展開状態
   dependentExpandedStates: boolean[] = [];
+  // 扶養者のマイナンバー表示状態
+  dependentMyNumberVisibleStates: boolean[] = [];
   // 扶養者のファイル管理（配列で管理：indexが扶養者のインデックス）
   dependentMyNumberCardFiles: (File | null)[] = [];
   dependentIdentityDocFiles: (File | null)[] = [];
@@ -2415,6 +2417,7 @@ export class HrDashboardComponent {
     this.myNumberCardFile = null;
     this.dependents = [];
     this.dependentExpandedStates = [];
+    this.dependentMyNumberVisibleStates = [];
     this.dependentMyNumberCardFiles = [];
     this.dependentIdentityDocFiles = [];
     this.dependentBasicPensionNumberDocFiles = [];
@@ -3090,6 +3093,7 @@ export class HrDashboardComponent {
       });
       // 展開状態を初期化（すべて折りたたみ）
       this.dependentExpandedStates = new Array(this.dependents.length).fill(false);
+      this.dependentMyNumberVisibleStates = new Array(this.dependents.length).fill(false);
       // ファイル配列を初期化
       this.dependentMyNumberCardFiles = new Array(this.dependents.length).fill(null);
       this.dependentIdentityDocFiles = new Array(this.dependents.length).fill(null);
@@ -3098,6 +3102,7 @@ export class HrDashboardComponent {
     } else {
       this.dependents = [];
       this.dependentExpandedStates = [];
+      this.dependentMyNumberVisibleStates = [];
       this.dependentMyNumberCardFiles = [];
       this.dependentIdentityDocFiles = [];
       this.dependentBasicPensionNumberDocFiles = [];
@@ -4566,6 +4571,7 @@ export class HrDashboardComponent {
       notes: ''
     });
     this.dependentExpandedStates.push(false);
+    this.dependentMyNumberVisibleStates.push(false);
     this.dependentMyNumberCardFiles.push(null);
     this.dependentIdentityDocFiles.push(null);
     this.dependentBasicPensionNumberDocFiles.push(null);
@@ -4576,6 +4582,7 @@ export class HrDashboardComponent {
   removeDependent(index: number) {
     this.dependents.splice(index, 1);
     this.dependentExpandedStates.splice(index, 1);
+    this.dependentMyNumberVisibleStates.splice(index, 1);
     this.dependentMyNumberCardFiles.splice(index, 1);
     this.dependentIdentityDocFiles.splice(index, 1);
     this.dependentBasicPensionNumberDocFiles.splice(index, 1);
@@ -4593,6 +4600,39 @@ export class HrDashboardComponent {
   // 扶養者情報が展開されているかどうか
   isDependentExpanded(index: number): boolean {
     return this.dependentExpandedStates[index] === true;
+  }
+
+  // 扶養者のマイナンバー表示/非表示をトグル
+  toggleDependentMyNumber(index: number) {
+    if (this.dependentMyNumberVisibleStates[index] === undefined) {
+      this.dependentMyNumberVisibleStates[index] = false;
+    }
+    this.dependentMyNumberVisibleStates[index] = !this.dependentMyNumberVisibleStates[index];
+  }
+
+  // 扶養者のマイナンバーが表示されているかどうか
+  isDependentMyNumberVisible(index: number): boolean {
+    return this.dependentMyNumberVisibleStates[index] === true;
+  }
+
+  // 扶養者のマイナンバー表示値を取得
+  getDependentMyNumberDisplay(dependent: any, index: number): string {
+    const myNumber = dependent.myNumber || 
+      (dependent.myNumberPart1 && dependent.myNumberPart2 && dependent.myNumberPart3 
+        ? dependent.myNumberPart1 + dependent.myNumberPart2 + dependent.myNumberPart3 
+        : null);
+    
+    if (!myNumber || myNumber.length !== 12) {
+      return '-';
+    }
+    if (this.isDependentMyNumberVisible(index)) {
+      const part1 = myNumber.substring(0, 4);
+      const part2 = myNumber.substring(4, 8);
+      const part3 = myNumber.substring(8, 12);
+      return `${part1}-${part2}-${part3}`;
+    } else {
+      return '●●●●-●●●●-●●●●';
+    }
   }
 
   // 年月の選択肢を生成

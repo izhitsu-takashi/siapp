@@ -3938,12 +3938,6 @@
                 <span class="detail-label">マイナンバー:</span>
                 <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber) || '-' }}</span>
               </div>
-              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl">
-                <span class="detail-label">マイナンバーカード:</span>
-                <span class="detail-value">
-                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.myNumberCardFileUrl, selectedApplication.myNumberCardFile) }}</a>
-                </span>
-              </div>
             </div>
             <!-- 編集モード -->
             <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
@@ -3983,6 +3977,23 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </section>
+          
+          <!-- マイナンバーカード添付（配偶者の場合） -->
+          <section class="detail-section" *ngIf="selectedApplication.myNumberCardFileUrl || (isEditModeForReapplication && selectedApplication.status === '差し戻し')">
+            <h3 class="section-title">マイナンバーカード添付</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl">
+                <span class="detail-label">マイナンバーカード:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.myNumberCardFileUrl, selectedApplication.myNumberCardFile) }}</a>
+                </span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
               <div class="form-group">
                 <label for="dependentMyNumberCard">マイナンバーカード添付</label>
                 <input 

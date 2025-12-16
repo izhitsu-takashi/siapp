@@ -2708,6 +2708,117 @@
   font-weight: 600;
 }
 
+/* 扶養者情報カード（HR用） */
+.hr-dependent-card {
+  background: #f0f4ff;
+  border: 1px solid #d0d9ff;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hr-dependent-card .dependent-header {
+  margin-bottom: 1rem;
+}
+
+.hr-dependent-card .info-content {
+  background: white;
+  border-radius: 6px;
+  padding: 1rem;
+  border: 1px solid #e0e7ff;
+}
+
+/* マイナンバー表示/非表示ボタン */
+.my-number-toggle-btn {
+  margin-left: 0.15rem !important;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.my-number-toggle-btn:hover {
+  background: #764ba2;
+}
+
+/* 情報照会レイアウト（扶養者情報用） */
+.info-inquiry-layout .info-row-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1rem, 1.5vw, 1.5rem);
+  margin-bottom: 0.75rem;
+}
+
+.info-inquiry-layout .info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.5rem, 1vw, 1rem);
+  min-height: 2rem;
+}
+
+/* マイナンバー行の間隔を狭くする（gapを相殺） */
+.info-inquiry-layout .info-row .info-value + .my-number-toggle-btn {
+  margin-left: -0.35rem !important;
+}
+
+.info-inquiry-layout .info-row.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-inquiry-layout .info-label {
+  font-weight: 500;
+  color: #666;
+  min-width: clamp(120px, 15vw, 180px);
+  font-size: clamp(0.85rem, 1vw, 1rem);
+  flex-shrink: 0;
+}
+
+.info-inquiry-layout .info-value {
+  color: #333;
+  font-size: clamp(0.85rem, 1vw, 1rem);
+  word-break: break-word;
+  flex: 1;
+}
+
+.info-inquiry-layout .file-link {
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.info-inquiry-layout .file-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+/* 情報照会ページのレスポンシブ対応 */
+@media (max-width: 768px) {
+  .info-inquiry-layout .info-row-pair {
+    grid-template-columns: 1fr;
+    gap: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .info-inquiry-layout .info-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .info-inquiry-layout .info-label {
+    min-width: auto;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  .info-inquiry-layout .info-row-pair {
+    gap: clamp(0.75rem, 1vw, 1rem);
+  }
+}
+
 /* 従業員検索結果 */
 .employee-search-results {
   margin-top: 1rem;
