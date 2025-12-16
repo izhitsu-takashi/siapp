@@ -1783,31 +1783,786 @@
         <div *ngIf="dependentApplicationForm.get('relationshipType')?.invalid && dependentApplicationForm.get('relationshipType')?.touched" class="error-message">
           続柄を選択してください
         </div>
-        
-        <!-- 配偶者選択時 -->
-        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者'" class="form-group">
-          <label for="spouseType">配偶者の種別 <span class="required">*</span></label>
-          <select 
-            id="spouseType" 
-            formControlName="spouseType" 
-            class="form-input"
-            (change)="onSpouseTypeChange()"
-          >
-            <option value="">選択してください</option>
-            <option value="妻">妻</option>
-            <option value="夫">夫</option>
-          </select>
-        </div>
-        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者' && dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
-          妻または夫を選択してください
-        </div>
-        
-        <!-- 配偶者以外選択時 -->
-        <div *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者以外'" class="form-group">
-          <label for="relationship">続柄 <span class="required">*</span></label>
-          <input type="text" id="relationship" formControlName="relationship" class="form-input" placeholder="例: 長男、長女">
-        </div>
       </section>
+      
+      <!-- 配偶者の場合のフォーム -->
+      <ng-container *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者'">
+        <!-- 続柄（妻or夫） -->
+        <section class="form-section">
+          <h3 class="section-title">続柄 <span class="required">*</span></h3>
+          <div class="form-group">
+            <label for="spouseType">続柄 <span class="required">*</span></label>
+            <select 
+              id="spouseType" 
+              formControlName="spouseType" 
+              class="form-input"
+              (change)="onSpouseTypeChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="妻">妻</option>
+              <option value="夫">夫</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('spouseType')?.invalid && dependentApplicationForm.get('spouseType')?.touched" class="error-message">
+              妻または夫を選択してください
+            </div>
+          </div>
+        </section>
+        
+        <!-- 氏名 -->
+        <section class="form-section">
+          <h3 class="section-title">氏名</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="dependentLastName">姓 <span class="required">*</span></label>
+              <input type="text" id="dependentLastName" formControlName="lastName" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="dependentFirstName">名 <span class="required">*</span></label>
+              <input type="text" id="dependentFirstName" formControlName="firstName" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="dependentLastNameKana">姓（フリガナ） <span class="required">*</span></label>
+              <input type="text" id="dependentLastNameKana" formControlName="lastNameKana" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="dependentFirstNameKana">名（フリガナ） <span class="required">*</span></label>
+              <input type="text" id="dependentFirstNameKana" formControlName="firstNameKana" class="form-input">
+            </div>
+          </div>
+        </section>
+        
+        <!-- 身分証明書添付 -->
+        <section class="form-section">
+          <h3 class="section-title">身分証明書添付</h3>
+          <div class="form-group">
+            <label for="dependentIdentityDoc">身分証明書添付</label>
+            <input 
+              type="file" 
+              id="dependentIdentityDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'identityDoc')"
+            >
+            <div *ngIf="dependentIdentityDocFile" class="file-name">{{ dependentIdentityDocFile.name }}</div>
+          </div>
+        </section>
+        
+        <!-- 生年月日 -->
+        <section class="form-section">
+          <h3 class="section-title">生年月日</h3>
+          <div class="form-group">
+            <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
+            <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+          </div>
+        </section>
+        
+        <!-- マイナンバー -->
+        <section class="form-section">
+          <h3 class="section-title">マイナンバー</h3>
+          <div class="form-group">
+            <label>マイナンバー</label>
+            <div class="my-number-container">
+              <div class="my-number-inputs">
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart1" 
+                  formControlName="myNumberPart1" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 1)"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart2" 
+                  formControlName="myNumberPart2" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 2)"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart3" 
+                  formControlName="myNumberPart3" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 3)"
+                  placeholder="0000"
+                >
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dependentMyNumberCard">マイナンバーカード添付</label>
+            <input 
+              type="file" 
+              id="dependentMyNumberCard" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'myNumberCard')"
+            >
+            <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
+          </div>
+        </section>
+        
+        <!-- 基礎年金番号 -->
+        <section class="form-section">
+          <h3 class="section-title">基礎年金番号</h3>
+          <div class="form-group">
+            <label>基礎年金番号 <span class="required">*</span></label>
+            <div class="basic-pension-number-container">
+              <input 
+                type="text" 
+                id="dependentBasicPensionNumberPart1" 
+                formControlName="basicPensionNumberPart1" 
+                class="form-input basic-pension-part"
+                maxlength="4"
+                (input)="formatDependentBasicPensionNumberInput($event, 1)"
+                placeholder="0000"
+              >
+              <span class="basic-pension-separator">-</span>
+              <input 
+                type="text" 
+                id="dependentBasicPensionNumberPart2" 
+                formControlName="basicPensionNumberPart2" 
+                class="form-input basic-pension-part"
+                maxlength="6"
+                (input)="formatDependentBasicPensionNumberInput($event, 2)"
+                placeholder="000000"
+              >
+            </div>
+            <div *ngIf="(dependentApplicationForm.get('basicPensionNumberPart1')?.invalid || dependentApplicationForm.get('basicPensionNumberPart2')?.invalid) && (dependentApplicationForm.get('basicPensionNumberPart1')?.touched || dependentApplicationForm.get('basicPensionNumberPart2')?.touched)" class="error-message">
+              基礎年金番号を入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dependentBasicPensionNumberDoc">基礎年金番号書類添付 <span class="required">*</span></label>
+            <input 
+              type="file" 
+              id="dependentBasicPensionNumberDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'basicPensionNumberDoc')"
+            >
+            <div *ngIf="dependentBasicPensionNumberDocFile" class="file-name">{{ dependentBasicPensionNumberDocFile.name }}</div>
+          </div>
+        </section>
+        
+        <!-- 外国籍か -->
+        <section class="form-section">
+          <h3 class="section-title">外国籍か</h3>
+          <div class="form-group">
+            <label>外国籍か <span class="required">*</span></label>
+            <div>
+              <label class="radio-label">
+                <input type="radio" formControlName="isForeignNational" value="はい" (change)="onForeignNationalChange()">
+                はい
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="isForeignNational" value="いいえ" (change)="onForeignNationalChange()">
+                いいえ
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('isForeignNational')?.invalid && dependentApplicationForm.get('isForeignNational')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('isForeignNational')?.value === 'はい'" class="form-grid">
+            <div class="form-group">
+              <label for="nationality">国籍 <span class="required">*</span></label>
+              <input type="text" id="nationality" formControlName="nationality" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="aliasName">通称名 <span class="required">*</span></label>
+              <input type="text" id="aliasName" formControlName="aliasName" class="form-input">
+            </div>
+          </div>
+        </section>
+        
+        <!-- 住所 -->
+        <section class="form-section">
+          <h3 class="section-title">住所</h3>
+          <div class="form-group">
+            <label>住所 <span class="required">*</span></label>
+            <div>
+              <label class="radio-label">
+                <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
+                同居
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="livingTogether" value="別居" (change)="onLivingTogetherChange()">
+                別居
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('livingTogether')?.invalid && dependentApplicationForm.get('livingTogether')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('livingTogether')?.value === '別居'" class="form-grid">
+            <div class="form-group">
+              <label for="dependentPostalCode">郵便番号 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="dependentPostalCode" 
+                formControlName="postalCode" 
+                class="form-input" 
+                placeholder="例: 1234567"
+                maxlength="7"
+                (input)="formatDependentPostalCode($event)"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="dependentAddress">住所 <span class="required">*</span></label>
+              <textarea id="dependentAddress" formControlName="address" class="form-input" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="monthlySupportAmount">毎月の仕送り額 <span class="required">*</span></label>
+              <input type="number" id="monthlySupportAmount" formControlName="monthlySupportAmount" class="form-input" placeholder="円">
+            </div>
+            <div class="form-group full-width">
+              <label for="supportAmountDoc">仕送り額証明書類添付 <span class="required">*</span></label>
+              <input 
+                type="file" 
+                id="supportAmountDoc" 
+                class="form-input"
+                accept=".pdf,.jpg,.jpeg,.png"
+                (change)="onDependentFileSelected($event, 'supportAmountDoc')"
+              >
+              <div *ngIf="supportAmountDocFile" class="file-name">{{ supportAmountDocFile.name }}</div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 電話番号 -->
+        <section class="form-section">
+          <h3 class="section-title">電話番号</h3>
+          <div class="form-group">
+            <label for="phoneNumberType">電話番号（自宅、携帯、勤務先、その他） <span class="required">*</span></label>
+            <select 
+              id="phoneNumberType" 
+              formControlName="phoneNumberType" 
+              class="form-input"
+              (change)="onPhoneNumberTypeChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="自宅">自宅</option>
+              <option value="携帯">携帯</option>
+              <option value="勤務先">勤務先</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('phoneNumberType')?.invalid && dependentApplicationForm.get('phoneNumberType')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('phoneNumberType')?.value === 'その他'" class="form-group">
+            <label for="phoneNumberOther">その他 <span class="required">*</span></label>
+            <input type="text" id="phoneNumberOther" formControlName="phoneNumberOther" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="dependentPhoneNumber">電話番号 <span class="required">*</span></label>
+            <input 
+              type="tel" 
+              id="dependentPhoneNumber" 
+              formControlName="phoneNumber" 
+              class="form-input"
+              maxlength="11"
+              (input)="formatDependentPhoneNumber($event)"
+            >
+          </div>
+        </section>
+        
+        <!-- 被扶養者になった日 -->
+        <section class="form-section">
+          <h3 class="section-title">被扶養者になった日</h3>
+          <div class="form-group">
+            <label for="dependentStartDate">被扶養者になった日 <span class="required">*</span></label>
+            <input type="date" id="dependentStartDate" formControlName="dependentStartDate" class="form-input">
+          </div>
+        </section>
+        
+        <!-- 理由 -->
+        <section class="form-section">
+          <h3 class="section-title">理由</h3>
+          <div class="form-group">
+            <label for="dependentReason">理由 <span class="required">*</span></label>
+            <select 
+              id="dependentReason" 
+              formControlName="dependentReason" 
+              class="form-input"
+              (change)="onDependentReasonChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="配偶者の就職">配偶者の就職</option>
+              <option value="婚姻">婚姻</option>
+              <option value="離職">離職</option>
+              <option value="収入減少">収入減少</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('dependentReason')?.invalid && dependentApplicationForm.get('dependentReason')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('dependentReason')?.value === 'その他'" class="form-group">
+            <label for="dependentReasonOther">その他 <span class="required">*</span></label>
+            <input type="text" id="dependentReasonOther" formControlName="dependentReasonOther" class="form-input">
+          </div>
+        </section>
+        
+        <!-- 職業 -->
+        <section class="form-section">
+          <h3 class="section-title">職業</h3>
+          <div class="form-group">
+            <label for="occupation">職業 <span class="required">*</span></label>
+            <select 
+              id="occupation" 
+              formControlName="occupation" 
+              class="form-input"
+              (change)="onOccupationChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="無職">無職</option>
+              <option value="パート">パート</option>
+              <option value="年金受給者">年金受給者</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('occupation')?.invalid && dependentApplicationForm.get('occupation')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('occupation')?.value === 'その他'" class="form-group">
+            <label for="occupationOther">その他 <span class="required">*</span></label>
+            <input type="text" id="occupationOther" formControlName="occupationOther" class="form-input">
+          </div>
+        </section>
+        
+        <!-- 年収見込み額 -->
+        <section class="form-section">
+          <h3 class="section-title">年収見込み額</h3>
+          <div class="form-group">
+            <label for="dependentAnnualIncome">年収見込み額 <span class="required">*</span></label>
+            <input type="number" id="dependentAnnualIncome" formControlName="annualIncome" class="form-input" placeholder="円">
+          </div>
+        </section>
+        
+        <!-- 海外居住者または海外から国内に転入した -->
+        <section class="form-section">
+          <h3 class="section-title">海外居住者または海外から国内に転入した</h3>
+          <div class="form-group">
+            <label>海外居住者または海外から国内に転入した <span class="required">*</span></label>
+            <div>
+              <label class="radio-label">
+                <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onDependentOverseasResidentChange()">
+                はい
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="isOverseasResident" value="いいえ" (change)="onDependentOverseasResidentChange()">
+                いいえ
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.invalid && dependentApplicationForm.get('isOverseasResident')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.value === 'はい'" class="form-grid">
+            <div class="form-group">
+              <label for="overseasSpecialRequirementDate">海外特例要件に該当した日 <span class="required">*</span></label>
+              <input type="date" id="overseasSpecialRequirementDate" formControlName="overseasSpecialRequirementDate" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="overseasReason">理由 <span class="required">*</span></label>
+              <select 
+                id="overseasReason" 
+                formControlName="overseasReason" 
+                class="form-input"
+                (change)="onOverseasReasonChange()"
+              >
+                <option value="">選択してください</option>
+                <option value="留学">留学</option>
+                <option value="同行家族">同行家族</option>
+                <option value="特定活動">特定活動</option>
+                <option value="海外婚姻">海外婚姻</option>
+                <option value="その他">その他</option>
+              </select>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('overseasReason')?.value === 'その他'" class="form-group">
+              <label for="overseasReasonOther">その他 <span class="required">*</span></label>
+              <input type="text" id="overseasReasonOther" formControlName="overseasReasonOther" class="form-input">
+            </div>
+          </div>
+        </section>
+        
+        <!-- 資格確認書発行が必要か -->
+        <section class="form-section">
+          <h3 class="section-title">資格確認書発行が必要か</h3>
+          <div class="form-group">
+            <label>資格確認書発行が必要か <span class="required">*</span></label>
+            <div>
+              <label class="radio-label">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
+                はい
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ">
+                いいえ
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('needsQualificationConfirmation')?.invalid && dependentApplicationForm.get('needsQualificationConfirmation')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      
+      <!-- 配偶者以外の場合のフォーム -->
+      <ng-container *ngIf="dependentApplicationForm.get('relationshipType')?.value === '配偶者以外'">
+        <!-- 続柄 -->
+        <section class="form-section">
+          <h3 class="section-title">続柄</h3>
+          <div class="form-group">
+            <label for="relationship">続柄 <span class="required">*</span></label>
+            <select 
+              id="relationship" 
+              formControlName="relationship" 
+              class="form-input"
+              (change)="onRelationshipChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="実子・養子">実子・養子</option>
+              <option value="実子・養子以外の子">実子・養子以外の子</option>
+              <option value="父母・養父母">父母・養父母</option>
+              <option value="義父母">義父母</option>
+              <option value="弟妹">弟妹</option>
+              <option value="兄姉">兄姉</option>
+              <option value="祖父母">祖父母</option>
+              <option value="曽祖父母">曽祖父母</option>
+              <option value="孫">孫</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('relationship')?.invalid && dependentApplicationForm.get('relationship')?.touched" class="error-message">
+              続柄を選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('relationship')?.value === 'その他'" class="form-group">
+            <label for="relationshipOther">その他 <span class="required">*</span></label>
+            <input type="text" id="relationshipOther" formControlName="relationshipOther" class="form-input">
+          </div>
+        </section>
+        
+        <!-- 氏名 -->
+        <section class="form-section">
+          <h3 class="section-title">氏名</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="dependentLastName">姓 <span class="required">*</span></label>
+              <input type="text" id="dependentLastName" formControlName="lastName" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="dependentFirstName">名 <span class="required">*</span></label>
+              <input type="text" id="dependentFirstName" formControlName="firstName" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="dependentLastNameKana">姓（フリガナ） <span class="required">*</span></label>
+              <input type="text" id="dependentLastNameKana" formControlName="lastNameKana" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="dependentFirstNameKana">名（フリガナ） <span class="required">*</span></label>
+              <input type="text" id="dependentFirstNameKana" formControlName="firstNameKana" class="form-input">
+            </div>
+          </div>
+        </section>
+        
+        <!-- 身分証明書添付 -->
+        <section class="form-section">
+          <h3 class="section-title">身分証明書添付</h3>
+          <div class="form-group">
+            <label for="dependentIdentityDoc">身分証明書添付</label>
+            <input 
+              type="file" 
+              id="dependentIdentityDoc" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'identityDoc')"
+            >
+            <div *ngIf="dependentIdentityDocFile" class="file-name">{{ dependentIdentityDocFile.name }}</div>
+          </div>
+        </section>
+        
+        <!-- 生年月日 -->
+        <section class="form-section">
+          <h3 class="section-title">生年月日</h3>
+          <div class="form-group">
+            <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
+            <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+          </div>
+        </section>
+        
+        <!-- マイナンバー -->
+        <section class="form-section">
+          <h3 class="section-title">マイナンバー</h3>
+          <div class="form-group">
+            <label>マイナンバー <span class="required">*</span></label>
+            <div class="my-number-container">
+              <div class="my-number-inputs">
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart1" 
+                  formControlName="myNumberPart1" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 1)"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart2" 
+                  formControlName="myNumberPart2" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 2)"
+                  placeholder="0000"
+                >
+                <span class="my-number-separator">-</span>
+                <input 
+                  type="text" 
+                  id="dependentMyNumberPart3" 
+                  formControlName="myNumberPart3" 
+                  class="form-input my-number-part"
+                  maxlength="4"
+                  (input)="formatDependentMyNumberInput($event, 3)"
+                  placeholder="0000"
+                >
+              </div>
+            </div>
+            <div *ngIf="(dependentApplicationForm.get('myNumberPart1')?.invalid || dependentApplicationForm.get('myNumberPart2')?.invalid || dependentApplicationForm.get('myNumberPart3')?.invalid) && (dependentApplicationForm.get('myNumberPart1')?.touched || dependentApplicationForm.get('myNumberPart2')?.touched || dependentApplicationForm.get('myNumberPart3')?.touched)" class="error-message">
+              マイナンバーを入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dependentMyNumberCard">マイナンバーカード添付 <span class="required">*</span></label>
+            <input 
+              type="file" 
+              id="dependentMyNumberCard" 
+              class="form-input"
+              accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onDependentFileSelected($event, 'myNumberCard')"
+            >
+            <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
+          </div>
+        </section>
+        
+        <!-- 性別 -->
+        <section class="form-section">
+          <h3 class="section-title">性別</h3>
+          <div class="form-group">
+            <label for="dependentGender">性別 <span class="required">*</span></label>
+            <select id="dependentGender" formControlName="gender" class="form-input">
+              <option value="">選択してください</option>
+              <option value="男性">男性</option>
+              <option value="女性">女性</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('gender')?.invalid && dependentApplicationForm.get('gender')?.touched" class="error-message">
+              性別を選択してください
+            </div>
+          </div>
+        </section>
+        
+        <!-- 住所 -->
+        <section class="form-section">
+          <h3 class="section-title">住所</h3>
+          <div class="form-group">
+            <label>住所 <span class="required">*</span></label>
+            <div>
+              <label class="radio-label">
+                <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
+                同居
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="livingTogether" value="別居" (change)="onLivingTogetherChange()">
+                別居
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('livingTogether')?.invalid && dependentApplicationForm.get('livingTogether')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('livingTogether')?.value === '別居'" class="form-grid">
+            <div class="form-group">
+              <label for="dependentPostalCode">郵便番号 <span class="required">*</span></label>
+              <input 
+                type="text" 
+                id="dependentPostalCode" 
+                formControlName="postalCode" 
+                class="form-input" 
+                placeholder="例: 1234567"
+                maxlength="7"
+                (input)="formatDependentPostalCode($event)"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="dependentAddress">住所 <span class="required">*</span></label>
+              <textarea id="dependentAddress" formControlName="address" class="form-input" rows="2"></textarea>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 海外居住者、または海外から国内に転入した -->
+        <section class="form-section">
+          <h3 class="section-title">海外居住者、または海外から国内に転入した</h3>
+          <div class="form-group">
+            <label>海外居住者、または海外から国内に転入した <span class="required">*</span></label>
+            <div>
+              <label class="radio-label">
+                <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onDependentOverseasResidentChange()">
+                はい
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="isOverseasResident" value="いいえ" (change)="onDependentOverseasResidentChange()">
+                いいえ
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.invalid && dependentApplicationForm.get('isOverseasResident')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.value === 'はい'" class="form-group">
+            <label for="overseasReason">理由 <span class="required">*</span></label>
+            <select 
+              id="overseasReason" 
+              formControlName="overseasReason" 
+              class="form-input"
+              (change)="onOverseasReasonChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="留学">留学</option>
+              <option value="同行家族">同行家族</option>
+              <option value="特定活動">特定活動</option>
+              <option value="海外婚姻">海外婚姻</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('overseasReason')?.value === 'その他'" class="form-group">
+              <label for="overseasReasonOther">その他 <span class="required">*</span></label>
+              <input type="text" id="overseasReasonOther" formControlName="overseasReasonOther" class="form-input">
+            </div>
+          </div>
+        </section>
+        
+        <!-- 被扶養者になった日 -->
+        <section class="form-section">
+          <h3 class="section-title">被扶養者になった日</h3>
+          <div class="form-group">
+            <label for="dependentStartDate">被扶養者になった日 <span class="required">*</span></label>
+            <input type="date" id="dependentStartDate" formControlName="dependentStartDate" class="form-input">
+          </div>
+        </section>
+        
+        <!-- 職業 -->
+        <section class="form-section">
+          <h3 class="section-title">職業</h3>
+          <div class="form-group">
+            <label for="occupation">職業 <span class="required">*</span></label>
+            <select 
+              id="occupation" 
+              formControlName="occupation" 
+              class="form-input"
+              (change)="onOccupationChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="無職">無職</option>
+              <option value="パート">パート</option>
+              <option value="年金受給者">年金受給者</option>
+              <option value="小中学生">小中学生</option>
+              <option value="高校生">高校生</option>
+              <option value="大学生">大学生</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('occupation')?.invalid && dependentApplicationForm.get('occupation')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('occupation')?.value === '大学生'" class="form-group">
+            <label for="studentYear">何年生 <span class="required">*</span></label>
+            <input type="text" id="studentYear" formControlName="studentYear" class="form-input" placeholder="例: 1年生">
+          </div>
+          <div *ngIf="dependentApplicationForm.get('occupation')?.value === 'その他'" class="form-group">
+            <label for="occupationOther">その他 <span class="required">*</span></label>
+            <input type="text" id="occupationOther" formControlName="occupationOther" class="form-input">
+          </div>
+        </section>
+        
+        <!-- 年収見込み額 -->
+        <section class="form-section">
+          <h3 class="section-title">年収見込み額</h3>
+          <div class="form-group">
+            <label for="dependentAnnualIncome">年収見込み額 <span class="required">*</span></label>
+            <input type="number" id="dependentAnnualIncome" formControlName="annualIncome" class="form-input" placeholder="円">
+          </div>
+        </section>
+        
+        <!-- 理由 -->
+        <section class="form-section">
+          <h3 class="section-title">理由</h3>
+          <div class="form-group">
+            <label for="dependentReason">理由 <span class="required">*</span></label>
+            <select 
+              id="dependentReason" 
+              formControlName="dependentReason" 
+              class="form-input"
+              (change)="onDependentReasonChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="出生">出生</option>
+              <option value="離職">離職</option>
+              <option value="収入減">収入減</option>
+              <option value="同居">同居</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentApplicationForm.get('dependentReason')?.invalid && dependentApplicationForm.get('dependentReason')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+          <div *ngIf="dependentApplicationForm.get('dependentReason')?.value === 'その他'" class="form-group">
+            <label for="dependentReasonOther">その他 <span class="required">*</span></label>
+            <input type="text" id="dependentReasonOther" formControlName="dependentReasonOther" class="form-input">
+          </div>
+        </section>
+        
+        <!-- 資格確認書発行が必要か -->
+        <section class="form-section">
+          <h3 class="section-title">資格確認書発行が必要か</h3>
+          <div class="form-group">
+            <label>資格確認書発行が必要か <span class="required">*</span></label>
+            <div>
+              <label class="radio-label">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
+                はい
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ">
+                いいえ
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('needsQualificationConfirmation')?.invalid && dependentApplicationForm.get('needsQualificationConfirmation')?.touched" class="error-message">
+              選択してください
+            </div>
+          </div>
+        </section>
+        
+        <!-- 配偶者の年収 -->
+        <section class="form-section">
+          <h3 class="section-title">配偶者の年収</h3>
+          <div class="form-group">
+            <label for="spouseAnnualIncome">配偶者の年収 <span class="required">*</span></label>
+            <input type="number" id="spouseAnnualIncome" formControlName="spouseAnnualIncome" class="form-input" placeholder="円">
+            <div *ngIf="dependentApplicationForm.get('spouseAnnualIncome')?.invalid && dependentApplicationForm.get('spouseAnnualIncome')?.touched" class="error-message">
+              配偶者の年収を入力してください
+            </div>
+          </div>
+        </section>
+      </ng-container>
       
       <!-- 基礎年金番号 -->
       <section class="form-section">
@@ -2117,28 +2872,11 @@
     </div>
     
     <form [formGroup]="dependentRemovalForm" (ngSubmit)="submitDependentRemovalApplication()" class="application-form">
-      <!-- 被扶養者移動日 -->
+      <!-- 扶養者を選択 -->
       <section class="form-section">
-        <h3 class="section-title">被扶養者移動日</h3>
+        <h3 class="section-title">扶養者を選択</h3>
         <div class="form-group">
-          <label for="removalDate">被扶養者移動日 <span class="required">*</span></label>
-          <input 
-            type="date" 
-            id="removalDate" 
-            formControlName="removalDate" 
-            class="form-input"
-          >
-          <div *ngIf="dependentRemovalForm.get('removalDate')?.invalid && dependentRemovalForm.get('removalDate')?.touched" class="error-message">
-            被扶養者移動日を入力してください
-          </div>
-        </div>
-      </section>
-      
-      <!-- 被扶養者情報 -->
-      <section class="form-section">
-        <h3 class="section-title">被扶養者情報</h3>
-        <div class="form-group">
-          <label for="dependentId">被扶養者 <span class="required">*</span></label>
+          <label for="dependentId">扶養者 <span class="required">*</span></label>
           <select 
             id="dependentId" 
             formControlName="dependentId" 
@@ -2151,7 +2889,7 @@
             </option>
           </select>
           <div *ngIf="dependentRemovalForm.get('dependentId')?.invalid && dependentRemovalForm.get('dependentId')?.touched" class="error-message">
-            被扶養者を選択してください
+            扶養者を選択してください
           </div>
           <div *ngIf="dependentsData.length === 0" class="info-message">
             登録されている扶養者がいません。
@@ -2159,20 +2897,171 @@
         </div>
       </section>
       
-      <!-- 扶養削除の理由 -->
+      <!-- 被扶養者ではなくなった日 -->
       <section class="form-section">
-        <h3 class="section-title">扶養削除の理由</h3>
+        <h3 class="section-title">被扶養者ではなくなった日</h3>
         <div class="form-group">
-          <label for="removalReason">扶養削除の理由 <span class="required">*</span></label>
-          <textarea 
+          <label for="removalDate">被扶養者ではなくなった日 <span class="required">*</span></label>
+          <input 
+            type="date" 
+            id="removalDate" 
+            formControlName="removalDate" 
+            class="form-input"
+          >
+          <div *ngIf="dependentRemovalForm.get('removalDate')?.invalid && dependentRemovalForm.get('removalDate')?.touched" class="error-message">
+            被扶養者ではなくなった日を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 理由 -->
+      <section class="form-section">
+        <h3 class="section-title">理由</h3>
+        <div class="form-group">
+          <label for="removalReason">理由 <span class="required">*</span></label>
+          <select 
             id="removalReason" 
             formControlName="removalReason" 
             class="form-input"
-            rows="4"
-            placeholder="扶養削除の理由を入力してください"
-          ></textarea>
+            (change)="onRemovalReasonChange()"
+          >
+            <option value="">選択してください</option>
+            <option value="死亡">死亡</option>
+            <option value="離婚">離婚</option>
+            <option value="就職・収入増加">就職・収入増加</option>
+            <option value="75歳到達">75歳到達</option>
+            <option value="障害認定">障害認定</option>
+            <option value="その他">その他</option>
+          </select>
           <div *ngIf="dependentRemovalForm.get('removalReason')?.invalid && dependentRemovalForm.get('removalReason')?.touched" class="error-message">
-            扶養削除の理由を入力してください
+            理由を選択してください
+          </div>
+        </div>
+        <!-- 死亡選択時：死亡年月日 -->
+        <div *ngIf="dependentRemovalForm.get('removalReason')?.value === '死亡'" class="form-group">
+          <label for="deathDate">死亡年月日 <span class="required">*</span></label>
+          <input 
+            type="date" 
+            id="deathDate" 
+            formControlName="deathDate" 
+            class="form-input"
+          >
+          <div *ngIf="dependentRemovalForm.get('deathDate')?.invalid && dependentRemovalForm.get('deathDate')?.touched" class="error-message">
+            死亡年月日を入力してください
+          </div>
+        </div>
+        <!-- その他選択時：その他の入力 -->
+        <div *ngIf="dependentRemovalForm.get('removalReason')?.value === 'その他'" class="form-group">
+          <label for="removalReasonOther">その他 <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="removalReasonOther" 
+            formControlName="removalReasonOther" 
+            class="form-input"
+            placeholder="理由を入力してください"
+          >
+          <div *ngIf="dependentRemovalForm.get('removalReasonOther')?.invalid && dependentRemovalForm.get('removalReasonOther')?.touched" class="error-message">
+            理由を入力してください
+          </div>
+        </div>
+      </section>
+      
+      <!-- 海外居住者または海外から国内に転入したか -->
+      <section class="form-section">
+        <h3 class="section-title">海外居住者または海外から国内に転入したか</h3>
+        <div class="form-group">
+          <label>海外居住者または海外から国内に転入したか <span class="required">*</span></label>
+          <div>
+            <label class="radio-label">
+              <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onRemovalOverseasResidentChange()">
+              はい
+            </label>
+            <label class="radio-label">
+              <input type="radio" formControlName="isOverseasResident" value="いいえ" (change)="onRemovalOverseasResidentChange()">
+              いいえ
+            </label>
+          </div>
+          <div *ngIf="dependentRemovalForm.get('isOverseasResident')?.invalid && dependentRemovalForm.get('isOverseasResident')?.touched" class="error-message">
+            選択してください
+          </div>
+        </div>
+        <!-- はいの場合 -->
+        <div *ngIf="dependentRemovalForm.get('isOverseasResident')?.value === 'はい'" class="form-grid">
+          <div class="form-group">
+            <label for="overseasNonQualificationDate">海外特例要件に非該当となった日 <span class="required">*</span></label>
+            <input 
+              type="date" 
+              id="overseasNonQualificationDate" 
+              formControlName="overseasNonQualificationDate" 
+              class="form-input"
+            >
+            <div *ngIf="dependentRemovalForm.get('overseasNonQualificationDate')?.invalid && dependentRemovalForm.get('overseasNonQualificationDate')?.touched" class="error-message">
+              海外特例要件に非該当となった日を入力してください
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="overseasReason">理由 <span class="required">*</span></label>
+            <select 
+              id="overseasReason" 
+              formControlName="overseasReason" 
+              class="form-input"
+              (change)="onRemovalOverseasReasonChange()"
+            >
+              <option value="">選択してください</option>
+              <option value="国内転入">国内転入</option>
+              <option value="その他">その他</option>
+            </select>
+            <div *ngIf="dependentRemovalForm.get('overseasReason')?.invalid && dependentRemovalForm.get('overseasReason')?.touched" class="error-message">
+              理由を選択してください
+            </div>
+          </div>
+          <!-- 国内転入選択時：転入日 -->
+          <div *ngIf="dependentRemovalForm.get('overseasReason')?.value === '国内転入'" class="form-group">
+            <label for="transferDate">転入日 <span class="required">*</span></label>
+            <input 
+              type="date" 
+              id="transferDate" 
+              formControlName="transferDate" 
+              class="form-input"
+            >
+            <div *ngIf="dependentRemovalForm.get('transferDate')?.invalid && dependentRemovalForm.get('transferDate')?.touched" class="error-message">
+              転入日を入力してください
+            </div>
+          </div>
+          <!-- その他選択時：その他の入力 -->
+          <div *ngIf="dependentRemovalForm.get('overseasReason')?.value === 'その他'" class="form-group">
+            <label for="overseasReasonOther">その他 <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="overseasReasonOther" 
+              formControlName="overseasReasonOther" 
+              class="form-input"
+              placeholder="理由を入力してください"
+            >
+            <div *ngIf="dependentRemovalForm.get('overseasReasonOther')?.invalid && dependentRemovalForm.get('overseasReasonOther')?.touched" class="error-message">
+              理由を入力してください
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 資格証明書発行が必要か -->
+      <section class="form-section">
+        <h3 class="section-title">資格証明書発行が必要か</h3>
+        <div class="form-group">
+          <label>資格証明書発行が必要か <span class="required">*</span></label>
+          <div>
+            <label class="radio-label">
+              <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
+              はい
+            </label>
+            <label class="radio-label">
+              <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ">
+              いいえ
+            </label>
+          </div>
+          <div *ngIf="dependentRemovalForm.get('needsQualificationConfirmation')?.invalid && dependentRemovalForm.get('needsQualificationConfirmation')?.touched" class="error-message">
+            選択してください
           </div>
         </div>
       </section>

@@ -147,6 +147,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
   dependentMyNumberDocFile: File | null = null;
   dependentIdentityDocFile: File | null = null;
   dependentDisabilityCardFile: File | null = null;
+  supportAmountDocFile: File | null = null; // 仕送り額証明書類添付（配偶者の別居の場合）
 
   // 選択肢
   employmentTypes = ['正社員', '契約社員', 'パート', 'アルバイト', '派遣社員'];
@@ -1550,6 +1551,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
     this.dependentMyNumberDocFile = null;
     this.dependentIdentityDocFile = null;
     this.dependentDisabilityCardFile = null;
+    this.supportAmountDocFile = null;
     this.nameChangeIdDocumentFile = null;
     this.maternityLeaveDocumentFile = null;
     this.myNumberCardFile = null;
@@ -1634,55 +1636,101 @@ export class EmployeeDashboardComponent implements OnDestroy {
     return this.fb.group({
       // 続柄欄
       relationshipType: ['', Validators.required], // 配偶者/配偶者以外
+      
+      // 配偶者の場合のフィールド
       spouseType: [''], // 妻/夫（配偶者選択時のみ必須）
+      
+      // 配偶者以外の場合のフィールド
       relationship: [''], // 続柄（配偶者以外選択時のみ必須）
+      relationshipOther: [''], // 続柄その他（その他選択時のみ必須）
+      spouseAnnualIncome: [''], // 配偶者の年収（配偶者以外選択時のみ必須）
       
-      // 基礎年金番号
-      basicPensionNumberPart1: ['', Validators.required], // 必須
-      basicPensionNumberPart2: ['', Validators.required], // 必須
-      
-      // 基本情報
+      // 共通基本情報
       lastName: ['', Validators.required],
       firstName: ['', Validators.required],
-      lastNameKana: [''],
-      firstNameKana: [''],
+      lastNameKana: ['', Validators.required],
+      firstNameKana: ['', Validators.required],
       birthDate: ['', Validators.required],
-      gender: ['', Validators.required],
-      phoneNumber: ['', [Validators.pattern(/^[a-zA-Z0-9]{0,11}$/)]],
-      occupation: [''],
       
-      // 収入情報
-      annualIncome: [''],
-      monthlyIncome: [''],
-      dependentStartDate: ['', Validators.required],
-      dependentReason: [''],
+      // 配偶者の場合の追加フィールド
+      isForeignNational: [''], // 外国籍か（はい/いいえ）- 配偶者のみ必須
+      nationality: [''], // 国籍（外国籍の場合）
+      aliasName: [''], // 通称名（外国籍の場合）
       
-      // マイナンバー
-      provideMyNumber: ['', Validators.required],
+      // 配偶者以外の場合の追加フィールド
+      gender: [''], // 性別（配偶者以外のみ必須）
+      
+      // マイナンバー（配偶者の場合は任意、配偶者以外の場合は必須）
       myNumberPart1: [''],
       myNumberPart2: [''],
       myNumberPart3: [''],
-      myNumberNotProvidedReason: [''],
       
-      // 障がい者情報
-      disabilityCategory: [''],
-      disabilityCardType: [''],
-      disabilityCardIssueDate: [''],
+      // 基礎年金番号（配偶者の場合のみ必須）
+      basicPensionNumberPart1: [''],
+      basicPensionNumberPart2: [''],
       
       // 住所情報
-      livingTogether: ['', Validators.required],
-      postalCode: ['', [Validators.pattern(/^[a-zA-Z0-9]{7}$/)]],
-      address: [''],
-      addressKana: [''],
-      addressChangeDate: ['']
+      livingTogether: ['', Validators.required], // 同居/別居
+      postalCode: [''], // 郵便番号（別居の場合必須）
+      address: [''], // 住所（別居の場合必須）
+      addressKana: [''], // 住所（ヨミガナ）
+      
+      // 配偶者の別居の場合の追加フィールド
+      monthlySupportAmount: [''], // 毎月の仕送り額（別居の場合）
+      
+      // 電話番号（配偶者の場合のみ必須）
+      phoneNumberType: [''], // 電話番号の種類（自宅/携帯/勤務先/その他）
+      phoneNumberOther: [''], // その他の場合の入力
+      phoneNumber: [''], // 電話番号
+      
+      // 被扶養者になった日（必須）
+      dependentStartDate: ['', Validators.required],
+      
+      // 理由（必須）
+      dependentReason: [''], // 理由（プルダウン）
+      dependentReasonOther: [''], // その他の場合の入力
+      
+      // 職業（必須）
+      occupation: [''], // 職業（プルダウン）
+      occupationOther: [''], // その他の場合の入力
+      studentYear: [''], // 大学生の場合の学年
+      
+      // 年収見込み額（必須）
+      annualIncome: ['', Validators.required],
+      
+      // 海外居住者情報（必須）
+      isOverseasResident: [''], // 海外居住者または海外から国内に転入した（はい/いいえ）
+      overseasSpecialRequirementDate: [''], // 海外特例要件に該当した日
+      overseasReason: [''], // 理由（留学/同行家族/特定活動/海外婚姻/その他）
+      overseasReasonOther: [''], // その他の場合の入力
+      
+      // 資格確認書発行が必要か（必須）
+      needsQualificationConfirmation: [''], // はい/いいえ
+      
+      // マイナンバー提供（配偶者の場合のみ）
+      provideMyNumber: [''], // 提供する/提供しない
+      myNumberNotProvidedReason: [''], // 未提供理由
+      
+      // 障がい者情報（削除予定だが互換性のため残す）
+      disabilityCategory: [''],
+      disabilityCardType: [''],
+      disabilityCardIssueDate: ['']
     });
   }
   
   createDependentRemovalForm(): FormGroup {
     return this.fb.group({
-      removalDate: ['', Validators.required],
-      dependentId: ['', Validators.required],
-      removalReason: ['', Validators.required]
+      dependentId: ['', Validators.required], // 扶養者を選択
+      removalDate: ['', Validators.required], // 被扶養者ではなくなった日
+      removalReason: ['', Validators.required], // 理由（プルダウン）
+      deathDate: [''], // 死亡年月日（死亡選択時のみ必須）
+      removalReasonOther: [''], // その他の場合の入力
+      isOverseasResident: ['', Validators.required], // 海外居住者または海外から国内に転入したか
+      overseasNonQualificationDate: [''], // 海外特例要件に非該当となった日
+      overseasReason: [''], // 理由（国内転入/その他）
+      transferDate: [''], // 転入日（国内転入選択時のみ必須）
+      overseasReasonOther: [''], // その他の場合の入力
+      needsQualificationConfirmation: ['', Validators.required] // 資格証明書発行が必要か
     });
   }
   
@@ -1957,24 +2005,288 @@ export class EmployeeDashboardComponent implements OnDestroy {
   // フォームの条件付きバリデーションを更新
   onRelationshipTypeChange() {
     const relationshipType = this.dependentApplicationForm.get('relationshipType')?.value;
-    const spouseTypeControl = this.dependentApplicationForm.get('spouseType');
-    const relationshipControl = this.dependentApplicationForm.get('relationship');
     
+    // 配偶者の場合
     if (relationshipType === '配偶者') {
-      spouseTypeControl?.setValidators([Validators.required]);
-      relationshipControl?.clearValidators();
-      relationshipControl?.setValue('');
+      // 必須フィールドを設定
+      this.dependentApplicationForm.get('spouseType')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('basicPensionNumberPart1')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('basicPensionNumberPart2')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('isForeignNational')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('phoneNumberType')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('phoneNumber')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('dependentReason')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('occupation')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('isOverseasResident')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('needsQualificationConfirmation')?.setValidators([Validators.required]);
+      
+      // 不要なフィールドをクリア
+      this.dependentApplicationForm.get('relationship')?.clearValidators();
+      this.dependentApplicationForm.get('relationship')?.setValue('');
+      this.dependentApplicationForm.get('gender')?.clearValidators();
+      this.dependentApplicationForm.get('gender')?.setValue('');
+      
+      // マイナンバーは任意
+      this.dependentApplicationForm.get('myNumberPart1')?.clearValidators();
+      this.dependentApplicationForm.get('myNumberPart2')?.clearValidators();
+      this.dependentApplicationForm.get('myNumberPart3')?.clearValidators();
+      
     } else if (relationshipType === '配偶者以外') {
-      spouseTypeControl?.clearValidators();
-      spouseTypeControl?.setValue('');
-      relationshipControl?.setValidators([Validators.required]);
+      // 必須フィールドを設定
+      this.dependentApplicationForm.get('relationship')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('gender')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('myNumberPart1')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('myNumberPart2')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('myNumberPart3')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('dependentReason')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('occupation')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('isOverseasResident')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('needsQualificationConfirmation')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('spouseAnnualIncome')?.setValidators([Validators.required]);
+      
+      // 続柄の「その他」選択時のバリデーションを更新
+      this.onRelationshipChange();
+      
+      // 不要なフィールドをクリア
+      this.dependentApplicationForm.get('spouseType')?.clearValidators();
+      this.dependentApplicationForm.get('spouseType')?.setValue('');
+      this.dependentApplicationForm.get('basicPensionNumberPart1')?.clearValidators();
+      this.dependentApplicationForm.get('basicPensionNumberPart2')?.clearValidators();
+      this.dependentApplicationForm.get('isForeignNational')?.clearValidators();
+      this.dependentApplicationForm.get('isForeignNational')?.setValue('');
+      this.dependentApplicationForm.get('phoneNumberType')?.clearValidators();
+      this.dependentApplicationForm.get('phoneNumberType')?.setValue('');
+      this.dependentApplicationForm.get('phoneNumber')?.clearValidators();
+      this.dependentApplicationForm.get('phoneNumber')?.setValue('');
+      this.dependentApplicationForm.get('provideMyNumber')?.clearValidators();
+      this.dependentApplicationForm.get('provideMyNumber')?.setValue('');
+      this.dependentApplicationForm.get('spouseAnnualIncome')?.setValidators([Validators.required]);
     } else {
-      spouseTypeControl?.clearValidators();
-      relationshipControl?.clearValidators();
+      // 全てのフィールドをクリア
+      this.dependentApplicationForm.get('spouseType')?.clearValidators();
+      this.dependentApplicationForm.get('relationship')?.clearValidators();
+      this.dependentApplicationForm.get('basicPensionNumberPart1')?.clearValidators();
+      this.dependentApplicationForm.get('basicPensionNumberPart2')?.clearValidators();
+      this.dependentApplicationForm.get('gender')?.clearValidators();
+      this.dependentApplicationForm.get('isForeignNational')?.clearValidators();
+      this.dependentApplicationForm.get('phoneNumberType')?.clearValidators();
+      this.dependentApplicationForm.get('myNumberPart1')?.clearValidators();
+      this.dependentApplicationForm.get('myNumberPart2')?.clearValidators();
+      this.dependentApplicationForm.get('myNumberPart3')?.clearValidators();
     }
     
-    spouseTypeControl?.updateValueAndValidity();
-    relationshipControl?.updateValueAndValidity();
+    // 全てのフィールドのバリデーションを更新
+    Object.keys(this.dependentApplicationForm.controls).forEach(key => {
+      this.dependentApplicationForm.get(key)?.updateValueAndValidity();
+    });
+    
+    // 条件付きフィールドのバリデーションも更新
+    this.onLivingTogetherChange();
+    this.onForeignNationalChange();
+    this.onDependentOverseasResidentChange();
+    this.onDependentReasonChange();
+    this.onOccupationChange();
+    this.onPhoneNumberTypeChange();
+  }
+  
+  // 外国籍の変更時にバリデーションを更新
+  onForeignNationalChange() {
+    const isForeignNational = this.dependentApplicationForm.get('isForeignNational')?.value;
+    const nationalityControl = this.dependentApplicationForm.get('nationality');
+    const aliasNameControl = this.dependentApplicationForm.get('aliasName');
+    
+    if (isForeignNational === 'はい') {
+      nationalityControl?.setValidators([Validators.required]);
+      aliasNameControl?.setValidators([Validators.required]);
+    } else {
+      nationalityControl?.clearValidators();
+      nationalityControl?.setValue('');
+      aliasNameControl?.clearValidators();
+      aliasNameControl?.setValue('');
+    }
+    
+    nationalityControl?.updateValueAndValidity();
+    aliasNameControl?.updateValueAndValidity();
+  }
+  
+  // 海外居住者の変更時にバリデーションを更新（扶養家族追加申請用）
+  onDependentOverseasResidentChange() {
+    const isOverseasResident = this.dependentApplicationForm.get('isOverseasResident')?.value;
+    const overseasSpecialRequirementDateControl = this.dependentApplicationForm.get('overseasSpecialRequirementDate');
+    const overseasReasonControl = this.dependentApplicationForm.get('overseasReason');
+    
+    if (isOverseasResident === 'はい') {
+      overseasSpecialRequirementDateControl?.setValidators([Validators.required]);
+      overseasReasonControl?.setValidators([Validators.required]);
+    } else {
+      overseasSpecialRequirementDateControl?.clearValidators();
+      overseasSpecialRequirementDateControl?.setValue('');
+      overseasReasonControl?.clearValidators();
+      overseasReasonControl?.setValue('');
+      this.dependentApplicationForm.get('overseasReasonOther')?.setValue('');
+    }
+    
+    overseasSpecialRequirementDateControl?.updateValueAndValidity();
+    overseasReasonControl?.updateValueAndValidity();
+    this.onOverseasReasonChange();
+  }
+  
+  // 海外居住理由の変更時にバリデーションを更新
+  onOverseasReasonChange() {
+    const overseasReason = this.dependentApplicationForm.get('overseasReason')?.value;
+    const overseasReasonOtherControl = this.dependentApplicationForm.get('overseasReasonOther');
+    
+    if (overseasReason === 'その他') {
+      overseasReasonOtherControl?.setValidators([Validators.required]);
+    } else {
+      overseasReasonOtherControl?.clearValidators();
+      overseasReasonOtherControl?.setValue('');
+    }
+    
+    overseasReasonOtherControl?.updateValueAndValidity();
+  }
+  
+  // 扶養理由の変更時にバリデーションを更新
+  onDependentReasonChange() {
+    const dependentReason = this.dependentApplicationForm.get('dependentReason')?.value;
+    const dependentReasonOtherControl = this.dependentApplicationForm.get('dependentReasonOther');
+    
+    if (dependentReason === 'その他') {
+      dependentReasonOtherControl?.setValidators([Validators.required]);
+    } else {
+      dependentReasonOtherControl?.clearValidators();
+      dependentReasonOtherControl?.setValue('');
+    }
+    
+    dependentReasonOtherControl?.updateValueAndValidity();
+  }
+  
+  // 職業の変更時にバリデーションを更新
+  onOccupationChange() {
+    const occupation = this.dependentApplicationForm.get('occupation')?.value;
+    const occupationOtherControl = this.dependentApplicationForm.get('occupationOther');
+    const studentYearControl = this.dependentApplicationForm.get('studentYear');
+    
+    if (occupation === 'その他') {
+      occupationOtherControl?.setValidators([Validators.required]);
+      studentYearControl?.clearValidators();
+      studentYearControl?.setValue('');
+    } else if (occupation === '大学生') {
+      occupationOtherControl?.clearValidators();
+      occupationOtherControl?.setValue('');
+      studentYearControl?.setValidators([Validators.required]);
+    } else {
+      occupationOtherControl?.clearValidators();
+      occupationOtherControl?.setValue('');
+      studentYearControl?.clearValidators();
+      studentYearControl?.setValue('');
+    }
+    
+    occupationOtherControl?.updateValueAndValidity();
+    studentYearControl?.updateValueAndValidity();
+  }
+  
+  // 電話番号の種類の変更時にバリデーションを更新
+  onPhoneNumberTypeChange() {
+    const phoneNumberType = this.dependentApplicationForm.get('phoneNumberType')?.value;
+    const phoneNumberOtherControl = this.dependentApplicationForm.get('phoneNumberOther');
+    
+    if (phoneNumberType === 'その他') {
+      phoneNumberOtherControl?.setValidators([Validators.required]);
+    } else {
+      phoneNumberOtherControl?.clearValidators();
+      phoneNumberOtherControl?.setValue('');
+    }
+    
+    phoneNumberOtherControl?.updateValueAndValidity();
+  }
+  
+  // 続柄の変更時にバリデーションを更新（配偶者以外の場合）
+  onRelationshipChange() {
+    const relationship = this.dependentApplicationForm.get('relationship')?.value;
+    const relationshipOtherControl = this.dependentApplicationForm.get('relationshipOther');
+    
+    if (relationship === 'その他') {
+      relationshipOtherControl?.setValidators([Validators.required]);
+    } else {
+      relationshipOtherControl?.clearValidators();
+      relationshipOtherControl?.setValue('');
+    }
+    
+    relationshipOtherControl?.updateValueAndValidity();
+  }
+  
+  // 扶養削除申請：理由の変更時にバリデーションを更新
+  onRemovalReasonChange() {
+    const removalReason = this.dependentRemovalForm.get('removalReason')?.value;
+    const deathDateControl = this.dependentRemovalForm.get('deathDate');
+    const removalReasonOtherControl = this.dependentRemovalForm.get('removalReasonOther');
+    
+    if (removalReason === '死亡') {
+      deathDateControl?.setValidators([Validators.required]);
+      removalReasonOtherControl?.clearValidators();
+      removalReasonOtherControl?.setValue('');
+    } else if (removalReason === 'その他') {
+      deathDateControl?.clearValidators();
+      deathDateControl?.setValue('');
+      removalReasonOtherControl?.setValidators([Validators.required]);
+    } else {
+      deathDateControl?.clearValidators();
+      deathDateControl?.setValue('');
+      removalReasonOtherControl?.clearValidators();
+      removalReasonOtherControl?.setValue('');
+    }
+    
+    deathDateControl?.updateValueAndValidity();
+    removalReasonOtherControl?.updateValueAndValidity();
+  }
+  
+  // 扶養削除申請：海外居住者の変更時にバリデーションを更新
+  onRemovalOverseasResidentChange() {
+    const isOverseasResident = this.dependentRemovalForm.get('isOverseasResident')?.value;
+    const overseasNonQualificationDateControl = this.dependentRemovalForm.get('overseasNonQualificationDate');
+    const overseasReasonControl = this.dependentRemovalForm.get('overseasReason');
+    
+    if (isOverseasResident === 'はい') {
+      overseasNonQualificationDateControl?.setValidators([Validators.required]);
+      overseasReasonControl?.setValidators([Validators.required]);
+    } else {
+      overseasNonQualificationDateControl?.clearValidators();
+      overseasNonQualificationDateControl?.setValue('');
+      overseasReasonControl?.clearValidators();
+      overseasReasonControl?.setValue('');
+      this.dependentRemovalForm.get('transferDate')?.setValue('');
+      this.dependentRemovalForm.get('overseasReasonOther')?.setValue('');
+    }
+    
+    overseasNonQualificationDateControl?.updateValueAndValidity();
+    overseasReasonControl?.updateValueAndValidity();
+    this.onRemovalOverseasReasonChange();
+  }
+  
+  // 扶養削除申請：海外居住理由の変更時にバリデーションを更新
+  onRemovalOverseasReasonChange() {
+    const overseasReason = this.dependentRemovalForm.get('overseasReason')?.value;
+    const transferDateControl = this.dependentRemovalForm.get('transferDate');
+    const overseasReasonOtherControl = this.dependentRemovalForm.get('overseasReasonOther');
+    
+    if (overseasReason === '国内転入') {
+      transferDateControl?.setValidators([Validators.required]);
+      overseasReasonOtherControl?.clearValidators();
+      overseasReasonOtherControl?.setValue('');
+    } else if (overseasReason === 'その他') {
+      transferDateControl?.clearValidators();
+      transferDateControl?.setValue('');
+      overseasReasonOtherControl?.setValidators([Validators.required]);
+    } else {
+      transferDateControl?.clearValidators();
+      transferDateControl?.setValue('');
+      overseasReasonOtherControl?.clearValidators();
+      overseasReasonOtherControl?.setValue('');
+    }
+    
+    transferDateControl?.updateValueAndValidity();
+    overseasReasonOtherControl?.updateValueAndValidity();
   }
   
   // 配偶者種別の変更時にバリデーションを更新
@@ -2017,25 +2329,45 @@ export class EmployeeDashboardComponent implements OnDestroy {
     myNumberNotProvidedReasonControl?.updateValueAndValidity();
   }
   
+  // ファイル選択ハンドラーに新しいファイルタイプを追加
+  onSupportAmountDocFileSelected(event: any) {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.supportAmountDocFile = file;
+    }
+  }
+  
   onLivingTogetherChange() {
     const livingTogether = this.dependentApplicationForm.get('livingTogether')?.value;
+    const relationshipType = this.dependentApplicationForm.get('relationshipType')?.value;
     const postalCodeControl = this.dependentApplicationForm.get('postalCode');
     const addressControl = this.dependentApplicationForm.get('address');
+    const monthlySupportAmountControl = this.dependentApplicationForm.get('monthlySupportAmount');
     
     if (livingTogether === '別居') {
       postalCodeControl?.setValidators([Validators.required, Validators.pattern(/^[a-zA-Z0-9]{7}$/)]);
       addressControl?.setValidators([Validators.required]);
+      
+      // 配偶者の場合、仕送り額も必須
+      if (relationshipType === '配偶者') {
+        monthlySupportAmountControl?.setValidators([Validators.required]);
+      } else {
+        monthlySupportAmountControl?.clearValidators();
+        monthlySupportAmountControl?.setValue('');
+      }
     } else {
       postalCodeControl?.clearValidators();
       addressControl?.clearValidators();
+      monthlySupportAmountControl?.clearValidators();
       postalCodeControl?.setValue('');
       addressControl?.setValue('');
       this.dependentApplicationForm.get('addressKana')?.setValue('');
-      this.dependentApplicationForm.get('addressChangeDate')?.setValue('');
+      monthlySupportAmountControl?.setValue('');
     }
     
     postalCodeControl?.updateValueAndValidity();
     addressControl?.updateValueAndValidity();
+    monthlySupportAmountControl?.updateValueAndValidity();
   }
   
   onDependentFileSelected(event: any, fileType: string) {
@@ -2053,6 +2385,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
           break;
         case 'disabilityCard':
           this.dependentDisabilityCardFile = file;
+          break;
+        case 'supportAmountDoc':
+          this.supportAmountDocFile = file;
           break;
       }
     }
@@ -2167,7 +2502,10 @@ export class EmployeeDashboardComponent implements OnDestroy {
         let identityDocFileName = '';
         let disabilityCardFileUrl = '';
         let disabilityCardFileName = '';
+        let supportAmountDocFileUrl = '';
+        let supportAmountDocFileName = '';
         
+        // 基礎年金番号書類（配偶者の場合のみ）
         if (this.dependentBasicPensionNumberDocFile) {
           const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentBasicPensionNumberDocFile.name);
           const basicPensionNumberDocPath = `applications/${this.employeeNumber}/dependentBasicPensionNumberDoc_${Date.now()}_${sanitizedFileName}`;
@@ -2206,48 +2544,98 @@ export class EmployeeDashboardComponent implements OnDestroy {
           disabilityCardFileName = this.dependentDisabilityCardFile.name;
         }
         
+        // 仕送り額証明書類（配偶者の別居の場合）
+        if (this.supportAmountDocFile) {
+          const sanitizedFileName = this.firestoreService.sanitizeFileName(this.supportAmountDocFile.name);
+          const supportAmountDocPath = `applications/${this.employeeNumber}/supportAmountDoc_${Date.now()}_${sanitizedFileName}`;
+          supportAmountDocFileUrl = await this.firestoreService.uploadFile(this.supportAmountDocFile, supportAmountDocPath);
+          supportAmountDocFileName = this.supportAmountDocFile.name;
+        }
+        
         // フォームデータを準備
         const formValue = this.dependentApplicationForm.value;
+        const relationshipType = formValue.relationshipType;
+        
         const applicationData: any = {
           employeeNumber: this.employeeNumber,
           applicationType: '扶養家族追加',
-          relationshipType: formValue.relationshipType,
-          spouseType: formValue.spouseType || '',
-          relationship: formValue.relationship || '',
-          basicPensionNumber: basicPensionNumber || null,
-          basicPensionNumberDocFileUrl: basicPensionNumberDocFileUrl,
-          basicPensionNumberDocFileName: basicPensionNumberDocFileName,
+          relationshipType: relationshipType,
+          
+          // 基本情報
           lastName: formValue.lastName,
           firstName: formValue.firstName,
           lastNameKana: formValue.lastNameKana || '',
           firstNameKana: formValue.firstNameKana || '',
           birthDate: formValue.birthDate,
-          gender: formValue.gender,
-          phoneNumber: formValue.phoneNumber || '',
-          occupation: formValue.occupation || '',
-          annualIncome: formValue.annualIncome || '',
-          monthlyIncome: formValue.monthlyIncome || '',
-          dependentStartDate: formValue.dependentStartDate,
-          dependentReason: formValue.dependentReason || '',
-          provideMyNumber: formValue.provideMyNumber,
-          myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+          
+          // 配偶者の場合のフィールド
+          spouseType: relationshipType === '配偶者' ? formValue.spouseType : '',
+          basicPensionNumber: relationshipType === '配偶者' ? (basicPensionNumber || null) : null,
+          basicPensionNumberDocFileUrl: relationshipType === '配偶者' ? basicPensionNumberDocFileUrl : '',
+          basicPensionNumberDocFileName: relationshipType === '配偶者' ? basicPensionNumberDocFileName : '',
+          isForeignNational: relationshipType === '配偶者' ? formValue.isForeignNational : '',
+          nationality: relationshipType === '配偶者' && formValue.isForeignNational === 'はい' ? formValue.nationality : '',
+          aliasName: relationshipType === '配偶者' && formValue.isForeignNational === 'はい' ? formValue.aliasName : '',
+          phoneNumberType: relationshipType === '配偶者' ? formValue.phoneNumberType : '',
+          phoneNumberOther: relationshipType === '配偶者' && formValue.phoneNumberType === 'その他' ? formValue.phoneNumberOther : '',
+          phoneNumber: relationshipType === '配偶者' ? formValue.phoneNumber : '',
+          monthlySupportAmount: relationshipType === '配偶者' && formValue.livingTogether === '別居' ? formValue.monthlySupportAmount : '',
+          supportAmountDocFileUrl: relationshipType === '配偶者' && formValue.livingTogether === '別居' ? supportAmountDocFileUrl : '',
+          supportAmountDocFileName: relationshipType === '配偶者' && formValue.livingTogether === '別居' ? supportAmountDocFileName : '',
+          provideMyNumber: relationshipType === '配偶者' ? formValue.provideMyNumber : '',
+          myNumberNotProvidedReason: relationshipType === '配偶者' && formValue.provideMyNumber === '提供しない' ? formValue.myNumberNotProvidedReason : '',
+          
+          // 配偶者以外の場合のフィールド
+          relationship: relationshipType === '配偶者以外' ? (formValue.relationship === 'その他' ? formValue.relationshipOther : formValue.relationship) : '',
+          gender: relationshipType === '配偶者以外' ? formValue.gender : '',
+          spouseAnnualIncome: relationshipType === '配偶者以外' ? formValue.spouseAnnualIncome : '',
+          
+          // マイナンバー
+          myNumber: relationshipType === '配偶者' 
+            ? (formValue.provideMyNumber === '提供する' ? myNumber : null)
+            : (myNumber || null),
           myNumberCardFileUrl: myNumberCardFileUrl,
           myNumberCardFile: myNumberCardFileName,
           myNumberDocFileUrl: myNumberDocFileUrl,
           myNumberDocFileName: myNumberDocFileName,
-          myNumberNotProvidedReason: formValue.provideMyNumber === '提供しない' ? formValue.myNumberNotProvidedReason : '',
+          
+          // 住所情報
+          livingTogether: formValue.livingTogether,
+          postalCode: formValue.livingTogether === '別居' ? formValue.postalCode : '',
+          address: formValue.livingTogether === '別居' ? formValue.address : '',
+          addressKana: formValue.livingTogether === '別居' ? formValue.addressKana : '',
+          
+          // 被扶養者になった日
+          dependentStartDate: formValue.dependentStartDate,
+          
+          // 理由
+          dependentReason: formValue.dependentReason === 'その他' ? formValue.dependentReasonOther : formValue.dependentReason,
+          
+          // 職業
+          occupation: formValue.occupation === 'その他' ? formValue.occupationOther : formValue.occupation,
+          studentYear: formValue.occupation === '大学生' ? formValue.studentYear : '',
+          
+          // 年収見込み額
+          annualIncome: formValue.annualIncome || '',
+          
+          // 海外居住者情報
+          isOverseasResident: formValue.isOverseasResident,
+          overseasSpecialRequirementDate: formValue.isOverseasResident === 'はい' ? formValue.overseasSpecialRequirementDate : '',
+          overseasReason: formValue.isOverseasResident === 'はい' 
+            ? (formValue.overseasReason === 'その他' ? formValue.overseasReasonOther : formValue.overseasReason)
+            : '',
+          
+          // 資格確認書発行が必要か
+          needsQualificationConfirmation: formValue.needsQualificationConfirmation,
+          
+          // 添付ファイル
           identityDocFileUrl: identityDocFileUrl,
           identityDocFileName: identityDocFileName,
           disabilityCategory: formValue.disabilityCategory || '',
           disabilityCardType: formValue.disabilityCardType || '',
           disabilityCardIssueDate: formValue.disabilityCardIssueDate || '',
           disabilityCardFileUrl: disabilityCardFileUrl,
-          disabilityCardFileName: disabilityCardFileName,
-          livingTogether: formValue.livingTogether,
-          postalCode: formValue.livingTogether === '別居' ? formValue.postalCode : '',
-          address: formValue.livingTogether === '別居' ? formValue.address : '',
-          addressKana: formValue.livingTogether === '別居' ? formValue.addressKana : '',
-          addressChangeDate: formValue.livingTogether === '別居' ? formValue.addressChangeDate : ''
+          disabilityCardFileName: disabilityCardFileName
         };
         
         // 申請を保存
@@ -2299,7 +2687,15 @@ export class EmployeeDashboardComponent implements OnDestroy {
           employeeNumber: this.employeeNumber,
           applicationType: '扶養削除申請',
           removalDate: formValue.removalDate,
-          removalReason: formValue.removalReason,
+          removalReason: formValue.removalReason === 'その他' ? formValue.removalReasonOther : formValue.removalReason,
+          deathDate: formValue.removalReason === '死亡' ? formValue.deathDate : '',
+          isOverseasResident: formValue.isOverseasResident,
+          overseasNonQualificationDate: formValue.isOverseasResident === 'はい' ? formValue.overseasNonQualificationDate : '',
+          overseasReason: formValue.isOverseasResident === 'はい' 
+            ? (formValue.overseasReason === 'その他' ? formValue.overseasReasonOther : formValue.overseasReason)
+            : '',
+          transferDate: formValue.isOverseasResident === 'はい' && formValue.overseasReason === '国内転入' ? formValue.transferDate : '',
+          needsQualificationConfirmation: formValue.needsQualificationConfirmation,
           dependent: {
             name: selectedDependent.name || '',
             nameKana: selectedDependent.nameKana || '',
