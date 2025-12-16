@@ -2762,6 +2762,15 @@ export class EmployeeDashboardComponent implements OnDestroy {
           myNumber: relationshipType === '配偶者' 
             ? (formValue.provideMyNumber === '提供する' ? (myNumber && myNumber.length > 0 ? myNumber : null) : null)
             : (myNumber && myNumber.length > 0 ? myNumber : null),
+          myNumberPart1: relationshipType === '配偶者' 
+            ? (formValue.provideMyNumber === '提供する' ? (myNumberParts[0] || null) : null)
+            : (myNumberParts[0] || null),
+          myNumberPart2: relationshipType === '配偶者' 
+            ? (formValue.provideMyNumber === '提供する' ? (myNumberParts[1] || null) : null)
+            : (myNumberParts[1] || null),
+          myNumberPart3: relationshipType === '配偶者' 
+            ? (formValue.provideMyNumber === '提供する' ? (myNumberParts[2] || null) : null)
+            : (myNumberParts[2] || null),
           myNumberCardFileUrl: myNumberCardFileUrl,
           myNumberCardFile: myNumberCardFileName,
           myNumberCardFileName: myNumberCardFileName,
@@ -2782,9 +2791,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
           
           // 理由
           dependentReason: formValue.dependentReason === 'その他' ? formValue.dependentReasonOther : formValue.dependentReason,
+          dependentReasonOther: formValue.dependentReason === 'その他' ? formValue.dependentReasonOther : '',
           
           // 職業
           occupation: formValue.occupation === 'その他' ? formValue.occupationOther : formValue.occupation,
+          occupationOther: formValue.occupation === 'その他' ? formValue.occupationOther : '',
           studentYear: formValue.occupation === '大学生' ? formValue.studentYear : '',
           
           // 年収見込み額
@@ -3984,6 +3995,33 @@ export class EmployeeDashboardComponent implements OnDestroy {
           myNumberPart1: application.myNumber.substring(0, 4),
           myNumberPart2: application.myNumber.substring(4, 8),
           myNumberPart3: application.myNumber.substring(8, 12)
+        });
+      } else if (application.myNumberPart1 && application.myNumberPart2 && application.myNumberPart3) {
+        // myNumberが結合されていない場合、myNumberPart1, myNumberPart2, myNumberPart3から設定
+        this.dependentApplicationForm.patchValue({
+          myNumberPart1: application.myNumberPart1,
+          myNumberPart2: application.myNumberPart2,
+          myNumberPart3: application.myNumberPart3
+        });
+      }
+      
+      // dependentReasonが「その他」の選択肢に一致しない場合（dependentReasonOtherの値が直接保存されている場合）
+      const validDependentReasons = ['配偶者の就職', '婚姻', '離職', '収入減少', 'その他'];
+      if (application.dependentReason && !validDependentReasons.includes(application.dependentReason)) {
+        // dependentReasonOtherの値がdependentReasonに保存されている場合
+        this.dependentApplicationForm.patchValue({
+          dependentReason: 'その他',
+          dependentReasonOther: application.dependentReason
+        });
+      }
+      
+      // occupationが「その他」の選択肢に一致しない場合（occupationOtherの値が直接保存されている場合）
+      const validOccupations = ['無職', 'パート', '年金受給者', 'その他'];
+      if (application.occupation && !validOccupations.includes(application.occupation)) {
+        // occupationOtherの値がoccupationに保存されている場合
+        this.dependentApplicationForm.patchValue({
+          occupation: 'その他',
+          occupationOther: application.occupation
         });
       }
       

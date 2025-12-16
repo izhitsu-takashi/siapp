@@ -2598,22 +2598,23 @@
               <span class="detail-label">続柄種別:</span>
               <span class="detail-value">{{ selectedApplication.relationshipType || '-' }}</span>
             </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者'">
+              <span class="detail-label">続柄（妻/夫）:</span>
+              <span class="detail-value">{{ selectedApplication.spouseType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外'">
+              <span class="detail-label">続柄:</span>
+              <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外' && selectedApplication.relationship === 'その他'">
+              <span class="detail-label">その他:</span>
+              <span class="detail-value">{{ selectedApplication.relationshipOther || '-' }}</span>
+            </div>
           </div>
         </section>
         
         <!-- 配偶者の場合のフォーム -->
         <ng-container *ngIf="selectedApplication.relationshipType === '配偶者'">
-          <!-- 続柄（妻or夫） -->
-          <section class="detail-section">
-            <h3 class="section-title">続柄</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">続柄:</span>
-                <span class="detail-value">{{ selectedApplication.spouseType || '-' }}</span>
-              </div>
-            </div>
-          </section>
-          
           <!-- 氏名 -->
           <section class="detail-section">
             <h3 class="section-title">氏名</h3>
@@ -2906,7 +2907,7 @@
             <div class="detail-grid">
               <div class="detail-item">
                 <span class="detail-label">マイナンバー:</span>
-                <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber) || '-' }}</span>
+                <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber || (selectedApplication.myNumberPart1 && selectedApplication.myNumberPart2 && selectedApplication.myNumberPart3 ? (selectedApplication.myNumberPart1 + selectedApplication.myNumberPart2 + selectedApplication.myNumberPart3) : null)) || '-' }}</span>
               </div>
             </div>
           </section>
