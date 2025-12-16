@@ -42,14 +42,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
     const hasResignation = this.applications.some((app: any) => 
       app.applicationType === '退職申請' && app.status !== '取り消し'
     );
-    console.log('[退職申請ボタン] チェック結果:', {
-      hasResignation,
-      applications: this.applications.filter((app: any) => app.applicationType === '退職申請').map((app: any) => ({
-        id: app.id,
-        applicationType: app.applicationType,
-        status: app.status
-      }))
-    });
     return hasResignation;
   }
   
@@ -284,16 +276,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
     this.applicationsUnsubscribe = this.firestoreService.subscribeEmployeeApplications(
       this.employeeNumber,
       (applications) => {
-        console.log('[申請一覧リアルタイム更新] 申請一覧が更新されました:', {
-          employeeNumber: this.employeeNumber,
-          applicationsCount: applications.length,
-          resignationApplications: applications.filter((app: any) => app.applicationType === '退職申請').map((app: any) => ({
-            id: app.id,
-            status: app.status,
-            applicationType: app.applicationType
-          }))
-        });
-        
         // FirestoreのTimestampをDateに変換
         const mappedApplications = applications.map((app: any) => {
           if (app.createdAt && typeof app.createdAt.toDate === 'function') {
@@ -335,13 +317,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
         const cancelledApplications = this.applications.filter((app: any) => app.status === '取り消し');
         const otherApplications = this.applications.filter((app: any) => app.status !== '取り消し');
         this.applications = [...otherApplications, ...cancelledApplications];
-        
-        console.log('[申請一覧リアルタイム更新] 更新後の申請一覧:', {
-          totalCount: this.applications.length,
-          resignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請').length,
-          activeResignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請' && app.status !== '取り消し').length,
-          hasResignationApplication: this.hasResignationApplication()
-        });
         
         // 変更検知をトリガー
         this.cdr.detectChanges();
@@ -3524,19 +3499,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
 
   async loadApplications() {
     try {
-      console.log('[申請一覧読み込み] 申請一覧を読み込み開始:', {
-        employeeNumber: this.employeeNumber
-      });
-      
       const applications = await this.firestoreService.getEmployeeApplications(this.employeeNumber);
-      console.log('[申請一覧読み込み] Firestoreから取得した申請:', {
-        count: applications.length,
-        resignationApplications: applications.filter((app: any) => app.applicationType === '退職申請').map((app: any) => ({
-          id: app.id,
-          status: app.status,
-          applicationType: app.applicationType
-        }))
-      });
       
       // FirestoreのTimestampをDateに変換
       const mappedApplications = applications.map((app: any) => {
@@ -3579,13 +3542,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
       const cancelledApplications = this.applications.filter((app: any) => app.status === '取り消し');
       const otherApplications = this.applications.filter((app: any) => app.status !== '取り消し');
       this.applications = [...otherApplications, ...cancelledApplications];
-      
-      console.log('[申請一覧読み込み] 読み込み完了:', {
-        totalCount: this.applications.length,
-        resignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請').length,
-        activeResignationCount: this.applications.filter((app: any) => app.applicationType === '退職申請' && app.status !== '取り消し').length,
-        hasResignationApplication: this.hasResignationApplication()
-      });
       
       // 変更検知をトリガー
       this.cdr.detectChanges();
