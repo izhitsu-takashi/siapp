@@ -437,49 +437,49 @@ export class EmployeeDashboardComponent implements OnDestroy {
             }
             
             return {
-              name: dep.name || '',
-              nameKana: dep.nameKana || '',
+            name: dep.name || '',
+            nameKana: dep.nameKana || '',
               lastName: dep.lastName || '',
               firstName: dep.firstName || '',
               lastNameKana: dep.lastNameKana || '',
               firstNameKana: dep.firstNameKana || '',
-              relationship: dep.relationship || '',
+            relationship: dep.relationship || '',
               relationshipType: relationshipType,
               relationshipOther: dep.relationshipOther || '',
               spouseType: dep.spouseType || '',
-              birthDate: dep.birthDate || '',
-              gender: dep.gender || '',
-              myNumber: dep.myNumber || '',
+            birthDate: dep.birthDate || '',
+            gender: dep.gender || '',
+            myNumber: dep.myNumber || '',
               myNumberPart1: myNumberPart1,
               myNumberPart2: myNumberPart2,
               myNumberPart3: myNumberPart3,
-              phoneNumber: dep.phoneNumber || '',
+            phoneNumber: dep.phoneNumber || '',
               phoneNumberType: dep.phoneNumberType || '',
               phoneNumberOther: dep.phoneNumberOther || '',
-              occupation: dep.occupation || '',
+            occupation: dep.occupation || '',
               occupationOther: dep.occupationOther || '',
               studentYear: dep.studentYear || '',
-              annualIncome: dep.annualIncome || '',
-              monthlyIncome: dep.monthlyIncome || '',
+            annualIncome: dep.annualIncome || '',
+            monthlyIncome: dep.monthlyIncome || '',
               monthlySupportAmount: dep.monthlySupportAmount || '',
-              dependentStartDate: dep.dependentStartDate || '',
-              dependentReason: dep.dependentReason || '',
+            dependentStartDate: dep.dependentStartDate || '',
+            dependentReason: dep.dependentReason || '',
               dependentReasonOther: dep.dependentReasonOther || '',
-              livingTogether: dep.livingTogether || '',
-              postalCode: dep.postalCode || '',
-              address: dep.address || '',
-              addressKana: dep.addressKana || '',
-              addressChangeDate: dep.addressChangeDate || '',
-              basicPensionNumber: dep.basicPensionNumber || '',
+            livingTogether: dep.livingTogether || '',
+            postalCode: dep.postalCode || '',
+            address: dep.address || '',
+            addressKana: dep.addressKana || '',
+            addressChangeDate: dep.addressChangeDate || '',
+            basicPensionNumber: dep.basicPensionNumber || '',
               basicPensionNumberPart1: basicPensionNumberPart1,
               basicPensionNumberPart2: basicPensionNumberPart2,
-              basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
+            basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
               basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
-              myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
+            myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
               myNumberDocFileName: dep.myNumberDocFileName || '',
               myNumberCardFileUrl: dep.myNumberCardFileUrl || '',
               myNumberCardFileName: dep.myNumberCardFileName || '',
-              identityDocFileUrl: dep.identityDocFileUrl || '',
+            identityDocFileUrl: dep.identityDocFileUrl || '',
               identityDocFileName: dep.identityDocFileName || '',
               supportAmountDocFileUrl: dep.supportAmountDocFileUrl || '',
               supportAmountDocFileName: dep.supportAmountDocFileName || '',
@@ -492,12 +492,12 @@ export class EmployeeDashboardComponent implements OnDestroy {
               overseasReasonOther: dep.overseasReasonOther || '',
               needsQualificationConfirmation: dep.needsQualificationConfirmation || '',
               spouseAnnualIncome: dep.spouseAnnualIncome || '',
-              disabilityCategory: dep.disabilityCategory || '',
-              disabilityCardType: dep.disabilityCardType || '',
-              disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
-              disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
+            disabilityCategory: dep.disabilityCategory || '',
+            disabilityCardType: dep.disabilityCardType || '',
+            disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
+            disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
               disabilityCardFileName: dep.disabilityCardFileName || '',
-              notes: dep.notes || ''
+            notes: dep.notes || ''
             };
           });
           // 展開状態を初期化（すべて折りたたみ）
@@ -4208,6 +4208,16 @@ export class EmployeeDashboardComponent implements OnDestroy {
       let deathDate = '';
       let removalReasonOther = '';
       
+      // 非標準的な理由を標準的な理由にマッピング
+      const reasonMapping: { [key: string]: string } = {
+        '別れた': '離婚',
+        '別居': '離婚'
+      };
+      
+      if (reasonMapping[removalReason]) {
+        removalReason = reasonMapping[removalReason];
+      }
+      
       // removalReasonが標準的な理由のいずれかである場合
       if (standardReasons.includes(removalReason)) {
         // 死亡の場合
@@ -4230,6 +4240,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
         else if (application.removalReasonOther) {
           removalReason = 'その他';
           removalReasonOther = application.removalReasonOther;
+        }
+        // それ以外の場合、removalReasonを「その他」として扱い、元の値をremovalReasonOtherに設定
+        else if (removalReason && removalReason !== '') {
+          removalReasonOther = application.removalReason || '';
+          removalReason = 'その他';
         }
         // それ以外の場合、removalReasonをそのまま使用（空文字列の場合は空のまま）
       }
@@ -4277,9 +4292,31 @@ export class EmployeeDashboardComponent implements OnDestroy {
         needsQualificationConfirmation: application.needsQualificationConfirmation || ''
       });
       
-      // バリデーションを更新
+      // バリデーションを更新（値がクリアされないように、バリデーション更新後に再度値を設定）
       this.onRemovalReasonChange();
+      
+      // バリデーション更新後に再度値を設定（onRemovalReasonChangeでクリアされる可能性があるため）
+      if (removalReason === '死亡' && deathDate) {
+        this.dependentRemovalForm.patchValue({ deathDate: deathDate });
+      } else if (removalReason === 'その他' && removalReasonOther) {
+        this.dependentRemovalForm.patchValue({ removalReasonOther: removalReasonOther });
+      }
+      
       this.onRemovalOverseasResidentChange();
+      // バリデーション更新後に再度値を設定（onRemovalOverseasResidentChangeでクリアされる可能性があるため）
+      if (isOverseasResident === 'はい') {
+        if (overseasNonQualificationDate) {
+          this.dependentRemovalForm.patchValue({ overseasNonQualificationDate: overseasNonQualificationDate });
+        }
+        if (overseasReason) {
+          this.dependentRemovalForm.patchValue({ overseasReason: overseasReason });
+        }
+        if (overseasReason === '国内転入' && transferDate) {
+          this.dependentRemovalForm.patchValue({ transferDate: transferDate });
+        } else if (overseasReason === 'その他' && overseasReasonOther) {
+          this.dependentRemovalForm.patchValue({ overseasReasonOther: overseasReasonOther });
+        }
+      }
     } else if (application.applicationType === '住所変更申請') {
       this.addressChangeForm = this.createAddressChangeForm();
       this.sameAsOldAddress = application.residentAddress?.sameAsOldAddress || false;
