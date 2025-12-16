@@ -607,6 +607,11 @@ export class HrDashboardComponent {
   dependents: any[] = [];
   // 扶養者情報の展開状態
   dependentExpandedStates: boolean[] = [];
+  // 扶養者のファイル管理（配列で管理：indexが扶養者のインデックス）
+  dependentMyNumberCardFiles: (File | null)[] = [];
+  dependentIdentityDocFiles: (File | null)[] = [];
+  dependentBasicPensionNumberDocFiles: (File | null)[] = [];
+  dependentSupportAmountDocFiles: (File | null)[] = [];
 
   // 文書作成・管理ページ用
   documentTypes = [
@@ -1559,6 +1564,21 @@ export class HrDashboardComponent {
         try {
           const employeeNumber = this.selectedApplication.employeeNumber;
           if (employeeNumber) {
+            // デバッグログ：申請データ全体を確認
+            console.log('=== 扶養家族追加申請承認時の申請データ ===');
+            console.log('申請データ全体:', this.selectedApplication);
+            console.log('マイナンバー:', this.selectedApplication.myNumber);
+            console.log('マイナンバーカードファイルURL:', this.selectedApplication.myNumberCardFileUrl);
+            console.log('マイナンバーカードファイル名(myNumberCardFile):', this.selectedApplication.myNumberCardFile);
+            console.log('マイナンバーカードファイル名(myNumberCardFileName):', this.selectedApplication.myNumberCardFileName);
+            console.log('身分証明書ファイルURL:', this.selectedApplication.identityDocFileUrl);
+            console.log('身分証明書ファイル名:', this.selectedApplication.identityDocFileName);
+            console.log('基礎年金番号書類ファイルURL:', this.selectedApplication.basicPensionNumberDocFileUrl);
+            console.log('基礎年金番号書類ファイル名:', this.selectedApplication.basicPensionNumberDocFileName);
+            console.log('仕送り額証明書類ファイルURL:', this.selectedApplication.supportAmountDocFileUrl);
+            console.log('仕送り額証明書類ファイル名:', this.selectedApplication.supportAmountDocFileName);
+            console.log('==========================================');
+            
             // 申請内容から扶養者情報を取得
             // 申請データのフィールド名を確認（従業員側のフォームでは lastName, firstName などが使われている）
             const lastName = this.selectedApplication.lastName || '';
@@ -1593,8 +1613,16 @@ export class HrDashboardComponent {
             
             let isNewDependent = false;
             if (existingDependentIndex >= 0) {
+              // デバッグログ：既存扶養者更新前
+              console.log('=== 既存扶養者情報更新 ===');
+              console.log('既存扶養者インデックス:', existingDependentIndex);
+              console.log('既存扶養者のマイナンバー:', dependents[existingDependentIndex].myNumber);
+              console.log('既存扶養者のマイナンバーカードファイル名:', dependents[existingDependentIndex].myNumberCardFileName);
+              console.log('申請データのマイナンバー:', this.selectedApplication.myNumber);
+              console.log('申請データのマイナンバーカードファイル名:', this.selectedApplication.myNumberCardFile || this.selectedApplication.myNumberCardFileName);
+              
               // 既存の扶養者情報を更新（申請データで上書き）
-              dependents[existingDependentIndex] = {
+              const updatedDependent = {
                 ...dependents[existingDependentIndex],
                 // 基本情報
                 lastName: lastName || dependents[existingDependentIndex].lastName || '',
@@ -1609,8 +1637,8 @@ export class HrDashboardComponent {
                 spouseType: this.selectedApplication.spouseType || dependents[existingDependentIndex].spouseType || '',
                 birthDate: this.selectedApplication.birthDate || dependents[existingDependentIndex].birthDate || '',
                 gender: this.selectedApplication.gender || dependents[existingDependentIndex].gender || '',
-                myNumber: this.selectedApplication.myNumber || dependents[existingDependentIndex].myNumber || '',
-                phoneNumber: this.selectedApplication.phoneNumber || dependents[existingDependentIndex].phoneNumber || '',
+                myNumber: this.selectedApplication.myNumber !== undefined && this.selectedApplication.myNumber !== null ? this.selectedApplication.myNumber : (dependents[existingDependentIndex].myNumber || ''),
+                phoneNumber: this.selectedApplication.phoneNumber !== undefined && this.selectedApplication.phoneNumber !== null ? this.selectedApplication.phoneNumber : (dependents[existingDependentIndex].phoneNumber || ''),
                 phoneNumberType: this.selectedApplication.phoneNumberType || dependents[existingDependentIndex].phoneNumberType || '',
                 phoneNumberOther: this.selectedApplication.phoneNumberOther || dependents[existingDependentIndex].phoneNumberOther || '',
                 occupation: this.selectedApplication.occupation || dependents[existingDependentIndex].occupation || '',
@@ -1641,19 +1669,19 @@ export class HrDashboardComponent {
                 disabilityCardType: this.selectedApplication.disabilityCardType || dependents[existingDependentIndex].disabilityCardType || '',
                 disabilityCardIssueDate: this.selectedApplication.disabilityCardIssueDate || dependents[existingDependentIndex].disabilityCardIssueDate || '',
                 notes: this.selectedApplication.notes || dependents[existingDependentIndex].notes || '',
-                // 添付ファイル
-                basicPensionNumberDocFileUrl: this.selectedApplication.basicPensionNumberDocFileUrl || dependents[existingDependentIndex].basicPensionNumberDocFileUrl || '',
-                basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName || dependents[existingDependentIndex].basicPensionNumberDocFileName || '',
-                myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl || dependents[existingDependentIndex].myNumberDocFileUrl || '',
-                myNumberDocFileName: this.selectedApplication.myNumberDocFileName || dependents[existingDependentIndex].myNumberDocFileName || '',
-                myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl || dependents[existingDependentIndex].myNumberCardFileUrl || '',
-                myNumberCardFileName: this.selectedApplication.myNumberCardFileName || dependents[existingDependentIndex].myNumberCardFileName || '',
-                identityDocFileUrl: this.selectedApplication.identityDocFileUrl || dependents[existingDependentIndex].identityDocFileUrl || '',
-                identityDocFileName: this.selectedApplication.identityDocFileName || dependents[existingDependentIndex].identityDocFileName || '',
-                supportAmountDocFileUrl: this.selectedApplication.supportAmountDocFileUrl || dependents[existingDependentIndex].supportAmountDocFileUrl || '',
-                supportAmountDocFileName: this.selectedApplication.supportAmountDocFileName || dependents[existingDependentIndex].supportAmountDocFileName || '',
-                disabilityCardFileUrl: this.selectedApplication.disabilityCardFileUrl || dependents[existingDependentIndex].disabilityCardFileUrl || '',
-                disabilityCardFileName: this.selectedApplication.disabilityCardFileName || dependents[existingDependentIndex].disabilityCardFileName || '',
+                // 添付ファイル（申請データを優先、なければ既存データ）
+                basicPensionNumberDocFileUrl: this.selectedApplication.basicPensionNumberDocFileUrl !== undefined ? this.selectedApplication.basicPensionNumberDocFileUrl : (dependents[existingDependentIndex].basicPensionNumberDocFileUrl || ''),
+                basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName !== undefined ? this.selectedApplication.basicPensionNumberDocFileName : (dependents[existingDependentIndex].basicPensionNumberDocFileName || ''),
+                myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl !== undefined ? this.selectedApplication.myNumberDocFileUrl : (dependents[existingDependentIndex].myNumberDocFileUrl || ''),
+                myNumberDocFileName: this.selectedApplication.myNumberDocFileName !== undefined ? this.selectedApplication.myNumberDocFileName : (dependents[existingDependentIndex].myNumberDocFileName || ''),
+                myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl !== undefined ? this.selectedApplication.myNumberCardFileUrl : (dependents[existingDependentIndex].myNumberCardFileUrl || ''),
+                myNumberCardFileName: this.selectedApplication.myNumberCardFile !== undefined ? this.selectedApplication.myNumberCardFile : (this.selectedApplication.myNumberCardFileName !== undefined ? this.selectedApplication.myNumberCardFileName : (dependents[existingDependentIndex].myNumberCardFileName || '')),
+                identityDocFileUrl: this.selectedApplication.identityDocFileUrl !== undefined ? this.selectedApplication.identityDocFileUrl : (dependents[existingDependentIndex].identityDocFileUrl || ''),
+                identityDocFileName: this.selectedApplication.identityDocFileName !== undefined ? this.selectedApplication.identityDocFileName : (dependents[existingDependentIndex].identityDocFileName || ''),
+                supportAmountDocFileUrl: this.selectedApplication.supportAmountDocFileUrl !== undefined ? this.selectedApplication.supportAmountDocFileUrl : (dependents[existingDependentIndex].supportAmountDocFileUrl || ''),
+                supportAmountDocFileName: this.selectedApplication.supportAmountDocFileName !== undefined ? this.selectedApplication.supportAmountDocFileName : (dependents[existingDependentIndex].supportAmountDocFileName || ''),
+                disabilityCardFileUrl: this.selectedApplication.disabilityCardFileUrl !== undefined ? this.selectedApplication.disabilityCardFileUrl : (dependents[existingDependentIndex].disabilityCardFileUrl || ''),
+                disabilityCardFileName: this.selectedApplication.disabilityCardFileName !== undefined ? this.selectedApplication.disabilityCardFileName : (dependents[existingDependentIndex].disabilityCardFileName || ''),
                 // 保険証情報
                 insuranceSymbol: insuranceSymbol || dependents[existingDependentIndex].insuranceSymbol || '',
                 insuranceNumber: insuranceNumber || dependents[existingDependentIndex].insuranceNumber || '',
@@ -1666,7 +1694,24 @@ export class HrDashboardComponent {
                   changedBy: this.hrName
                 }]
               };
+              
+              // デバッグログ：更新後の扶養者情報
+              console.log('更新後の扶養者情報:');
+              console.log('マイナンバー:', updatedDependent.myNumber);
+              console.log('マイナンバーカードファイルURL:', updatedDependent.myNumberCardFileUrl);
+              console.log('マイナンバーカードファイル名:', updatedDependent.myNumberCardFileName);
+              console.log('身分証明書ファイルURL:', updatedDependent.identityDocFileUrl);
+              console.log('身分証明書ファイル名:', updatedDependent.identityDocFileName);
+              console.log('==========================================');
+              
+              dependents[existingDependentIndex] = updatedDependent;
             } else {
+              // デバッグログ：新規扶養者作成
+              console.log('=== 新規扶養者情報作成 ===');
+              console.log('申請データのマイナンバー:', this.selectedApplication.myNumber);
+              console.log('申請データのマイナンバーカードファイル名:', this.selectedApplication.myNumberCardFile || this.selectedApplication.myNumberCardFileName);
+              console.log('申請データの身分証明書ファイル名:', this.selectedApplication.identityDocFileName);
+              
               // 新しい扶養者情報を作成（添付ファイルURLとファイル名を含む）
               const newDependent = {
                 name: dependentName,
@@ -1681,8 +1726,8 @@ export class HrDashboardComponent {
                 spouseType: this.selectedApplication.spouseType || '',
                 birthDate: this.selectedApplication.birthDate || '',
                 gender: this.selectedApplication.gender || '',
-                myNumber: this.selectedApplication.myNumber || '',
-                phoneNumber: this.selectedApplication.phoneNumber || '',
+                myNumber: this.selectedApplication.myNumber !== undefined && this.selectedApplication.myNumber !== null ? this.selectedApplication.myNumber : '',
+                phoneNumber: this.selectedApplication.phoneNumber !== undefined && this.selectedApplication.phoneNumber !== null ? this.selectedApplication.phoneNumber : '',
                 phoneNumberType: this.selectedApplication.phoneNumberType || '',
                 phoneNumberOther: this.selectedApplication.phoneNumberOther || '',
                 occupation: this.selectedApplication.occupation || '',
@@ -1700,16 +1745,16 @@ export class HrDashboardComponent {
                 addressKana: this.selectedApplication.addressKana || '',
                 addressChangeDate: this.selectedApplication.addressChangeDate || '',
                 basicPensionNumber: this.selectedApplication.basicPensionNumber || '',
-                basicPensionNumberDocFileUrl: this.selectedApplication.basicPensionNumberDocFileUrl || '',
-                basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName || '',
-                myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl || '',
-                myNumberDocFileName: this.selectedApplication.myNumberDocFileName || '',
-                myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl || '',
-                myNumberCardFileName: this.selectedApplication.myNumberCardFileName || '',
-                identityDocFileUrl: this.selectedApplication.identityDocFileUrl || '',
-                identityDocFileName: this.selectedApplication.identityDocFileName || '',
-                supportAmountDocFileUrl: this.selectedApplication.supportAmountDocFileUrl || '',
-                supportAmountDocFileName: this.selectedApplication.supportAmountDocFileName || '',
+                basicPensionNumberDocFileUrl: this.selectedApplication.basicPensionNumberDocFileUrl !== undefined ? this.selectedApplication.basicPensionNumberDocFileUrl : '',
+                basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName !== undefined ? this.selectedApplication.basicPensionNumberDocFileName : '',
+                myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl !== undefined ? this.selectedApplication.myNumberDocFileUrl : '',
+                myNumberDocFileName: this.selectedApplication.myNumberDocFileName !== undefined ? this.selectedApplication.myNumberDocFileName : '',
+                myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl !== undefined ? this.selectedApplication.myNumberCardFileUrl : '',
+                myNumberCardFileName: this.selectedApplication.myNumberCardFile !== undefined ? this.selectedApplication.myNumberCardFile : (this.selectedApplication.myNumberCardFileName !== undefined ? this.selectedApplication.myNumberCardFileName : ''),
+                identityDocFileUrl: this.selectedApplication.identityDocFileUrl !== undefined ? this.selectedApplication.identityDocFileUrl : '',
+                identityDocFileName: this.selectedApplication.identityDocFileName !== undefined ? this.selectedApplication.identityDocFileName : '',
+                supportAmountDocFileUrl: this.selectedApplication.supportAmountDocFileUrl !== undefined ? this.selectedApplication.supportAmountDocFileUrl : '',
+                supportAmountDocFileName: this.selectedApplication.supportAmountDocFileName !== undefined ? this.selectedApplication.supportAmountDocFileName : '',
                 isForeignNational: this.selectedApplication.isForeignNational || '',
                 nationality: this.selectedApplication.nationality || '',
                 aliasName: this.selectedApplication.aliasName || '',
@@ -1737,9 +1782,32 @@ export class HrDashboardComponent {
                 }]
               };
               
+              // デバッグログ：新規扶養者情報
+              console.log('作成された新規扶養者情報:');
+              console.log('マイナンバー:', newDependent.myNumber);
+              console.log('マイナンバーカードファイルURL:', newDependent.myNumberCardFileUrl);
+              console.log('マイナンバーカードファイル名:', newDependent.myNumberCardFileName);
+              console.log('身分証明書ファイルURL:', newDependent.identityDocFileUrl);
+              console.log('身分証明書ファイル名:', newDependent.identityDocFileName);
+              console.log('==========================================');
+              
               dependents.push(newDependent);
               isNewDependent = true;
             }
+            
+            // デバッグログ：保存前の扶養者一覧
+            console.log('=== 保存前の扶養者一覧 ===');
+            dependents.forEach((dep: any, idx: number) => {
+              console.log(`扶養者 ${idx + 1}:`, {
+                name: dep.name,
+                myNumber: dep.myNumber,
+                myNumberCardFileUrl: dep.myNumberCardFileUrl,
+                myNumberCardFileName: dep.myNumberCardFileName,
+                identityDocFileUrl: dep.identityDocFileUrl,
+                identityDocFileName: dep.identityDocFileName
+              });
+            });
+            console.log('==========================================');
             
             // 扶養者情報が「無」だった場合、「有」に変更
             const currentDependentStatus = employeeData.dependentStatus || employeeData.hasDependents;
@@ -2347,6 +2415,10 @@ export class HrDashboardComponent {
     this.myNumberCardFile = null;
     this.dependents = [];
     this.dependentExpandedStates = [];
+    this.dependentMyNumberCardFiles = [];
+    this.dependentIdentityDocFiles = [];
+    this.dependentBasicPensionNumberDocFiles = [];
+    this.dependentSupportAmountDocFiles = [];
   }
 
   // 新入社員情報編集フォームを作成（必須項目あり）
@@ -3018,9 +3090,18 @@ export class HrDashboardComponent {
       });
       // 展開状態を初期化（すべて折りたたみ）
       this.dependentExpandedStates = new Array(this.dependents.length).fill(false);
+      // ファイル配列を初期化
+      this.dependentMyNumberCardFiles = new Array(this.dependents.length).fill(null);
+      this.dependentIdentityDocFiles = new Array(this.dependents.length).fill(null);
+      this.dependentBasicPensionNumberDocFiles = new Array(this.dependents.length).fill(null);
+      this.dependentSupportAmountDocFiles = new Array(this.dependents.length).fill(null);
     } else {
       this.dependents = [];
       this.dependentExpandedStates = [];
+      this.dependentMyNumberCardFiles = [];
+      this.dependentIdentityDocFiles = [];
+      this.dependentBasicPensionNumberDocFiles = [];
+      this.dependentSupportAmountDocFiles = [];
     }
 
     // 氏名を姓・名に分割（既存データとの互換性を考慮）
@@ -3655,8 +3736,75 @@ export class HrDashboardComponent {
         delete formData.myNumberPart2;
         delete formData.myNumberPart3;
 
+        // 扶養者のファイルをアップロード
+        const dependentFileUrls: any[] = [];
+        for (let i = 0; i < this.dependents.length; i++) {
+          const dep = this.dependents[i];
+          const fileUrls: any = {
+            myNumberCardFileUrl: dep.myNumberCardFileUrl || '',
+            myNumberCardFileName: dep.myNumberCardFileName || '',
+            identityDocFileUrl: dep.identityDocFileUrl || '',
+            identityDocFileName: dep.identityDocFileName || '',
+            basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
+            basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
+            supportAmountDocFileUrl: dep.supportAmountDocFileUrl || '',
+            supportAmountDocFileName: dep.supportAmountDocFileName || ''
+          };
+
+          // マイナンバーカードファイル（配偶者以外の場合）
+          if (dep.relationshipType === '配偶者以外' && this.dependentMyNumberCardFiles[i]) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberCardFiles[i]!.name);
+            const myNumberCardPath = `employees/${this.selectedEmployeeNumber}/dependents/${i}/myNumberCard_${Date.now()}_${sanitizedFileName}`;
+            fileUrls.myNumberCardFileUrl = await this.firestoreService.uploadFile(this.dependentMyNumberCardFiles[i]!, myNumberCardPath);
+            fileUrls.myNumberCardFileName = this.dependentMyNumberCardFiles[i]!.name;
+          } else if (dep.myNumberCardFileUrl) {
+            // 既存のファイルURLを保持
+            fileUrls.myNumberCardFileUrl = dep.myNumberCardFileUrl;
+            fileUrls.myNumberCardFileName = dep.myNumberCardFileName || '';
+          }
+
+          // 身分証明書ファイル（配偶者以外の場合）
+          if (dep.relationshipType === '配偶者以外' && this.dependentIdentityDocFiles[i]) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentIdentityDocFiles[i]!.name);
+            const identityDocPath = `employees/${this.selectedEmployeeNumber}/dependents/${i}/identityDoc_${Date.now()}_${sanitizedFileName}`;
+            fileUrls.identityDocFileUrl = await this.firestoreService.uploadFile(this.dependentIdentityDocFiles[i]!, identityDocPath);
+            fileUrls.identityDocFileName = this.dependentIdentityDocFiles[i]!.name;
+          } else if (dep.identityDocFileUrl) {
+            // 既存のファイルURLを保持
+            fileUrls.identityDocFileUrl = dep.identityDocFileUrl;
+            fileUrls.identityDocFileName = dep.identityDocFileName || '';
+          }
+
+          // 基礎年金番号書類ファイル（配偶者の場合）
+          if (dep.relationshipType === '配偶者' && this.dependentBasicPensionNumberDocFiles[i]) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentBasicPensionNumberDocFiles[i]!.name);
+            const basicPensionNumberDocPath = `employees/${this.selectedEmployeeNumber}/dependents/${i}/basicPensionNumberDoc_${Date.now()}_${sanitizedFileName}`;
+            fileUrls.basicPensionNumberDocFileUrl = await this.firestoreService.uploadFile(this.dependentBasicPensionNumberDocFiles[i]!, basicPensionNumberDocPath);
+            fileUrls.basicPensionNumberDocFileName = this.dependentBasicPensionNumberDocFiles[i]!.name;
+          } else if (dep.basicPensionNumberDocFileUrl) {
+            // 既存のファイルURLを保持
+            fileUrls.basicPensionNumberDocFileUrl = dep.basicPensionNumberDocFileUrl;
+            fileUrls.basicPensionNumberDocFileName = dep.basicPensionNumberDocFileName || '';
+          }
+
+          // 仕送り額証明書類ファイル（配偶者の別居の場合）
+          if (dep.relationshipType === '配偶者' && dep.livingTogether === '別居' && this.dependentSupportAmountDocFiles[i]) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentSupportAmountDocFiles[i]!.name);
+            const supportAmountDocPath = `employees/${this.selectedEmployeeNumber}/dependents/${i}/supportAmountDoc_${Date.now()}_${sanitizedFileName}`;
+            fileUrls.supportAmountDocFileUrl = await this.firestoreService.uploadFile(this.dependentSupportAmountDocFiles[i]!, supportAmountDocPath);
+            fileUrls.supportAmountDocFileName = this.dependentSupportAmountDocFiles[i]!.name;
+          } else if (dep.supportAmountDocFileUrl) {
+            // 既存のファイルURLを保持
+            fileUrls.supportAmountDocFileUrl = dep.supportAmountDocFileUrl;
+            fileUrls.supportAmountDocFileName = dep.supportAmountDocFileName || '';
+          }
+
+          dependentFileUrls.push(fileUrls);
+        }
+
         // 扶養者一覧を追加（深いコピーを作成）
         formData.dependents = this.dependents.map((dep, index) => {
+          const fileUrls = dependentFileUrls[index] || {};
           // マイナンバーを結合
           const myNumberParts = [
             dep.myNumberPart1 || '',
@@ -3718,16 +3866,16 @@ export class HrDashboardComponent {
           addressKana: dep.addressKana || '',
           addressChangeDate: dep.addressChangeDate || '',
           basicPensionNumber: basicPensionNumber || '',
-          basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
-          basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
+          basicPensionNumberDocFileUrl: fileUrls.basicPensionNumberDocFileUrl || '',
+          basicPensionNumberDocFileName: fileUrls.basicPensionNumberDocFileName || '',
           myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
           myNumberDocFileName: dep.myNumberDocFileName || '',
-          myNumberCardFileUrl: dep.myNumberCardFileUrl || '',
-          myNumberCardFileName: dep.myNumberCardFileName || '',
-          identityDocFileUrl: dep.identityDocFileUrl || '',
-          identityDocFileName: dep.identityDocFileName || '',
-          supportAmountDocFileUrl: dep.supportAmountDocFileUrl || '',
-          supportAmountDocFileName: dep.supportAmountDocFileName || '',
+          myNumberCardFileUrl: fileUrls.myNumberCardFileUrl || '',
+          myNumberCardFileName: fileUrls.myNumberCardFileName || '',
+          identityDocFileUrl: fileUrls.identityDocFileUrl || '',
+          identityDocFileName: fileUrls.identityDocFileName || '',
+          supportAmountDocFileUrl: fileUrls.supportAmountDocFileUrl || '',
+          supportAmountDocFileName: fileUrls.supportAmountDocFileName || '',
           isForeignNational: dep.isForeignNational !== undefined && dep.isForeignNational !== null ? dep.isForeignNational : '',
           nationality: dep.nationality || '',
           aliasName: dep.aliasName || '',
@@ -4418,12 +4566,20 @@ export class HrDashboardComponent {
       notes: ''
     });
     this.dependentExpandedStates.push(false);
+    this.dependentMyNumberCardFiles.push(null);
+    this.dependentIdentityDocFiles.push(null);
+    this.dependentBasicPensionNumberDocFiles.push(null);
+    this.dependentSupportAmountDocFiles.push(null);
   }
 
   // 扶養者を削除
   removeDependent(index: number) {
     this.dependents.splice(index, 1);
     this.dependentExpandedStates.splice(index, 1);
+    this.dependentMyNumberCardFiles.splice(index, 1);
+    this.dependentIdentityDocFiles.splice(index, 1);
+    this.dependentBasicPensionNumberDocFiles.splice(index, 1);
+    this.dependentSupportAmountDocFiles.splice(index, 1);
   }
 
   // 扶養者情報の展開状態をトグル

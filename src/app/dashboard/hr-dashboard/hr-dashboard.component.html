@@ -2566,382 +2566,456 @@
                 <!-- 配偶者以外の場合のフォーム -->
                 <ng-container *ngIf="dependent.relationshipType === '配偶者以外'">
                   <!-- 続柄 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-relationship-' + i">続柄 <span class="required">*</span></label>
-                    <select 
-                      [id]="'hr-dependent-relationship-' + i"
-                      [(ngModel)]="dependent.relationship"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                      <option value="">選択してください</option>
-                      <option value="実子・養子">実子・養子</option>
-                      <option value="実子・養子以外の子">実子・養子以外の子</option>
-                      <option value="父母・養父母">父母・養父母</option>
-                      <option value="義父母">義父母</option>
-                      <option value="弟妹">弟妹</option>
-                      <option value="兄姉">兄姉</option>
-                      <option value="祖父母">祖父母</option>
-                      <option value="曽祖父母">曽祖父母</option>
-                      <option value="孫">孫</option>
-                      <option value="その他">その他</option>
-                    </select>
-                  </div>
-                  <div *ngIf="dependent.relationship === 'その他'" class="form-group">
-                    <label [for]="'hr-dependent-relationshipOther-' + i">その他 <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-relationshipOther-' + i"
-                      [(ngModel)]="dependent.relationshipOther"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
+                  <section class="form-section">
+                    <h3 class="section-title">続柄</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-relationship-' + i">続柄 <span class="required">*</span></label>
+                      <select 
+                        [id]="'hr-dependent-relationship-' + i"
+                        [(ngModel)]="dependent.relationship"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="実子・養子">実子・養子</option>
+                        <option value="実子・養子以外の子">実子・養子以外の子</option>
+                        <option value="父母・養父母">父母・養父母</option>
+                        <option value="義父母">義父母</option>
+                        <option value="弟妹">弟妹</option>
+                        <option value="兄姉">兄姉</option>
+                        <option value="祖父母">祖父母</option>
+                        <option value="曽祖父母">曽祖父母</option>
+                        <option value="孫">孫</option>
+                        <option value="その他">その他</option>
+                      </select>
+                    </div>
+                    <div *ngIf="dependent.relationship === 'その他'" class="form-group">
+                      <label [for]="'hr-dependent-relationshipOther-' + i">その他 <span class="required">*</span></label>
+                      <input 
+                        type="text" 
+                        [id]="'hr-dependent-relationshipOther-' + i"
+                        [(ngModel)]="dependent.relationshipOther"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                    </div>
+                  </section>
                   
                   <!-- 氏名 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-lastName-' + i">姓 <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-lastName-' + i"
-                      [(ngModel)]="dependent.lastName"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-firstName-' + i">名 <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-firstName-' + i"
-                      [(ngModel)]="dependent.firstName"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-lastNameKana-' + i">姓（フリガナ） <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-lastNameKana-' + i"
-                      [(ngModel)]="dependent.lastNameKana"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-firstNameKana-' + i">名（フリガナ） <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-firstNameKana-' + i"
-                      [(ngModel)]="dependent.firstNameKana"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
-                  
-                  <!-- 生年月日 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-birthDate-' + i">生年月日 <span class="required">*</span></label>
-                    <input 
-                      type="date" 
-                      [id]="'hr-dependent-birthDate-' + i"
-                      [(ngModel)]="dependent.birthDate"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
-                  
-                  <!-- マイナンバー -->
-                  <div class="form-group">
-                    <label>マイナンバー <span class="required">*</span></label>
-                    <div class="my-number-container">
-                      <div class="my-number-inputs">
+                  <section class="form-section">
+                    <h3 class="section-title">氏名</h3>
+                    <div class="form-grid">
+                      <div class="form-group">
+                        <label [for]="'hr-dependent-lastName-' + i">姓 <span class="required">*</span></label>
                         <input 
                           type="text" 
-                          [id]="'hr-dependent-myNumberPart1-' + i"
-                          [(ngModel)]="dependent.myNumberPart1"
+                          [id]="'hr-dependent-lastName-' + i"
+                          [(ngModel)]="dependent.lastName"
                           [ngModelOptions]="{standalone: true}"
-                          class="form-input my-number-part"
-                          maxlength="4"
-                          placeholder="0000"
+                          class="form-input"
                         >
-                        <span class="my-number-separator">-</span>
+                      </div>
+                      <div class="form-group">
+                        <label [for]="'hr-dependent-firstName-' + i">名 <span class="required">*</span></label>
                         <input 
                           type="text" 
-                          [id]="'hr-dependent-myNumberPart2-' + i"
-                          [(ngModel)]="dependent.myNumberPart2"
+                          [id]="'hr-dependent-firstName-' + i"
+                          [(ngModel)]="dependent.firstName"
                           [ngModelOptions]="{standalone: true}"
-                          class="form-input my-number-part"
-                          maxlength="4"
-                          placeholder="0000"
+                          class="form-input"
                         >
-                        <span class="my-number-separator">-</span>
+                      </div>
+                      <div class="form-group">
+                        <label [for]="'hr-dependent-lastNameKana-' + i">姓（フリガナ） <span class="required">*</span></label>
                         <input 
                           type="text" 
-                          [id]="'hr-dependent-myNumberPart3-' + i"
-                          [(ngModel)]="dependent.myNumberPart3"
+                          [id]="'hr-dependent-lastNameKana-' + i"
+                          [(ngModel)]="dependent.lastNameKana"
                           [ngModelOptions]="{standalone: true}"
-                          class="form-input my-number-part"
-                          maxlength="4"
-                          placeholder="0000"
+                          class="form-input"
+                        >
+                      </div>
+                      <div class="form-group">
+                        <label [for]="'hr-dependent-firstNameKana-' + i">名（フリガナ） <span class="required">*</span></label>
+                        <input 
+                          type="text" 
+                          [id]="'hr-dependent-firstNameKana-' + i"
+                          [(ngModel)]="dependent.firstNameKana"
+                          [ngModelOptions]="{standalone: true}"
+                          class="form-input"
                         >
                       </div>
                     </div>
-                  </div>
+                  </section>
+                  
+                  <!-- 身分証明書添付 -->
+                  <section class="form-section">
+                    <h3 class="section-title">身分証明書添付</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-identityDoc-' + i">身分証明書添付</label>
+                      <input 
+                        type="file" 
+                        [id]="'hr-dependent-identityDoc-' + i"
+                        class="form-input"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        (change)="onHrDependentFileSelected($event, i, 'identityDoc')"
+                      >
+                      <div *ngIf="dependentIdentityDocFiles[i]" class="file-name">{{ dependentIdentityDocFiles[i]?.name }}</div>
+                      <div *ngIf="dependent.identityDocFileUrl && !dependentIdentityDocFiles[i]" class="file-link-container">
+                        <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
+                      </div>
+                    </div>
+                  </section>
+                  
+                  <!-- 生年月日 -->
+                  <section class="form-section">
+                    <h3 class="section-title">生年月日</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-birthDate-' + i">生年月日 <span class="required">*</span></label>
+                      <input 
+                        type="date" 
+                        [id]="'hr-dependent-birthDate-' + i"
+                        [(ngModel)]="dependent.birthDate"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                    </div>
+                  </section>
+                  
+                  <!-- マイナンバー -->
+                  <section class="form-section">
+                    <h3 class="section-title">マイナンバー</h3>
+                    <div class="form-group">
+                      <label>マイナンバー <span class="required">*</span></label>
+                      <div class="my-number-container">
+                        <div class="my-number-inputs">
+                          <input 
+                            type="text" 
+                            [id]="'hr-dependent-myNumberPart1-' + i"
+                            [(ngModel)]="dependent.myNumberPart1"
+                            [ngModelOptions]="{standalone: true}"
+                            class="form-input my-number-part"
+                            maxlength="4"
+                            placeholder="0000"
+                          >
+                          <span class="my-number-separator">-</span>
+                          <input 
+                            type="text" 
+                            [id]="'hr-dependent-myNumberPart2-' + i"
+                            [(ngModel)]="dependent.myNumberPart2"
+                            [ngModelOptions]="{standalone: true}"
+                            class="form-input my-number-part"
+                            maxlength="4"
+                            placeholder="0000"
+                          >
+                          <span class="my-number-separator">-</span>
+                          <input 
+                            type="text" 
+                            [id]="'hr-dependent-myNumberPart3-' + i"
+                            [(ngModel)]="dependent.myNumberPart3"
+                            [ngModelOptions]="{standalone: true}"
+                            class="form-input my-number-part"
+                            maxlength="4"
+                            placeholder="0000"
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-myNumberCard-' + i">マイナンバーカード添付 <span class="required">*</span></label>
+                      <input 
+                        type="file" 
+                        [id]="'hr-dependent-myNumberCard-' + i"
+                        class="form-input"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        (change)="onHrDependentFileSelected($event, i, 'myNumberCard')"
+                      >
+                      <div *ngIf="dependentMyNumberCardFiles[i]" class="file-name">{{ dependentMyNumberCardFiles[i]?.name }}</div>
+                      <div *ngIf="dependent.myNumberCardFileUrl && !dependentMyNumberCardFiles[i]" class="file-link-container">
+                        <a [href]="dependent.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberCardFileUrl, dependent.myNumberCardFileName) }}</a>
+                      </div>
+                    </div>
+                  </section>
                   
                   <!-- 性別 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-gender-' + i">性別 <span class="required">*</span></label>
-                    <select 
-                      [id]="'hr-dependent-gender-' + i"
-                      [(ngModel)]="dependent.gender"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                      <option value="">選択してください</option>
-                      <option value="男性">男性</option>
-                      <option value="女性">女性</option>
-                    </select>
-                  </div>
+                  <section class="form-section">
+                    <h3 class="section-title">性別</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-gender-' + i">性別 <span class="required">*</span></label>
+                      <select 
+                        [id]="'hr-dependent-gender-' + i"
+                        [(ngModel)]="dependent.gender"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="男性">男性</option>
+                        <option value="女性">女性</option>
+                      </select>
+                    </div>
+                  </section>
                   
                   <!-- 住所 -->
-                  <div class="form-group full-width">
-                    <label>住所 <span class="required">*</span></label>
-                    <div>
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          [name]="'livingTogether-non-spouse-' + i"
-                          value="同居"
-                          [(ngModel)]="dependent.livingTogether"
-                          [ngModelOptions]="{standalone: true}"
-                        >
-                        同居
-                      </label>
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          [name]="'livingTogether-non-spouse-' + i"
-                          value="別居"
-                          [(ngModel)]="dependent.livingTogether"
-                          [ngModelOptions]="{standalone: true}"
-                        >
-                        別居
-                      </label>
-                    </div>
-                  </div>
-                  <div *ngIf="dependent.livingTogether === '別居'" class="form-grid">
-                    <div class="form-group">
-                      <label [for]="'hr-dependent-postalCode-' + i">郵便番号 <span class="required">*</span></label>
-                      <input 
-                        type="text" 
-                        [id]="'hr-dependent-postalCode-' + i"
-                        [(ngModel)]="dependent.postalCode"
-                        [ngModelOptions]="{standalone: true}"
-                        class="form-input"
-                        maxlength="7"
-                        placeholder="例: 1234567"
-                      >
-                    </div>
+                  <section class="form-section">
+                    <h3 class="section-title">住所</h3>
                     <div class="form-group full-width">
-                      <label [for]="'hr-dependent-address-' + i">住所 <span class="required">*</span></label>
-                      <textarea 
-                        [id]="'hr-dependent-address-' + i"
-                        [(ngModel)]="dependent.address"
-                        [ngModelOptions]="{standalone: true}"
-                        class="form-input"
-                        rows="2"
-                      ></textarea>
+                      <label>住所 <span class="required">*</span></label>
+                      <div>
+                        <label class="radio-label">
+                          <input 
+                            type="radio" 
+                            [name]="'livingTogether-non-spouse-' + i"
+                            value="同居"
+                            [(ngModel)]="dependent.livingTogether"
+                            [ngModelOptions]="{standalone: true}"
+                          >
+                          同居
+                        </label>
+                        <label class="radio-label">
+                          <input 
+                            type="radio" 
+                            [name]="'livingTogether-non-spouse-' + i"
+                            value="別居"
+                            [(ngModel)]="dependent.livingTogether"
+                            [ngModelOptions]="{standalone: true}"
+                          >
+                          別居
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                    <div *ngIf="dependent.livingTogether === '別居'" class="form-grid">
+                      <div class="form-group">
+                        <label [for]="'hr-dependent-postalCode-' + i">郵便番号 <span class="required">*</span></label>
+                        <input 
+                          type="text" 
+                          [id]="'hr-dependent-postalCode-' + i"
+                          [(ngModel)]="dependent.postalCode"
+                          [ngModelOptions]="{standalone: true}"
+                          class="form-input"
+                          maxlength="7"
+                          placeholder="例: 1234567"
+                        >
+                      </div>
+                      <div class="form-group full-width">
+                        <label [for]="'hr-dependent-address-' + i">住所 <span class="required">*</span></label>
+                        <textarea 
+                          [id]="'hr-dependent-address-' + i"
+                          [(ngModel)]="dependent.address"
+                          [ngModelOptions]="{standalone: true}"
+                          class="form-input"
+                          rows="2"
+                        ></textarea>
+                      </div>
+                    </div>
+                  </section>
                   
                   <!-- 海外居住者、または海外から国内に転入した -->
-                  <div class="form-group full-width">
-                    <label>海外居住者、または海外から国内に転入した <span class="required">*</span></label>
-                    <div>
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          [name]="'isOverseasResident-non-spouse-' + i"
-                          value="はい"
-                          [(ngModel)]="dependent.isOverseasResident"
-                          [ngModelOptions]="{standalone: true}"
-                        >
-                        はい
-                      </label>
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          [name]="'isOverseasResident-non-spouse-' + i"
-                          value="いいえ"
-                          [(ngModel)]="dependent.isOverseasResident"
-                          [ngModelOptions]="{standalone: true}"
-                        >
-                        いいえ
-                      </label>
+                  <section class="form-section">
+                    <h3 class="section-title">海外居住者、または海外から国内に転入した</h3>
+                    <div class="form-group full-width">
+                      <label>海外居住者、または海外から国内に転入した <span class="required">*</span></label>
+                      <div>
+                        <label class="radio-label">
+                          <input 
+                            type="radio" 
+                            [name]="'isOverseasResident-non-spouse-' + i"
+                            value="はい"
+                            [(ngModel)]="dependent.isOverseasResident"
+                            [ngModelOptions]="{standalone: true}"
+                          >
+                          はい
+                        </label>
+                        <label class="radio-label">
+                          <input 
+                            type="radio" 
+                            [name]="'isOverseasResident-non-spouse-' + i"
+                            value="いいえ"
+                            [(ngModel)]="dependent.isOverseasResident"
+                            [ngModelOptions]="{standalone: true}"
+                          >
+                          いいえ
+                        </label>
+                      </div>
                     </div>
-                  </div>
-                  <div *ngIf="dependent.isOverseasResident === 'はい'" class="form-group">
-                    <label [for]="'hr-dependent-overseasReason-' + i">理由 <span class="required">*</span></label>
-                    <select 
-                      [id]="'hr-dependent-overseasReason-' + i"
-                      [(ngModel)]="dependent.overseasReason"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                      <option value="">選択してください</option>
-                      <option value="留学">留学</option>
-                      <option value="同行家族">同行家族</option>
-                      <option value="特定活動">特定活動</option>
-                      <option value="海外婚姻">海外婚姻</option>
-                      <option value="その他">その他</option>
-                    </select>
-                    <div *ngIf="dependent.overseasReason === 'その他'" class="form-group">
-                      <label [for]="'hr-dependent-overseasReasonOther-' + i">その他 <span class="required">*</span></label>
+                    <div *ngIf="dependent.isOverseasResident === 'はい'" class="form-group">
+                      <label [for]="'hr-dependent-overseasReason-' + i">理由 <span class="required">*</span></label>
+                      <select 
+                        [id]="'hr-dependent-overseasReason-' + i"
+                        [(ngModel)]="dependent.overseasReason"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="留学">留学</option>
+                        <option value="同行家族">同行家族</option>
+                        <option value="特定活動">特定活動</option>
+                        <option value="海外婚姻">海外婚姻</option>
+                        <option value="その他">その他</option>
+                      </select>
+                      <div *ngIf="dependent.overseasReason === 'その他'" class="form-group">
+                        <label [for]="'hr-dependent-overseasReasonOther-' + i">その他 <span class="required">*</span></label>
+                        <input 
+                          type="text" 
+                          [id]="'hr-dependent-overseasReasonOther-' + i"
+                          [(ngModel)]="dependent.overseasReasonOther"
+                          [ngModelOptions]="{standalone: true}"
+                          class="form-input"
+                        >
+                      </div>
+                    </div>
+                  </section>
+                  
+                  <!-- 被扶養者になった日 -->
+                  <section class="form-section">
+                    <h3 class="section-title">被扶養者になった日</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-dependentStartDate-' + i">被扶養者になった日 <span class="required">*</span></label>
                       <input 
-                        type="text" 
-                        [id]="'hr-dependent-overseasReasonOther-' + i"
-                        [(ngModel)]="dependent.overseasReasonOther"
+                        type="date" 
+                        [id]="'hr-dependent-dependentStartDate-' + i"
+                        [(ngModel)]="dependent.dependentStartDate"
                         [ngModelOptions]="{standalone: true}"
                         class="form-input"
                       >
                     </div>
-                  </div>
-                  
-                  <!-- 被扶養者になった日 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-dependentStartDate-' + i">被扶養者になった日 <span class="required">*</span></label>
-                    <input 
-                      type="date" 
-                      [id]="'hr-dependent-dependentStartDate-' + i"
-                      [(ngModel)]="dependent.dependentStartDate"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
+                  </section>
                   
                   <!-- 職業 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-occupation-' + i">職業 <span class="required">*</span></label>
-                    <select 
-                      [id]="'hr-dependent-occupation-' + i"
-                      [(ngModel)]="dependent.occupation"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                      <option value="">選択してください</option>
-                      <option value="無職">無職</option>
-                      <option value="パート">パート</option>
-                      <option value="年金受給者">年金受給者</option>
-                      <option value="小中学生">小中学生</option>
-                      <option value="高校生">高校生</option>
-                      <option value="大学生">大学生</option>
-                      <option value="その他">その他</option>
-                    </select>
-                  </div>
-                  <div *ngIf="dependent.occupation === '大学生'" class="form-group">
-                    <label [for]="'hr-dependent-studentYear-' + i">何年生 <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-studentYear-' + i"
-                      [(ngModel)]="dependent.studentYear"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                      placeholder="例: 1年生"
-                    >
-                  </div>
-                  <div *ngIf="dependent.occupation === 'その他'" class="form-group">
-                    <label [for]="'hr-dependent-occupationOther-' + i">その他 <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-occupationOther-' + i"
-                      [(ngModel)]="dependent.occupationOther"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
+                  <section class="form-section">
+                    <h3 class="section-title">職業</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-occupation-' + i">職業 <span class="required">*</span></label>
+                      <select 
+                        [id]="'hr-dependent-occupation-' + i"
+                        [(ngModel)]="dependent.occupation"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="無職">無職</option>
+                        <option value="パート">パート</option>
+                        <option value="年金受給者">年金受給者</option>
+                        <option value="小中学生">小中学生</option>
+                        <option value="高校生">高校生</option>
+                        <option value="大学生">大学生</option>
+                        <option value="その他">その他</option>
+                      </select>
+                    </div>
+                    <div *ngIf="dependent.occupation === '大学生'" class="form-group">
+                      <label [for]="'hr-dependent-studentYear-' + i">何年生 <span class="required">*</span></label>
+                      <input 
+                        type="text" 
+                        [id]="'hr-dependent-studentYear-' + i"
+                        [(ngModel)]="dependent.studentYear"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                        placeholder="例: 1年生"
+                      >
+                    </div>
+                    <div *ngIf="dependent.occupation === 'その他'" class="form-group">
+                      <label [for]="'hr-dependent-occupationOther-' + i">その他 <span class="required">*</span></label>
+                      <input 
+                        type="text" 
+                        [id]="'hr-dependent-occupationOther-' + i"
+                        [(ngModel)]="dependent.occupationOther"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                    </div>
+                  </section>
                   
                   <!-- 年収見込み額 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-annualIncome-' + i">年収見込み額 <span class="required">*</span></label>
-                    <input 
-                      type="number" 
-                      [id]="'hr-dependent-annualIncome-' + i"
-                      [(ngModel)]="dependent.annualIncome"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                      placeholder="円"
-                    >
-                  </div>
+                  <section class="form-section">
+                    <h3 class="section-title">年収見込み額</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-annualIncome-' + i">年収見込み額 <span class="required">*</span></label>
+                      <input 
+                        type="number" 
+                        [id]="'hr-dependent-annualIncome-' + i"
+                        [(ngModel)]="dependent.annualIncome"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                        placeholder="円"
+                      >
+                    </div>
+                  </section>
                   
                   <!-- 理由 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-dependentReason-' + i">理由 <span class="required">*</span></label>
-                    <select 
-                      [id]="'hr-dependent-dependentReason-' + i"
-                      [(ngModel)]="dependent.dependentReason"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                      <option value="">選択してください</option>
-                      <option value="出生">出生</option>
-                      <option value="離職">離職</option>
-                      <option value="収入減">収入減</option>
-                      <option value="同居">同居</option>
-                      <option value="その他">その他</option>
-                    </select>
-                  </div>
-                  <div *ngIf="dependent.dependentReason === 'その他'" class="form-group">
-                    <label [for]="'hr-dependent-dependentReasonOther-' + i">その他 <span class="required">*</span></label>
-                    <input 
-                      type="text" 
-                      [id]="'hr-dependent-dependentReasonOther-' + i"
-                      [(ngModel)]="dependent.dependentReasonOther"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                    >
-                  </div>
+                  <section class="form-section">
+                    <h3 class="section-title">理由</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-dependentReason-' + i">理由 <span class="required">*</span></label>
+                      <select 
+                        [id]="'hr-dependent-dependentReason-' + i"
+                        [(ngModel)]="dependent.dependentReason"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="出生">出生</option>
+                        <option value="離職">離職</option>
+                        <option value="収入減">収入減</option>
+                        <option value="同居">同居</option>
+                        <option value="その他">その他</option>
+                      </select>
+                    </div>
+                    <div *ngIf="dependent.dependentReason === 'その他'" class="form-group">
+                      <label [for]="'hr-dependent-dependentReasonOther-' + i">その他 <span class="required">*</span></label>
+                      <input 
+                        type="text" 
+                        [id]="'hr-dependent-dependentReasonOther-' + i"
+                        [(ngModel)]="dependent.dependentReasonOther"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                      >
+                    </div>
+                  </section>
                   
                   <!-- 資格確認書発行が必要か -->
-                  <div class="form-group full-width">
-                    <label>資格確認書発行が必要か <span class="required">*</span></label>
-                    <div>
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          [name]="'needsQualificationConfirmation-non-spouse-' + i"
-                          value="はい"
-                          [(ngModel)]="dependent.needsQualificationConfirmation"
-                          [ngModelOptions]="{standalone: true}"
-                        >
-                        はい
-                      </label>
-                      <label class="radio-label">
-                        <input 
-                          type="radio" 
-                          [name]="'needsQualificationConfirmation-non-spouse-' + i"
-                          value="いいえ"
-                          [(ngModel)]="dependent.needsQualificationConfirmation"
-                          [ngModelOptions]="{standalone: true}"
-                        >
-                        いいえ
-                      </label>
+                  <section class="form-section">
+                    <h3 class="section-title">資格確認書発行が必要か</h3>
+                    <div class="form-group full-width">
+                      <label>資格確認書発行が必要か <span class="required">*</span></label>
+                      <div>
+                        <label class="radio-label">
+                          <input 
+                            type="radio" 
+                            [name]="'needsQualificationConfirmation-non-spouse-' + i"
+                            value="はい"
+                            [(ngModel)]="dependent.needsQualificationConfirmation"
+                            [ngModelOptions]="{standalone: true}"
+                          >
+                          はい
+                        </label>
+                        <label class="radio-label">
+                          <input 
+                            type="radio" 
+                            [name]="'needsQualificationConfirmation-non-spouse-' + i"
+                            value="いいえ"
+                            [(ngModel)]="dependent.needsQualificationConfirmation"
+                            [ngModelOptions]="{standalone: true}"
+                          >
+                          いいえ
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  </section>
                   
                   <!-- 配偶者の年収 -->
-                  <div class="form-group">
-                    <label [for]="'hr-dependent-spouseAnnualIncome-' + i">配偶者の年収 <span class="required">*</span></label>
-                    <input 
-                      type="number" 
-                      [id]="'hr-dependent-spouseAnnualIncome-' + i"
-                      [(ngModel)]="dependent.spouseAnnualIncome"
-                      [ngModelOptions]="{standalone: true}"
-                      class="form-input"
-                      placeholder="円"
-                    >
-                  </div>
+                  <section class="form-section">
+                    <h3 class="section-title">配偶者の年収</h3>
+                    <div class="form-group">
+                      <label [for]="'hr-dependent-spouseAnnualIncome-' + i">配偶者の年収 <span class="required">*</span></label>
+                      <input 
+                        type="number" 
+                        [id]="'hr-dependent-spouseAnnualIncome-' + i"
+                        [(ngModel)]="dependent.spouseAnnualIncome"
+                        [ngModelOptions]="{standalone: true}"
+                        class="form-input"
+                        placeholder="円"
+                      >
+                    </div>
+                  </section>
                 </ng-container>
                 
                 <!-- 添付書類（共通） -->
@@ -2955,12 +3029,6 @@
                   <label [for]="'hr-dependent-myNumberDoc-' + i">マイナンバー確認書類</label>
                   <div class="file-link-container">
                     <a [href]="dependent.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberDocFileUrl, dependent.myNumberDocFileName) }}</a>
-                  </div>
-                </div>
-                <div class="form-group full-width" *ngIf="dependent.identityDocFileUrl">
-                  <label [for]="'hr-dependent-identityDoc-' + i">身元確認書類</label>
-                  <div class="file-link-container">
-                    <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
                   </div>
                 </div>
                 <div class="form-group full-width" *ngIf="dependent.disabilityCardFileUrl">

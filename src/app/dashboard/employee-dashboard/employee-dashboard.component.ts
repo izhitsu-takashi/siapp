@@ -2653,10 +2653,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
           
           // マイナンバー
           myNumber: relationshipType === '配偶者' 
-            ? (formValue.provideMyNumber === '提供する' ? myNumber : null)
-            : (myNumber || null),
+            ? (formValue.provideMyNumber === '提供する' ? (myNumber && myNumber.length > 0 ? myNumber : null) : null)
+            : (myNumber && myNumber.length > 0 ? myNumber : null),
           myNumberCardFileUrl: myNumberCardFileUrl,
           myNumberCardFile: myNumberCardFileName,
+          myNumberCardFileName: myNumberCardFileName,
           myNumberDocFileUrl: myNumberDocFileUrl,
           myNumberDocFileName: myNumberDocFileName,
           
@@ -4291,14 +4292,51 @@ export class EmployeeDashboardComponent implements OnDestroy {
           }
           
           const formValue = this.dependentApplicationForm.value;
+          const relationshipType = formValue.relationshipType;
+          
+          // デバッグログ：再申請時のマイナンバー情報
+          console.log('=== 再申請時のマイナンバー情報 ===');
+          console.log('relationshipType:', relationshipType);
+          console.log('myNumberParts:', [
+            this.dependentApplicationForm.get('myNumberPart1')?.value || '',
+            this.dependentApplicationForm.get('myNumberPart2')?.value || '',
+            this.dependentApplicationForm.get('myNumberPart3')?.value || ''
+          ]);
+          console.log('結合後のmyNumber:', myNumber);
+          console.log('provideMyNumber:', formValue.provideMyNumber);
+          console.log('myNumberCardFileUrl:', myNumberCardFileUrl);
+          console.log('myNumberCardFileName:', myNumberCardFileName);
+          console.log('myNumberCardFile (selectedApplication):', this.selectedApplication.myNumberCardFile);
+          console.log('myNumberCardFileName (selectedApplication):', this.selectedApplication.myNumberCardFileName);
+          console.log('====================================');
+          
+          // マイナンバーの保存処理（配偶者と配偶者以外で分岐）
+          let savedMyNumber: string | null = null;
+          if (relationshipType === '配偶者') {
+            // 配偶者の場合：提供するを選択した場合のみ保存
+            savedMyNumber = formValue.provideMyNumber === '提供する' ? (myNumber || null) : null;
+          } else {
+            // 配偶者以外の場合：マイナンバーをそのまま保存（空文字列の場合はnull）
+            savedMyNumber = myNumber && myNumber.length > 0 ? myNumber : null;
+          }
+          
+          // マイナンバーカードファイル名の取得（優先順位：新規ファイル > myNumberCardFile > myNumberCardFileName）
+          let finalMyNumberCardFileName = myNumberCardFileName;
+          if (!finalMyNumberCardFileName) {
+            finalMyNumberCardFileName = this.selectedApplication.myNumberCardFile || 
+                                        this.selectedApplication.myNumberCardFileName || '';
+          }
+          
           applicationData = {
             ...formValue,
+            relationshipType: relationshipType,
             basicPensionNumber: basicPensionNumber || null,
             basicPensionNumberDocFileUrl: basicPensionNumberDocFileUrl,
             basicPensionNumberDocFileName: basicPensionNumberDocFileName,
-            myNumber: formValue.provideMyNumber === '提供する' ? myNumber : null,
+            myNumber: savedMyNumber,
             myNumberCardFileUrl: myNumberCardFileUrl,
-            myNumberCardFile: myNumberCardFileName,
+            myNumberCardFile: finalMyNumberCardFileName,
+            myNumberCardFileName: finalMyNumberCardFileName,
             myNumberDocFileUrl: myNumberDocFileUrl,
             myNumberDocFileName: myNumberDocFileName,
             identityDocFileUrl: identityDocFileUrl,
@@ -4310,6 +4348,14 @@ export class EmployeeDashboardComponent implements OnDestroy {
             employeeNumber: this.employeeNumber,
             applicationType: '扶養家族追加'
           };
+          
+          // デバッグログ：保存される申請データ
+          console.log('=== 保存される再申請データ ===');
+          console.log('myNumber:', applicationData.myNumber);
+          console.log('myNumberCardFileUrl:', applicationData.myNumberCardFileUrl);
+          console.log('myNumberCardFile:', applicationData.myNumberCardFile);
+          console.log('myNumberCardFileName:', applicationData.myNumberCardFileName);
+          console.log('================================');
         }
       } else if (this.selectedApplication.applicationType === '扶養削除申請') {
         formValid = this.dependentRemovalForm.valid;
