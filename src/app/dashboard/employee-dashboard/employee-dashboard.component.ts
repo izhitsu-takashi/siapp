@@ -4191,11 +4191,62 @@ export class EmployeeDashboardComponent implements OnDestroy {
           dependentId = foundIndex.toString();
         }
       }
+      
+      // 理由を判定（removalReasonに「死亡」や「その他」が含まれているか、またはdeathDateやremovalReasonOtherが存在するか）
+      let removalReason = application.removalReason || '';
+      let deathDate = '';
+      let removalReasonOther = '';
+      
+      // 死亡の場合
+      if (application.deathDate) {
+        removalReason = '死亡';
+        deathDate = application.deathDate;
+      }
+      // その他の場合（removalReasonが「死亡」「離婚」「就職・収入増加」「75歳到達」「障害認定」以外の場合）
+      else if (application.removalReasonOther && 
+               !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定'].includes(application.removalReason)) {
+        removalReason = 'その他';
+        removalReasonOther = application.removalReasonOther || application.removalReason || '';
+      }
+      
+      // 海外居住者関連のフィールド
+      let isOverseasResident = application.isOverseasResident || '';
+      let overseasNonQualificationDate = '';
+      let overseasReason = '';
+      let transferDate = '';
+      let overseasReasonOther = '';
+      
+      if (isOverseasResident === 'はい') {
+        overseasNonQualificationDate = application.overseasNonQualificationDate || '';
+        // overseasReasonを判定（transferDateが存在する場合は「国内転入」、overseasReasonOtherが存在する場合は「その他」）
+        if (application.transferDate) {
+          overseasReason = '国内転入';
+          transferDate = application.transferDate;
+        } else if (application.overseasReasonOther) {
+          overseasReason = 'その他';
+          overseasReasonOther = application.overseasReasonOther;
+        } else {
+          overseasReason = application.overseasReason || '';
+        }
+      }
+      
       this.dependentRemovalForm.patchValue({
         removalDate: application.removalDate || '',
         dependentId: dependentId,
-        removalReason: application.removalReason || ''
+        removalReason: removalReason,
+        deathDate: deathDate,
+        removalReasonOther: removalReasonOther,
+        isOverseasResident: isOverseasResident,
+        overseasNonQualificationDate: overseasNonQualificationDate,
+        overseasReason: overseasReason,
+        transferDate: transferDate,
+        overseasReasonOther: overseasReasonOther,
+        needsQualificationConfirmation: application.needsQualificationConfirmation || ''
       });
+      
+      // バリデーションを更新
+      this.onRemovalReasonChange();
+      this.onRemovalOverseasResidentChange();
     } else if (application.applicationType === '住所変更申請') {
       this.addressChangeForm = this.createAddressChangeForm();
       this.sameAsOldAddress = application.residentAddress?.sameAsOldAddress || false;
