@@ -2676,6 +2676,17 @@ export class EmployeeDashboardComponent implements OnDestroy {
         const formValue = this.dependentApplicationForm.value;
         const relationshipType = formValue.relationshipType;
         
+        // マイナンバーのデバッグログ
+        console.log('=== マイナンバー情報の確認 ===');
+        console.log('relationshipType:', relationshipType);
+        console.log('myNumberPart1:', myNumberParts[0]);
+        console.log('myNumberPart2:', myNumberParts[1]);
+        console.log('myNumberPart3:', myNumberParts[2]);
+        console.log('myNumber (結合後):', myNumber);
+        console.log('myNumber length:', myNumber.length);
+        console.log('provideMyNumber:', formValue.provideMyNumber);
+        console.log('========================================');
+        
         // マイナンバーカードをアップロード
         let myNumberCardFileUrl = '';
         let myNumberCardFileName = '';
@@ -2724,6 +2735,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
           supportAmountDocFileName = this.supportAmountDocFile.name;
         }
         
+        // 配偶者の場合、マイナンバーが入力されている場合は自動的に「提供する」と判断
+        const spouseProvidesMyNumber = relationshipType === '配偶者' 
+          ? (formValue.provideMyNumber === '提供する' || (myNumber && myNumber.length > 0))
+          : true;
+        
         const applicationData: any = {
           employeeNumber: this.employeeNumber,
           applicationType: '扶養家族追加',
@@ -2760,16 +2776,16 @@ export class EmployeeDashboardComponent implements OnDestroy {
           
           // マイナンバー
           myNumber: relationshipType === '配偶者' 
-            ? (formValue.provideMyNumber === '提供する' ? (myNumber && myNumber.length > 0 ? myNumber : null) : null)
+            ? (spouseProvidesMyNumber && myNumber && myNumber.length > 0 ? myNumber : null)
             : (myNumber && myNumber.length > 0 ? myNumber : null),
           myNumberPart1: relationshipType === '配偶者' 
-            ? (formValue.provideMyNumber === '提供する' ? (myNumberParts[0] || null) : null)
+            ? (spouseProvidesMyNumber ? (myNumberParts[0] || null) : null)
             : (myNumberParts[0] || null),
           myNumberPart2: relationshipType === '配偶者' 
-            ? (formValue.provideMyNumber === '提供する' ? (myNumberParts[1] || null) : null)
+            ? (spouseProvidesMyNumber ? (myNumberParts[1] || null) : null)
             : (myNumberParts[1] || null),
           myNumberPart3: relationshipType === '配偶者' 
-            ? (formValue.provideMyNumber === '提供する' ? (myNumberParts[2] || null) : null)
+            ? (spouseProvidesMyNumber ? (myNumberParts[2] || null) : null)
             : (myNumberParts[2] || null),
           myNumberCardFileUrl: myNumberCardFileUrl,
           myNumberCardFile: myNumberCardFileName,
@@ -2826,6 +2842,16 @@ export class EmployeeDashboardComponent implements OnDestroy {
         console.log('myNumberCardFileUrl:', applicationData.myNumberCardFileUrl);
         console.log('myNumberCardFile:', applicationData.myNumberCardFile);
         console.log('relationshipType:', applicationData.relationshipType);
+        console.log('==================================================');
+        
+        // デバッグログ：保存される申請データのマイナンバー情報
+        console.log('=== 保存される申請データのマイナンバー情報 ===');
+        console.log('myNumber:', applicationData.myNumber);
+        console.log('myNumberPart1:', applicationData.myNumberPart1);
+        console.log('myNumberPart2:', applicationData.myNumberPart2);
+        console.log('myNumberPart3:', applicationData.myNumberPart3);
+        console.log('relationshipType:', applicationData.relationshipType);
+        console.log('provideMyNumber:', formValue.provideMyNumber);
         console.log('==================================================');
         
         // 申請を保存
