@@ -3718,28 +3718,44 @@ export class EmployeeDashboardComponent implements OnDestroy {
         relationshipType: application.relationshipType || '',
         spouseType: application.spouseType || '',
         relationship: application.relationship || '',
+        relationshipOther: application.relationshipOther || '',
         lastName: application.lastName || '',
         firstName: application.firstName || '',
         lastNameKana: application.lastNameKana || '',
         firstNameKana: application.firstNameKana || '',
         birthDate: application.birthDate || '',
         gender: application.gender || '',
+        phoneNumberType: application.phoneNumberType || '',
+        phoneNumberOther: application.phoneNumberOther || '',
         phoneNumber: application.phoneNumber || '',
         occupation: application.occupation || '',
+        occupationOther: application.occupationOther || '',
+        studentYear: application.studentYear || '',
         annualIncome: application.annualIncome || '',
         monthlyIncome: application.monthlyIncome || '',
         dependentStartDate: application.dependentStartDate || '',
         dependentReason: application.dependentReason || '',
+        dependentReasonOther: application.dependentReasonOther || '',
         provideMyNumber: application.provideMyNumber || '',
         myNumberNotProvidedReason: application.myNumberNotProvidedReason || '',
         disabilityCategory: application.disabilityCategory || '',
         disabilityCardType: application.disabilityCardType || '',
         disabilityCardIssueDate: application.disabilityCardIssueDate || '',
+        isForeignNational: application.isForeignNational || '',
+        nationality: application.nationality || '',
+        aliasName: application.aliasName || '',
         livingTogether: application.livingTogether || '',
         postalCode: application.postalCode || '',
         address: application.address || '',
         addressKana: application.addressKana || '',
-        addressChangeDate: application.addressChangeDate || ''
+        addressChangeDate: application.addressChangeDate || '',
+        monthlySupportAmount: application.monthlySupportAmount || '',
+        isOverseasResident: application.isOverseasResident || '',
+        overseasSpecialRequirementDate: application.overseasSpecialRequirementDate || '',
+        overseasReason: application.overseasReason || '',
+        overseasReasonOther: application.overseasReasonOther || '',
+        needsQualificationConfirmation: application.needsQualificationConfirmation || '',
+        spouseAnnualIncome: application.spouseAnnualIncome || ''
       });
       
       // 基礎年金番号を分割
@@ -3764,6 +3780,13 @@ export class EmployeeDashboardComponent implements OnDestroy {
       
       // バリデーションを再設定
       this.onRelationshipTypeChange();
+      this.onForeignNationalChange();
+      this.onDependentOverseasResidentChange();
+      this.onOverseasReasonChange();
+      this.onDependentReasonChange();
+      this.onOccupationChange();
+      this.onPhoneNumberTypeChange();
+      this.onRelationshipChange();
       this.onProvideMyNumberChange();
       this.onLivingTogetherChange();
     } else if (application.applicationType === '入社時申請') {
@@ -4132,6 +4155,16 @@ export class EmployeeDashboardComponent implements OnDestroy {
             disabilityCardFileName = this.dependentDisabilityCardFile.name;
           }
           
+          // 仕送り額証明書類をアップロード（配偶者の別居の場合のみ）
+          let supportAmountDocFileUrl = this.selectedApplication.supportAmountDocFileUrl || '';
+          let supportAmountDocFileName = this.selectedApplication.supportAmountDocFileName || '';
+          if (this.supportAmountDocFile) {
+            const sanitizedFileName = this.firestoreService.sanitizeFileName(this.supportAmountDocFile.name);
+            const supportAmountDocPath = `applications/${this.employeeNumber}/supportAmountDoc_${Date.now()}_${sanitizedFileName}`;
+            supportAmountDocFileUrl = await this.firestoreService.uploadFile(this.supportAmountDocFile, supportAmountDocPath);
+            supportAmountDocFileName = this.supportAmountDocFile.name;
+          }
+          
           const formValue = this.dependentApplicationForm.value;
           applicationData = {
             ...formValue,
@@ -4147,6 +4180,8 @@ export class EmployeeDashboardComponent implements OnDestroy {
             identityDocFileName: identityDocFileName,
             disabilityCardFileUrl: disabilityCardFileUrl,
             disabilityCardFileName: disabilityCardFileName,
+            supportAmountDocFileUrl: supportAmountDocFileUrl,
+            supportAmountDocFileName: supportAmountDocFileName,
             employeeNumber: this.employeeNumber,
             applicationType: '扶養家族追加'
           };
