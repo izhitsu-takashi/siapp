@@ -632,9 +632,6 @@
                               [class.status-resubmitted]="application.status === '再申請' || application.status === '再提出'">
                           {{ application.status }}
                         </span>
-                        <div *ngIf="application.status === '差し戻し' && application.statusComment" class="status-comment-preview">
-                          <small>{{ application.statusComment }}</small>
-                        </div>
                       </td>
                       <td class="col-application-date">{{ getApplicationDate(application) | date:'yyyy/MM/dd' }}</td>
                     </tr>
@@ -5236,25 +5233,16 @@
                   <div *ngIf="dependentRemovalForm.get('overseasReason')?.invalid && dependentRemovalForm.get('overseasReason')?.touched" class="error-message">
                     理由を選択してください
                   </div>
-                </div>
-              </div>
-              <!-- 国内転入選択時：転入日 -->
-              <ng-container *ngIf="(isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('overseasReason')?.value === '国内転入') || ((!isEditModeForReapplication || selectedApplication.status !== '差し戻し') && (selectedApplication.overseasReason === '国内転入' || selectedApplication.transferDate))">
-                <div class="detail-item">
-                  <span class="detail-label">転入日:</span>
-                  <!-- 表示モード -->
-                  <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                    {{ selectedApplication.transferDate || '-' }}
-                  </span>
-                  <!-- 編集モード -->
-                  <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+                  <!-- 国内転入選択時：転入日（編集モードのみ） -->
+                  <div *ngIf="dependentRemovalForm.get('overseasReason')?.value === '国内転入'" style="margin-top: 0.5rem;">
+                    <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">転入日 <span class="required">*</span></label>
                     <input type="date" formControlName="transferDate" class="form-input">
                     <div *ngIf="dependentRemovalForm.get('transferDate')?.invalid && dependentRemovalForm.get('transferDate')?.touched" class="error-message">
                       転入日を入力してください
                     </div>
                   </div>
                 </div>
-              </ng-container>
+              </div>
               <!-- その他選択時：その他の入力 -->
               <ng-container *ngIf="(isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('overseasReason')?.value === 'その他') || ((!isEditModeForReapplication || selectedApplication.status !== '差し戻し') && (selectedApplication.overseasReason === 'その他' || selectedApplication.overseasReasonOther))">
                 <div class="detail-item full-width">

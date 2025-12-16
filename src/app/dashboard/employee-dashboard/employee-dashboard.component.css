@@ -291,7 +291,7 @@
 }
 
 .application-list-section .table-container {
-  max-height: calc(3 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3行分の高さ + ヘッダー */
+  max-height: calc(6 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 6行分の高さ + ヘッダー */
   overflow-y: auto;
   overflow-x: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -318,7 +318,7 @@
   }
 
   .application-list-section .table-container {
-    max-height: calc(3.5 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3.5行分の高さ + ヘッダー */
+    max-height: calc(6 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 6行分の高さ + ヘッダー */
   }
 
   .section-header {
@@ -356,7 +356,7 @@
   }
 
   .application-list-section .table-container {
-    max-height: calc(3.5 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3.5行分の高さ + ヘッダー */
+    max-height: calc(6 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 6行分の高さ + ヘッダー */
   }
 
   .section-header {
@@ -386,7 +386,7 @@
   }
 
   .application-list-section .table-container {
-    max-height: calc(3 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3行分の高さ + ヘッダー */
+    max-height: calc(6 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 6行分の高さ + ヘッダー */
   }
 }
 
@@ -481,14 +481,14 @@
   }
 
   .application-list-section .table-container {
-    max-height: calc(3 * clamp(2rem, 3vw, 2.5rem) + clamp(1.5rem, 2.5vw, 2rem)); /* 3行分の高さ + ヘッダー */
+    max-height: calc(6 * clamp(2rem, 3vw, 2.5rem) + clamp(1.5rem, 2.5vw, 2rem)); /* 6行分の高さ + ヘッダー */
   }
 }
 
 /* 中画面（769px - 1023px） */
 @media (min-width: 769px) and (max-width: 1023px) {
   .application-list-section .table-container {
-    max-height: calc(3 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 3行分の高さ + ヘッダー */
+    max-height: calc(6 * clamp(2.5rem, 3.5vw, 3.5rem) + clamp(2rem, 3vw, 3rem)); /* 6行分の高さ + ヘッダー */
   }
 }
 
@@ -511,7 +511,7 @@
   }
 
   .application-list-section .table-container {
-    max-height: calc(3 * 2rem + 1.5rem);
+    max-height: calc(6 * 2rem + 1.5rem); /* 6行分の高さ + ヘッダー */
   }
 
   .application-table .col-application-id,

@@ -3687,59 +3687,105 @@
       
       <!-- 扶養削除申請の詳細 -->
       <ng-container *ngIf="selectedApplication.applicationType === '扶養削除申請'">
-        <!-- 被扶養者移動日 -->
+        <!-- 扶養者 -->
         <section class="detail-section">
-          <h3 class="section-title">被扶養者移動日</h3>
+          <h3 class="section-title">扶養者</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">扶養者:</span>
+              <span class="detail-value">
+                <span *ngIf="selectedApplication.dependent">
+                  {{ selectedApplication.dependent.name || '（氏名未設定）' }}
+                  <span *ngIf="selectedApplication.dependent.relationship">（{{ selectedApplication.dependent.relationship }}）</span>
+                </span>
+                <span *ngIf="!selectedApplication.dependent">-</span>
+              </span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 被扶養者ではなくなった日 -->
+        <section class="detail-section">
+          <h3 class="section-title">被扶養者ではなくなった日</h3>
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="detail-label">被扶養者移動日:</span>
+              <span class="detail-label">被扶養者ではなくなった日:</span>
               <span class="detail-value">{{ selectedApplication.removalDate || '-' }}</span>
             </div>
           </div>
         </section>
         
-        <!-- 扶養削除の理由 -->
+        <!-- 理由 -->
         <section class="detail-section">
-          <h3 class="section-title">扶養削除の理由</h3>
+          <h3 class="section-title">理由</h3>
           <div class="detail-grid">
             <div class="detail-item full-width">
-              <span class="detail-label">扶養削除の理由:</span>
-              <span class="detail-value">{{ selectedApplication.removalReason || '-' }}</span>
+              <span class="detail-label">理由:</span>
+              <span class="detail-value">
+                {{ selectedApplication.removalReason || '-' }}
+                <span *ngIf="selectedApplication.removalReason === '死亡' && selectedApplication.deathDate">
+                  （死亡年月日: {{ selectedApplication.deathDate }}）
+                </span>
+                <span *ngIf="selectedApplication.removalReason === 'その他' && selectedApplication.removalReasonOther">
+                  （{{ selectedApplication.removalReasonOther }}）
+                </span>
+              </span>
+            </div>
+            <!-- 死亡選択時：死亡年月日 -->
+            <div class="detail-item" *ngIf="selectedApplication.removalReason === '死亡' || selectedApplication.deathDate">
+              <span class="detail-label">死亡年月日:</span>
+              <span class="detail-value">{{ selectedApplication.deathDate || '-' }}</span>
+            </div>
+            <!-- その他選択時：その他の入力 -->
+            <div class="detail-item full-width" *ngIf="selectedApplication.removalReason === 'その他' || selectedApplication.removalReasonOther">
+              <span class="detail-label">その他:</span>
+              <span class="detail-value">{{ selectedApplication.removalReasonOther || '-' }}</span>
             </div>
           </div>
         </section>
         
-        <!-- 被扶養者情報 -->
-        <section class="detail-section" *ngIf="selectedApplication.dependent">
-          <h3 class="section-title">被扶養者情報</h3>
+        <!-- 海外居住者または海外から国内に転入したか -->
+        <section class="detail-section">
+          <h3 class="section-title">海外居住者または海外から国内に転入したか</h3>
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="detail-label">氏名:</span>
-              <span class="detail-value">{{ selectedApplication.dependent.name || '-' }}</span>
+              <span class="detail-label">海外居住者または海外から国内に転入したか:</span>
+              <span class="detail-value">{{ selectedApplication.isOverseasResident || '-' }}</span>
             </div>
+            <!-- はいの場合 -->
+            <ng-container *ngIf="selectedApplication.isOverseasResident === 'はい'">
+              <div class="detail-item">
+                <span class="detail-label">海外特例要件に非該当となった日:</span>
+                <span class="detail-value">{{ selectedApplication.overseasNonQualificationDate || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">理由:</span>
+                <span class="detail-value">
+                  {{ selectedApplication.overseasReason || '-' }}
+                  <span *ngIf="selectedApplication.overseasReason === '国内転入' && selectedApplication.transferDate">
+                    （転入日: {{ selectedApplication.transferDate }}）
+                  </span>
+                  <span *ngIf="selectedApplication.overseasReason === 'その他' && selectedApplication.overseasReasonOther">
+                    （{{ selectedApplication.overseasReasonOther }}）
+                  </span>
+                </span>
+              </div>
+              <!-- その他選択時：その他の入力 -->
+              <div class="detail-item full-width" *ngIf="selectedApplication.overseasReason === 'その他' || selectedApplication.overseasReasonOther">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.overseasReasonOther || '-' }}</span>
+              </div>
+            </ng-container>
+          </div>
+        </section>
+        
+        <!-- 資格証明書発行が必要か -->
+        <section class="detail-section">
+          <h3 class="section-title">資格証明書発行が必要か</h3>
+          <div class="detail-grid">
             <div class="detail-item">
-              <span class="detail-label">氏名（ヨミガナ）:</span>
-              <span class="detail-value">{{ selectedApplication.dependent.nameKana || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">続柄:</span>
-              <span class="detail-value">{{ selectedApplication.dependent.relationship || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">生年月日:</span>
-              <span class="detail-value">{{ selectedApplication.dependent.birthDate || '-' }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">マイナンバー:</span>
-              <span class="detail-value">{{ selectedApplication.dependent.myNumber ? '●●●●-●●●●-●●●●' : '-' }}</span>
-            </div>
-            <div class="detail-item full-width">
-              <span class="detail-label">住所:</span>
-              <span class="detail-value">{{ selectedApplication.dependent.address || '-' }}</span>
-            </div>
-            <div class="detail-item full-width" *ngIf="selectedApplication.dependent.notes">
-              <span class="detail-label">備考:</span>
-              <span class="detail-value">{{ selectedApplication.dependent.notes }}</span>
+              <span class="detail-label">資格証明書発行が必要か:</span>
+              <span class="detail-value">{{ selectedApplication.needsQualificationConfirmation || '-' }}</span>
             </div>
           </div>
         </section>

@@ -286,12 +286,22 @@ export class EmployeeDashboardComponent implements OnDestroy {
           return app;
         });
         
-        // 承認済みと取り消しステータスの申請を下に表示するようにソート
+        // 差し戻しステータスを最優先で上に、取り消しステータスを一番下に表示するようにソート
         this.applications = mappedApplications.sort((a: any, b: any) => {
+          const aIsRejected = a.status === '差し戻し';
+          const bIsRejected = b.status === '差し戻し';
           const aIsApproved = a.status === '承認済み' || a.status === '承認';
           const bIsApproved = b.status === '承認済み' || b.status === '承認';
           const aIsCancelled = a.status === '取り消し';
           const bIsCancelled = b.status === '取り消し';
+          
+          // 差し戻しステータスの申請は一番上に表示
+          if (aIsRejected && !bIsRejected) {
+            return -1; // aを前に
+          }
+          if (!aIsRejected && bIsRejected) {
+            return 1; // bを前に
+          }
           
           // 取り消しステータスの申請は一番下に表示
           if (aIsCancelled && !bIsCancelled) {
@@ -301,24 +311,19 @@ export class EmployeeDashboardComponent implements OnDestroy {
             return -1; // bを後ろに
           }
           
-          // 承認済みの申請は下に表示（取り消しよりは上）
-          if (aIsApproved && !bIsApproved && !bIsCancelled) {
+          // 承認済みの申請は下に表示（取り消しよりは上、差し戻しよりは下）
+          if (aIsApproved && !bIsApproved && !bIsCancelled && !bIsRejected) {
             return 1; // aを後ろに
           }
-          if (!aIsApproved && bIsApproved && !aIsCancelled) {
+          if (!aIsApproved && bIsApproved && !aIsCancelled && !aIsRejected) {
             return -1; // bを後ろに
           }
           
-          // どちらも承認済み、またはどちらも承認済みでない場合は、申請IDでソート（古い順）
+          // どちらも同じ優先度の場合は、申請IDでソート（古い順）
           const idA = a.applicationId || 0;
           const idB = b.applicationId || 0;
           return idA - idB;
         });
-        
-        // 取り消しステータスの申請を一番下に移動
-        const cancelledApplications = this.applications.filter((app: any) => app.status === '取り消し');
-        const otherApplications = this.applications.filter((app: any) => app.status !== '取り消し');
-        this.applications = [...otherApplications, ...cancelledApplications];
         
         // 変更検知をトリガー
         this.cdr.detectChanges();
@@ -3708,12 +3713,22 @@ export class EmployeeDashboardComponent implements OnDestroy {
         return app;
       });
       
-      // 承認済みと取り消しステータスの申請を下に表示するようにソート
+      // 差し戻しステータスを最優先で上に、取り消しステータスを一番下に表示するようにソート
       this.applications = mappedApplications.sort((a: any, b: any) => {
+        const aIsRejected = a.status === '差し戻し';
+        const bIsRejected = b.status === '差し戻し';
         const aIsApproved = a.status === '承認済み' || a.status === '承認';
         const bIsApproved = b.status === '承認済み' || b.status === '承認';
         const aIsCancelled = a.status === '取り消し';
         const bIsCancelled = b.status === '取り消し';
+        
+        // 差し戻しステータスの申請は一番上に表示
+        if (aIsRejected && !bIsRejected) {
+          return -1; // aを前に
+        }
+        if (!aIsRejected && bIsRejected) {
+          return 1; // bを前に
+        }
         
         // 取り消しステータスの申請は一番下に表示
         if (aIsCancelled && !bIsCancelled) {
@@ -3723,24 +3738,19 @@ export class EmployeeDashboardComponent implements OnDestroy {
           return -1; // bを後ろに
         }
         
-        // 承認済みの申請は下に表示（取り消しよりは上）
-        if (aIsApproved && !bIsApproved && !bIsCancelled) {
+        // 承認済みの申請は下に表示（取り消しよりは上、差し戻しよりは下）
+        if (aIsApproved && !bIsApproved && !bIsCancelled && !bIsRejected) {
           return 1; // aを後ろに
         }
-        if (!aIsApproved && bIsApproved && !aIsCancelled) {
+        if (!aIsApproved && bIsApproved && !aIsCancelled && !aIsRejected) {
           return -1; // bを後ろに
         }
         
-        // どちらも承認済み、またはどちらも承認済みでない場合は、申請IDでソート（古い順）
+        // どちらも同じ優先度の場合は、申請IDでソート（古い順）
         const idA = a.applicationId || 0;
         const idB = b.applicationId || 0;
         return idA - idB;
       });
-      
-      // 取り消しステータスの申請を一番下に移動
-      const cancelledApplications = this.applications.filter((app: any) => app.status === '取り消し');
-      const otherApplications = this.applications.filter((app: any) => app.status !== '取り消し');
-      this.applications = [...otherApplications, ...cancelledApplications];
       
       // 変更検知をトリガー
       this.cdr.detectChanges();
@@ -4192,21 +4202,36 @@ export class EmployeeDashboardComponent implements OnDestroy {
         }
       }
       
-      // 理由を判定（removalReasonに「死亡」や「その他」が含まれているか、またはdeathDateやremovalReasonOtherが存在するか）
+      // 理由を判定
+      const standardReasons = ['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'];
       let removalReason = application.removalReason || '';
       let deathDate = '';
       let removalReasonOther = '';
       
-      // 死亡の場合
-      if (application.deathDate) {
-        removalReason = '死亡';
-        deathDate = application.deathDate;
+      // removalReasonが標準的な理由のいずれかである場合
+      if (standardReasons.includes(removalReason)) {
+        // 死亡の場合
+        if (removalReason === '死亡') {
+          deathDate = application.deathDate || '';
+        }
+        // その他の場合
+        else if (removalReason === 'その他') {
+          removalReasonOther = application.removalReasonOther || '';
+        }
       }
-      // その他の場合（removalReasonが「死亡」「離婚」「就職・収入増加」「75歳到達」「障害認定」以外の場合）
-      else if (application.removalReasonOther && 
-               !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定'].includes(application.removalReason)) {
-        removalReason = 'その他';
-        removalReasonOther = application.removalReasonOther || application.removalReason || '';
+      // removalReasonが標準的な理由でない場合、deathDateやremovalReasonOtherの存在を確認
+      else {
+        // 死亡の場合
+        if (application.deathDate) {
+          removalReason = '死亡';
+          deathDate = application.deathDate;
+        }
+        // その他の場合
+        else if (application.removalReasonOther) {
+          removalReason = 'その他';
+          removalReasonOther = application.removalReasonOther;
+        }
+        // それ以外の場合、removalReasonをそのまま使用（空文字列の場合は空のまま）
       }
       
       // 海外居住者関連のフィールド
@@ -4218,15 +4243,23 @@ export class EmployeeDashboardComponent implements OnDestroy {
       
       if (isOverseasResident === 'はい') {
         overseasNonQualificationDate = application.overseasNonQualificationDate || '';
-        // overseasReasonを判定（transferDateが存在する場合は「国内転入」、overseasReasonOtherが存在する場合は「その他」）
-        if (application.transferDate) {
-          overseasReason = '国内転入';
-          transferDate = application.transferDate;
-        } else if (application.overseasReasonOther) {
-          overseasReason = 'その他';
-          overseasReasonOther = application.overseasReasonOther;
-        } else {
-          overseasReason = application.overseasReason || '';
+        overseasReason = application.overseasReason || '';
+        
+        // overseasReasonが標準的な理由のいずれかである場合
+        if (overseasReason === '国内転入') {
+          transferDate = application.transferDate || '';
+        } else if (overseasReason === 'その他') {
+          overseasReasonOther = application.overseasReasonOther || '';
+        }
+        // overseasReasonが標準的な理由でない場合、transferDateやoverseasReasonOtherの存在を確認
+        else {
+          if (application.transferDate) {
+            overseasReason = '国内転入';
+            transferDate = application.transferDate;
+          } else if (application.overseasReasonOther) {
+            overseasReason = 'その他';
+            overseasReasonOther = application.overseasReasonOther;
+          }
         }
       }
       
