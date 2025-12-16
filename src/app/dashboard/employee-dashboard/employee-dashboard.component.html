@@ -2201,11 +2201,11 @@
             <label>資格確認書発行が必要か <span class="required">*</span></label>
             <div>
               <label class="radio-label">
-                <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="はい" (change)="dependentApplicationForm.get('needsQualificationConfirmation')?.updateValueAndValidity()">
                 はい
               </label>
               <label class="radio-label">
-                <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ" (change)="dependentApplicationForm.get('needsQualificationConfirmation')?.updateValueAndValidity()">
                 いいえ
               </label>
             </div>
@@ -2227,7 +2227,7 @@
               id="relationship" 
               formControlName="relationship" 
               class="form-input"
-              (change)="onRelationshipChange()"
+              (change)="onRelationshipChange(); dependentApplicationForm.get('relationship')?.updateValueAndValidity()"
             >
               <option value="">選択してください</option>
               <option value="実子・養子">実子・養子</option>
@@ -2537,11 +2537,11 @@
             <label>資格確認書発行が必要か <span class="required">*</span></label>
             <div>
               <label class="radio-label">
-                <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="はい" (change)="dependentApplicationForm.get('needsQualificationConfirmation')?.updateValueAndValidity()">
                 はい
               </label>
               <label class="radio-label">
-                <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ">
+                <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ" (change)="dependentApplicationForm.get('needsQualificationConfirmation')?.updateValueAndValidity()">
                 いいえ
               </label>
             </div>
@@ -2567,7 +2567,7 @@
       <!-- 送信ボタン -->
       <div class="form-actions">
         <button type="button" class="cancel-button" (click)="closeApplicationModal()" [disabled]="isSubmittingDependentApplication">キャンセル</button>
-        <button type="submit" class="submit-button" [disabled]="dependentApplicationForm.invalid || isSubmittingDependentApplication">
+        <button type="submit" class="submit-button" [disabled]="!dependentApplicationForm.valid || isSubmittingDependentApplication">
           {{ isSubmittingDependentApplication ? '申請中です' : '申請' }}
         </button>
       </div>
@@ -4418,6 +4418,74 @@
                       placeholder="0000"
                     >
                   </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- マイナンバーカード添付 -->
+          <section class="detail-section" *ngIf="selectedApplication.myNumberCardFileUrl || (isEditModeForReapplication && selectedApplication.status === '差し戻し')">
+            <h3 class="section-title">マイナンバーカード添付</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl">
+                <span class="detail-label">マイナンバーカード:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.myNumberCardFileUrl, selectedApplication.myNumberCardFile) }}</a>
+                </span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentMyNumberCard">マイナンバーカード添付 <span class="required">*</span></label>
+                <input 
+                  type="file" 
+                  id="dependentMyNumberCard" 
+                  class="form-input"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  (change)="onDependentFileSelected($event, 'myNumberCard')"
+                >
+                <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
+                <div *ngIf="selectedApplication.myNumberCardFileUrl && !dependentMyNumberCardFile" class="file-info" style="margin-top: 0.5rem;">
+                  <span>既存ファイル: </span>
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                    {{ getFileNameFromUrl(selectedApplication.myNumberCardFileUrl, selectedApplication.myNumberCardFile) }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 身分証明書添付 -->
+          <section class="detail-section" *ngIf="selectedApplication.identityDocFileUrl || (isEditModeForReapplication && selectedApplication.status === '差し戻し')">
+            <h3 class="section-title">身分証明書添付</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item full-width" *ngIf="selectedApplication.identityDocFileUrl">
+                <span class="detail-label">身分証明書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.identityDocFileUrl, selectedApplication.identityDocFileName) }}</a>
+                </span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentIdentityDoc">身分証明書添付</label>
+                <input 
+                  type="file" 
+                  id="dependentIdentityDoc" 
+                  class="form-input"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  (change)="onDependentFileSelected($event, 'identityDoc')"
+                >
+                <div *ngIf="dependentIdentityDocFile" class="file-name">{{ dependentIdentityDocFile.name }}</div>
+                <div *ngIf="selectedApplication.identityDocFileUrl && !dependentIdentityDocFile" class="file-info" style="margin-top: 0.5rem;">
+                  <span>既存ファイル: </span>
+                  <a [href]="selectedApplication.identityDocFileUrl" target="_blank" class="file-link">
+                    {{ getFileNameFromUrl(selectedApplication.identityDocFileUrl, selectedApplication.identityDocFileName) }}
+                  </a>
                 </div>
               </div>
             </div>

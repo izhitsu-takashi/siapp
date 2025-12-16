@@ -2018,6 +2018,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
       this.dependentApplicationForm.get('isOverseasResident')?.setValidators([Validators.required]);
       this.dependentApplicationForm.get('needsQualificationConfirmation')?.setValidators([Validators.required]);
       this.dependentApplicationForm.get('spouseAnnualIncome')?.setValidators([Validators.required]);
+      // dependentStartDateとannualIncomeはフォーム作成時に既に必須になっているが、念のため確認
+      this.dependentApplicationForm.get('dependentStartDate')?.setValidators([Validators.required]);
+      this.dependentApplicationForm.get('annualIncome')?.setValidators([Validators.required]);
       
       // 続柄の「その他」選択時のバリデーションを更新
       this.onRelationshipChange();
@@ -2035,7 +2038,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
       this.dependentApplicationForm.get('phoneNumber')?.setValue('');
       this.dependentApplicationForm.get('provideMyNumber')?.clearValidators();
       this.dependentApplicationForm.get('provideMyNumber')?.setValue('');
-      this.dependentApplicationForm.get('spouseAnnualIncome')?.setValidators([Validators.required]);
     } else {
       // 全てのフィールドをクリア
       this.dependentApplicationForm.get('spouseType')?.clearValidators();
@@ -2087,11 +2089,19 @@ export class EmployeeDashboardComponent implements OnDestroy {
   // 海外居住者の変更時にバリデーションを更新（扶養家族追加申請用）
   onDependentOverseasResidentChange() {
     const isOverseasResident = this.dependentApplicationForm.get('isOverseasResident')?.value;
+    const relationshipType = this.dependentApplicationForm.get('relationshipType')?.value;
     const overseasSpecialRequirementDateControl = this.dependentApplicationForm.get('overseasSpecialRequirementDate');
     const overseasReasonControl = this.dependentApplicationForm.get('overseasReason');
     
     if (isOverseasResident === 'はい') {
-      overseasSpecialRequirementDateControl?.setValidators([Validators.required]);
+      // 配偶者の場合のみ、海外特例要件に該当した日を必須
+      if (relationshipType === '配偶者') {
+        overseasSpecialRequirementDateControl?.setValidators([Validators.required]);
+      } else {
+        overseasSpecialRequirementDateControl?.clearValidators();
+        overseasSpecialRequirementDateControl?.setValue('');
+      }
+      // 理由は常に必須
       overseasReasonControl?.setValidators([Validators.required]);
     } else {
       overseasSpecialRequirementDateControl?.clearValidators();
@@ -2345,12 +2355,18 @@ export class EmployeeDashboardComponent implements OnDestroy {
     monthlySupportAmountControl?.updateValueAndValidity();
   }
   
-  onDependentFileSelected(event: any, fileType: string) {
-    const file = event.target.files?.[0];
+  onDependentFileSelected(event: Event, fileType: string) {
+    const target = event.target as HTMLInputElement;
+    if (!target || !target.files) return;
+    
+    const file = target.files[0];
     if (file) {
       switch (fileType) {
         case 'basicPensionNumberDoc':
           this.dependentBasicPensionNumberDocFile = file;
+          break;
+        case 'myNumberCard':
+          this.dependentMyNumberCardFile = file;
           break;
         case 'myNumberDoc':
           this.dependentMyNumberDocFile = file;
@@ -2450,6 +2466,67 @@ export class EmployeeDashboardComponent implements OnDestroy {
   }
   
   async submitDependentApplication() {
+    // デバッグログ：フォームの状態を確認
+    const relationshipType = this.dependentApplicationForm.get('relationshipType')?.value;
+    console.log('=== 扶養家族追加申請フォームの状態 ===');
+    console.log('relationshipType:', relationshipType);
+    console.log('フォーム全体の有効性:', this.dependentApplicationForm.valid);
+    
+    // 無効なフィールドを確認
+    const invalidFields: string[] = [];
+    Object.keys(this.dependentApplicationForm.controls).forEach(key => {
+      const control = this.dependentApplicationForm.get(key);
+      if (control && control.invalid) {
+        invalidFields.push(`${key}: ${JSON.stringify(control.errors)}`);
+      }
+    });
+    console.log('無効なフィールド:', invalidFields);
+    
+    // 配偶者以外の場合の必須フィールドの値を確認
+    if (relationshipType === '配偶者以外') {
+      console.log('配偶者以外の場合の必須フィールドの値:');
+      console.log({
+        relationship: this.dependentApplicationForm.get('relationship')?.value,
+        gender: this.dependentApplicationForm.get('gender')?.value,
+        myNumberPart1: this.dependentApplicationForm.get('myNumberPart1')?.value,
+        myNumberPart2: this.dependentApplicationForm.get('myNumberPart2')?.value,
+        myNumberPart3: this.dependentApplicationForm.get('myNumberPart3')?.value,
+        dependentStartDate: this.dependentApplicationForm.get('dependentStartDate')?.value,
+        dependentReason: this.dependentApplicationForm.get('dependentReason')?.value,
+        occupation: this.dependentApplicationForm.get('occupation')?.value,
+        annualIncome: this.dependentApplicationForm.get('annualIncome')?.value,
+        isOverseasResident: this.dependentApplicationForm.get('isOverseasResident')?.value,
+        needsQualificationConfirmation: this.dependentApplicationForm.get('needsQualificationConfirmation')?.value,
+        spouseAnnualIncome: this.dependentApplicationForm.get('spouseAnnualIncome')?.value,
+        relationshipOther: this.dependentApplicationForm.get('relationshipOther')?.value,
+        dependentReasonOther: this.dependentApplicationForm.get('dependentReasonOther')?.value,
+        occupationOther: this.dependentApplicationForm.get('occupationOther')?.value,
+        studentYear: this.dependentApplicationForm.get('studentYear')?.value,
+        overseasSpecialRequirementDate: this.dependentApplicationForm.get('overseasSpecialRequirementDate')?.value,
+        overseasReason: this.dependentApplicationForm.get('overseasReason')?.value,
+        overseasReasonOther: this.dependentApplicationForm.get('overseasReasonOther')?.value,
+        livingTogether: this.dependentApplicationForm.get('livingTogether')?.value,
+        postalCode: this.dependentApplicationForm.get('postalCode')?.value,
+        address: this.dependentApplicationForm.get('address')?.value
+      });
+      
+      // 各フィールドのバリデーション状態も確認
+      console.log('各フィールドのバリデーション状態:');
+      const validationStatus: any = {};
+      ['relationship', 'gender', 'myNumberPart1', 'myNumberPart2', 'myNumberPart3', 'dependentStartDate', 'dependentReason', 'occupation', 'annualIncome', 'isOverseasResident', 'needsQualificationConfirmation', 'spouseAnnualIncome'].forEach(key => {
+        const control = this.dependentApplicationForm.get(key);
+        validationStatus[key] = {
+          value: control?.value,
+          valid: control?.valid,
+          invalid: control?.invalid,
+          errors: control?.errors,
+          touched: control?.touched
+        };
+      });
+      console.log(validationStatus);
+    }
+    console.log('=====================================');
+    
     if (this.dependentApplicationForm.valid) {
       this.isSubmittingDependentApplication = true;
       try {
@@ -2488,15 +2565,28 @@ export class EmployeeDashboardComponent implements OnDestroy {
           basicPensionNumberDocFileName = this.dependentBasicPensionNumberDocFile.name;
         }
         
+        // フォームデータを準備（relationshipTypeを先に取得）
+        const formValue = this.dependentApplicationForm.value;
+        const relationshipType = formValue.relationshipType;
+        
         // マイナンバーカードをアップロード
         let myNumberCardFileUrl = '';
         let myNumberCardFileName = '';
+        console.log('=== マイナンバーカードファイルの確認 ===');
+        console.log('dependentMyNumberCardFile:', this.dependentMyNumberCardFile);
+        console.log('relationshipType:', relationshipType);
         if (this.dependentMyNumberCardFile) {
           const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberCardFile.name);
           const myNumberCardPath = `applications/${this.employeeNumber}/dependentMyNumberCard_${Date.now()}_${sanitizedFileName}`;
+          console.log('マイナンバーカードファイルをアップロード中:', myNumberCardPath);
           myNumberCardFileUrl = await this.firestoreService.uploadFile(this.dependentMyNumberCardFile, myNumberCardPath);
           myNumberCardFileName = this.dependentMyNumberCardFile.name;
+          console.log('マイナンバーカードファイルURL:', myNumberCardFileUrl);
+          console.log('マイナンバーカードファイル名:', myNumberCardFileName);
+        } else {
+          console.log('マイナンバーカードファイルが選択されていません');
         }
+        console.log('========================================');
         
         if (this.dependentMyNumberDocFile) {
           const sanitizedFileName = this.firestoreService.sanitizeFileName(this.dependentMyNumberDocFile.name);
@@ -2526,10 +2616,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
           supportAmountDocFileUrl = await this.firestoreService.uploadFile(this.supportAmountDocFile, supportAmountDocPath);
           supportAmountDocFileName = this.supportAmountDocFile.name;
         }
-        
-        // フォームデータを準備
-        const formValue = this.dependentApplicationForm.value;
-        const relationshipType = formValue.relationshipType;
         
         const applicationData: any = {
           employeeNumber: this.employeeNumber,
@@ -2574,6 +2660,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
           myNumberDocFileUrl: myNumberDocFileUrl,
           myNumberDocFileName: myNumberDocFileName,
           
+          // デバッグログ：保存されるマイナンバーカード情報
+          // (実際のデータには含めない)
+          
           // 住所情報
           livingTogether: formValue.livingTogether,
           postalCode: formValue.livingTogether === '別居' ? formValue.postalCode : '',
@@ -2612,6 +2701,13 @@ export class EmployeeDashboardComponent implements OnDestroy {
           disabilityCardFileUrl: disabilityCardFileUrl,
           disabilityCardFileName: disabilityCardFileName
         };
+        
+        // デバッグログ：保存される申請データのマイナンバーカード情報
+        console.log('=== 保存される申請データのマイナンバーカード情報 ===');
+        console.log('myNumberCardFileUrl:', applicationData.myNumberCardFileUrl);
+        console.log('myNumberCardFile:', applicationData.myNumberCardFile);
+        console.log('relationshipType:', applicationData.relationshipType);
+        console.log('==================================================');
         
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
@@ -3778,17 +3874,46 @@ export class EmployeeDashboardComponent implements OnDestroy {
         });
       }
       
+      // 添付ファイルのURLとファイル名を保持（配偶者以外の場合）
+      if (application.relationshipType === '配偶者以外') {
+        // マイナンバーカードファイルのURLとファイル名を保持
+        if (application.myNumberCardFileUrl) {
+          // ファイルオブジェクトは作成できないため、URLとファイル名のみ保持
+          // 実際のファイルは再アップロードが必要
+        }
+        // 身分証明書ファイルのURLとファイル名を保持
+        if (application.identityDocFileUrl) {
+          // ファイルオブジェクトは作成できないため、URLとファイル名のみ保持
+          // 実際のファイルは再アップロードが必要
+        }
+      }
+      
       // バリデーションを再設定
+      // 注意: overseasReasonを設定した後にonDependentOverseasResidentChange()を呼び出すと、
+      // isOverseasResidentが「いいえ」の場合にoverseasReasonがクリアされる可能性があるため、
+      // 先にバリデーション関数を呼び出してから、再度overseasReasonを設定する
       this.onRelationshipTypeChange();
       this.onForeignNationalChange();
-      this.onDependentOverseasResidentChange();
-      this.onOverseasReasonChange();
       this.onDependentReasonChange();
       this.onOccupationChange();
       this.onPhoneNumberTypeChange();
       this.onRelationshipChange();
       this.onProvideMyNumberChange();
       this.onLivingTogetherChange();
+      
+      // overseasReasonを設定した後に、海外居住者関連のバリデーションを更新
+      // これにより、overseasReasonが正しく保持される
+      const savedOverseasReason = application.overseasReason || '';
+      const savedOverseasReasonOther = application.overseasReasonOther || '';
+      this.onDependentOverseasResidentChange();
+      // 値が設定されている場合は復元（isOverseasResidentが「はい」の場合のみ）
+      if (application.isOverseasResident === 'はい' && savedOverseasReason) {
+        this.dependentApplicationForm.patchValue({
+          overseasReason: savedOverseasReason,
+          overseasReasonOther: savedOverseasReasonOther
+        });
+        this.onOverseasReasonChange();
+      }
     } else if (application.applicationType === '入社時申請') {
       // 入社時申請フォームを初期化
       if (!this.onboardingApplicationForm) {

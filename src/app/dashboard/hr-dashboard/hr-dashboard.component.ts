@@ -1593,17 +1593,68 @@ export class HrDashboardComponent {
             
             let isNewDependent = false;
             if (existingDependentIndex >= 0) {
-              // 既存の扶養者情報を更新（添付ファイルURLとファイル名を追加または更新）
+              // 既存の扶養者情報を更新（申請データで上書き）
               dependents[existingDependentIndex] = {
                 ...dependents[existingDependentIndex],
+                // 基本情報
+                lastName: lastName || dependents[existingDependentIndex].lastName || '',
+                firstName: firstName || dependents[existingDependentIndex].firstName || '',
+                lastNameKana: lastNameKana || dependents[existingDependentIndex].lastNameKana || '',
+                firstNameKana: firstNameKana || dependents[existingDependentIndex].firstNameKana || '',
+                name: dependentName || dependents[existingDependentIndex].name || '',
+                nameKana: `${lastNameKana} ${firstNameKana}`.trim() || dependents[existingDependentIndex].nameKana || '',
+                relationship: relationship || dependents[existingDependentIndex].relationship || '',
+                relationshipType: this.selectedApplication.relationshipType || dependents[existingDependentIndex].relationshipType || '',
+                relationshipOther: this.selectedApplication.relationshipOther || dependents[existingDependentIndex].relationshipOther || '',
+                spouseType: this.selectedApplication.spouseType || dependents[existingDependentIndex].spouseType || '',
+                birthDate: this.selectedApplication.birthDate || dependents[existingDependentIndex].birthDate || '',
+                gender: this.selectedApplication.gender || dependents[existingDependentIndex].gender || '',
+                myNumber: this.selectedApplication.myNumber || dependents[existingDependentIndex].myNumber || '',
+                phoneNumber: this.selectedApplication.phoneNumber || dependents[existingDependentIndex].phoneNumber || '',
+                phoneNumberType: this.selectedApplication.phoneNumberType || dependents[existingDependentIndex].phoneNumberType || '',
+                phoneNumberOther: this.selectedApplication.phoneNumberOther || dependents[existingDependentIndex].phoneNumberOther || '',
+                occupation: this.selectedApplication.occupation || dependents[existingDependentIndex].occupation || '',
+                occupationOther: this.selectedApplication.occupationOther || dependents[existingDependentIndex].occupationOther || '',
+                studentYear: this.selectedApplication.studentYear || dependents[existingDependentIndex].studentYear || '',
+                annualIncome: this.selectedApplication.annualIncome || dependents[existingDependentIndex].annualIncome || '',
+                monthlyIncome: this.selectedApplication.monthlyIncome || dependents[existingDependentIndex].monthlyIncome || '',
+                monthlySupportAmount: this.selectedApplication.monthlySupportAmount || dependents[existingDependentIndex].monthlySupportAmount || '',
+                dependentStartDate: this.selectedApplication.dependentStartDate || dependents[existingDependentIndex].dependentStartDate || '',
+                dependentReason: this.selectedApplication.dependentReason || dependents[existingDependentIndex].dependentReason || '',
+                dependentReasonOther: this.selectedApplication.dependentReasonOther || dependents[existingDependentIndex].dependentReasonOther || '',
+                livingTogether: this.selectedApplication.livingTogether || dependents[existingDependentIndex].livingTogether || '',
+                postalCode: this.selectedApplication.postalCode || dependents[existingDependentIndex].postalCode || '',
+                address: this.selectedApplication.address || dependents[existingDependentIndex].address || '',
+                addressKana: this.selectedApplication.addressKana || dependents[existingDependentIndex].addressKana || '',
+                addressChangeDate: this.selectedApplication.addressChangeDate || dependents[existingDependentIndex].addressChangeDate || '',
+                basicPensionNumber: this.selectedApplication.basicPensionNumber || dependents[existingDependentIndex].basicPensionNumber || '',
+                isForeignNational: this.selectedApplication.isForeignNational || dependents[existingDependentIndex].isForeignNational || '',
+                nationality: this.selectedApplication.nationality || dependents[existingDependentIndex].nationality || '',
+                aliasName: this.selectedApplication.aliasName || dependents[existingDependentIndex].aliasName || '',
+                isOverseasResident: this.selectedApplication.isOverseasResident || dependents[existingDependentIndex].isOverseasResident || '',
+                overseasSpecialRequirementDate: this.selectedApplication.overseasSpecialRequirementDate || dependents[existingDependentIndex].overseasSpecialRequirementDate || '',
+                overseasReason: this.selectedApplication.overseasReason || dependents[existingDependentIndex].overseasReason || '',
+                overseasReasonOther: this.selectedApplication.overseasReasonOther || dependents[existingDependentIndex].overseasReasonOther || '',
+                needsQualificationConfirmation: this.selectedApplication.needsQualificationConfirmation || dependents[existingDependentIndex].needsQualificationConfirmation || '',
+                spouseAnnualIncome: this.selectedApplication.spouseAnnualIncome || dependents[existingDependentIndex].spouseAnnualIncome || '',
+                disabilityCategory: this.selectedApplication.disabilityCategory || dependents[existingDependentIndex].disabilityCategory || '',
+                disabilityCardType: this.selectedApplication.disabilityCardType || dependents[existingDependentIndex].disabilityCardType || '',
+                disabilityCardIssueDate: this.selectedApplication.disabilityCardIssueDate || dependents[existingDependentIndex].disabilityCardIssueDate || '',
+                notes: this.selectedApplication.notes || dependents[existingDependentIndex].notes || '',
+                // 添付ファイル
                 basicPensionNumberDocFileUrl: this.selectedApplication.basicPensionNumberDocFileUrl || dependents[existingDependentIndex].basicPensionNumberDocFileUrl || '',
                 basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName || dependents[existingDependentIndex].basicPensionNumberDocFileName || '',
                 myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl || dependents[existingDependentIndex].myNumberDocFileUrl || '',
                 myNumberDocFileName: this.selectedApplication.myNumberDocFileName || dependents[existingDependentIndex].myNumberDocFileName || '',
+                myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl || dependents[existingDependentIndex].myNumberCardFileUrl || '',
+                myNumberCardFileName: this.selectedApplication.myNumberCardFileName || dependents[existingDependentIndex].myNumberCardFileName || '',
                 identityDocFileUrl: this.selectedApplication.identityDocFileUrl || dependents[existingDependentIndex].identityDocFileUrl || '',
                 identityDocFileName: this.selectedApplication.identityDocFileName || dependents[existingDependentIndex].identityDocFileName || '',
+                supportAmountDocFileUrl: this.selectedApplication.supportAmountDocFileUrl || dependents[existingDependentIndex].supportAmountDocFileUrl || '',
+                supportAmountDocFileName: this.selectedApplication.supportAmountDocFileName || dependents[existingDependentIndex].supportAmountDocFileName || '',
                 disabilityCardFileUrl: this.selectedApplication.disabilityCardFileUrl || dependents[existingDependentIndex].disabilityCardFileUrl || '',
                 disabilityCardFileName: this.selectedApplication.disabilityCardFileName || dependents[existingDependentIndex].disabilityCardFileName || '',
+                // 保険証情報
                 insuranceSymbol: insuranceSymbol || dependents[existingDependentIndex].insuranceSymbol || '',
                 insuranceNumber: insuranceNumber || dependents[existingDependentIndex].insuranceNumber || '',
                 insuranceCardIssueDate: dependents[existingDependentIndex].insuranceCardIssueDate || this.selectedApplication.dependentStartDate || new Date(),
@@ -1625,15 +1676,24 @@ export class HrDashboardComponent {
                 lastNameKana: lastNameKana,
                 firstNameKana: firstNameKana,
                 relationship: relationship,
+                relationshipType: this.selectedApplication.relationshipType || '',
+                relationshipOther: this.selectedApplication.relationshipOther || '',
+                spouseType: this.selectedApplication.spouseType || '',
                 birthDate: this.selectedApplication.birthDate || '',
                 gender: this.selectedApplication.gender || '',
                 myNumber: this.selectedApplication.myNumber || '',
                 phoneNumber: this.selectedApplication.phoneNumber || '',
+                phoneNumberType: this.selectedApplication.phoneNumberType || '',
+                phoneNumberOther: this.selectedApplication.phoneNumberOther || '',
                 occupation: this.selectedApplication.occupation || '',
+                occupationOther: this.selectedApplication.occupationOther || '',
+                studentYear: this.selectedApplication.studentYear || '',
                 annualIncome: this.selectedApplication.annualIncome || '',
                 monthlyIncome: this.selectedApplication.monthlyIncome || '',
+                monthlySupportAmount: this.selectedApplication.monthlySupportAmount || '',
                 dependentStartDate: this.selectedApplication.dependentStartDate || '',
                 dependentReason: this.selectedApplication.dependentReason || '',
+                dependentReasonOther: this.selectedApplication.dependentReasonOther || '',
                 livingTogether: this.selectedApplication.livingTogether || '',
                 postalCode: this.selectedApplication.postalCode || '',
                 address: this.selectedApplication.address || '',
@@ -1644,13 +1704,27 @@ export class HrDashboardComponent {
                 basicPensionNumberDocFileName: this.selectedApplication.basicPensionNumberDocFileName || '',
                 myNumberDocFileUrl: this.selectedApplication.myNumberDocFileUrl || '',
                 myNumberDocFileName: this.selectedApplication.myNumberDocFileName || '',
+                myNumberCardFileUrl: this.selectedApplication.myNumberCardFileUrl || '',
+                myNumberCardFileName: this.selectedApplication.myNumberCardFileName || '',
                 identityDocFileUrl: this.selectedApplication.identityDocFileUrl || '',
                 identityDocFileName: this.selectedApplication.identityDocFileName || '',
+                supportAmountDocFileUrl: this.selectedApplication.supportAmountDocFileUrl || '',
+                supportAmountDocFileName: this.selectedApplication.supportAmountDocFileName || '',
+                isForeignNational: this.selectedApplication.isForeignNational || '',
+                nationality: this.selectedApplication.nationality || '',
+                aliasName: this.selectedApplication.aliasName || '',
+                isOverseasResident: this.selectedApplication.isOverseasResident || '',
+                overseasSpecialRequirementDate: this.selectedApplication.overseasSpecialRequirementDate || '',
+                overseasReason: this.selectedApplication.overseasReason || '',
+                overseasReasonOther: this.selectedApplication.overseasReasonOther || '',
+                needsQualificationConfirmation: this.selectedApplication.needsQualificationConfirmation || '',
+                spouseAnnualIncome: this.selectedApplication.spouseAnnualIncome || '',
                 disabilityCategory: this.selectedApplication.disabilityCategory || '',
                 disabilityCardType: this.selectedApplication.disabilityCardType || '',
                 disabilityCardIssueDate: this.selectedApplication.disabilityCardIssueDate || '',
                 disabilityCardFileUrl: this.selectedApplication.disabilityCardFileUrl || '',
                 disabilityCardFileName: this.selectedApplication.disabilityCardFileName || '',
+                notes: this.selectedApplication.notes || '',
                 insuranceSymbol: insuranceSymbol,
                 insuranceNumber: insuranceNumber,
                 insuranceCardIssueDate: this.selectedApplication.dependentStartDate || new Date(),
@@ -2751,58 +2825,197 @@ export class HrDashboardComponent {
     // 扶養者一覧を最初に読み込む（formDataを操作する前に）
     if (data.dependents && Array.isArray(data.dependents) && data.dependents.length > 0) {
       // 深いコピーを作成して、元のデータを変更しないようにする
-      this.dependents = data.dependents.map((dep: any) => ({
-        name: dep.name || '',
-        nameKana: dep.nameKana || '',
-        relationship: dep.relationship || '',
-        relationshipType: dep.relationshipType || '',
-        spouseType: dep.spouseType || '',
-        birthDate: dep.birthDate || '',
-        gender: dep.gender || '',
-        myNumber: dep.myNumber || '',
-        phoneNumber: dep.phoneNumber || '',
-        phoneNumberType: dep.phoneNumberType || '',
-        phoneNumberOther: dep.phoneNumberOther || '',
-        occupation: dep.occupation || '',
-        occupationOther: dep.occupationOther || '',
-        studentYear: dep.studentYear || '',
-        annualIncome: dep.annualIncome || '',
-        monthlyIncome: dep.monthlyIncome || '',
-        monthlySupportAmount: dep.monthlySupportAmount || '',
-        dependentStartDate: dep.dependentStartDate || '',
-        dependentReason: dep.dependentReason || '',
-        dependentReasonOther: dep.dependentReasonOther || '',
-        livingTogether: dep.livingTogether || '',
-        postalCode: dep.postalCode || '',
-        address: dep.address || '',
-        addressKana: dep.addressKana || '',
-        addressChangeDate: dep.addressChangeDate || '',
-        basicPensionNumber: dep.basicPensionNumber || '',
-        basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
-        basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
-        myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
-        myNumberDocFileName: dep.myNumberDocFileName || '',
-        myNumberCardFileUrl: dep.myNumberCardFileUrl || '',
-        myNumberCardFileName: dep.myNumberCardFileName || '',
-        identityDocFileUrl: dep.identityDocFileUrl || '',
-        identityDocFileName: dep.identityDocFileName || '',
-        supportAmountDocFileUrl: dep.supportAmountDocFileUrl || '',
-        supportAmountDocFileName: dep.supportAmountDocFileName || '',
-        isForeignNational: dep.isForeignNational || '',
-        nationality: dep.nationality || '',
-        aliasName: dep.aliasName || '',
-        isOverseasResident: dep.isOverseasResident || '',
-        overseasSpecialRequirementDate: dep.overseasSpecialRequirementDate || '',
-        overseasReason: dep.overseasReason || '',
-        overseasReasonOther: dep.overseasReasonOther || '',
-        needsQualificationConfirmation: dep.needsQualificationConfirmation || '',
-        disabilityCategory: dep.disabilityCategory || '',
-        disabilityCardType: dep.disabilityCardType || '',
-        disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
-        disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
-        disabilityCardFileName: dep.disabilityCardFileName || '',
-        notes: dep.notes || ''
-      }));
+      this.dependents = data.dependents.map((dep: any) => {
+        // マイナンバーを分割
+        let myNumberPart1 = '';
+        let myNumberPart2 = '';
+        let myNumberPart3 = '';
+        if (dep.myNumber && dep.myNumber.length === 12) {
+          myNumberPart1 = dep.myNumber.substring(0, 4);
+          myNumberPart2 = dep.myNumber.substring(4, 8);
+          myNumberPart3 = dep.myNumber.substring(8, 12);
+        }
+        
+        // 基礎年金番号を分割
+        let basicPensionNumberPart1 = '';
+        let basicPensionNumberPart2 = '';
+        if (dep.basicPensionNumber) {
+          const basicPensionNumber = dep.basicPensionNumber.toString();
+          if (basicPensionNumber.length >= 4) {
+            basicPensionNumberPart1 = basicPensionNumber.substring(0, 4);
+            basicPensionNumberPart2 = basicPensionNumber.substring(4, 10) || '';
+          }
+        }
+        
+        // 氏名を姓・名に分割（既存データとの互換性を考慮）
+        let lastName = dep.lastName || '';
+        let firstName = dep.firstName || '';
+        let lastNameKana = dep.lastNameKana || '';
+        let firstNameKana = dep.firstNameKana || '';
+        
+        if (!lastName && !firstName && dep.name) {
+          const nameParts = dep.name.split(/[\s　]+/);
+          if (nameParts.length >= 2) {
+            lastName = nameParts[0];
+            firstName = nameParts.slice(1).join('');
+          } else {
+            lastName = dep.name.substring(0, 1);
+            firstName = dep.name.substring(1);
+          }
+        }
+        
+        if (!lastNameKana && !firstNameKana && dep.nameKana) {
+          const nameKanaParts = dep.nameKana.split(/[\s　]+/);
+          if (nameKanaParts.length >= 2) {
+            lastNameKana = nameKanaParts[0];
+            firstNameKana = nameKanaParts.slice(1).join('');
+          } else {
+            lastNameKana = dep.nameKana.substring(0, 1);
+            firstNameKana = dep.nameKana.substring(1);
+          }
+        }
+        
+        // relationshipTypeを推測（既存データとの互換性を考慮）
+        let relationshipType = dep.relationshipType || '';
+        if (!relationshipType) {
+          // relationshipが「妻」や「夫」の場合、またはspouseTypeが設定されている場合は「配偶者」
+          if (dep.spouseType || dep.relationship === '妻' || dep.relationship === '夫') {
+            relationshipType = '配偶者';
+          } else if (dep.relationship) {
+            // それ以外の続柄が設定されている場合は「配偶者以外」
+            relationshipType = '配偶者以外';
+          }
+        }
+        
+        // spouseTypeを推測（既存データとの互換性を考慮）
+        let spouseType = dep.spouseType || '';
+        if (!spouseType && relationshipType === '配偶者') {
+          // relationshipが「妻」や「夫」の場合、spouseTypeに設定
+          if (dep.relationship === '妻' || dep.relationship === '夫') {
+            spouseType = dep.relationship;
+          }
+        }
+        
+        // デバッグログ（読み込み前の生データ）
+        console.log(`扶養者データ読み込み前（depオブジェクト全体）:`, dep);
+        const depKeys = Object.keys(dep);
+        const targetKeys = ['isForeignNational', 'phoneNumberType', 'monthlySupportAmount', 'isOverseasResident', 'needsQualificationConfirmation'];
+        const foundKeys = targetKeys.filter(key => depKeys.includes(key));
+        const missingKeys = targetKeys.filter(key => !depKeys.includes(key));
+        console.log(`扶養者データ読み込み前（特定フィールド確認）:`, {
+          isForeignNational: dep.isForeignNational,
+          phoneNumberType: dep.phoneNumberType,
+          monthlySupportAmount: dep.monthlySupportAmount,
+          isOverseasResident: dep.isOverseasResident,
+          needsQualificationConfirmation: dep.needsQualificationConfirmation,
+          'depのキー一覧': depKeys,
+          '対象フィールドが存在するか': foundKeys,
+          '対象フィールドが存在しない': missingKeys
+        });
+        
+        // 値の正規化（null/undefinedを空文字列に変換、ただし空文字列の場合はそのまま）
+        const normalizeValue = (value: any, defaultValue: string = ''): string => {
+          if (value === null || value === undefined) {
+            return defaultValue;
+          }
+          // 空文字列の場合はそのまま返す
+          if (value === '') {
+            return '';
+          }
+          return String(value);
+        };
+        
+        // データベースにフィールドが存在しない場合のデフォルト値設定
+        // 既存データとの互換性を考慮して、フィールドが存在しない場合は空文字列を設定
+        const hasIsForeignNational = Object.prototype.hasOwnProperty.call(dep, 'isForeignNational');
+        const hasPhoneNumberType = Object.prototype.hasOwnProperty.call(dep, 'phoneNumberType');
+        const hasMonthlySupportAmount = Object.prototype.hasOwnProperty.call(dep, 'monthlySupportAmount');
+        const hasIsOverseasResident = Object.prototype.hasOwnProperty.call(dep, 'isOverseasResident');
+        const hasNeedsQualificationConfirmation = Object.prototype.hasOwnProperty.call(dep, 'needsQualificationConfirmation');
+        
+        const normalizedIsForeignNational = normalizeValue(hasIsForeignNational ? dep.isForeignNational : '', '');
+        const normalizedPhoneNumberType = normalizeValue(hasPhoneNumberType ? dep.phoneNumberType : '', '');
+        const normalizedMonthlySupportAmount = normalizeValue(hasMonthlySupportAmount ? dep.monthlySupportAmount : '', '');
+        const normalizedIsOverseasResident = normalizeValue(hasIsOverseasResident ? dep.isOverseasResident : '', '');
+        const normalizedNeedsQualificationConfirmation = normalizeValue(hasNeedsQualificationConfirmation ? dep.needsQualificationConfirmation : '', '');
+        
+        // デバッグログ
+        console.log(`扶養者データ読み込み:`, {
+          relationshipType: relationshipType,
+          relationship: dep.relationship,
+          spouseType: spouseType,
+          relationshipOther: dep.relationshipOther,
+          isForeignNational: normalizedIsForeignNational,
+          phoneNumberType: normalizedPhoneNumberType,
+          monthlySupportAmount: normalizedMonthlySupportAmount,
+          isOverseasResident: normalizedIsOverseasResident,
+          needsQualificationConfirmation: normalizedNeedsQualificationConfirmation
+        });
+        
+        return {
+          name: dep.name || `${lastName} ${firstName}`.trim(),
+          nameKana: dep.nameKana || `${lastNameKana} ${firstNameKana}`.trim(),
+          lastName: lastName,
+          firstName: firstName,
+          lastNameKana: lastNameKana,
+          firstNameKana: firstNameKana,
+          relationship: dep.relationship || '',
+          relationshipType: relationshipType,
+          relationshipOther: dep.relationshipOther || '',
+          spouseType: spouseType,
+          birthDate: dep.birthDate || '',
+          gender: dep.gender || '',
+          myNumber: dep.myNumber || '',
+          myNumberPart1: myNumberPart1,
+          myNumberPart2: myNumberPart2,
+          myNumberPart3: myNumberPart3,
+          phoneNumber: dep.phoneNumber || '',
+          phoneNumberType: normalizedPhoneNumberType,
+          phoneNumberOther: dep.phoneNumberOther || '',
+          occupation: dep.occupation || '',
+          occupationOther: dep.occupationOther || '',
+          studentYear: dep.studentYear || '',
+          annualIncome: dep.annualIncome || '',
+          monthlyIncome: dep.monthlyIncome || '',
+          monthlySupportAmount: normalizedMonthlySupportAmount,
+          dependentStartDate: dep.dependentStartDate || '',
+          dependentReason: dep.dependentReason || '',
+          dependentReasonOther: dep.dependentReasonOther || '',
+          livingTogether: dep.livingTogether || '',
+          postalCode: dep.postalCode || '',
+          address: dep.address || '',
+          addressKana: dep.addressKana || '',
+          addressChangeDate: dep.addressChangeDate || '',
+          basicPensionNumber: dep.basicPensionNumber || '',
+          basicPensionNumberPart1: basicPensionNumberPart1,
+          basicPensionNumberPart2: basicPensionNumberPart2,
+          basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
+          basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
+          myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
+          myNumberDocFileName: dep.myNumberDocFileName || '',
+          myNumberCardFileUrl: dep.myNumberCardFileUrl || '',
+          myNumberCardFileName: dep.myNumberCardFileName || '',
+          identityDocFileUrl: dep.identityDocFileUrl || '',
+          identityDocFileName: dep.identityDocFileName || '',
+          supportAmountDocFileUrl: dep.supportAmountDocFileUrl || '',
+          supportAmountDocFileName: dep.supportAmountDocFileName || '',
+          isForeignNational: normalizedIsForeignNational,
+          nationality: dep.nationality || '',
+          aliasName: dep.aliasName || '',
+          isOverseasResident: normalizedIsOverseasResident,
+          overseasSpecialRequirementDate: dep.overseasSpecialRequirementDate || '',
+          overseasReason: dep.overseasReason || '',
+          overseasReasonOther: dep.overseasReasonOther || '',
+          needsQualificationConfirmation: normalizedNeedsQualificationConfirmation,
+          spouseAnnualIncome: dep.spouseAnnualIncome || '',
+          disabilityCategory: dep.disabilityCategory || '',
+          disabilityCardType: dep.disabilityCardType || '',
+          disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
+          disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
+          disabilityCardFileName: dep.disabilityCardFileName || '',
+          notes: dep.notes || ''
+        };
+      });
       // 展開状態を初期化（すべて折りたたみ）
       this.dependentExpandedStates = new Array(this.dependents.length).fill(false);
     } else {
@@ -3443,24 +3656,59 @@ export class HrDashboardComponent {
         delete formData.myNumberPart3;
 
         // 扶養者一覧を追加（深いコピーを作成）
-        formData.dependents = this.dependents.map(dep => ({
+        formData.dependents = this.dependents.map((dep, index) => {
+          // マイナンバーを結合
+          const myNumberParts = [
+            dep.myNumberPart1 || '',
+            dep.myNumberPart2 || '',
+            dep.myNumberPart3 || ''
+          ];
+          const myNumber = myNumberParts.join('') || dep.myNumber || '';
+          
+          // 基礎年金番号を結合
+          const basicPensionNumberParts = [
+            dep.basicPensionNumberPart1 || '',
+            dep.basicPensionNumberPart2 || ''
+          ];
+          const basicPensionNumber = basicPensionNumberParts.join('') || dep.basicPensionNumber || '';
+          
+          // デバッグログ（保存前の生データ）
+          console.log(`扶養者 ${index + 1} の保存前データ（depオブジェクト全体）:`, dep);
+          console.log(`扶養者 ${index + 1} の保存データ:`, {
+            relationshipType: dep.relationshipType,
+            relationship: dep.relationship,
+            spouseType: dep.spouseType,
+            relationshipOther: dep.relationshipOther,
+            isForeignNational: dep.isForeignNational,
+            phoneNumberType: dep.phoneNumberType,
+            monthlySupportAmount: dep.monthlySupportAmount,
+            isOverseasResident: dep.isOverseasResident,
+            needsQualificationConfirmation: dep.needsQualificationConfirmation
+          });
+          
+          return {
           name: dep.name || '',
           nameKana: dep.nameKana || '',
+          lastName: dep.lastName || '',
+          firstName: dep.firstName || '',
+          lastNameKana: dep.lastNameKana || '',
+          firstNameKana: dep.firstNameKana || '',
           relationship: dep.relationship || '',
           relationshipType: dep.relationshipType || '',
+          relationshipOther: dep.relationshipOther || '',
           spouseType: dep.spouseType || '',
           birthDate: dep.birthDate || '',
           gender: dep.gender || '',
-          myNumber: dep.myNumber || '',
+          myNumber: myNumber || '',
           phoneNumber: dep.phoneNumber || '',
-          phoneNumberType: dep.phoneNumberType || '',
+          phoneNumberType: dep.phoneNumberType !== undefined && dep.phoneNumberType !== null ? dep.phoneNumberType : '',
           phoneNumberOther: dep.phoneNumberOther || '',
           occupation: dep.occupation || '',
           occupationOther: dep.occupationOther || '',
           studentYear: dep.studentYear || '',
           annualIncome: dep.annualIncome || '',
           monthlyIncome: dep.monthlyIncome || '',
-          monthlySupportAmount: dep.monthlySupportAmount || '',
+          monthlySupportAmount: dep.monthlySupportAmount !== undefined && dep.monthlySupportAmount !== null ? dep.monthlySupportAmount : '',
           dependentStartDate: dep.dependentStartDate || '',
           dependentReason: dep.dependentReason || '',
           dependentReasonOther: dep.dependentReasonOther || '',
@@ -3469,7 +3717,7 @@ export class HrDashboardComponent {
           address: dep.address || '',
           addressKana: dep.addressKana || '',
           addressChangeDate: dep.addressChangeDate || '',
-          basicPensionNumber: dep.basicPensionNumber || '',
+          basicPensionNumber: basicPensionNumber || '',
           basicPensionNumberDocFileUrl: dep.basicPensionNumberDocFileUrl || '',
           basicPensionNumberDocFileName: dep.basicPensionNumberDocFileName || '',
           myNumberDocFileUrl: dep.myNumberDocFileUrl || '',
@@ -3480,21 +3728,23 @@ export class HrDashboardComponent {
           identityDocFileName: dep.identityDocFileName || '',
           supportAmountDocFileUrl: dep.supportAmountDocFileUrl || '',
           supportAmountDocFileName: dep.supportAmountDocFileName || '',
-          isForeignNational: dep.isForeignNational || '',
+          isForeignNational: dep.isForeignNational !== undefined && dep.isForeignNational !== null ? dep.isForeignNational : '',
           nationality: dep.nationality || '',
           aliasName: dep.aliasName || '',
-          isOverseasResident: dep.isOverseasResident || '',
+          isOverseasResident: dep.isOverseasResident !== undefined && dep.isOverseasResident !== null ? dep.isOverseasResident : '',
           overseasSpecialRequirementDate: dep.overseasSpecialRequirementDate || '',
           overseasReason: dep.overseasReason || '',
           overseasReasonOther: dep.overseasReasonOther || '',
-          needsQualificationConfirmation: dep.needsQualificationConfirmation || '',
+          needsQualificationConfirmation: dep.needsQualificationConfirmation !== undefined && dep.needsQualificationConfirmation !== null ? dep.needsQualificationConfirmation : '',
           disabilityCategory: dep.disabilityCategory || '',
           disabilityCardType: dep.disabilityCardType || '',
           disabilityCardIssueDate: dep.disabilityCardIssueDate || '',
           disabilityCardFileUrl: dep.disabilityCardFileUrl || '',
           disabilityCardFileName: dep.disabilityCardFileName || '',
+          spouseAnnualIncome: dep.spouseAnnualIncome || '',
           notes: dep.notes || ''
-        }));
+          };
+        });
 
         // ファイルをアップロード（新しいファイルが選択された場合）
         if (this.resumeFile) {
@@ -3559,6 +3809,27 @@ export class HrDashboardComponent {
 
         // undefinedの値を削除（サービス側でも処理されるが、事前に削除）
         const cleanedData = this.removeUndefinedValues(formData);
+
+        // デバッグログ：保存されるデータ全体
+        console.log('=== 保存されるデータ全体 ===');
+        console.log('cleanedData:', cleanedData);
+        console.log('cleanedData.dependents:', cleanedData.dependents);
+        if (cleanedData.dependents && cleanedData.dependents.length > 0) {
+          cleanedData.dependents.forEach((dep: any, idx: number) => {
+            console.log(`扶養者 ${idx + 1} の保存データ:`, {
+              relationshipType: dep.relationshipType,
+              relationship: dep.relationship,
+              spouseType: dep.spouseType,
+              relationshipOther: dep.relationshipOther,
+              isForeignNational: dep.isForeignNational,
+              phoneNumberType: dep.phoneNumberType,
+              monthlySupportAmount: dep.monthlySupportAmount,
+              isOverseasResident: dep.isOverseasResident,
+              needsQualificationConfirmation: dep.needsQualificationConfirmation
+            });
+          });
+        }
+        console.log('========================');
 
         // Firestoreに保存（サービス側で最終的な正規化が行われる）
         await this.firestoreService.saveEmployeeData(this.selectedEmployeeNumber, cleanedData);
@@ -4101,8 +4372,13 @@ export class HrDashboardComponent {
     this.dependents.push({
       name: '',
       nameKana: '',
+      lastName: '',
+      firstName: '',
+      lastNameKana: '',
+      firstNameKana: '',
       relationship: '',
       relationshipType: '',
+      relationshipOther: '',
       spouseType: '',
       gender: '',
       phoneNumber: '',
@@ -4123,8 +4399,13 @@ export class HrDashboardComponent {
       addressKana: '',
       addressChangeDate: '',
       basicPensionNumber: '',
+      basicPensionNumberPart1: '',
+      basicPensionNumberPart2: '',
       birthDate: '',
       myNumber: '',
+      myNumberPart1: '',
+      myNumberPart2: '',
+      myNumberPart3: '',
       isForeignNational: '',
       nationality: '',
       aliasName: '',
@@ -4133,6 +4414,7 @@ export class HrDashboardComponent {
       overseasReason: '',
       overseasReasonOther: '',
       needsQualificationConfirmation: '',
+      spouseAnnualIncome: '',
       notes: ''
     });
     this.dependentExpandedStates.push(false);
@@ -5863,6 +6145,28 @@ export class HrDashboardComponent {
     this.applicationRequestForm.reset();
   }
   
+  // 続柄タイプ変更時のハンドラ
+  onRelationshipTypeChange(index: number) {
+    const dependent = this.dependents[index];
+    console.log(`続柄タイプ変更: インデックス ${index}`, {
+      relationshipType: dependent.relationshipType,
+      relationship: dependent.relationship,
+      spouseType: dependent.spouseType,
+      dependent全体: dependent
+    });
+    
+    // relationshipTypeが変更された場合、関連フィールドをリセット
+    if (dependent.relationshipType === '配偶者') {
+      // 配偶者の場合、relationshipをクリア（spouseTypeを使用）
+      if (dependent.relationship && dependent.relationship !== '妻' && dependent.relationship !== '夫') {
+        dependent.relationship = '';
+      }
+    } else if (dependent.relationshipType === '配偶者以外') {
+      // 配偶者以外の場合、spouseTypeをクリア
+      dependent.spouseType = '';
+    }
+  }
+
   // 申請要求を送信
   async submitApplicationRequest() {
     if (this.applicationRequestForm.invalid) {
