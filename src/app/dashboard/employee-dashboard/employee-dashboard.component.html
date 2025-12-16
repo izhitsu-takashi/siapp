@@ -3546,40 +3546,52 @@
       <!-- 扶養家族追加申請の詳細（表示モード・編集モード） -->
       <ng-container *ngIf="selectedApplication.applicationType === '扶養家族追加'">
         <form [formGroup]="dependentApplicationForm" (ngSubmit)="submitReapplication()" *ngIf="dependentApplicationForm" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
-        <!-- 続柄情報 -->
+        <!-- 続柄欄 -->
         <section class="detail-section">
           <h3 class="section-title">続柄 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
-          <div class="detail-grid">
+          <!-- 表示モード -->
+          <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
             <div class="detail-item">
               <span class="detail-label">続柄種別:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.relationshipType || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <label class="radio-label">
-                  <input type="radio" formControlName="relationshipType" value="配偶者" (change)="onRelationshipTypeChange()">
-                  配偶者
-                </label>
-                <label class="radio-label">
-                  <input type="radio" formControlName="relationshipType" value="配偶者以外" (change)="onRelationshipTypeChange()">
-                  配偶者以外
-                </label>
-                <div *ngIf="dependentApplicationForm.get('relationshipType')?.invalid && dependentApplicationForm.get('relationshipType')?.touched" class="error-message">
-                  続柄を選択してください
-                </div>
+              <span class="detail-value">{{ selectedApplication.relationshipType || '-' }}</span>
+            </div>
+          </div>
+          <!-- 編集モード -->
+          <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+            <div class="form-group">
+              <label class="radio-label">
+                <input type="radio" formControlName="relationshipType" value="配偶者" (change)="onRelationshipTypeChange()">
+                配偶者
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="relationshipType" value="配偶者以外" (change)="onRelationshipTypeChange()">
+                配偶者以外
+              </label>
+            </div>
+            <div *ngIf="dependentApplicationForm.get('relationshipType')?.invalid && dependentApplicationForm.get('relationshipType')?.touched" class="error-message">
+              続柄を選択してください
+            </div>
+          </div>
+        </section>
+        
+        <!-- 配偶者の場合のフォーム -->
+        <ng-container *ngIf="(selectedApplication.relationshipType === '配偶者' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('relationshipType')?.value === '配偶者'))">
+          <!-- 続柄（妻or夫） -->
+          <section class="detail-section">
+            <h3 class="section-title">続柄 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">続柄:</span>
+                <span class="detail-value">{{ selectedApplication.spouseType || '-' }}</span>
               </div>
             </div>
-            <div class="detail-item" *ngIf="(selectedApplication.relationshipType === '配偶者' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('relationshipType')?.value === '配偶者'))">
-              <span class="detail-label">配偶者種別:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.spouseType || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="spouseType">続柄 <span class="required">*</span></label>
                 <select 
+                  id="spouseType" 
                   formControlName="spouseType" 
                   class="form-input"
                   (change)="onSpouseTypeChange()"
@@ -3593,43 +3605,204 @@
                 </div>
               </div>
             </div>
-            <div class="detail-item" *ngIf="(selectedApplication.relationshipType === '配偶者以外' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('relationshipType')?.value === '配偶者以外'))">
-              <span class="detail-label">続柄:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.relationship || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input 
-                  type="text" 
-                  formControlName="relationship" 
-                  class="form-input"
-                  placeholder="例：父、母、子など"
-                >
-                <div *ngIf="dependentApplicationForm.get('relationship')?.invalid && dependentApplicationForm.get('relationship')?.touched" class="error-message">
-                  続柄を入力してください
+          </section>
+          
+          <!-- 氏名 -->
+          <section class="detail-section">
+            <h3 class="section-title">氏名</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">姓:</span>
+                <span class="detail-value">{{ selectedApplication.lastName || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名:</span>
+                <span class="detail-value">{{ selectedApplication.firstName || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">姓（フリガナ）:</span>
+                <span class="detail-value">{{ selectedApplication.lastNameKana || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名（フリガナ）:</span>
+                <span class="detail-value">{{ selectedApplication.firstNameKana || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="dependentLastName">姓 <span class="required">*</span></label>
+                  <input type="text" id="dependentLastName" formControlName="lastName" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="dependentFirstName">名 <span class="required">*</span></label>
+                  <input type="text" id="dependentFirstName" formControlName="firstName" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="dependentLastNameKana">姓（フリガナ） <span class="required">*</span></label>
+                  <input type="text" id="dependentLastNameKana" formControlName="lastNameKana" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="dependentFirstNameKana">名（フリガナ） <span class="required">*</span></label>
+                  <input type="text" id="dependentFirstNameKana" formControlName="firstNameKana" class="form-input">
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-        
-        <!-- 基礎年金番号 -->
-        <section class="detail-section">
-          <h3 class="section-title">基礎年金番号</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">基礎年金番号:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ formatBasicPensionNumberForDisplay(selectedApplication.basicPensionNumber) }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+          </section>
+          
+          <!-- 身分証明書添付 -->
+          <section class="detail-section" *ngIf="selectedApplication.identityDocFileUrl || (isEditModeForReapplication && selectedApplication.status === '差し戻し')">
+            <h3 class="section-title">身分証明書添付</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item full-width" *ngIf="selectedApplication.identityDocFileUrl">
+                <span class="detail-label">身分証明書:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.identityDocFileUrl, selectedApplication.identityDocFileName) }}</a>
+                </span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentIdentityDoc">身分証明書添付</label>
+                <input 
+                  type="file" 
+                  id="dependentIdentityDoc" 
+                  class="form-input"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  (change)="onDependentFileSelected($event, 'identityDoc')"
+                >
+                <div *ngIf="dependentIdentityDocFile" class="file-name">{{ dependentIdentityDocFile.name }}</div>
+                <div *ngIf="selectedApplication.identityDocFileUrl && !dependentIdentityDocFile" class="file-info" style="margin-top: 0.5rem;">
+                  <span>既存ファイル: </span>
+                  <a [href]="selectedApplication.identityDocFileUrl" target="_blank" class="file-link">
+                    {{ getFileNameFromUrl(selectedApplication.identityDocFileUrl, selectedApplication.identityDocFileName) }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 生年月日 -->
+          <section class="detail-section">
+            <h3 class="section-title">生年月日</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">生年月日:</span>
+                <span class="detail-value">{{ selectedApplication.birthDate || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
+                <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- マイナンバー -->
+          <section class="detail-section">
+            <h3 class="section-title">マイナンバー</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">マイナンバー:</span>
+                <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber) || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.myNumberCardFileUrl">
+                <span class="detail-label">マイナンバーカード:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.myNumberCardFileUrl, selectedApplication.myNumberCardFile) }}</a>
+                </span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>マイナンバー</label>
+                <div class="my-number-container">
+                  <div class="my-number-inputs">
+                    <input 
+                      type="text" 
+                      id="dependentMyNumberPart1" 
+                      formControlName="myNumberPart1" 
+                      class="form-input my-number-part"
+                      maxlength="4"
+                      (input)="formatDependentMyNumberInput($event, 1)"
+                      placeholder="0000"
+                    >
+                    <span class="my-number-separator">-</span>
+                    <input 
+                      type="text" 
+                      id="dependentMyNumberPart2" 
+                      formControlName="myNumberPart2" 
+                      class="form-input my-number-part"
+                      maxlength="4"
+                      (input)="formatDependentMyNumberInput($event, 2)"
+                      placeholder="0000"
+                    >
+                    <span class="my-number-separator">-</span>
+                    <input 
+                      type="text" 
+                      id="dependentMyNumberPart3" 
+                      formControlName="myNumberPart3" 
+                      class="form-input my-number-part"
+                      maxlength="4"
+                      (input)="formatDependentMyNumberInput($event, 3)"
+                      placeholder="0000"
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="dependentMyNumberCard">マイナンバーカード添付</label>
+                <input 
+                  type="file" 
+                  id="dependentMyNumberCard" 
+                  class="form-input"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  (change)="onDependentFileSelected($event, 'myNumberCard')"
+                >
+                <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
+                <div *ngIf="selectedApplication.myNumberCardFileUrl && !dependentMyNumberCardFile" class="file-info" style="margin-top: 0.5rem;">
+                  <span>既存ファイル: </span>
+                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
+                    {{ getFileNameFromUrl(selectedApplication.myNumberCardFileUrl, selectedApplication.myNumberCardFile) }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 基礎年金番号 -->
+          <section class="detail-section">
+            <h3 class="section-title">基礎年金番号</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">基礎年金番号:</span>
+                <span class="detail-value">{{ formatBasicPensionNumberForDisplay(selectedApplication.basicPensionNumber) || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.basicPensionNumberDocFileUrl">
+                <span class="detail-label">基礎年金番号書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.basicPensionNumberDocFileUrl, selectedApplication.basicPensionNumberDocFileName) }}</a>
+                </span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>基礎年金番号 <span class="required">*</span></label>
                 <div class="basic-pension-number-container">
                   <input 
                     type="text" 
+                    id="dependentBasicPensionNumberPart1" 
                     formControlName="basicPensionNumberPart1" 
                     class="form-input basic-pension-part"
                     maxlength="4"
@@ -3639,6 +3812,7 @@
                   <span class="basic-pension-separator">-</span>
                   <input 
                     type="text" 
+                    id="dependentBasicPensionNumberPart2" 
                     formControlName="basicPensionNumberPart2" 
                     class="form-input basic-pension-part"
                     maxlength="6"
@@ -3646,87 +3820,623 @@
                     placeholder="000000"
                   >
                 </div>
+                <div *ngIf="(dependentApplicationForm.get('basicPensionNumberPart1')?.invalid || dependentApplicationForm.get('basicPensionNumberPart2')?.invalid) && (dependentApplicationForm.get('basicPensionNumberPart1')?.touched || dependentApplicationForm.get('basicPensionNumberPart2')?.touched)" class="error-message">
+                  基礎年金番号を入力してください
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="dependentBasicPensionNumberDoc">基礎年金番号書類添付 <span class="required">*</span></label>
+                <input 
+                  type="file" 
+                  id="dependentBasicPensionNumberDoc" 
+                  class="form-input"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  (change)="onDependentFileSelected($event, 'basicPensionNumberDoc')"
+                >
+                <div *ngIf="dependentBasicPensionNumberDocFile" class="file-name">{{ dependentBasicPensionNumberDocFile.name }}</div>
+                <div *ngIf="selectedApplication.basicPensionNumberDocFileUrl && !dependentBasicPensionNumberDocFile" class="file-info" style="margin-top: 0.5rem;">
+                  <span>既存ファイル: </span>
+                  <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
+                    {{ getFileNameFromUrl(selectedApplication.basicPensionNumberDocFileUrl, selectedApplication.basicPensionNumberDocFileName) }}
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+          
+          <!-- 外国籍か -->
+          <section class="detail-section">
+            <h3 class="section-title">外国籍か</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">外国籍か:</span>
+                <span class="detail-value">{{ selectedApplication.isForeignNational || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isForeignNational === 'はい'">
+                <span class="detail-label">国籍:</span>
+                <span class="detail-value">{{ selectedApplication.nationality || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isForeignNational === 'はい'">
+                <span class="detail-label">通称名:</span>
+                <span class="detail-value">{{ selectedApplication.aliasName || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>外国籍か <span class="required">*</span></label>
+                <div>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="isForeignNational" value="はい" (change)="onForeignNationalChange()">
+                    はい
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="isForeignNational" value="いいえ" (change)="onForeignNationalChange()">
+                    いいえ
+                  </label>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('isForeignNational')?.invalid && dependentApplicationForm.get('isForeignNational')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('isForeignNational')?.value === 'はい'" class="form-grid">
+                <div class="form-group">
+                  <label for="nationality">国籍 <span class="required">*</span></label>
+                  <input type="text" id="nationality" formControlName="nationality" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="aliasName">通称名 <span class="required">*</span></label>
+                  <input type="text" id="aliasName" formControlName="aliasName" class="form-input">
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 住所 -->
+          <section class="detail-section">
+            <h3 class="section-title">住所</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">住所:</span>
+                <span class="detail-value">{{ selectedApplication.livingTogether || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
+                <span class="detail-label">郵便番号:</span>
+                <span class="detail-value">{{ selectedApplication.postalCode || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居'">
+                <span class="detail-label">住所:</span>
+                <span class="detail-value">{{ selectedApplication.address || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
+                <span class="detail-label">毎月の仕送り額:</span>
+                <span class="detail-value">{{ selectedApplication.monthlySupportAmount ? (selectedApplication.monthlySupportAmount | number:'1.0-0') + '円' : '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居' && selectedApplication.supportAmountDocFileUrl">
+                <span class="detail-label">仕送り額証明書類:</span>
+                <span class="detail-value">
+                  <a [href]="selectedApplication.supportAmountDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.supportAmountDocFileUrl, selectedApplication.supportAmountDocFileName) }}</a>
+                </span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>住所 <span class="required">*</span></label>
+                <div>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
+                    同居
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="livingTogether" value="別居" (change)="onLivingTogetherChange()">
+                    別居
+                  </label>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('livingTogether')?.invalid && dependentApplicationForm.get('livingTogether')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('livingTogether')?.value === '別居'" class="form-grid">
+                <div class="form-group">
+                  <label for="dependentPostalCode">郵便番号 <span class="required">*</span></label>
+                  <input 
+                    type="text" 
+                    id="dependentPostalCode" 
+                    formControlName="postalCode" 
+                    class="form-input" 
+                    placeholder="例: 1234567"
+                    maxlength="7"
+                    (input)="formatDependentPostalCode($event)"
+                  >
+                </div>
+                <div class="form-group full-width">
+                  <label for="dependentAddress">住所 <span class="required">*</span></label>
+                  <textarea id="dependentAddress" formControlName="address" class="form-input" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="monthlySupportAmount">毎月の仕送り額 <span class="required">*</span></label>
+                  <input type="number" id="monthlySupportAmount" formControlName="monthlySupportAmount" class="form-input" placeholder="円">
+                </div>
+                <div class="form-group full-width">
+                  <label for="supportAmountDoc">仕送り額証明書類添付 <span class="required">*</span></label>
+                  <input 
+                    type="file" 
+                    id="supportAmountDoc" 
+                    class="form-input"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    (change)="onDependentFileSelected($event, 'supportAmountDoc')"
+                  >
+                  <div *ngIf="supportAmountDocFile" class="file-name">{{ supportAmountDocFile.name }}</div>
+                  <div *ngIf="selectedApplication.supportAmountDocFileUrl && !supportAmountDocFile" class="file-info" style="margin-top: 0.5rem;">
+                    <span>既存ファイル: </span>
+                    <a [href]="selectedApplication.supportAmountDocFileUrl" target="_blank" class="file-link">
+                      {{ getFileNameFromUrl(selectedApplication.supportAmountDocFileUrl, selectedApplication.supportAmountDocFileName) }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 電話番号 -->
+          <section class="detail-section">
+            <h3 class="section-title">電話番号</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">電話番号の種類:</span>
+                <span class="detail-value">{{ selectedApplication.phoneNumberType || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.phoneNumberType === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.phoneNumberOther || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">電話番号:</span>
+                <span class="detail-value">{{ selectedApplication.phoneNumber || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="phoneNumberType">電話番号（自宅、携帯、勤務先、その他） <span class="required">*</span></label>
+                <select 
+                  id="phoneNumberType" 
+                  formControlName="phoneNumberType" 
+                  class="form-input"
+                  (change)="onPhoneNumberTypeChange()"
+                >
+                  <option value="">選択してください</option>
+                  <option value="自宅">自宅</option>
+                  <option value="携帯">携帯</option>
+                  <option value="勤務先">勤務先</option>
+                  <option value="その他">その他</option>
+                </select>
+                <div *ngIf="dependentApplicationForm.get('phoneNumberType')?.invalid && dependentApplicationForm.get('phoneNumberType')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('phoneNumberType')?.value === 'その他'" class="form-group">
+                <label for="phoneNumberOther">その他 <span class="required">*</span></label>
+                <input type="text" id="phoneNumberOther" formControlName="phoneNumberOther" class="form-input">
+              </div>
+              <div class="form-group">
+                <label for="dependentPhoneNumber">電話番号 <span class="required">*</span></label>
+                <input 
+                  type="tel" 
+                  id="dependentPhoneNumber" 
+                  formControlName="phoneNumber" 
+                  class="form-input"
+                  maxlength="11"
+                  (input)="formatDependentPhoneNumber($event)"
+                >
+              </div>
+            </div>
+          </section>
+          
+          <!-- 被扶養者になった日 -->
+          <section class="detail-section">
+            <h3 class="section-title">被扶養者になった日</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">被扶養者になった日:</span>
+                <span class="detail-value">{{ selectedApplication.dependentStartDate || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentStartDate">被扶養者になった日 <span class="required">*</span></label>
+                <input type="date" id="dependentStartDate" formControlName="dependentStartDate" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 理由 -->
+          <section class="detail-section">
+            <h3 class="section-title">理由</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ selectedApplication.dependentReason || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.dependentReason === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.dependentReasonOther || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentReason">理由 <span class="required">*</span></label>
+                <select 
+                  id="dependentReason" 
+                  formControlName="dependentReason" 
+                  class="form-input"
+                  (change)="onDependentReasonChange()"
+                >
+                  <option value="">選択してください</option>
+                  <option value="配偶者の就職">配偶者の就職</option>
+                  <option value="婚姻">婚姻</option>
+                  <option value="離職">離職</option>
+                  <option value="収入減少">収入減少</option>
+                  <option value="その他">その他</option>
+                </select>
+                <div *ngIf="dependentApplicationForm.get('dependentReason')?.invalid && dependentApplicationForm.get('dependentReason')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('dependentReason')?.value === 'その他'" class="form-group">
+                <label for="dependentReasonOther">その他 <span class="required">*</span></label>
+                <input type="text" id="dependentReasonOther" formControlName="dependentReasonOther" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 職業 -->
+          <section class="detail-section">
+            <h3 class="section-title">職業</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">職業:</span>
+                <span class="detail-value">{{ selectedApplication.occupation || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.occupation === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.occupationOther || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="occupation">職業 <span class="required">*</span></label>
+                <select 
+                  id="occupation" 
+                  formControlName="occupation" 
+                  class="form-input"
+                  (change)="onOccupationChange()"
+                >
+                  <option value="">選択してください</option>
+                  <option value="無職">無職</option>
+                  <option value="パート">パート</option>
+                  <option value="年金受給者">年金受給者</option>
+                  <option value="その他">その他</option>
+                </select>
+                <div *ngIf="dependentApplicationForm.get('occupation')?.invalid && dependentApplicationForm.get('occupation')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('occupation')?.value === 'その他'" class="form-group">
+                <label for="occupationOther">その他 <span class="required">*</span></label>
+                <input type="text" id="occupationOther" formControlName="occupationOther" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 年収見込み額 -->
+          <section class="detail-section">
+            <h3 class="section-title">年収見込み額</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">年収見込み額:</span>
+                <span class="detail-value">{{ selectedApplication.annualIncome ? (selectedApplication.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentAnnualIncome">年収見込み額 <span class="required">*</span></label>
+                <input type="number" id="dependentAnnualIncome" formControlName="annualIncome" class="form-input" placeholder="円">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 海外居住者または海外から国内に転入した -->
+          <section class="detail-section">
+            <h3 class="section-title">海外居住者または海外から国内に転入した</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">海外居住者または海外から国内に転入した:</span>
+                <span class="detail-value">{{ selectedApplication.isOverseasResident || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい'">
+                <span class="detail-label">海外特例要件に該当した日:</span>
+                <span class="detail-value">{{ selectedApplication.overseasSpecialRequirementDate || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい'">
+                <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ selectedApplication.overseasReason || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.overseasReasonOther || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>海外居住者または海外から国内に転入した <span class="required">*</span></label>
+                <div>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onDependentOverseasResidentChange()">
+                    はい
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="isOverseasResident" value="いいえ" (change)="onDependentOverseasResidentChange()">
+                    いいえ
+                  </label>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.invalid && dependentApplicationForm.get('isOverseasResident')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.value === 'はい'" class="form-grid">
+                <div class="form-group">
+                  <label for="overseasSpecialRequirementDate">海外特例要件に該当した日 <span class="required">*</span></label>
+                  <input type="date" id="overseasSpecialRequirementDate" formControlName="overseasSpecialRequirementDate" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="overseasReason">理由 <span class="required">*</span></label>
+                  <select 
+                    id="overseasReason" 
+                    formControlName="overseasReason" 
+                    class="form-input"
+                    (change)="onOverseasReasonChange()"
+                  >
+                    <option value="">選択してください</option>
+                    <option value="留学">留学</option>
+                    <option value="同行家族">同行家族</option>
+                    <option value="特定活動">特定活動</option>
+                    <option value="海外婚姻">海外婚姻</option>
+                    <option value="その他">その他</option>
+                  </select>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('overseasReason')?.value === 'その他'" class="form-group">
+                  <label for="overseasReasonOther">その他 <span class="required">*</span></label>
+                  <input type="text" id="overseasReasonOther" formControlName="overseasReasonOther" class="form-input">
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 資格確認書発行が必要か -->
+          <section class="detail-section">
+            <h3 class="section-title">資格確認書発行が必要か</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">資格確認書発行が必要か:</span>
+                <span class="detail-value">{{ selectedApplication.needsQualificationConfirmation || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>資格確認書発行が必要か <span class="required">*</span></label>
+                <div>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
+                    はい
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ">
+                    いいえ
+                  </label>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('needsQualificationConfirmation')?.invalid && dependentApplicationForm.get('needsQualificationConfirmation')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+            </div>
+          </section>
+        </ng-container>
         
-        <!-- 基本情報 -->
-        <section class="detail-section">
-          <h3 class="section-title">基本情報</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">姓 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.lastName || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="lastName" class="form-input">
-                <div *ngIf="dependentApplicationForm.get('lastName')?.invalid && dependentApplicationForm.get('lastName')?.touched" class="error-message">
-                  姓を入力してください
+        <!-- 配偶者以外の場合のフォーム -->
+        <ng-container *ngIf="(selectedApplication.relationshipType === '配偶者以外' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('relationshipType')?.value === '配偶者以外'))">
+          <!-- 続柄 -->
+          <section class="detail-section">
+            <h3 class="section-title">続柄</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">続柄:</span>
+                <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.relationship === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.relationshipOther || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="relationship">続柄 <span class="required">*</span></label>
+                <select 
+                  id="relationship" 
+                  formControlName="relationship" 
+                  class="form-input"
+                  (change)="onRelationshipChange()"
+                >
+                  <option value="">選択してください</option>
+                  <option value="実子・養子">実子・養子</option>
+                  <option value="実子・養子以外の子">実子・養子以外の子</option>
+                  <option value="父母・養父母">父母・養父母</option>
+                  <option value="義父母">義父母</option>
+                  <option value="弟妹">弟妹</option>
+                  <option value="兄姉">兄姉</option>
+                  <option value="祖父母">祖父母</option>
+                  <option value="曽祖父母">曽祖父母</option>
+                  <option value="孫">孫</option>
+                  <option value="その他">その他</option>
+                </select>
+                <div *ngIf="dependentApplicationForm.get('relationship')?.invalid && dependentApplicationForm.get('relationship')?.touched" class="error-message">
+                  続柄を選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('relationship')?.value === 'その他'" class="form-group">
+                <label for="relationshipOther">その他 <span class="required">*</span></label>
+                <input type="text" id="relationshipOther" formControlName="relationshipOther" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 氏名 -->
+          <section class="detail-section">
+            <h3 class="section-title">氏名</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">姓:</span>
+                <span class="detail-value">{{ selectedApplication.lastName || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名:</span>
+                <span class="detail-value">{{ selectedApplication.firstName || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">姓（フリガナ）:</span>
+                <span class="detail-value">{{ selectedApplication.lastNameKana || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">名（フリガナ）:</span>
+                <span class="detail-value">{{ selectedApplication.firstNameKana || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="dependentLastName">姓 <span class="required">*</span></label>
+                  <input type="text" id="dependentLastName" formControlName="lastName" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="dependentFirstName">名 <span class="required">*</span></label>
+                  <input type="text" id="dependentFirstName" formControlName="firstName" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="dependentLastNameKana">姓（フリガナ） <span class="required">*</span></label>
+                  <input type="text" id="dependentLastNameKana" formControlName="lastNameKana" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="dependentFirstNameKana">名（フリガナ） <span class="required">*</span></label>
+                  <input type="text" id="dependentFirstNameKana" formControlName="firstNameKana" class="form-input">
                 </div>
               </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">名 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.firstName || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="firstName" class="form-input">
-                <div *ngIf="dependentApplicationForm.get('firstName')?.invalid && dependentApplicationForm.get('firstName')?.touched" class="error-message">
-                  名を入力してください
+          </section>
+          
+          <!-- 生年月日 -->
+          <section class="detail-section">
+            <h3 class="section-title">生年月日</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">生年月日:</span>
+                <span class="detail-value">{{ selectedApplication.birthDate || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
+                <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- マイナンバー -->
+          <section class="detail-section">
+            <h3 class="section-title">マイナンバー</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">マイナンバー:</span>
+                <span class="detail-value">{{ formatMyNumberForDisplay(selectedApplication.myNumber) || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>マイナンバー <span class="required">*</span></label>
+                <div class="my-number-container">
+                  <div class="my-number-inputs">
+                    <input 
+                      type="text" 
+                      id="dependentMyNumberPart1" 
+                      formControlName="myNumberPart1" 
+                      class="form-input my-number-part"
+                      maxlength="4"
+                      (input)="formatDependentMyNumberInput($event, 1)"
+                      placeholder="0000"
+                    >
+                    <span class="my-number-separator">-</span>
+                    <input 
+                      type="text" 
+                      id="dependentMyNumberPart2" 
+                      formControlName="myNumberPart2" 
+                      class="form-input my-number-part"
+                      maxlength="4"
+                      (input)="formatDependentMyNumberInput($event, 2)"
+                      placeholder="0000"
+                    >
+                    <span class="my-number-separator">-</span>
+                    <input 
+                      type="text" 
+                      id="dependentMyNumberPart3" 
+                      formControlName="myNumberPart3" 
+                      class="form-input my-number-part"
+                      maxlength="4"
+                      (input)="formatDependentMyNumberInput($event, 3)"
+                      placeholder="0000"
+                    >
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">姓（ヨミガナ）:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.lastNameKana || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="lastNameKana" class="form-input">
+          </section>
+          
+          <!-- 性別 -->
+          <section class="detail-section">
+            <h3 class="section-title">性別</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">性別:</span>
+                <span class="detail-value">{{ selectedApplication.gender || '-' }}</span>
               </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">名（ヨミガナ）:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.firstNameKana || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="firstNameKana" class="form-input">
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">生年月日 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.birthDate || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="date" formControlName="birthDate" class="form-input">
-                <div *ngIf="dependentApplicationForm.get('birthDate')?.invalid && dependentApplicationForm.get('birthDate')?.touched" class="error-message">
-                  生年月日を入力してください
-                </div>
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">性別 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.gender || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="gender">性別 <span class="required">*</span></label>
                 <select formControlName="gender" class="form-input">
                   <option value="">選択してください</option>
                   <option value="男性">男性</option>
@@ -3737,359 +4447,308 @@
                 </div>
               </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">電話番号:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.phoneNumber || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input 
-                  type="tel" 
-                  formControlName="phoneNumber" 
-                  class="form-input"
-                  maxlength="11"
-                  pattern="[a-zA-Z0-9]*"
-                  (input)="formatDependentPhoneNumber($event)"
-                >
+          </section>
+          
+          <!-- 住所 -->
+          <section class="detail-section">
+            <h3 class="section-title">住所</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">住所:</span>
+                <span class="detail-value">{{ selectedApplication.livingTogether || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居'">
+                <span class="detail-label">郵便番号:</span>
+                <span class="detail-value">{{ selectedApplication.postalCode || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居'">
+                <span class="detail-label">住所:</span>
+                <span class="detail-value">{{ selectedApplication.address || '-' }}</span>
               </div>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">職業:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.occupation || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="occupation" class="form-input">
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 収入情報 -->
-        <section class="detail-section">
-          <h3 class="section-title">収入情報</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">扶養追加日からの年間収入見込み額:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.annualIncome ? (selectedApplication.annualIncome | number:'1.0-0') + '円' : '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="number" formControlName="annualIncome" class="form-input">
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">扶養追加日からの月額収入見込み額:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.monthlyIncome ? (selectedApplication.monthlyIncome | number:'1.0-0') + '円' : '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="number" formControlName="monthlyIncome" class="form-input">
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">社会保険の扶養者となった日 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.dependentStartDate || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="date" formControlName="dependentStartDate" class="form-input">
-                <div *ngIf="dependentApplicationForm.get('dependentStartDate')?.invalid && dependentApplicationForm.get('dependentStartDate')?.touched" class="error-message">
-                  社会保険の扶養者となった日を入力してください
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>住所 <span class="required">*</span></label>
+                <div>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
+                    同居
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="livingTogether" value="別居" (change)="onLivingTogetherChange()">
+                    別居
+                  </label>
                 </div>
-              </div>
-            </div>
-            <div class="detail-item full-width">
-              <span class="detail-label">扶養に追加された理由:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.dependentReason || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <textarea formControlName="dependentReason" class="form-input" rows="3"></textarea>
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <!-- マイナンバー情報 -->
-        <section class="detail-section">
-          <h3 class="section-title">マイナンバー <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">マイナンバーの提供:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.provideMyNumber || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <label class="radio-label">
-                  <input type="radio" formControlName="provideMyNumber" value="提供する" (change)="onProvideMyNumberChange()">
-                  提供する
-                </label>
-                <label class="radio-label">
-                  <input type="radio" formControlName="provideMyNumber" value="提供しない" (change)="onProvideMyNumberChange()">
-                  提供しない
-                </label>
-                <div *ngIf="dependentApplicationForm.get('provideMyNumber')?.invalid && dependentApplicationForm.get('provideMyNumber')?.touched" class="error-message">
-                  マイナンバーの提供を選択してください
-                </div>
-              </div>
-            </div>
-            <div class="detail-item" *ngIf="selectedApplication.provideMyNumber === '提供する' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('provideMyNumber')?.value === '提供する')">
-              <span class="detail-label">マイナンバー:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ formatMyNumberForDisplay(selectedApplication.myNumber) }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <div class="my-number-container">
-                  <div class="my-number-inputs">
-                    <input 
-                      type="text" 
-                      formControlName="myNumberPart1" 
-                      class="form-input my-number-part"
-                      maxlength="4"
-                      (input)="formatDependentMyNumberInput($event, 1)"
-                      placeholder="0000"
-                    >
-                    <span class="my-number-separator">-</span>
-                    <input 
-                      type="text" 
-                      formControlName="myNumberPart2" 
-                      class="form-input my-number-part"
-                      maxlength="4"
-                      (input)="formatDependentMyNumberInput($event, 2)"
-                      placeholder="0000"
-                    >
-                    <span class="my-number-separator">-</span>
-                    <input 
-                      type="text" 
-                      formControlName="myNumberPart3" 
-                      class="form-input my-number-part"
-                      maxlength="4"
-                      (input)="formatDependentMyNumberInput($event, 3)"
-                      placeholder="0000"
-                    >
-                  </div>
-                </div>
-                <div *ngIf="dependentApplicationForm.get('myNumberPart1')?.invalid && dependentApplicationForm.get('myNumberPart1')?.touched" class="error-message">
-                  マイナンバーを入力してください
-                </div>
-              </div>
-            </div>
-            <div class="detail-item full-width" *ngIf="(selectedApplication.provideMyNumber === '提供する' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('provideMyNumber')?.value === '提供する')) && (selectedApplication.myNumberCardFileUrl || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentMyNumberCardFile))">
-              <span class="detail-label">マイナンバーカード <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                <a *ngIf="selectedApplication.myNumberCardFileUrl" [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
-                  {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
-                </a>
-                <span *ngIf="!selectedApplication.myNumberCardFileUrl">-</span>
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input 
-                  type="file" 
-                  class="form-input"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  (change)="onFileSelected($event, 'dependentMyNumberCard')"
-                >
-                <div *ngIf="dependentMyNumberCardFile" class="file-name">{{ dependentMyNumberCardFile.name }}</div>
-                <div *ngIf="selectedApplication.myNumberCardFileUrl && !dependentMyNumberCardFile" class="file-info" style="margin-top: 0.5rem;">
-                  <span>既存ファイル: </span>
-                  <a [href]="selectedApplication.myNumberCardFileUrl" target="_blank" class="file-link">
-                    {{ selectedApplication.myNumberCardFile || 'マイナンバーカードを開く' }}
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div class="detail-item full-width" *ngIf="selectedApplication.provideMyNumber === '提供しない' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('provideMyNumber')?.value === '提供しない')">
-              <span class="detail-label">未提供理由 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.myNumberNotProvidedReason || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <textarea formControlName="myNumberNotProvidedReason" class="form-input" rows="3"></textarea>
-                <div *ngIf="dependentApplicationForm.get('myNumberNotProvidedReason')?.invalid && dependentApplicationForm.get('myNumberNotProvidedReason')?.touched" class="error-message">
-                  未提供理由を入力してください
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 障がい者情報 -->
-        <section class="detail-section" *ngIf="selectedApplication.disabilityCategory || selectedApplication.disabilityCardType || (isEditModeForReapplication && selectedApplication.status === '差し戻し')">
-          <h3 class="section-title">障がい者情報</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">障がい者区分:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.disabilityCategory || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="disabilityCategory" class="form-input">
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">障がい者手帳の種類:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.disabilityCardType || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="text" formControlName="disabilityCardType" class="form-input">
-              </div>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">障がい者手帳の交付年月日:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.disabilityCardIssueDate || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="date" formControlName="disabilityCardIssueDate" class="form-input">
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 住所情報 -->
-        <section class="detail-section">
-          <h3 class="section-title">住所情報 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span></h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">同居/別居:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.livingTogether || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <label class="radio-label">
-                  <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
-                  同居
-                </label>
-                <label class="radio-label">
-                  <input type="radio" formControlName="livingTogether" value="別居" (change)="onLivingTogetherChange()">
-                  別居
-                </label>
                 <div *ngIf="dependentApplicationForm.get('livingTogether')?.invalid && dependentApplicationForm.get('livingTogether')?.touched" class="error-message">
-                  同居/別居を選択してください
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('livingTogether')?.value === '別居'" class="form-grid">
+                <div class="form-group">
+                  <label for="dependentPostalCode">郵便番号 <span class="required">*</span></label>
+                  <input 
+                    type="text" 
+                    id="dependentPostalCode" 
+                    formControlName="postalCode" 
+                    class="form-input" 
+                    placeholder="例: 1234567"
+                    maxlength="7"
+                    (input)="formatDependentPostalCode($event)"
+                  >
+                </div>
+                <div class="form-group full-width">
+                  <label for="dependentAddress">住所 <span class="required">*</span></label>
+                  <textarea id="dependentAddress" formControlName="address" class="form-input" rows="2"></textarea>
                 </div>
               </div>
             </div>
-            <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('livingTogether')?.value === '別居')">
-              <span class="detail-label">郵便番号 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.postalCode || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input 
-                  type="text" 
-                  formControlName="postalCode" 
-                  class="form-input" 
-                  placeholder="例: 1234567"
-                  maxlength="7"
-                  pattern="[a-zA-Z0-9]*"
-                  (input)="formatDependentPostalCode($event)"
+          </section>
+          
+          <!-- 海外居住者、または海外から国内に転入した -->
+          <section class="detail-section">
+            <h3 class="section-title">海外居住者、または海外から国内に転入した</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">海外居住者、または海外から国内に転入した:</span>
+                <span class="detail-value">{{ selectedApplication.isOverseasResident || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい'">
+                <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ selectedApplication.overseasReason || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.overseasReasonOther || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>海外居住者、または海外から国内に転入した <span class="required">*</span></label>
+                <div>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onDependentOverseasResidentChange()">
+                    はい
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="isOverseasResident" value="いいえ" (change)="onDependentOverseasResidentChange()">
+                    いいえ
+                  </label>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.invalid && dependentApplicationForm.get('isOverseasResident')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('isOverseasResident')?.value === 'はい'" class="form-grid">
+                <div class="form-group">
+                  <label for="overseasReason">理由 <span class="required">*</span></label>
+                  <select 
+                    id="overseasReason" 
+                    formControlName="overseasReason" 
+                    class="form-input"
+                    (change)="onOverseasReasonChange()"
+                  >
+                    <option value="">選択してください</option>
+                    <option value="留学">留学</option>
+                    <option value="同行家族">同行家族</option>
+                    <option value="特定活動">特定活動</option>
+                    <option value="海外婚姻">海外婚姻</option>
+                    <option value="その他">その他</option>
+                  </select>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('overseasReason')?.value === 'その他'" class="form-group">
+                  <label for="overseasReasonOther">その他 <span class="required">*</span></label>
+                  <input type="text" id="overseasReasonOther" formControlName="overseasReasonOther" class="form-input">
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <!-- 被扶養者になった日 -->
+          <section class="detail-section">
+            <h3 class="section-title">被扶養者になった日</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">被扶養者になった日:</span>
+                <span class="detail-value">{{ selectedApplication.dependentStartDate || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentStartDate">被扶養者になった日 <span class="required">*</span></label>
+                <input type="date" id="dependentStartDate" formControlName="dependentStartDate" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 職業 -->
+          <section class="detail-section">
+            <h3 class="section-title">職業</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">職業:</span>
+                <span class="detail-value">{{ selectedApplication.occupation || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.occupation === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.occupationOther || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.occupation === '大学生'">
+                <span class="detail-label">学年:</span>
+                <span class="detail-value">{{ selectedApplication.studentYear || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="occupation">職業 <span class="required">*</span></label>
+                <select 
+                  id="occupation" 
+                  formControlName="occupation" 
+                  class="form-input"
+                  (change)="onOccupationChange()"
                 >
-                <div *ngIf="dependentApplicationForm.get('postalCode')?.invalid && dependentApplicationForm.get('postalCode')?.touched" class="error-message">
-                  郵便番号を入力してください
+                  <option value="">選択してください</option>
+                  <option value="無職">無職</option>
+                  <option value="パート">パート</option>
+                  <option value="年金受給者">年金受給者</option>
+                  <option value="小中学生">小中学生</option>
+                  <option value="高校生">高校生</option>
+                  <option value="大学生">大学生</option>
+                  <option value="その他">その他</option>
+                </select>
+                <div *ngIf="dependentApplicationForm.get('occupation')?.invalid && dependentApplicationForm.get('occupation')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('occupation')?.value === 'その他'" class="form-group">
+                <label for="occupationOther">その他 <span class="required">*</span></label>
+                <input type="text" id="occupationOther" formControlName="occupationOther" class="form-input">
+              </div>
+              <div *ngIf="dependentApplicationForm.get('occupation')?.value === '大学生'" class="form-group">
+                <label for="studentYear">学年 <span class="required">*</span></label>
+                <input type="text" id="studentYear" formControlName="studentYear" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 年収見込み額 -->
+          <section class="detail-section">
+            <h3 class="section-title">年収見込み額</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">年収見込み額:</span>
+                <span class="detail-value">{{ selectedApplication.annualIncome ? (selectedApplication.annualIncome | number:'1.0-0') + '円' : '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentAnnualIncome">年収見込み額 <span class="required">*</span></label>
+                <input type="number" id="dependentAnnualIncome" formControlName="annualIncome" class="form-input" placeholder="円">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 理由 -->
+          <section class="detail-section">
+            <h3 class="section-title">理由</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ selectedApplication.dependentReason || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.dependentReason === 'その他'">
+                <span class="detail-label">その他:</span>
+                <span class="detail-value">{{ selectedApplication.dependentReasonOther || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="dependentReason">理由 <span class="required">*</span></label>
+                <select 
+                  id="dependentReason" 
+                  formControlName="dependentReason" 
+                  class="form-input"
+                  (change)="onDependentReasonChange()"
+                >
+                  <option value="">選択してください</option>
+                  <option value="出生">出生</option>
+                  <option value="離職">離職</option>
+                  <option value="収入減">収入減</option>
+                  <option value="同居">同居</option>
+                  <option value="その他">その他</option>
+                </select>
+                <div *ngIf="dependentApplicationForm.get('dependentReason')?.invalid && dependentApplicationForm.get('dependentReason')?.touched" class="error-message">
+                  選択してください
+                </div>
+              </div>
+              <div *ngIf="dependentApplicationForm.get('dependentReason')?.value === 'その他'" class="form-group">
+                <label for="dependentReasonOther">その他 <span class="required">*</span></label>
+                <input type="text" id="dependentReasonOther" formControlName="dependentReasonOther" class="form-input">
+              </div>
+            </div>
+          </section>
+          
+          <!-- 資格確認書発行が必要か -->
+          <section class="detail-section">
+            <h3 class="section-title">資格確認書発行が必要か</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">資格確認書発行が必要か:</span>
+                <span class="detail-value">{{ selectedApplication.needsQualificationConfirmation || '-' }}</span>
+              </div>
+            </div>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label>資格確認書発行が必要か <span class="required">*</span></label>
+                <div>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
+                    はい
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="needsQualificationConfirmation" value="いいえ">
+                    いいえ
+                  </label>
+                </div>
+                <div *ngIf="dependentApplicationForm.get('needsQualificationConfirmation')?.invalid && dependentApplicationForm.get('needsQualificationConfirmation')?.touched" class="error-message">
+                  選択してください
                 </div>
               </div>
             </div>
-            <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('livingTogether')?.value === '別居')">
-              <span class="detail-label">住所 <span class="required" *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'">*</span>:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.address || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <textarea formControlName="address" class="form-input" rows="2"></textarea>
-                <div *ngIf="dependentApplicationForm.get('address')?.invalid && dependentApplicationForm.get('address')?.touched" class="error-message">
-                  住所を入力してください
-                </div>
+          </section>
+          
+          <!-- 配偶者の年収 -->
+          <section class="detail-section">
+            <h3 class="section-title">配偶者の年収</h3>
+            <!-- 表示モード -->
+            <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
+              <div class="detail-item">
+                <span class="detail-label">配偶者の年収:</span>
+                <span class="detail-value">{{ selectedApplication.spouseAnnualIncome ? (selectedApplication.spouseAnnualIncome | number:'1.0-0') + '円' : '-' }}</span>
               </div>
             </div>
-            <div class="detail-item full-width" *ngIf="selectedApplication.livingTogether === '別居' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('livingTogether')?.value === '別居')">
-              <span class="detail-label">住所（ヨミガナ）:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.addressKana || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <textarea formControlName="addressKana" class="form-input" rows="2"></textarea>
+            <!-- 編集モード -->
+            <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+              <div class="form-group">
+                <label for="spouseAnnualIncome">配偶者の年収 <span class="required">*</span></label>
+                <input type="number" id="spouseAnnualIncome" formControlName="spouseAnnualIncome" class="form-input" placeholder="円">
               </div>
             </div>
-            <div class="detail-item" *ngIf="selectedApplication.livingTogether === '別居' || (isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentApplicationForm?.get('livingTogether')?.value === '別居')">
-              <span class="detail-label">住所変更年月日:</span>
-              <!-- 表示モード -->
-              <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.addressChangeDate || '-' }}
-              </span>
-              <!-- 編集モード -->
-              <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <input type="date" formControlName="addressChangeDate" class="form-input">
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <!-- 添付書類 -->
-        <section class="detail-section" *ngIf="selectedApplication.basicPensionNumberDocFileUrl || selectedApplication.myNumberDocFileUrl || selectedApplication.identityDocFileUrl || selectedApplication.disabilityCardFileUrl">
-          <h3 class="section-title">添付書類</h3>
-          <div class="detail-grid">
-            <div class="detail-item full-width" *ngIf="selectedApplication.basicPensionNumberDocFileUrl">
-              <span class="detail-label">基礎年金番号確認書類:</span>
-              <span class="detail-value">
-                <a [href]="selectedApplication.basicPensionNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.basicPensionNumberDocFileUrl, selectedApplication.basicPensionNumberDocFileName) }}</a>
-              </span>
-            </div>
-            <div class="detail-item full-width" *ngIf="selectedApplication.myNumberDocFileUrl">
-              <span class="detail-label">マイナンバー確認書類:</span>
-              <span class="detail-value">
-                <a [href]="selectedApplication.myNumberDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.myNumberDocFileUrl, selectedApplication.myNumberDocFileName) }}</a>
-              </span>
-            </div>
-            <div class="detail-item full-width" *ngIf="selectedApplication.identityDocFileUrl">
-              <span class="detail-label">身元確認書類:</span>
-              <span class="detail-value">
-                <a [href]="selectedApplication.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.identityDocFileUrl, selectedApplication.identityDocFileName) }}</a>
-              </span>
-            </div>
-            <div class="detail-item full-width" *ngIf="selectedApplication.disabilityCardFileUrl">
-              <span class="detail-label">障がい者手帳の画像:</span>
-              <span class="detail-value">
-                <a [href]="selectedApplication.disabilityCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(selectedApplication.disabilityCardFileUrl, selectedApplication.disabilityCardFileName) }}</a>
-              </span>
-            </div>
-          </div>
-        </section>
+          </section>
+        </ng-container>
         </form>
       </ng-container>
       
