@@ -2610,5 +2610,1011 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       }
     });
   });
+
+  describe('年齢による保険料徴収のテスト', () => {
+    beforeEach(() => {
+      // 保険料率を設定
+      component.insuranceRates = {
+        healthInsurance: 9.91,
+        nursingInsurance: 1.59,
+        pensionInsurance: 18.3
+      };
+    });
+
+    describe('誕生日が11日の社員の場合', () => {
+      const createEmployeeData = (birthYear: number, birthMonth: number) => ({
+        employeeNumber: `age-test-${birthYear}-${birthMonth}-11`,
+        name: `年齢テスト社員（${birthYear}年${birthMonth}月11日生まれ）`,
+        birthDate: new Date(birthYear, birthMonth - 1, 11),
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '在籍',
+        email: `age-test-${birthYear}-${birthMonth}-11@example.com`,
+        employmentType: '正社員'
+      });
+
+      it('39歳の場合、介護保険0円、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1985; // 2024年時点で39歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので39歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 39歳なので介護保険0円、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('40歳の場合、介護保険あり、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1984; // 2024年時点で40歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので40歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 40歳なので介護保険あり、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBeGreaterThan(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('64歳の場合、介護保険あり、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1960; // 2024年時点で64歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので64歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 64歳なので介護保険あり、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBeGreaterThan(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('65歳の場合、介護保険0円、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1959; // 2024年時点で65歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので65歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 65歳なので介護保険0円、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('69歳の場合、介護保険0円、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1955; // 2024年時点で69歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので69歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 69歳なので介護保険0円、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('70歳の場合、介護保険0円、厚生年金保険0円、健康保険あり', async () => {
+        const birthYear = 1954; // 2024年時点で70歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので70歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 70歳なので介護保険0円、厚生年金保険0円、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBe(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('74歳の場合、介護保険0円、厚生年金保険0円、健康保険あり', async () => {
+        const birthYear = 1950; // 2024年時点で74歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので74歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 74歳なので介護保険0円、厚生年金保険0円、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBe(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('75歳の場合、介護保険0円、厚生年金保険0円、健康保険0円', async () => {
+        const birthYear = 1949; // 2024年時点で75歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-11`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので75歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 75歳なので介護保険0円、厚生年金保険0円、健康保険0円
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBe(0);
+          expect(insurance.healthInsurance).toBe(0);
+        }
+      });
+    });
+
+    describe('誕生日が1日の社員の場合', () => {
+      const createEmployeeData = (birthYear: number, birthMonth: number) => ({
+        employeeNumber: `age-test-${birthYear}-${birthMonth}-1`,
+        name: `年齢テスト社員（${birthYear}年${birthMonth}月1日生まれ）`,
+        birthDate: new Date(birthYear, birthMonth - 1, 1),
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '在籍',
+        email: `age-test-${birthYear}-${birthMonth}-1@example.com`,
+        employmentType: '正社員'
+      });
+
+      it('39歳の場合（誕生月の前月）、介護保険0円、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1985; // 2024年時点で39歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので39歳（1日生まれなので前月から年齢加算）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 39歳なので介護保険0円、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('40歳の場合（誕生月の前月）、介護保険あり、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1984; // 2024年時点で40歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので40歳（1日生まれなので前月から年齢加算）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 40歳なので介護保険あり、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBeGreaterThan(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('64歳の場合（誕生月の前月）、介護保険あり、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1960; // 2024年時点で64歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので64歳（1日生まれなので前月から年齢加算）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 64歳なので介護保険あり、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBeGreaterThan(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('65歳の場合（誕生月の前月）、介護保険0円、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1959; // 2024年時点で65歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので65歳（1日生まれなので前月から年齢加算）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 65歳なので介護保険0円、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('69歳の場合（誕生月の前月）、介護保険0円、厚生年金保険あり、健康保険あり', async () => {
+        const birthYear = 1955; // 2024年時点で69歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので69歳（1日生まれなので前月から年齢加算）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 69歳なので介護保険0円、厚生年金保険あり、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBeGreaterThan(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('70歳の場合（誕生月の前月）、介護保険0円、厚生年金保険0円、健康保険あり', async () => {
+        const birthYear = 1954; // 2024年時点で70歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので70歳（1日生まれなので前月から年齢加算）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 70歳なので介護保険0円、厚生年金保険0円、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBe(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('74歳の場合（誕生月の前月）、介護保険0円、厚生年金保険0円、健康保険あり', async () => {
+        const birthYear = 1950; // 2024年時点で74歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので74歳（1日生まれだが、74歳→75歳の場合は前月から加算しない）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 74歳なので介護保険0円、厚生年金保険0円、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBe(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('75歳になる前月（誕生月の前月）、介護保険0円、厚生年金保険0円、健康保険あり（74歳のまま）', async () => {
+        const birthYear = 1949; // 2024年時点で75歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 11; // 誕生月の前月なので74歳（1日生まれだが、74歳→75歳の場合は前月から加算しない）
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 74歳なので介護保険0円、厚生年金保険0円、健康保険あり
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBe(0);
+          expect(insurance.healthInsurance).toBeGreaterThan(0);
+        }
+      });
+
+      it('75歳の場合（誕生月）、介護保険0円、厚生年金保険0円、健康保険0円', async () => {
+        const birthYear = 1949; // 2024年時点で75歳
+        const birthMonth = 12;
+        const employeeNumber = `age-test-${birthYear}-${birthMonth}-1`;
+        const employeeData = createEmployeeData(birthYear, birthMonth);
+        
+        const testYear = 2024;
+        const testMonth = 12; // 誕生月なので75歳
+
+        const salaryHistory = [
+          {
+            employeeNumber: employeeNumber,
+            year: testYear,
+            month: testMonth,
+            amount: 500000,
+            isManual: true
+          }
+        ];
+
+        firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+        firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+        firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+        firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+        firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+        firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getSettings.and.returnValue(Promise.resolve({
+          insuranceRates: {
+            healthInsurance: 9.91,
+            nursingInsurance: 1.59,
+            pensionInsurance: 18.3
+          }
+        }));
+
+        // 保険料一覧を読み込む
+        await component.loadInsuranceList();
+
+        // フィルター年月を設定してフィルタリング
+        component.insuranceListYear = testYear;
+        component.insuranceListMonth = testMonth;
+        component.insuranceListType = 'salary';
+        await component.filterInsuranceListByDate();
+
+        const insurance = component.filteredInsuranceList.find((item: any) => 
+          item.employeeNumber === employeeNumber
+        );
+
+        expect(insurance).toBeDefined();
+        if (insurance) {
+          // 75歳なので介護保険0円、厚生年金保険0円、健康保険0円
+          expect(insurance.nursingInsurance).toBe(0);
+          expect(insurance.pensionInsurance).toBe(0);
+          expect(insurance.healthInsurance).toBe(0);
+        }
+      });
+    });
+  });
 });
 

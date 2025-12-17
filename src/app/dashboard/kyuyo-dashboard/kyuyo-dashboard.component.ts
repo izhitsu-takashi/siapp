@@ -1116,11 +1116,11 @@ export class KyuyoDashboardComponent {
       // 誕生日が1日の場合
       if (birthDay === 1) {
         // 74歳から75歳になる場合のみ、前月から年齢を加算しない（75歳になる月から年齢を加算）
-        // 誕生月の前月で基本年齢が74歳の場合、次の月（誕生月）で75歳になる
-        const isTurning75PreviousMonth = age === 74 && month === birthMonth - 1;
+        // 誕生月の前月で基本年齢が74歳または75歳の場合、特別処理が必要
+        const isTurning75PreviousMonth = (age === 74 || age === 75) && month === birthMonth - 1;
         const isTurning75BirthMonth = age === 74 && month === birthMonth;
         const isAfterTurning75 = age === 74 && month > birthMonth;
-        const isAlready75 = age === 75;
+        const isAlready75AfterBirthMonth = age === 75 && month >= birthMonth;
         
         if (isTurning75PreviousMonth) {
           // 74歳→75歳になる前月の場合：前月から年齢を加算しない（74歳のまま）
@@ -1128,9 +1128,12 @@ export class KyuyoDashboardComponent {
         } else if (isTurning75BirthMonth || isAfterTurning75) {
           // 74歳→75歳になる誕生月以降の場合：75歳にする
           age = 75;
-        } else if (isAlready75) {
-          // 既に75歳以上の場合：75歳のまま
+        } else if (isAlready75AfterBirthMonth) {
+          // 誕生月以降で既に75歳以上の場合：75歳のまま
           age = 75;
+        } else if (age === 75 && month < birthMonth) {
+          // 誕生月より前で基本年齢が75歳の場合：74歳にする（前年など）
+          age = 74;
         } else {
           // それ以外の場合：誕生月の前月から年齢を加算
           if (month >= birthMonth - 1) {
