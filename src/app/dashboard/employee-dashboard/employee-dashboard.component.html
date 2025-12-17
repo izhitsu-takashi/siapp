@@ -4802,9 +4802,13 @@
               </div>
               <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい'">
                 <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ (selectedApplication.overseasReason && !['留学', '同行家族', '特定活動', '海外婚姻', 'その他'].includes(selectedApplication.overseasReason)) ? 'その他' : (selectedApplication.overseasReason || '-') }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason && !['留学', '同行家族', '特定活動', '海外婚姻', 'その他'].includes(selectedApplication.overseasReason)">
+                <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.overseasReason || '-' }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason === 'その他'">
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason === 'その他' && selectedApplication.overseasReasonOther">
                 <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.overseasReasonOther || '-' }}</span>
               </div>
@@ -4878,9 +4882,13 @@
             <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
               <div class="detail-item">
                 <span class="detail-label">職業:</span>
+                <span class="detail-value">{{ (selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation)) ? 'その他' : (selectedApplication.occupation || '-') }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation)">
+                <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.occupation || '-' }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.occupation === 'その他'">
+              <div class="detail-item" *ngIf="selectedApplication.occupation === 'その他' && selectedApplication.occupationOther">
                 <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.occupationOther || '-' }}</span>
               </div>
@@ -4949,9 +4957,13 @@
             <div class="detail-grid" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
               <div class="detail-item">
                 <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ (selectedApplication.dependentReason && !['出生', '離職', '収入減', '同居', 'その他'].includes(selectedApplication.dependentReason)) ? 'その他' : (selectedApplication.dependentReason || '-') }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.dependentReason && !['出生', '離職', '収入減', '同居', 'その他'].includes(selectedApplication.dependentReason)">
+                <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.dependentReason || '-' }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.dependentReason === 'その他'">
+              <div class="detail-item" *ngIf="selectedApplication.dependentReason === 'その他' && selectedApplication.dependentReasonOther">
                 <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.dependentReasonOther || '-' }}</span>
               </div>

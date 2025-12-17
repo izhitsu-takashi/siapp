@@ -2676,17 +2676,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
         const formValue = this.dependentApplicationForm.value;
         const relationshipType = formValue.relationshipType;
         
-        // マイナンバーのデバッグログ
-        console.log('=== マイナンバー情報の確認 ===');
-        console.log('relationshipType:', relationshipType);
-        console.log('myNumberPart1:', myNumberParts[0]);
-        console.log('myNumberPart2:', myNumberParts[1]);
-        console.log('myNumberPart3:', myNumberParts[2]);
-        console.log('myNumber (結合後):', myNumber);
-        console.log('myNumber length:', myNumber.length);
-        console.log('provideMyNumber:', formValue.provideMyNumber);
-        console.log('========================================');
-        
         // マイナンバーカードをアップロード
         let myNumberCardFileUrl = '';
         let myNumberCardFileName = '';
@@ -2836,23 +2825,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
           disabilityCardFileUrl: disabilityCardFileUrl,
           disabilityCardFileName: disabilityCardFileName
         };
-        
-        // デバッグログ：保存される申請データのマイナンバーカード情報
-        console.log('=== 保存される申請データのマイナンバーカード情報 ===');
-        console.log('myNumberCardFileUrl:', applicationData.myNumberCardFileUrl);
-        console.log('myNumberCardFile:', applicationData.myNumberCardFile);
-        console.log('relationshipType:', applicationData.relationshipType);
-        console.log('==================================================');
-        
-        // デバッグログ：保存される申請データのマイナンバー情報
-        console.log('=== 保存される申請データのマイナンバー情報 ===');
-        console.log('myNumber:', applicationData.myNumber);
-        console.log('myNumberPart1:', applicationData.myNumberPart1);
-        console.log('myNumberPart2:', applicationData.myNumberPart2);
-        console.log('myNumberPart3:', applicationData.myNumberPart3);
-        console.log('relationshipType:', applicationData.relationshipType);
-        console.log('provideMyNumber:', formValue.provideMyNumber);
-        console.log('==================================================');
         
         // 申請を保存
         await this.firestoreService.saveApplication(applicationData);
