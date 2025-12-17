@@ -49,6 +49,7 @@
                 <button 
                   class="toggle-button" 
                   [class.active]="insuranceListType === 'bonus'"
+                  [disabled]="insuranceListType === 'salary' && isLoadingInsuranceList"
                   (click)="switchInsuranceListType('bonus')"
                 >
                   賞与
