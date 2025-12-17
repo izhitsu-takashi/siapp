@@ -457,7 +457,7 @@ export class HrDashboardComponent {
   allApplications: any[] = [];
   filteredApplications: any[] = [];
   applicationStatusFilter: string = 'すべて';
-  applicationStatuses = ['すべて', '承認待ち', '確認中', '差し戻し', '再申請', '承認済み'];
+  applicationStatuses = ['すべて', '承認待ち', '確認中', '差し戻し', '承認済み'];
   
   // 社員情報管理用フィルター
   employeeStatusFilter: string = 'すべて';
@@ -1302,16 +1302,16 @@ export class HrDashboardComponent {
   
   // 申請管理表のフィルターとソート
   filterAndSortApplications() {
-    // ステータスの優先度順（承認待ち→確認中→差し戻し→再申請→承認済み）
+    // ステータスの優先度順（承認待ち→確認中→差し戻し→承認済み）
     const statusPriority: { [key: string]: number } = {
       '承認待ち': 1,
       '確認中': 2,
       '差し戻し': 3,
-      '再申請': 4,
       '承認済み': 5,
       '承認': 5, // 承認済みと同じ優先度
       '却下': 3, // 差し戻しと同じ優先度
-      '再提出': 4 // 再申請と同じ優先度
+      '再申請': 4, // 既存データ用（表示のみ）
+      '再提出': 4 // 既存データ用（表示のみ）
     };
     
     // フィルター適用
@@ -6186,9 +6186,6 @@ export class HrDashboardComponent {
     // ステータスに応じてフィルターを設定
     if (status === '却下・差し戻し') {
       // 却下・差し戻しの場合は「すべて」に設定（フィルター処理で対応）
-      this.applicationStatusFilter = 'すべて';
-    } else if (status === '再申請') {
-      // 再申請の場合は「すべて」に設定（再申請と再提出を考慮）
       this.applicationStatusFilter = 'すべて';
     } else if (status === '承認済み') {
       // 承認済みの場合は「承認済み」に設定（承認済みと承認を表示）

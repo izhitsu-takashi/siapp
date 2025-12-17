@@ -116,15 +116,6 @@
                       {{ getApplicationStatusCount('却下') + getApplicationStatusCount('差し戻し') }}
                     </div>
                   </div>
-                  <div class="status-card" (click)="navigateToApplicationManagement('再申請')">
-                    <div class="status-label">再申請</div>
-                    <div class="status-count" 
-                         [class.count-zero]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) === 0"
-                         [class.count-red]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) > 0"
-                         [class.count-green]="(getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出')) === 0">
-                      {{ getApplicationStatusCount('再申請') + getApplicationStatusCount('再提出') }}
-                    </div>
-                  </div>
                   <div class="status-card" (click)="navigateToApplicationManagement('承認済み')">
                     <div class="status-label">承認済み</div>
                     <div class="status-count" 
@@ -2487,7 +2478,6 @@
                 <option value="確認中">確認中</option>
                 <option value="承認済み">承認済み</option>
                 <option value="差し戻し">差し戻し</option>
-                <option value="再申請">再申請</option>
               </select>
               <div *ngIf="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認'" class="info-message" style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
                 承認済みの申請のステータスは変更できません
