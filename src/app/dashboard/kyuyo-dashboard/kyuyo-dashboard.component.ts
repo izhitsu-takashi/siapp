@@ -2265,44 +2265,45 @@ export class KyuyoDashboardComponent {
               }
               
               // 健康保険料・介護保険料計算用の標準賞与額（年度間上限573万円を考慮）
-              // 年度を判定（7月～翌年6月が1年度）
-              let fiscalYear: number;
-              if (filterMonth >= 7) {
-                fiscalYear = filterYear;
+              // 健康介護保険料の賞与累積額の計算の年度は、4月～翌年3月
+              let healthNursingFiscalYear: number;
+              if (filterMonth >= 4) {
+                healthNursingFiscalYear = filterYear;
               } else {
-                fiscalYear = filterYear - 1;
+                healthNursingFiscalYear = filterYear - 1;
               }
               
-              // 該当年度の7月から選択された年月までの賞与の合計を計算
-              const fiscalYearBonuses = this.bonusList.filter((b: any) => {
+              // 該当年度の4月から選択された年月までの賞与の合計を計算
+              const healthNursingFiscalYearBonuses = this.bonusList.filter((b: any) => {
                 const bYear = Number(b['year']);
                 const bMonth = Number(b['month']);
                 if (b['employeeNumber'] !== bonusGroup.employeeNumber) return false;
                 
-                // 年度を判定（7月～翌年6月が1年度）
-                let bFiscalYear: number;
-                if (bMonth >= 7) {
-                  bFiscalYear = bYear;
+                // 年度を判定（4月～翌年3月が1年度）
+                let bHealthNursingFiscalYear: number;
+                if (bMonth >= 4) {
+                  bHealthNursingFiscalYear = bYear;
                 } else {
-                  bFiscalYear = bYear - 1;
+                  bHealthNursingFiscalYear = bYear - 1;
                 }
                 
                 // 同じ年度で、選択された年月以前の賞与を取得
-                if (bFiscalYear !== fiscalYear) return false;
+                if (bHealthNursingFiscalYear !== healthNursingFiscalYear) return false;
                 if (bYear < filterYear) return true;
                 if (bYear === filterYear && bMonth <= filterMonth) return true;
                 return false;
               });
               
-              // 年度内の標準賞与額の合計を計算
-              const fiscalYearTotalStandardBonus = fiscalYearBonuses.reduce((sum: number, b: any) => {
+              // 年度内の標準賞与額の合計を計算（健康介護保険料用：4月～翌年3月の年度）
+              const healthNursingFiscalYearTotalStandardBonus = healthNursingFiscalYearBonuses.reduce((sum: number, b: any) => {
                 const amount = Math.floor(Number(b['amount']) / 1000) * 1000;
                 return sum + amount;
               }, 0);
               
               // 健康保険料・介護保険料計算用の標準賞与額（年度間上限573万円）
+              // 健康介護保険料の賞与累積額の計算の年度は、4月～翌年3月
               const healthNursingStandardBonusAmount = isVoluntaryContinuation ? 0 : 
-                Math.min(standardBonusAmount, Math.max(0, 5730000 - (fiscalYearTotalStandardBonus - standardBonusAmount)));
+                Math.min(standardBonusAmount, Math.max(0, 5730000 - (healthNursingFiscalYearTotalStandardBonus - standardBonusAmount)));
               
               // 厚生年金保険料計算用の標準賞与額（月上限150万円、任意継続被保険者の場合は0）
               // 賞与の場合は等級を関係なく、賞与額をそのまま使用（1000円未満切り捨て）
