@@ -2462,11 +2462,151 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
         // 介護保険料 = 500000 × 1.59 / 100 = 7950円（36歳なので0円）
         // 厚生年金保険料 = 500000 × 18.3 / 100 = 91500円
         
-        expect(marchInsurance.healthInsurance).toBeCloseTo(49500, 0);
+        expect(marchInsurance.healthInsurance).toBeCloseTo(49550, 0);
         expect(marchInsurance.nursingInsurance).toBe(0); // 36歳なので介護保険料は0円
         expect(marchInsurance.pensionInsurance).toBeCloseTo(91500, 0);
         // 社員負担額も0より大きい値であることを確認
         expect(marchInsurance.employeeBurden).toBeGreaterThan(0);
+      }
+    });
+
+    it('2/10~5/10で産前産後休業、3/13から任意継続開始の場合、2月と3月の社会保険料は免除、4月から任意継続被保険者の社会保険料を徴収する', async () => {
+      const employeeNumber = '3';
+      const year = 2026;
+      
+      // 社員情報をモック（産前産後休業中で、3/13から任意継続開始）
+      const employeeData = {
+        employeeNumber: '3',
+        name: '産前産後休業・任意継続テスト社員',
+        birthDate: new Date(1985, 0, 1), // 41歳（2026年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'maternity-voluntary@example.com',
+        employmentType: '正社員',
+        maternityLeaveStartDate: new Date(2026, 1, 10), // 2月10日（月は0ベースなので1が2月）
+        maternityLeaveEndDate: new Date(2026, 4, 10), // 5月10日（月は0ベースなので4が5月）
+        resignationDate: new Date(2026, 2, 12), // 3月12日（退職日、月は0ベースなので2が3月）
+        healthInsuranceType: '任意継続被保険者',
+        voluntaryInsuranceEndDate: new Date(2028, 2, 12) // 任意継続終了日（2年後、月は0ベースなので2が3月）
+      };
+
+      // 給与設定履歴（退職前の給与設定）
+      const salaryHistory = [
+        { employeeNumber, year: 2026, month: 2, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 3, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 4, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 5, amount: 500000, isManual: true }
+      ];
+
+      // loadInsuranceListで必要なモックを設定
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 2月の保険料を確認
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 2;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const februaryInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(februaryInsurance).toBeDefined();
+      if (februaryInsurance) {
+        // 2月は産前産後休業期間内で、任意継続期間外なので、すべて0円
+        expect(februaryInsurance.healthInsurance).toBe(0);
+        expect(februaryInsurance.nursingInsurance).toBe(0);
+        expect(februaryInsurance.pensionInsurance).toBe(0);
+        expect(februaryInsurance.employeeBurden).toBe(0);
+      }
+
+      // 3月の保険料を確認
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 3;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const marchInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(marchInsurance).toBeDefined();
+      if (marchInsurance) {
+        // 3月は産前産後休業期間内で、任意継続期間外（3/13からスタートなので月の途中からスタート、次の月から任意継続）なので、すべて0円
+        expect(marchInsurance.healthInsurance).toBe(0);
+        expect(marchInsurance.nursingInsurance).toBe(0);
+        expect(marchInsurance.pensionInsurance).toBe(0);
+        expect(marchInsurance.employeeBurden).toBe(0);
+      }
+
+      // 4月の保険料を確認
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 4;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const aprilInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(aprilInsurance).toBeDefined();
+      if (aprilInsurance) {
+        // 4月は産前産後休業期間内だが、任意継続期間内なので、任意継続被保険者として保険料を徴収
+        // 任意継続被保険者の場合：
+        // - 健康保険料と介護保険料は全額社員負担
+        // - 厚生年金保険料は0円（任意継続被保険者は厚生年金に加入しない）
+        // - 標準報酬月額は最大32万円に制限
+        
+        // 退職前の給与50万円から標準報酬月額を計算すると50万円だが、任意継続は最大32万円に制限
+        // 32万円の場合の健康保険料 = 320000 × 9.91 / 100 = 31712円
+        // 32万円の場合の介護保険料 = 320000 × 1.59 / 100 = 5088円（41歳なので介護保険対象）
+        // 厚生年金保険料 = 0円
+        
+        expect(aprilInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(aprilInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(aprilInsurance.pensionInsurance).toBe(0);
+        // 任意継続被保険者の場合、健康保険料と介護保険料は全額社員負担
+        expect(aprilInsurance.employeeBurden).toBeGreaterThan(0);
+        // 健康保険料と介護保険料の合計に近い値であることを確認
+        expect(aprilInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
+      }
+
+      // 5月の保険料を確認
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 5;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const mayInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(mayInsurance).toBeDefined();
+      if (mayInsurance) {
+        // 5月も産前産後休業期間内だが、任意継続期間内なので、任意継続被保険者として保険料を徴収
+        expect(mayInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(mayInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(mayInsurance.pensionInsurance).toBe(0);
+        expect(mayInsurance.employeeBurden).toBeGreaterThan(0);
+        expect(mayInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
       }
     });
   });

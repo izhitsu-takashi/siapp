@@ -2010,15 +2010,15 @@ export class KyuyoDashboardComponent {
               }
             }
             
-            // 各保険料を計算（産前産後休業期間内の場合は0円）
-            const healthInsuranceRaw = isInMaternityLeave ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
-            // 介護保険料：40歳未満または65歳以上または任意継続被保険者の場合は0円
-            const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isNursingInsuranceTarget && !isVoluntaryContinuation ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
-            const pensionInsuranceRaw = isInMaternityLeave ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardMonthlySalary * (pensionInsuranceRate / 100));
+            // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
+            const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
+            // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上64歳以下は徴収）
+            const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
+            const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardMonthlySalary * (pensionInsuranceRate / 100));
             
             // 社員負担額を計算
             let employeeBurden = 0;
-            if (!isInMaternityLeave) {
+            if (!isInMaternityLeave || isVoluntaryContinuation) {
               // 現金徴収する社員かどうかを判定
               const isCashCollection = this.isCashCollectionEmployee(item.employeeNumber);
               const roundFunction = isCashCollection ? this.roundHalfCash.bind(this) : this.roundHalf.bind(this);
@@ -2323,15 +2323,15 @@ export class KyuyoDashboardComponent {
               // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
               const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
               
-              // 各保険料を計算（産前産後休業期間内の場合は0円）
-              const healthInsuranceRaw = isInMaternityLeave ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
-              // 介護保険料：40歳未満または65歳以上または任意継続被保険者の場合は0円
-              const nursingInsuranceRaw = isInMaternityLeave ? 0 : (isNursingInsuranceTarget && !isVoluntaryContinuation ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
-              const pensionInsuranceRaw = isInMaternityLeave ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100));
+              // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
+              const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
+              // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上64歳以下は徴収）
+              const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
+              const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100));
               
               // 社員負担額を計算
               let employeeBurden = 0;
-              if (!isInMaternityLeave) {
+              if (!isInMaternityLeave || isVoluntaryContinuation) {
                 // 現金徴収する社員かどうかを判定
                 const isCashCollection = this.isCashCollectionEmployee(bonusGroup.employeeNumber);
                 const roundFunction = isCashCollection ? this.roundHalfCash.bind(this) : this.roundHalf.bind(this);
