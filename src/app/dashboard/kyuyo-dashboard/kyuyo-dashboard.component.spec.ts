@@ -2351,6 +2351,124 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
         expect(februaryInsurance.pensionInsurance).toBeCloseTo(91500, 0);
       }
     });
+
+    it('1月16日から3月12日まで産前産後休業を取得している社員の場合、1月と2月の社会保険料は0円、3月の社会保険料は通常通り徴収される', async () => {
+      const employeeNumber = '2';
+      const year = 2026;
+      
+      // 社員情報をモック（産前産後休業中）
+      const employeeData = {
+        employeeNumber: '2',
+        name: '産前産後休業テスト社員',
+        birthDate: new Date(1990, 0, 1), // 36歳（2026年時点）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '在籍',
+        email: 'maternity@example.com',
+        employmentType: '正社員',
+        maternityLeaveStartDate: new Date(2026, 0, 16), // 1月16日
+        maternityLeaveEndDate: new Date(2026, 2, 12) // 3月12日
+      };
+
+      // 給与設定履歴（1月、2月、3月に50万円）
+      const salaryHistory = [
+        { employeeNumber, year: 2026, month: 1, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 2, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 3, amount: 500000, isManual: true }
+      ];
+
+      // 標準報酬月額変更情報（50万円に対応する等級30）
+      const standardChange = {
+        employeeNumber,
+        effectiveYear: 2026,
+        effectiveMonth: 1,
+        grade: 30,
+        monthlyStandard: 500000
+      };
+
+      // loadInsuranceListで必要なモックを設定
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(standardChange));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 1月の保険料を確認
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 1;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const januaryInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(januaryInsurance).toBeDefined();
+      if (januaryInsurance) {
+        // 1月は産前産後休業期間内なので、すべて0円
+        expect(januaryInsurance.healthInsurance).toBe(0);
+        expect(januaryInsurance.nursingInsurance).toBe(0);
+        expect(januaryInsurance.pensionInsurance).toBe(0);
+        expect(januaryInsurance.employeeBurden).toBe(0);
+      }
+
+      // 2月の保険料を確認
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 2;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const februaryInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(februaryInsurance).toBeDefined();
+      if (februaryInsurance) {
+        // 2月は産前産後休業期間内なので、すべて0円
+        expect(februaryInsurance.healthInsurance).toBe(0);
+        expect(februaryInsurance.nursingInsurance).toBe(0);
+        expect(februaryInsurance.pensionInsurance).toBe(0);
+        expect(februaryInsurance.employeeBurden).toBe(0);
+      }
+
+      // 3月の保険料を確認
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 3;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const marchInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(marchInsurance).toBeDefined();
+      if (marchInsurance) {
+        // 3月は産前産後休業期間外なので、通常通り徴収
+        // 標準報酬月額50万円の場合
+        // 健康保険料 = 500000 × 9.91 / 100 = 49550円
+        // 介護保険料 = 500000 × 1.59 / 100 = 7950円（36歳なので0円）
+        // 厚生年金保険料 = 500000 × 18.3 / 100 = 91500円
+        
+        expect(marchInsurance.healthInsurance).toBeCloseTo(49500, 0);
+        expect(marchInsurance.nursingInsurance).toBe(0); // 36歳なので介護保険料は0円
+        expect(marchInsurance.pensionInsurance).toBeCloseTo(91500, 0);
+        // 社員負担額も0より大きい値であることを確認
+        expect(marchInsurance.employeeBurden).toBeGreaterThan(0);
+      }
+    });
   });
 });
 
