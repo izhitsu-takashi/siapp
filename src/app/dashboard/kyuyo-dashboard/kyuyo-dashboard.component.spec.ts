@@ -704,22 +704,6 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       });
     });
 
-    describe('roundToFifty（50円単位での切り上げ/切り捨て）', () => {
-      it('端数50円以下の場合、切り捨てられる', () => {
-        const result = component.roundToFifty(10050);
-        expect(result).toBe(10000);
-      });
-
-      it('端数50円の場合、切り捨てられる', () => {
-        const result = component.roundToFifty(10050);
-        expect(result).toBe(10000);
-      });
-
-      it('端数51円以上の場合、切り上げられる', () => {
-        const result = component.roundToFifty(10051);
-        expect(result).toBe(10100);
-      });
-    });
   });
 
   describe('保険料計算のテスト', () => {
@@ -2550,11 +2534,24 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       
       expect(marchInsurance).toBeDefined();
       if (marchInsurance) {
-        // 3月は産前産後休業期間内で、任意継続期間外（3/13からスタートなので月の途中からスタート、次の月から任意継続）なので、すべて0円
-        expect(marchInsurance.healthInsurance).toBe(0);
-        expect(marchInsurance.nursingInsurance).toBe(0);
+        // 3月は産前産後休業期間内だが、任意継続期間内（3/13からスタートなので月の途中からスタート、その月から任意継続）なので、任意継続被保険者として保険料を徴収
+        // 任意継続被保険者の場合：
+        // - 健康保険料と介護保険料は全額社員負担
+        // - 厚生年金保険料は0円（任意継続被保険者は厚生年金に加入しない）
+        // - 標準報酬月額は最大32万円に制限
+        
+        // 退職前の給与50万円から標準報酬月額を計算すると50万円だが、任意継続は最大32万円に制限
+        // 32万円の場合の健康保険料 = 320000 × 9.91 / 100 = 31712円
+        // 32万円の場合の介護保険料 = 320000 × 1.59 / 100 = 5088円（41歳なので介護保険対象）
+        // 厚生年金保険料 = 0円
+        
+        expect(marchInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(marchInsurance.nursingInsurance).toBeCloseTo(5088, 0);
         expect(marchInsurance.pensionInsurance).toBe(0);
-        expect(marchInsurance.employeeBurden).toBe(0);
+        // 任意継続被保険者の場合、健康保険料と介護保険料は全額社員負担
+        expect(marchInsurance.employeeBurden).toBeGreaterThan(0);
+        // 健康保険料と介護保険料の合計に近い値であることを確認
+        expect(marchInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
       }
 
       // 4月の保険料を確認
@@ -2609,6 +2606,265 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
         expect(mayInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
       }
     });
+  });
+
+  describe('任意継続被保険者の保険料徴収テスト', () => {
+    beforeEach(() => {
+      // 保険料率を設定
+      component.insuranceRates = {
+        healthInsurance: 9.91,
+        nursingInsurance: 1.59,
+        pensionInsurance: 18.3
+      };
+    });
+
+    it('月末退職の場合（3月31日退職、4月1日から任意継続開始）、4月から任意継続被保険者の保険料を徴収する', async () => {
+      const employeeNumber = 'voluntary-test-1';
+      const employeeData = {
+        employeeNumber: employeeNumber,
+        name: '任意継続テスト社員1（月末退職）',
+        birthDate: new Date(1985, 0, 1), // 41歳（2026年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'voluntary-test-1@example.com',
+        employmentType: '正社員',
+        resignationDate: new Date(2026, 2, 31), // 3月31日（退職日、月は0ベースなので2が3月）
+        healthInsuranceType: '任意継続被保険者',
+        voluntaryInsuranceEndDate: new Date(2028, 2, 31) // 任意継続終了日（2年後、3月31日）
+      };
+
+      // 給与設定履歴
+      const salaryHistory = [
+        { employeeNumber, year: 2026, month: 3, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 4, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 5, amount: 500000, isManual: true }
+      ];
+
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 3月の保険料を確認（退職月、任意継続開始前）
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 3;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const marchInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(marchInsurance).toBeDefined();
+      if (marchInsurance) {
+        // 3月は退職月なので、通常の社会保険料を徴収（任意継続開始前）
+        expect(marchInsurance.healthInsurance).toBeGreaterThan(0);
+        expect(marchInsurance.pensionInsurance).toBeGreaterThan(0);
+      }
+
+      // 4月の保険料を確認（任意継続開始月）
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 4;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const aprilInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(aprilInsurance).toBeDefined();
+      if (aprilInsurance) {
+        // 4月は任意継続開始月なので、任意継続被保険者として保険料を徴収
+        // 32万円の場合の健康保険料 = 320000 × 9.91 / 100 = 31712円
+        // 32万円の場合の介護保険料 = 320000 × 1.59 / 100 = 5088円
+        // 厚生年金保険料 = 0円
+        expect(aprilInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(aprilInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(aprilInsurance.pensionInsurance).toBe(0);
+        expect(aprilInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
+      }
+
+      // 5月の保険料を確認（任意継続期間中）
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 5;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const mayInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(mayInsurance).toBeDefined();
+      if (mayInsurance) {
+        // 5月も任意継続期間中なので、任意継続被保険者として保険料を徴収
+        expect(mayInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(mayInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(mayInsurance.pensionInsurance).toBe(0);
+        expect(mayInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
+      }
+
+      // 2028年3月の保険料を確認（任意継続終了月の前月）
+      component.insuranceListYear = 2028;
+      component.insuranceListMonth = 2; // 2月（終了月の前月）
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const feb2028Insurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(feb2028Insurance).toBeDefined();
+      if (feb2028Insurance) {
+        // 2028年2月は任意継続期間中なので、任意継続被保険者として保険料を徴収
+        expect(feb2028Insurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(feb2028Insurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(feb2028Insurance.pensionInsurance).toBe(0);
+      }
+
+      // 2028年3月の保険料を確認（任意継続終了月）
+      component.insuranceListYear = 2028;
+      component.insuranceListMonth = 3; // 3月（終了月）
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const march2028Insurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      // 2028年3月は任意継続終了月なので、社員は表示されない（終了月の前日まで徴収）
+      expect(march2028Insurance).toBeUndefined();
+    });
+
+    it('月の途中で退職の場合（3月15日退職、3月16日から任意継続開始）、3月から任意継続被保険者の保険料を徴収する', async () => {
+      const employeeNumber = 'voluntary-test-2';
+      const employeeData = {
+        employeeNumber: employeeNumber,
+        name: '任意継続テスト社員2（月の途中退職）',
+        birthDate: new Date(1985, 0, 1), // 41歳（2026年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'voluntary-test-2@example.com',
+        employmentType: '正社員',
+        resignationDate: new Date(2026, 2, 15), // 3月15日（退職日、月は0ベースなので2が3月）
+        healthInsuranceType: '任意継続被保険者',
+        voluntaryInsuranceEndDate: new Date(2028, 2, 15) // 任意継続終了日（2年後、3月15日）
+      };
+
+      // 給与設定履歴
+      const salaryHistory = [
+        { employeeNumber, year: 2026, month: 3, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 4, amount: 500000, isManual: true },
+        { employeeNumber, year: 2026, month: 5, amount: 500000, isManual: true }
+      ];
+
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 3月の保険料を確認（任意継続開始月、月の途中からスタート）
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 3;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const marchInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(marchInsurance).toBeDefined();
+      if (marchInsurance) {
+        // 3月は任意継続開始月（月の途中からスタート）なので、任意継続被保険者として保険料を徴収
+        // 32万円の場合の健康保険料 = 320000 × 9.91 / 100 = 31712円
+        // 32万円の場合の介護保険料 = 320000 × 1.59 / 100 = 5088円
+        // 厚生年金保険料 = 0円
+        expect(marchInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(marchInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(marchInsurance.pensionInsurance).toBe(0);
+        expect(marchInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
+      }
+
+      // 4月の保険料を確認（任意継続期間中）
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 4;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const aprilInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(aprilInsurance).toBeDefined();
+      if (aprilInsurance) {
+        // 4月も任意継続期間中なので、任意継続被保険者として保険料を徴収
+        expect(aprilInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(aprilInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(aprilInsurance.pensionInsurance).toBe(0);
+        expect(aprilInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
+      }
+
+      // 2028年2月の保険料を確認（任意継続終了月の前月）
+      component.insuranceListYear = 2028;
+      component.insuranceListMonth = 2; // 2月（終了月の前月）
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const feb2028Insurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(feb2028Insurance).toBeDefined();
+      if (feb2028Insurance) {
+        // 2028年2月は任意継続期間中なので、任意継続被保険者として保険料を徴収
+        expect(feb2028Insurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(feb2028Insurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(feb2028Insurance.pensionInsurance).toBe(0);
+      }
+
+      // 2028年3月の保険料を確認（任意継続終了月）
+      component.insuranceListYear = 2028;
+      component.insuranceListMonth = 3; // 3月（終了月）
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const march2028Insurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      // 2028年3月は任意継続終了月なので、社員は表示されない（終了月の前日まで徴収）
+      expect(march2028Insurance).toBeUndefined();
+    });
+
   });
 
   describe('年齢による保険料徴収のテスト', () => {

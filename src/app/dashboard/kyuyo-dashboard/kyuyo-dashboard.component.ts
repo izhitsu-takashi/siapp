@@ -1686,24 +1686,28 @@ export class KyuyoDashboardComponent {
       // 選択された年月の1日を計算
       const selectedDate = new Date(year, month - 1, 1);
       
-      // 任意継続終了日の月の最終日を計算（その月の任意継続期間内かどうかを判定するため）
-      const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+      // 任意継続終了日の月の1日を計算（終了月の前日まで徴収するため）
+      const endDateMonthStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
       
-      // 選択された年月が退職日の翌日から任意継続終了日までの範囲内かどうかを判定
-      // 退職月より後の期間で、任意継続被保険者の場合のみ表示
-      // 退職日の翌日が属する月の1日を計算
-      const nextDayMonthStart = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
+      // 退職日の翌日が属する月の1日を計算（任意継続開始月、月の途中からスタートでもその月から任意継続保険料を徴収）
+      const voluntaryStartMonth = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
       
-      // 選択年月が退職日の翌日が属する月以降で、任意継続終了日の月以前であれば表示
-      if (selectedDate < nextDayMonthStart) {
-        return false; // 退職日の翌日が属する月より前は表示しない（既に退職月以前で処理済み）
-      }
-      // 選択年月の1日が任意継続終了日の月の最終日以前であれば表示
-      if (selectedDate <= endDateMonth) {
-        return true; // 任意継続終了日までの範囲内は表示
+      // 選択年月が退職日の翌日が属する月より前は表示しない
+      if (selectedDate < voluntaryStartMonth) {
+        return false;
       }
       
-      return false; // 任意継続終了日を超える場合は表示しない
+      // 加入月と終了月が同じ場合は、その月のみ表示
+      if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
+        return selectedDate.getTime() === voluntaryStartMonth.getTime();
+      }
+      
+      // 加入月から終了月の前日まで表示
+      if (selectedDate >= voluntaryStartMonth && selectedDate < endDateMonthStart) {
+        return true;
+      }
+      
+      return false; // 任意継続終了月以降は表示しない
     }
     
     // 任意継続被保険者以外の退職済み社員の場合、退職月より後は表示しない
@@ -1907,25 +1911,18 @@ export class KyuyoDashboardComponent {
                 // 選択された年月の1日を計算
                 const selectedDate = new Date(filterYear, filterMonth - 1, 1);
                 
-                // 任意継続終了日の月の最終日を計算
-                const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+                // 任意継続終了日の月の1日を計算（終了月の前日まで徴収するため）
+                const endDateMonthStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
                 
-                // 任意継続期間が月の途中からスタートする場合の処理
-                // 退職日の翌日が属する月の場合は通常の標準報酬月額で保険料を計算
-                // その次の月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
-                const nextMonth = new Date(voluntaryStartMonth);
-                nextMonth.setMonth(nextMonth.getMonth() + 1);
-                
-                // 退職日の翌日が月の1日の場合（任意継続開始日が月の始まりの場合）は、その月から任意継続被保険者として扱う
-                // それ以外の場合（月の途中からスタート）は、その月は通常の標準報酬月額で計算し、次の月から任意継続被保険者として扱う
-                if (nextDay.getDate() === 1) {
-                  // 月の1日からスタートの場合
-                  if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
+                // 任意継続開始月は、退職日の翌日が属する月から開始（月の途中からスタートでもその月から任意継続保険料を徴収）
+                // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
+                if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
+                  if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
                     isVoluntaryContinuation = true;
                   }
                 } else {
-                  // 月の途中からスタートの場合
-                  if (selectedDate >= nextMonth && selectedDate <= endDateMonth) {
+                  // 加入月から終了月の前日まで徴収
+                  if (selectedDate >= voluntaryStartMonth && selectedDate < endDateMonthStart) {
                     isVoluntaryContinuation = true;
                   }
                 }
@@ -2322,25 +2319,18 @@ export class KyuyoDashboardComponent {
                   // 選択された年月の1日を計算
                   const selectedDate = new Date(filterYear, filterMonth - 1, 1);
                   
-                  // 任意継続終了日の月の最終日を計算
-                  const endDateMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+                  // 任意継続終了日の月の1日を計算（終了月の前日まで徴収するため）
+                  const endDateMonthStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
                   
-                  // 任意継続期間が月の途中からスタートする場合の処理
-                  // 退職日の翌日が属する月の場合は通常の標準報酬月額で保険料を計算
-                  // その次の月から任意継続終了日までの範囲内の場合のみ任意継続被保険者として扱う
-                  const nextMonth = new Date(voluntaryStartMonth);
-                  nextMonth.setMonth(nextMonth.getMonth() + 1);
-                  
-                  // 退職日の翌日が月の1日の場合（任意継続開始日が月の始まりの場合）は、その月から任意継続被保険者として扱う
-                  // それ以外の場合（月の途中からスタート）は、その月は通常の標準報酬月額で計算し、次の月から任意継続被保険者として扱う
-                  if (nextDay.getDate() === 1) {
-                    // 月の1日からスタートの場合
-                    if (selectedDate >= voluntaryStartMonth && selectedDate <= endDateMonth) {
+                  // 任意継続開始月は、退職日の翌日が属する月から開始（月の途中からスタートでもその月から任意継続保険料を徴収）
+                  // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
+                  if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
+                    if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
                       isVoluntaryContinuation = true;
                     }
                   } else {
-                    // 月の途中からスタートの場合
-                    if (selectedDate >= nextMonth && selectedDate <= endDateMonth) {
+                    // 加入月から終了月の前日まで徴収
+                    if (selectedDate >= voluntaryStartMonth && selectedDate < endDateMonthStart) {
                       isVoluntaryContinuation = true;
                     }
                   }
