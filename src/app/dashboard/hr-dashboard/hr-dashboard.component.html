@@ -3124,12 +3124,9 @@
             <div class="detail-item full-width">
               <span class="detail-label">理由:</span>
               <span class="detail-value">
-                {{ selectedApplication.removalReason || '-' }}
+                {{ (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason)) ? 'その他' : (selectedApplication.removalReason || '-') }}
                 <span *ngIf="selectedApplication.removalReason === '死亡' && selectedApplication.deathDate">
                   （死亡年月日: {{ selectedApplication.deathDate }}）
-                </span>
-                <span *ngIf="selectedApplication.removalReason === 'その他' && selectedApplication.removalReasonOther">
-                  （{{ selectedApplication.removalReasonOther }}）
                 </span>
               </span>
             </div>
@@ -3139,9 +3136,9 @@
               <span class="detail-value">{{ selectedApplication.deathDate || '-' }}</span>
             </div>
             <!-- その他選択時：その他の入力 -->
-            <div class="detail-item full-width" *ngIf="selectedApplication.removalReason === 'その他' || selectedApplication.removalReasonOther">
+            <div class="detail-item full-width" *ngIf="(selectedApplication.removalReason === 'その他' && selectedApplication.removalReasonOther) || (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason))">
               <span class="detail-label">その他:</span>
-              <span class="detail-value">{{ selectedApplication.removalReasonOther || '-' }}</span>
+              <span class="detail-value">{{ selectedApplication.removalReasonOther || (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason) ? selectedApplication.removalReason : '-') }}</span>
             </div>
           </div>
         </section>
@@ -3163,19 +3160,16 @@
               <div class="detail-item">
                 <span class="detail-label">理由:</span>
                 <span class="detail-value">
-                  {{ selectedApplication.overseasReason || '-' }}
+                  {{ (selectedApplication.overseasReason && !['国内転入', 'その他'].includes(selectedApplication.overseasReason)) ? 'その他' : (selectedApplication.overseasReason || '-') }}
                   <span *ngIf="selectedApplication.overseasReason === '国内転入' && selectedApplication.transferDate">
                     （転入日: {{ selectedApplication.transferDate }}）
-                  </span>
-                  <span *ngIf="selectedApplication.overseasReason === 'その他' && selectedApplication.overseasReasonOther">
-                    （{{ selectedApplication.overseasReasonOther }}）
                   </span>
                 </span>
               </div>
               <!-- その他選択時：その他の入力 -->
-              <div class="detail-item full-width" *ngIf="selectedApplication.overseasReason === 'その他' || selectedApplication.overseasReasonOther">
+              <div class="detail-item full-width" *ngIf="(selectedApplication.overseasReason === 'その他' && selectedApplication.overseasReasonOther) || (selectedApplication.overseasReason && !['国内転入', 'その他'].includes(selectedApplication.overseasReason))">
                 <span class="detail-label">その他:</span>
-                <span class="detail-value">{{ selectedApplication.overseasReasonOther || '-' }}</span>
+                <span class="detail-value">{{ selectedApplication.overseasReasonOther || (selectedApplication.overseasReason && !['国内転入', 'その他'].includes(selectedApplication.overseasReason) ? selectedApplication.overseasReason : '-') }}</span>
               </div>
             </ng-container>
           </div>

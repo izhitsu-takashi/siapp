@@ -4323,6 +4323,10 @@ export class EmployeeDashboardComponent implements OnDestroy {
           } else if (application.overseasReasonOther) {
             overseasReason = 'その他';
             overseasReasonOther = application.overseasReasonOther;
+          } else if (overseasReason && !['国内転入', 'その他'].includes(overseasReason)) {
+            // overseasReasonが標準オプションに含まれていない場合、「その他」に設定し、元の値をoverseasReasonOtherに設定
+            overseasReasonOther = overseasReason;
+            overseasReason = 'その他';
           }
         }
       }
@@ -4362,8 +4366,10 @@ export class EmployeeDashboardComponent implements OnDestroy {
         }
         if (overseasReason === '国内転入' && transferDate) {
           this.dependentRemovalForm.patchValue({ transferDate: transferDate });
+          this.onRemovalOverseasReasonChange();
         } else if (overseasReason === 'その他' && overseasReasonOther) {
           this.dependentRemovalForm.patchValue({ overseasReasonOther: overseasReasonOther });
+          this.onRemovalOverseasReasonChange();
         }
       }
     } else if (application.applicationType === '住所変更申請') {
@@ -4632,6 +4638,14 @@ export class EmployeeDashboardComponent implements OnDestroy {
             applicationType: '扶養削除申請',
             removalDate: formValue.removalDate,
             removalReason: formValue.removalReason,
+            deathDate: formValue.deathDate || null,
+            removalReasonOther: formValue.removalReasonOther || null,
+            isOverseasResident: formValue.isOverseasResident || null,
+            overseasNonQualificationDate: formValue.overseasNonQualificationDate || null,
+            overseasReason: formValue.overseasReason || null,
+            transferDate: formValue.transferDate || null,
+            overseasReasonOther: formValue.overseasReasonOther || null,
+            needsQualificationConfirmation: formValue.needsQualificationConfirmation || null,
             dependent: {
               name: selectedDependent.name || '',
               nameKana: selectedDependent.nameKana || '',

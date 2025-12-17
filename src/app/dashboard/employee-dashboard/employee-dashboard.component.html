@@ -5122,12 +5122,9 @@
               <span class="detail-label">理由:</span>
               <!-- 表示モード -->
               <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                {{ selectedApplication.removalReason || '-' }}
+                {{ (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason)) ? 'その他' : (selectedApplication.removalReason || '-') }}
                 <span *ngIf="selectedApplication.removalReason === '死亡' && selectedApplication.deathDate">
                   （死亡年月日: {{ selectedApplication.deathDate }}）
-                </span>
-                <span *ngIf="selectedApplication.removalReason === 'その他' && selectedApplication.removalReasonOther">
-                  （{{ selectedApplication.removalReasonOther }}）
                 </span>
               </span>
               <!-- 編集モード -->
@@ -5164,12 +5161,12 @@
               </div>
             </ng-container>
             <!-- その他選択時：その他の入力 -->
-            <ng-container *ngIf="(isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('removalReason')?.value === 'その他') || ((!isEditModeForReapplication || selectedApplication.status !== '差し戻し') && (selectedApplication.removalReason === 'その他' || selectedApplication.removalReasonOther))">
+            <ng-container *ngIf="(isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('removalReason')?.value === 'その他') || ((!isEditModeForReapplication || selectedApplication.status !== '差し戻し') && ((selectedApplication.removalReason === 'その他' && selectedApplication.removalReasonOther) || (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason))))">
               <div class="detail-item full-width">
                 <span class="detail-label">その他:</span>
                 <!-- 表示モード -->
                 <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                  {{ selectedApplication.removalReasonOther || '-' }}
+                  {{ selectedApplication.removalReasonOther || (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason) ? selectedApplication.removalReason : '-') }}
                 </span>
                 <!-- 編集モード -->
                 <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
@@ -5230,12 +5227,9 @@
                 <span class="detail-label">理由:</span>
                 <!-- 表示モード -->
                 <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                  {{ selectedApplication.overseasReason || '-' }}
+                  {{ (selectedApplication.overseasReason && !['国内転入', 'その他'].includes(selectedApplication.overseasReason)) ? 'その他' : (selectedApplication.overseasReason || '-') }}
                   <span *ngIf="selectedApplication.overseasReason === '国内転入' && selectedApplication.transferDate">
                     （転入日: {{ selectedApplication.transferDate }}）
-                  </span>
-                  <span *ngIf="selectedApplication.overseasReason === 'その他' && selectedApplication.overseasReasonOther">
-                    （{{ selectedApplication.overseasReasonOther }}）
                   </span>
                 </span>
                 <!-- 編集モード -->
@@ -5259,12 +5253,12 @@
                 </div>
               </div>
               <!-- その他選択時：その他の入力 -->
-              <ng-container *ngIf="(isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('overseasReason')?.value === 'その他') || ((!isEditModeForReapplication || selectedApplication.status !== '差し戻し') && (selectedApplication.overseasReason === 'その他' || selectedApplication.overseasReasonOther))">
+              <ng-container *ngIf="(isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('overseasReason')?.value === 'その他') || ((!isEditModeForReapplication || selectedApplication.status !== '差し戻し') && ((selectedApplication.overseasReason === 'その他' && selectedApplication.overseasReasonOther) || (selectedApplication.overseasReason && !['国内転入', 'その他'].includes(selectedApplication.overseasReason))))">
                 <div class="detail-item full-width">
                   <span class="detail-label">その他:</span>
                   <!-- 表示モード -->
                   <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                    {{ selectedApplication.overseasReasonOther || '-' }}
+                    {{ selectedApplication.overseasReasonOther || (selectedApplication.overseasReason && !['国内転入', 'その他'].includes(selectedApplication.overseasReason) ? selectedApplication.overseasReason : '-') }}
                   </span>
                   <!-- 編集モード -->
                   <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
