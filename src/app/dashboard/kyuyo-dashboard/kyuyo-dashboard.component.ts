@@ -217,6 +217,33 @@ export class KyuyoDashboardComponent {
   openVoluntaryEndModal(employee: any) {
     this.selectedVoluntaryEmployee = employee;
     
+    // バリデーターを設定
+    const voluntaryEndDateControl = this.voluntaryEndForm.get('voluntaryEndDate');
+    if (voluntaryEndDateControl && employee.resignationDate) {
+      const resignationDate = new Date(employee.resignationDate);
+      const minDate = new Date(resignationDate);
+      minDate.setDate(minDate.getDate() + 1);
+      
+      // カスタムバリデーターを追加（退職日の翌日以降であることを確認）
+      voluntaryEndDateControl.setValidators([
+        Validators.required,
+        (control) => {
+          if (!control.value || !employee.resignationDate) {
+            return null;
+          }
+          const selectedDate = new Date(control.value);
+          const resignation = new Date(employee.resignationDate);
+          
+          // 退職日を含む退職日より前の日付は無効
+          if (selectedDate <= resignation) {
+            return { minDate: true };
+          }
+          return null;
+        }
+      ]);
+      voluntaryEndDateControl.updateValueAndValidity();
+    }
+    
     // 退職日の翌日から2年後の日をデフォルト値として設定
     if (employee.resignationDate) {
       const resignationDate = new Date(employee.resignationDate);
@@ -238,6 +265,22 @@ export class KyuyoDashboardComponent {
     }
     
     this.showVoluntaryEndModal = true;
+  }
+  
+  // 任意継続終了日の最小日付を取得（退職日の翌日）
+  getMinVoluntaryEndDate(): string {
+    if (!this.selectedVoluntaryEmployee || !this.selectedVoluntaryEmployee.resignationDate) {
+      return '';
+    }
+    
+    const resignationDate = new Date(this.selectedVoluntaryEmployee.resignationDate);
+    const nextDay = new Date(resignationDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    
+    const year = nextDay.getFullYear();
+    const month = String(nextDay.getMonth() + 1).padStart(2, '0');
+    const day = String(nextDay.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
   
   // 任意継続終了日の最大日付を取得（退職日の翌日から2年後）
@@ -264,6 +307,14 @@ export class KyuyoDashboardComponent {
   closeVoluntaryEndModal() {
     this.showVoluntaryEndModal = false;
     this.selectedVoluntaryEmployee = null;
+    
+    // バリデーターをリセット
+    const voluntaryEndDateControl = this.voluntaryEndForm.get('voluntaryEndDate');
+    if (voluntaryEndDateControl) {
+      voluntaryEndDateControl.setValidators([Validators.required]);
+      voluntaryEndDateControl.updateValueAndValidity();
+    }
+    
     this.voluntaryEndForm.reset();
   }
   
@@ -280,6 +331,19 @@ export class KyuyoDashboardComponent {
       if (!voluntaryEndDate) {
         alert('任意継続終了日を入力してください');
         return;
+      }
+      
+      // 退職日より前の日付が選択されていないかチェック
+      if (this.selectedVoluntaryEmployee.resignationDate) {
+        const resignationDate = new Date(this.selectedVoluntaryEmployee.resignationDate);
+        const selectedDate = new Date(voluntaryEndDate);
+        
+        // 退職日を含む退職日より前の日付は設定不可
+        if (selectedDate <= resignationDate) {
+          alert('任意継続終了日は退職日の翌日以降である必要があります');
+          this.isSavingVoluntaryEnd = false;
+          return;
+        }
       }
       
       // 社員データを取得

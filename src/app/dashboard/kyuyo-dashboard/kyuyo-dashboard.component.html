@@ -898,10 +898,15 @@
               id="voluntaryEndDate" 
               formControlName="voluntaryEndDate" 
               class="form-input"
+              [min]="getMinVoluntaryEndDate()"
               [max]="getMaxVoluntaryEndDate()"
             >
             <div *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.invalid && voluntaryEndForm.get('voluntaryEndDate')?.touched" class="error-message">
-              任意継続終了日を入力してください
+              <span *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.errors?.['required']">任意継続終了日を入力してください</span>
+              <span *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.errors?.['minDate']">任意継続終了日は退職日の翌日以降である必要があります</span>
+            </div>
+            <div *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.value && getMinVoluntaryEndDate() && voluntaryEndForm.get('voluntaryEndDate')?.value < getMinVoluntaryEndDate()" class="error-message">
+              任意継続終了日は退職日の翌日以降である必要があります
             </div>
             <div *ngIf="voluntaryEndForm.get('voluntaryEndDate')?.value && getMaxVoluntaryEndDate() && voluntaryEndForm.get('voluntaryEndDate')?.value > getMaxVoluntaryEndDate()" class="error-message">
               任意継続終了日は退職日の翌日から2年以内である必要があります
