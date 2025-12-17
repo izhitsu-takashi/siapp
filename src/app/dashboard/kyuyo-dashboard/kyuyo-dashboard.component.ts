@@ -1705,12 +1705,15 @@ export class KyuyoDashboardComponent {
       return false;
     }
     
-    // 退職月を取得
-    const resignationYear = resignation.getFullYear();
-    const resignationMonth = resignation.getMonth() + 1;
+    // 資格喪失年月日を計算（退職日の翌日）
+    const nextDay = new Date(resignation);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const lossYear = nextDay.getFullYear();
+    const lossMonth = nextDay.getMonth() + 1;
     
-    // 選択された年月が退職月以前の場合は表示（在籍中として）
-    if (year < resignationYear || (year === resignationYear && month <= resignationMonth)) {
+    // 選択された年月が資格喪失年月日の前月以前の場合は表示（在籍中として）
+    // 資格喪失年月日の前月まで社会保険料を徴収する
+    if (year < lossYear || (year === lossYear && month < lossMonth)) {
       return true;
     }
     
@@ -1753,10 +1756,13 @@ export class KyuyoDashboardComponent {
       // 任意継続終了日の月の1日を計算（終了月の前日まで徴収するため）
       const endDateMonthStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
       
-      // 退職日の翌日が属する月の1日を計算（任意継続開始月、月の途中からスタートでもその月から任意継続保険料を徴収）
-      const voluntaryStartMonth = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
+      // 任意継続開始日は退職日の翌日
+      const voluntaryStartDate = nextDay;
       
-      // 選択年月が退職日の翌日が属する月より前は表示しない
+      // 任意継続開始日が属する月の1日を計算（徴収は月単位で行うため）
+      const voluntaryStartMonth = new Date(voluntaryStartDate.getFullYear(), voluntaryStartDate.getMonth(), 1);
+      
+      // 選択年月が任意継続開始日が属する月より前は表示しない
       if (selectedDate < voluntaryStartMonth) {
         return false;
       }
@@ -1903,8 +1909,43 @@ export class KyuyoDashboardComponent {
           })
           .map(async (item: any) => {
             // 給与設定履歴から該当年月以前の最新の固定的賃金を取得
-            const relevantSalaries = this.salaryHistory
-              .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
+            // 退職済み社員の場合は、資格喪失年月日の前月までの給与設定のみ使用
+            let relevantSalaries = this.salaryHistory
+              .filter((s: any) => s['employeeNumber'] === item.employeeNumber);
+            
+            // 退職済み社員の場合、資格喪失年月日の前月までの給与設定のみ使用
+            if ((item.employmentStatus === '退職' || item.employmentStatus === '退職済み') && 
+                item.resignationDate && 
+                item.healthInsuranceType !== '任意継続被保険者') {
+              let resignation: Date | null = null;
+              if (item.resignationDate instanceof Date) {
+                resignation = item.resignationDate;
+              } else if (item.resignationDate && typeof item.resignationDate.toDate === 'function') {
+                resignation = item.resignationDate.toDate();
+              } else if (typeof item.resignationDate === 'string') {
+                resignation = new Date(item.resignationDate);
+              }
+              
+              if (resignation && !isNaN(resignation.getTime())) {
+                // 資格喪失年月日を計算（退職日の翌日）
+                const nextDay = new Date(resignation);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const lossYear = nextDay.getFullYear();
+                const lossMonth = nextDay.getMonth() + 1;
+                
+                // 資格喪失年月日の前月までの給与設定のみ使用
+                relevantSalaries = relevantSalaries.filter((s: any) => {
+                  const salaryYear = Number(s['year']);
+                  const salaryMonth = Number(s['month']);
+                  if (salaryYear < lossYear) return true;
+                  if (salaryYear === lossYear && salaryMonth < lossMonth) return true;
+                  return false;
+                });
+              }
+            }
+            
+            // 該当年月以前の最新の給与設定を取得
+            relevantSalaries = relevantSalaries
               .filter((s: any) => {
                 const salaryYear = Number(s['year']);
                 const salaryMonth = Number(s['month']);
@@ -1939,12 +1980,13 @@ export class KyuyoDashboardComponent {
               }
               
               if (resignation && !isNaN(resignation.getTime())) {
-                // 退職日の翌日を計算
+                // 任意継続開始日は退職日の翌日
                 const nextDay = new Date(resignation);
                 nextDay.setDate(nextDay.getDate() + 1);
+                const voluntaryStartDate = nextDay;
                 
-                // 退職日の翌日が属する月の1日を計算（任意継続開始月）
-                const voluntaryStartMonth = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
+                // 任意継続開始日が属する月の1日を計算（徴収は月単位で行うため）
+                const voluntaryStartMonth = new Date(voluntaryStartDate.getFullYear(), voluntaryStartDate.getMonth(), 1);
                 
                 // 任意継続終了日を計算
                 let endDate: Date;
@@ -1957,18 +1999,18 @@ export class KyuyoDashboardComponent {
                     endDate = new Date(voluntaryInsuranceEndDate);
                   } else {
                     // フォールバック：2年後
-                    endDate = new Date(nextDay);
+                    endDate = new Date(voluntaryStartDate);
                     endDate.setFullYear(endDate.getFullYear() + 2);
                   }
                 } else {
                   // 任意継続終了日が設定されていない場合は2年後
-                  endDate = new Date(nextDay);
+                  endDate = new Date(voluntaryStartDate);
                   endDate.setFullYear(endDate.getFullYear() + 2);
                 }
                 
                 if (isNaN(endDate.getTime())) {
                   // 終了日が無効な場合は2年後を使用
-                  endDate = new Date(nextDay);
+                  endDate = new Date(voluntaryStartDate);
                   endDate.setFullYear(endDate.getFullYear() + 2);
                 }
                 
@@ -1978,7 +2020,7 @@ export class KyuyoDashboardComponent {
                 // 任意継続終了日の月の1日を計算（終了月の前日まで徴収するため）
                 const endDateMonthStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
                 
-                // 任意継続開始月は、退職日の翌日が属する月から開始（月の途中からスタートでもその月から任意継続保険料を徴収）
+                // 任意継続開始日は退職日の翌日。徴収はその日が属する月から開始
                 // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
                 if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
                   if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
@@ -1994,19 +2036,22 @@ export class KyuyoDashboardComponent {
             }
             
             if (isVoluntaryContinuation) {
-              // 退職時の固定的賃金を取得（退職月以前の最新の給与設定）
+              // 退職時の固定的賃金を取得（資格喪失年月日の前月以前の最新の給与設定）
               if (resignation && !isNaN(resignation.getTime())) {
-                const resignationYear = resignation.getFullYear();
-                const resignationMonth = resignation.getMonth() + 1;
+                // 資格喪失年月日を計算（退職日の翌日）
+                const nextDay = new Date(resignation);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const lossYear = nextDay.getFullYear();
+                const lossMonth = nextDay.getMonth() + 1;
                 
-                // 退職月以前の最新の給与設定を取得
+                // 資格喪失年月日の前月以前の最新の給与設定を取得
                 const preResignationSalaries = this.salaryHistory
                   .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
                   .filter((s: any) => {
                     const salaryYear = Number(s['year']);
                     const salaryMonth = Number(s['month']);
-                    if (salaryYear < resignationYear) return true;
-                    if (salaryYear === resignationYear && salaryMonth <= resignationMonth) return true;
+                    if (salaryYear < lossYear) return true;
+                    if (salaryYear === lossYear && salaryMonth < lossMonth) return true;
                     return false;
                   })
                   .sort((a: any, b: any) => {
@@ -2064,17 +2109,34 @@ export class KyuyoDashboardComponent {
               // 32万円以下の場合はその値を採用し、32万円を超える場合は32万円に制限
               // 標準報酬月額変更情報があっても、32万円の上限を優先する
               
-              // 退職時の固定的賃金を再取得
-              const relevantSalariesForResignation = this.salaryHistory
-                .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
-                .sort((a: any, b: any) => {
-                  if (a['year'] !== b['year']) return b['year'] - a['year'];
-                  return b['month'] - a['month'];
-                });
-              
-              const latestSalaryBeforeResignation = relevantSalariesForResignation.length > 0 
-                ? relevantSalariesForResignation[0]['amount'] 
-                : item.fixedSalary;
+              // 退職時の固定的賃金を再取得（資格喪失年月日の前月以前の最新の給与設定）
+              let latestSalaryBeforeResignation = item.fixedSalary;
+              if (resignation && !isNaN(resignation.getTime())) {
+                // 資格喪失年月日を計算（退職日の翌日）
+                const nextDay = new Date(resignation);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const lossYear = nextDay.getFullYear();
+                const lossMonth = nextDay.getMonth() + 1;
+                
+                // 資格喪失年月日の前月以前の最新の給与設定を取得
+                const relevantSalariesForResignation = this.salaryHistory
+                  .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
+                  .filter((s: any) => {
+                    const salaryYear = Number(s['year']);
+                    const salaryMonth = Number(s['month']);
+                    if (salaryYear < lossYear) return true;
+                    if (salaryYear === lossYear && salaryMonth < lossMonth) return true;
+                    return false;
+                  })
+                  .sort((a: any, b: any) => {
+                    if (a['year'] !== b['year']) return b['year'] - a['year'];
+                    return b['month'] - a['month'];
+                  });
+                
+                latestSalaryBeforeResignation = relevantSalariesForResignation.length > 0 
+                  ? relevantSalariesForResignation[0]['amount'] 
+                  : item.fixedSalary;
+              }
               
               const standardSalaryInfo = this.calculateStandardMonthlySalary(latestSalaryBeforeResignation);
               standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
@@ -2347,12 +2409,13 @@ export class KyuyoDashboardComponent {
                 }
                 
                 if (resignation && !isNaN(resignation.getTime())) {
-                  // 退職日の翌日を計算
+                  // 任意継続開始日は退職日の翌日
                   const nextDay = new Date(resignation);
                   nextDay.setDate(nextDay.getDate() + 1);
+                  const voluntaryStartDate = nextDay;
                   
-                  // 退職日の翌日が属する月の1日を計算（任意継続開始月）
-                  const voluntaryStartMonth = new Date(nextDay.getFullYear(), nextDay.getMonth(), 1);
+                  // 任意継続開始日が属する月の1日を計算（徴収は月単位で行うため）
+                  const voluntaryStartMonth = new Date(voluntaryStartDate.getFullYear(), voluntaryStartDate.getMonth(), 1);
                   
                   // 任意継続終了日を計算
                   let endDate: Date;
@@ -2365,18 +2428,18 @@ export class KyuyoDashboardComponent {
                       endDate = new Date(voluntaryInsuranceEndDate);
                     } else {
                       // フォールバック：2年後
-                      endDate = new Date(nextDay);
+                      endDate = new Date(voluntaryStartDate);
                       endDate.setFullYear(endDate.getFullYear() + 2);
                     }
                   } else {
                     // 任意継続終了日が設定されていない場合は2年後
-                    endDate = new Date(nextDay);
+                    endDate = new Date(voluntaryStartDate);
                     endDate.setFullYear(endDate.getFullYear() + 2);
                   }
                   
                   if (isNaN(endDate.getTime())) {
                     // 終了日が無効な場合は2年後を使用
-                    endDate = new Date(nextDay);
+                    endDate = new Date(voluntaryStartDate);
                     endDate.setFullYear(endDate.getFullYear() + 2);
                   }
                   
@@ -2386,7 +2449,7 @@ export class KyuyoDashboardComponent {
                   // 任意継続終了日の月の1日を計算（終了月の前日まで徴収するため）
                   const endDateMonthStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
                   
-                  // 任意継続開始月は、退職日の翌日が属する月から開始（月の途中からスタートでもその月から任意継続保険料を徴収）
+                  // 任意継続開始日は退職日の翌日。徴収はその日が属する月から開始
                   // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
                   if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
                     if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {

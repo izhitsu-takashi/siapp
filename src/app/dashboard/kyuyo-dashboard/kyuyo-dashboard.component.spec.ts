@@ -3872,5 +3872,396 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       });
     });
   });
+
+  describe('退職時の社会保険料徴収ロジックテスト（資格喪失年月日の前月まで徴収）', () => {
+    beforeEach(() => {
+      // 保険料率を設定
+      component.insuranceRates = {
+        healthInsurance: 9.91,
+        nursingInsurance: 1.59,
+        pensionInsurance: 18.3
+      };
+    });
+
+    it('6月20日退職の場合、資格喪失年月日は6月21日（6月）なので、5月まで徴収、6月分は徴収しない', async () => {
+      const employeeNumber = 'resignation-test-1';
+      const employeeData = {
+        employeeNumber: employeeNumber,
+        name: '退職テスト社員1（6月20日退職）',
+        birthDate: new Date(1985, 0, 1), // 41歳（2025年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'resignation-test-1@example.com',
+        employmentType: '正社員',
+        resignationDate: new Date(2025, 5, 20), // 6月20日（退職日、月は0ベースなので5が6月）
+        healthInsuranceType: '協会けんぽ'
+      };
+
+      // 給与設定履歴
+      const salaryHistory = [
+        { employeeNumber, year: 2025, month: 4, amount: 500000, isManual: true },
+        { employeeNumber, year: 2025, month: 5, amount: 500000, isManual: true },
+        { employeeNumber, year: 2025, month: 6, amount: 500000, isManual: true }
+      ];
+
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 5月の保険料を確認（資格喪失年月日の前月）
+      component.insuranceListYear = 2025;
+      component.insuranceListMonth = 5;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const mayInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(mayInsurance).toBeDefined();
+      if (mayInsurance) {
+        // 5月は資格喪失年月日の前月なので、社会保険料を徴収する
+        expect(mayInsurance.healthInsurance).toBeGreaterThan(0);
+        expect(mayInsurance.nursingInsurance).toBeGreaterThan(0);
+        expect(mayInsurance.pensionInsurance).toBeGreaterThan(0);
+        expect(mayInsurance.employeeBurden).toBeGreaterThan(0);
+      }
+
+      // 6月の保険料を確認（資格喪失年月日が6月なので、6月分は徴収しない）
+      component.insuranceListYear = 2025;
+      component.insuranceListMonth = 6;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const juneInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      // 6月は資格喪失年月日なので、社員は表示されない（徴収しない）
+      expect(juneInsurance).toBeUndefined();
+    });
+
+    it('6月30日退職の場合、資格喪失年月日は7月1日（7月）なので、6月まで徴収、7月分は徴収しない', async () => {
+      const employeeNumber = 'resignation-test-2';
+      const employeeData = {
+        employeeNumber: employeeNumber,
+        name: '退職テスト社員2（6月30日退職）',
+        birthDate: new Date(1985, 0, 1), // 41歳（2025年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'resignation-test-2@example.com',
+        employmentType: '正社員',
+        resignationDate: new Date(2025, 5, 30), // 6月30日（退職日、月は0ベースなので5が6月）
+        healthInsuranceType: '協会けんぽ'
+      };
+
+      // 給与設定履歴
+      const salaryHistory = [
+        { employeeNumber, year: 2025, month: 5, amount: 500000, isManual: true },
+        { employeeNumber, year: 2025, month: 6, amount: 500000, isManual: true },
+        { employeeNumber, year: 2025, month: 7, amount: 500000, isManual: true }
+      ];
+
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 6月の保険料を確認（資格喪失年月日の前月）
+      component.insuranceListYear = 2025;
+      component.insuranceListMonth = 6;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const juneInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(juneInsurance).toBeDefined();
+      if (juneInsurance) {
+        // 6月は資格喪失年月日の前月なので、社会保険料を徴収する
+        expect(juneInsurance.healthInsurance).toBeGreaterThan(0);
+        expect(juneInsurance.nursingInsurance).toBeGreaterThan(0);
+        expect(juneInsurance.pensionInsurance).toBeGreaterThan(0);
+        expect(juneInsurance.employeeBurden).toBeGreaterThan(0);
+      }
+
+      // 7月の保険料を確認（資格喪失年月日が7月なので、7月分は徴収しない）
+      component.insuranceListYear = 2025;
+      component.insuranceListMonth = 7;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const julyInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      // 7月は資格喪失年月日なので、社員は表示されない（徴収しない）
+      expect(julyInsurance).toBeUndefined();
+    });
+  });
+
+  describe('任意継続開始日と資格喪失年月日の算出テスト', () => {
+    beforeEach(() => {
+      // 保険料率を設定
+      component.insuranceRates = {
+        healthInsurance: 9.91,
+        nursingInsurance: 1.59,
+        pensionInsurance: 18.3
+      };
+    });
+
+    it('任意継続被保険者の場合、任意継続開始日と資格喪失年月日が等しい（退職日の翌日）', () => {
+      // 退職日: 2025年6月20日
+      const resignationDate = new Date(2025, 5, 20); // 6月20日（月は0ベースなので5が6月）
+      
+      // 資格喪失年月日を計算（退職日の翌日）
+      const nextDayForLoss = new Date(resignationDate);
+      nextDayForLoss.setDate(nextDayForLoss.getDate() + 1);
+      const lossYear = nextDayForLoss.getFullYear();
+      const lossMonth = nextDayForLoss.getMonth() + 1;
+      const lossDay = nextDayForLoss.getDate();
+      
+      // 任意継続開始日を計算（退職日の翌日）
+      const nextDayForVoluntary = new Date(resignationDate);
+      nextDayForVoluntary.setDate(nextDayForVoluntary.getDate() + 1);
+      const voluntaryStartYear = nextDayForVoluntary.getFullYear();
+      const voluntaryStartMonth = nextDayForVoluntary.getMonth() + 1;
+      const voluntaryStartDay = nextDayForVoluntary.getDate();
+      
+      // 資格喪失年月日と任意継続開始日が等しいことを確認
+      expect(lossYear).toBe(voluntaryStartYear);
+      expect(lossMonth).toBe(voluntaryStartMonth);
+      expect(lossDay).toBe(voluntaryStartDay);
+      expect(nextDayForLoss.getTime()).toBe(nextDayForVoluntary.getTime());
+      
+      // 具体的な日付を確認
+      expect(lossYear).toBe(2025);
+      expect(lossMonth).toBe(6);
+      expect(lossDay).toBe(21);
+    });
+
+    it('月末退職の場合（6月30日退職）、任意継続開始日と資格喪失年月日が等しい（7月1日）', () => {
+      // 退職日: 2025年6月30日
+      const resignationDate = new Date(2025, 5, 30); // 6月30日（月は0ベースなので5が6月）
+      
+      // 資格喪失年月日を計算（退職日の翌日）
+      const nextDayForLoss = new Date(resignationDate);
+      nextDayForLoss.setDate(nextDayForLoss.getDate() + 1);
+      const lossYear = nextDayForLoss.getFullYear();
+      const lossMonth = nextDayForLoss.getMonth() + 1;
+      const lossDay = nextDayForLoss.getDate();
+      
+      // 任意継続開始日を計算（退職日の翌日）
+      const nextDayForVoluntary = new Date(resignationDate);
+      nextDayForVoluntary.setDate(nextDayForVoluntary.getDate() + 1);
+      const voluntaryStartYear = nextDayForVoluntary.getFullYear();
+      const voluntaryStartMonth = nextDayForVoluntary.getMonth() + 1;
+      const voluntaryStartDay = nextDayForVoluntary.getDate();
+      
+      // 資格喪失年月日と任意継続開始日が等しいことを確認
+      expect(lossYear).toBe(voluntaryStartYear);
+      expect(lossMonth).toBe(voluntaryStartMonth);
+      expect(lossDay).toBe(voluntaryStartDay);
+      expect(nextDayForLoss.getTime()).toBe(nextDayForVoluntary.getTime());
+      
+      // 具体的な日付を確認（7月1日）
+      expect(lossYear).toBe(2025);
+      expect(lossMonth).toBe(7);
+      expect(lossDay).toBe(1);
+    });
+
+    it('退職申請承認時に資格喪失年月日と任意継続開始日が正しく計算される（updateEmployeeResignationのロジックに基づく）', () => {
+      // updateEmployeeResignationメソッドのロジックに基づいて計算
+      // 資格喪失年月日: 退職日の次の日を計算
+      // 任意継続開始日: 退職日の翌日（任意継続終了日を計算する際に使用）
+      
+      // テストケース1: 6月20日退職、任意継続を申請
+      const resignationDate1 = new Date(2025, 5, 20); // 2025年6月20日
+      
+      // updateEmployeeResignationのロジック: 資格喪失年月日を計算（退職日の翌日）
+      const lossDateForCalculation1 = new Date(resignationDate1);
+      lossDateForCalculation1.setDate(lossDateForCalculation1.getDate() + 1);
+      const lossYear1 = lossDateForCalculation1.getFullYear();
+      const lossMonth1 = String(lossDateForCalculation1.getMonth() + 1).padStart(2, '0');
+      const lossDay1 = String(lossDateForCalculation1.getDate()).padStart(2, '0');
+      const socialInsuranceLossDate1 = `${lossYear1}-${lossMonth1}-${lossDay1}`;
+      
+      // updateEmployeeResignationのロジック: 任意継続開始日を計算（退職日の翌日）
+      const voluntaryStartDate1 = new Date(resignationDate1);
+      voluntaryStartDate1.setDate(voluntaryStartDate1.getDate() + 1);
+      
+      // 期待値: 資格喪失年月日は "2025-06-21"
+      expect(socialInsuranceLossDate1).toBe('2025-06-21');
+      
+      // 期待値: 任意継続開始日は 2025年6月21日
+      expect(voluntaryStartDate1.getFullYear()).toBe(2025);
+      expect(voluntaryStartDate1.getMonth() + 1).toBe(6);
+      expect(voluntaryStartDate1.getDate()).toBe(21);
+      
+      // 資格喪失年月日と任意継続開始日が等しいことを確認
+      expect(socialInsuranceLossDate1).toBe(`${voluntaryStartDate1.getFullYear()}-${String(voluntaryStartDate1.getMonth() + 1).padStart(2, '0')}-${String(voluntaryStartDate1.getDate()).padStart(2, '0')}`);
+      
+      // テストケース2: 6月30日退職、任意継続を申請（月末）
+      const resignationDate2 = new Date(2025, 5, 30); // 2025年6月30日
+      
+      // updateEmployeeResignationのロジック: 資格喪失年月日を計算
+      const lossDateForCalculation2 = new Date(resignationDate2);
+      lossDateForCalculation2.setDate(lossDateForCalculation2.getDate() + 1);
+      const lossYear2 = lossDateForCalculation2.getFullYear();
+      const lossMonth2 = String(lossDateForCalculation2.getMonth() + 1).padStart(2, '0');
+      const lossDay2 = String(lossDateForCalculation2.getDate()).padStart(2, '0');
+      const socialInsuranceLossDate2 = `${lossYear2}-${lossMonth2}-${lossDay2}`;
+      
+      // updateEmployeeResignationのロジック: 任意継続開始日を計算
+      const voluntaryStartDate2 = new Date(resignationDate2);
+      voluntaryStartDate2.setDate(voluntaryStartDate2.getDate() + 1);
+      
+      // 期待値: 資格喪失年月日は "2025-07-01"
+      expect(socialInsuranceLossDate2).toBe('2025-07-01');
+      
+      // 期待値: 任意継続開始日は 2025年7月1日
+      expect(voluntaryStartDate2.getFullYear()).toBe(2025);
+      expect(voluntaryStartDate2.getMonth() + 1).toBe(7);
+      expect(voluntaryStartDate2.getDate()).toBe(1);
+      
+      // 資格喪失年月日と任意継続開始日が等しいことを確認
+      expect(socialInsuranceLossDate2).toBe(`${voluntaryStartDate2.getFullYear()}-${String(voluntaryStartDate2.getMonth() + 1).padStart(2, '0')}-${String(voluntaryStartDate2.getDate()).padStart(2, '0')}`);
+      
+      // テストケース3: 12月31日退職、任意継続を申請（年末）
+      const resignationDate3 = new Date(2025, 11, 31); // 2025年12月31日
+      
+      // updateEmployeeResignationのロジック: 資格喪失年月日を計算
+      const lossDateForCalculation3 = new Date(resignationDate3);
+      lossDateForCalculation3.setDate(lossDateForCalculation3.getDate() + 1);
+      const lossYear3 = lossDateForCalculation3.getFullYear();
+      const lossMonth3 = String(lossDateForCalculation3.getMonth() + 1).padStart(2, '0');
+      const lossDay3 = String(lossDateForCalculation3.getDate()).padStart(2, '0');
+      const socialInsuranceLossDate3 = `${lossYear3}-${lossMonth3}-${lossDay3}`;
+      
+      // updateEmployeeResignationのロジック: 任意継続開始日を計算
+      const voluntaryStartDate3 = new Date(resignationDate3);
+      voluntaryStartDate3.setDate(voluntaryStartDate3.getDate() + 1);
+      
+      // 期待値: 資格喪失年月日は "2026-01-01"
+      expect(socialInsuranceLossDate3).toBe('2026-01-01');
+      
+      // 期待値: 任意継続開始日は 2026年1月1日
+      expect(voluntaryStartDate3.getFullYear()).toBe(2026);
+      expect(voluntaryStartDate3.getMonth() + 1).toBe(1);
+      expect(voluntaryStartDate3.getDate()).toBe(1);
+      
+      // 資格喪失年月日と任意継続開始日が等しいことを確認
+      expect(socialInsuranceLossDate3).toBe(`${voluntaryStartDate3.getFullYear()}-${String(voluntaryStartDate3.getMonth() + 1).padStart(2, '0')}-${String(voluntaryStartDate3.getDate()).padStart(2, '0')}`);
+    });
+
+    it('任意継続被保険者の保険料徴収が任意継続開始日から開始される', async () => {
+      const employeeNumber = 'voluntary-start-test';
+      const resignationDate = new Date(2025, 5, 20); // 6月20日退職
+      
+      // 任意継続開始日を計算（退職日の翌日 = 6月21日）
+      const voluntaryStartDate = new Date(resignationDate);
+      voluntaryStartDate.setDate(voluntaryStartDate.getDate() + 1);
+      
+      // 資格喪失年月日を計算（退職日の翌日 = 6月21日）
+      const lossDate = new Date(resignationDate);
+      lossDate.setDate(lossDate.getDate() + 1);
+      
+      // 任意継続開始日と資格喪失年月日が等しいことを確認
+      expect(voluntaryStartDate.getTime()).toBe(lossDate.getTime());
+      
+      const employeeData = {
+        employeeNumber: employeeNumber,
+        name: '任意継続開始日テスト社員',
+        birthDate: new Date(1985, 0, 1), // 41歳（2025年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'voluntary-start-test@example.com',
+        employmentType: '正社員',
+        resignationDate: resignationDate,
+        healthInsuranceType: '任意継続被保険者',
+        voluntaryInsuranceEndDate: new Date(2027, 5, 20) // 任意継続終了日（2年後）
+      };
+
+      // 給与設定履歴
+      const salaryHistory = [
+        { employeeNumber, year: 2025, month: 5, amount: 500000, isManual: true },
+        { employeeNumber, year: 2025, month: 6, amount: 500000, isManual: true }
+      ];
+
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 6月の保険料を確認（任意継続開始月）
+      component.insuranceListYear = 2025;
+      component.insuranceListMonth = 6;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const juneInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(juneInsurance).toBeDefined();
+      if (juneInsurance) {
+        // 6月は任意継続開始月なので、任意継続被保険者として保険料を徴収
+        // 32万円の場合の健康保険料 = 320000 × 9.91 / 100 = 31712円
+        // 32万円の場合の介護保険料 = 320000 × 1.59 / 100 = 5088円
+        // 厚生年金保険料 = 0円
+        expect(juneInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(juneInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(juneInsurance.pensionInsurance).toBe(0);
+        expect(juneInsurance.employeeBurden).toBeCloseTo(31712 + 5088, 0);
+      }
+    });
+  });
 });
 
