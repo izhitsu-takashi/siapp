@@ -4023,6 +4023,21 @@ export class EmployeeDashboardComponent implements OnDestroy {
         });
       }
       
+      // overseasReasonが「その他」の選択肢に一致しない場合（overseasReasonOtherの値が直接保存されている場合）
+      const validOverseasReasons = ['留学', '同行家族', '特定活動', '海外婚姻', 'その他'];
+      let savedOverseasReason = application.overseasReason || '';
+      let savedOverseasReasonOther = application.overseasReasonOther || '';
+      
+      if (application.isOverseasResident === 'はい' && savedOverseasReason && !validOverseasReasons.includes(savedOverseasReason)) {
+        // overseasReasonOtherの値がoverseasReasonに保存されている場合
+        savedOverseasReasonOther = savedOverseasReason;
+        savedOverseasReason = 'その他';
+        this.dependentApplicationForm.patchValue({
+          overseasReason: 'その他',
+          overseasReasonOther: savedOverseasReasonOther
+        });
+      }
+      
       // 添付ファイルのURLとファイル名を保持（配偶者以外の場合）
       if (application.relationshipType === '配偶者以外') {
         // マイナンバーカードファイルのURLとファイル名を保持
@@ -4052,8 +4067,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
       
       // overseasReasonを設定した後に、海外居住者関連のバリデーションを更新
       // これにより、overseasReasonが正しく保持される
-      const savedOverseasReason = application.overseasReason || '';
-      const savedOverseasReasonOther = application.overseasReasonOther || '';
       this.onDependentOverseasResidentChange();
       // 値が設定されている場合は復元（isOverseasResidentが「はい」の場合のみ）
       if (application.isOverseasResident === 'はい' && savedOverseasReason) {
@@ -4553,27 +4566,13 @@ export class EmployeeDashboardComponent implements OnDestroy {
           const formValue = this.dependentApplicationForm.value;
           const relationshipType = formValue.relationshipType;
           
-          // デバッグログ：再申請時のマイナンバー情報
-          console.log('=== 再申請時のマイナンバー情報 ===');
-          console.log('relationshipType:', relationshipType);
-          console.log('myNumberParts:', [
-            this.dependentApplicationForm.get('myNumberPart1')?.value || '',
-            this.dependentApplicationForm.get('myNumberPart2')?.value || '',
-            this.dependentApplicationForm.get('myNumberPart3')?.value || ''
-          ]);
-          console.log('結合後のmyNumber:', myNumber);
-          console.log('provideMyNumber:', formValue.provideMyNumber);
-          console.log('myNumberCardFileUrl:', myNumberCardFileUrl);
-          console.log('myNumberCardFileName:', myNumberCardFileName);
-          console.log('myNumberCardFile (selectedApplication):', this.selectedApplication.myNumberCardFile);
-          console.log('myNumberCardFileName (selectedApplication):', this.selectedApplication.myNumberCardFileName);
-          console.log('====================================');
-          
           // マイナンバーの保存処理（配偶者と配偶者以外で分岐）
           let savedMyNumber: string | null = null;
           if (relationshipType === '配偶者') {
             // 配偶者の場合：提供するを選択した場合のみ保存
-            savedMyNumber = formValue.provideMyNumber === '提供する' ? (myNumber || null) : null;
+            // マイナンバーが入力されている場合は自動的に「提供する」と判断
+            const shouldProvideMyNumber = formValue.provideMyNumber === '提供する' || (myNumber && myNumber.length > 0);
+            savedMyNumber = shouldProvideMyNumber ? (myNumber || null) : null;
           } else {
             // 配偶者以外の場合：マイナンバーをそのまま保存（空文字列の場合はnull）
             savedMyNumber = myNumber && myNumber.length > 0 ? myNumber : null;
@@ -4593,6 +4592,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
             basicPensionNumberDocFileUrl: basicPensionNumberDocFileUrl,
             basicPensionNumberDocFileName: basicPensionNumberDocFileName,
             myNumber: savedMyNumber,
+            myNumberPart1: formValue.myNumberPart1 || '',
+            myNumberPart2: formValue.myNumberPart2 || '',
+            myNumberPart3: formValue.myNumberPart3 || '',
             myNumberCardFileUrl: myNumberCardFileUrl,
             myNumberCardFile: finalMyNumberCardFileName,
             myNumberCardFileName: finalMyNumberCardFileName,
@@ -4608,13 +4610,6 @@ export class EmployeeDashboardComponent implements OnDestroy {
             applicationType: '扶養家族追加'
           };
           
-          // デバッグログ：保存される申請データ
-          console.log('=== 保存される再申請データ ===');
-          console.log('myNumber:', applicationData.myNumber);
-          console.log('myNumberCardFileUrl:', applicationData.myNumberCardFileUrl);
-          console.log('myNumberCardFile:', applicationData.myNumberCardFile);
-          console.log('myNumberCardFileName:', applicationData.myNumberCardFileName);
-          console.log('================================');
         }
       } else if (this.selectedApplication.applicationType === '扶養削除申請') {
         formValid = this.dependentRemovalForm.valid;

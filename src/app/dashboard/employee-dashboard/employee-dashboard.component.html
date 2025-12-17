@@ -4437,9 +4437,13 @@
               </div>
               <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい'">
                 <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ (selectedApplication.overseasReason && !['留学', '同行家族', '特定活動', '海外婚姻', 'その他'].includes(selectedApplication.overseasReason)) ? 'その他' : (selectedApplication.overseasReason || '-') }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason && !['留学', '同行家族', '特定活動', '海外婚姻', 'その他'].includes(selectedApplication.overseasReason)">
+                <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.overseasReason || '-' }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason === 'その他'">
+              <div class="detail-item" *ngIf="selectedApplication.isOverseasResident === 'はい' && selectedApplication.overseasReason === 'その他' && selectedApplication.overseasReasonOther">
                 <span class="detail-label">その他:</span>
                 <span class="detail-value">{{ selectedApplication.overseasReasonOther || '-' }}</span>
               </div>
