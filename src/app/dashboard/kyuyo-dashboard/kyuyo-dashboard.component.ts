@@ -1115,12 +1115,30 @@ export class KyuyoDashboardComponent {
       
       // 誕生日が1日の場合
       if (birthDay === 1) {
-        // 誕生月の前月から年齢を加算（フィルター月 >= 誕生月 - 1なら年齢を加算）
-        if (month >= birthMonth - 1) {
-          // 年齢はそのまま（既に加算済み）
+        // 74歳から75歳になる場合のみ、前月から年齢を加算しない（75歳になる月から年齢を加算）
+        // 誕生月の前月で基本年齢が74歳の場合、次の月（誕生月）で75歳になる
+        const isTurning75PreviousMonth = age === 74 && month === birthMonth - 1;
+        const isTurning75BirthMonth = age === 74 && month === birthMonth;
+        const isAfterTurning75 = age === 74 && month > birthMonth;
+        const isAlready75 = age === 75;
+        
+        if (isTurning75PreviousMonth) {
+          // 74歳→75歳になる前月の場合：前月から年齢を加算しない（74歳のまま）
+          age = 74;
+        } else if (isTurning75BirthMonth || isAfterTurning75) {
+          // 74歳→75歳になる誕生月以降の場合：75歳にする
+          age = 75;
+        } else if (isAlready75) {
+          // 既に75歳以上の場合：75歳のまま
+          age = 75;
         } else {
-          // フィルター月 < 誕生月 - 1の場合は1歳減らす
-          age--;
+          // それ以外の場合：誕生月の前月から年齢を加算
+          if (month >= birthMonth - 1) {
+            // 年齢はそのまま（既に加算済み）
+          } else {
+            // フィルター月 < 誕生月 - 1の場合は1歳減らす
+            age--;
+          }
         }
       } else {
         // 誕生日が1日でない場合
@@ -1359,7 +1377,9 @@ export class KyuyoDashboardComponent {
             
             // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
             // 小数第2位まで保持（表示用）
-            const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
+            // 健康保険料：75歳以上の場合は0円
+            const isHealthInsuranceTarget = age !== null && age < 75;
+            const healthInsuranceRaw = isHealthInsuranceTarget ? standardMonthlySalary * (healthInsuranceRate / 100) : 0;
             // 介護保険料：40歳未満または65歳以上の場合は0円
             const nursingInsuranceRaw = isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0;
             // 厚生年金保険料：70歳以上の場合は0円
@@ -2071,7 +2091,9 @@ export class KyuyoDashboardComponent {
             }
             
             // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
-            const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
+            // 健康保険料：75歳以上の場合は0円
+            const isHealthInsuranceTarget = age !== null && age < 75;
+            const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isHealthInsuranceTarget ? standardMonthlySalary * (healthInsuranceRate / 100) : 0);
             // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
             const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
             // 厚生年金保険料：70歳以上の場合は0円
@@ -2387,7 +2409,9 @@ export class KyuyoDashboardComponent {
               const isNursingInsuranceTarget = age !== null && age >= 40 && age < 65;
               
               // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
-              const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
+              // 健康保険料：75歳以上の場合は0円
+              const isHealthInsuranceTarget = age !== null && age < 75;
+              const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isHealthInsuranceTarget ? healthNursingStandardBonusAmount * (healthInsuranceRate / 100) : 0);
               // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
               const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
               // 厚生年金保険料：70歳以上の場合は0円
@@ -5153,37 +5177,9 @@ export class KyuyoDashboardComponent {
             ? employeeData.birthDate 
             : (employeeData.birthDate.toDate ? employeeData.birthDate.toDate() : new Date(employeeData.birthDate));
           
-          // フィルター年月の1日を基準に年齢を計算
+          // フィルター年月での年齢を計算（calculateAgeAtDateメソッドを使用）
           if (birthDate && !isNaN(birthDate.getTime())) {
-            const filterDate = new Date(filterYear, filterMonth - 1, 1);
-            const birthYear = birthDate.getFullYear();
-            const birthMonth = birthDate.getMonth() + 1; // 1-12の範囲
-            const birthDay = birthDate.getDate();
-            
-            // 基本年齢 = フィルター年 - 誕生年
-            age = filterYear - birthYear;
-            
-            // 誕生日が1日の場合
-            if (birthDay === 1) {
-              // 誕生月の前月から年齢を加算（フィルター月 >= 誕生月 - 1なら年齢を加算）
-              if (filterMonth >= birthMonth - 1) {
-                // 年齢はそのまま（既に加算済み）
-              } else {
-                // フィルター月 < 誕生月 - 1の場合は1歳減らす
-                age--;
-              }
-            } else {
-              // 誕生日が1日でない場合
-              // 誕生月がフィルターしている年月なら年齢を加算
-              if (filterMonth > birthMonth) {
-                // 年齢はそのまま（既に加算済み）
-              } else if (filterMonth === birthMonth) {
-                // 誕生月なので年齢を加算（そのまま）
-              } else {
-                // フィルター月 < 誕生月の場合は1歳減らす
-                age--;
-              }
-            }
+            age = this.calculateAgeAtDate(birthDate, filterYear, filterMonth);
           }
         }
         
