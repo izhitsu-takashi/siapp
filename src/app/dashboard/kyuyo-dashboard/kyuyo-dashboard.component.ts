@@ -1362,7 +1362,9 @@ export class KyuyoDashboardComponent {
             const healthInsuranceRaw = standardMonthlySalary * (healthInsuranceRate / 100);
             // 介護保険料：40歳未満または65歳以上の場合は0円
             const nursingInsuranceRaw = isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0;
-            const pensionInsuranceRaw = pensionStandardMonthlySalary * (pensionInsuranceRate / 100);
+            // 厚生年金保険料：70歳以上の場合は0円
+            const isPensionInsuranceTarget = age !== null && age < 70;
+            const pensionInsuranceRaw = isPensionInsuranceTarget ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0;
             
             // 社員負担額を計算
             // 現金徴収する社員かどうかを判定
@@ -2072,7 +2074,9 @@ export class KyuyoDashboardComponent {
             const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
             // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
             const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
-            const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardMonthlySalary * (pensionInsuranceRate / 100));
+            // 厚生年金保険料：70歳以上の場合は0円
+            const isPensionInsuranceTarget = age !== null && age < 70;
+            const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : (isPensionInsuranceTarget ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0));
             
             // 社員負担額を計算
             let employeeBurden = 0;
@@ -2386,7 +2390,9 @@ export class KyuyoDashboardComponent {
               const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
               // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
               const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
-              const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100));
+              // 厚生年金保険料：70歳以上の場合は0円
+              const isPensionInsuranceTarget = age !== null && age < 70;
+              const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : (isPensionInsuranceTarget ? pensionStandardBonusAmount * (pensionInsuranceRate / 100) : 0));
               
               // 社員負担額を計算
               let employeeBurden = 0;
