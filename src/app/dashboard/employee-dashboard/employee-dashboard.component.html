@@ -794,6 +794,12 @@
                             {{ isDependentMyNumberVisible(i) ? '非表示' : '表示' }}
                           </button>
                         </div>
+                        <div class="info-row full-width" *ngIf="dependent.myNumberCardFileUrl">
+                          <span class="info-label">マイナンバーカード添付:</span>
+                          <span class="info-value">
+                            <a [href]="dependent.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberCardFileUrl, dependent.myNumberCardFileName) }}</a>
+                          </span>
+                        </div>
                       </div>
                       
                       <!-- 基礎年金番号 -->
