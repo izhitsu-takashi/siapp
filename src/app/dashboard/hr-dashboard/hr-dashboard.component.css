@@ -2719,20 +2719,55 @@
 .hr-dependent-card {
   background: #f0f4ff;
   border: 1px solid #d0d9ff;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+}
+
+.hr-dependent-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .hr-dependent-card .dependent-header {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 8px;
+  border: 1px solid #e0e7ff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.hr-dependent-card .dependent-header:hover {
+  background: linear-gradient(135deg, #f8f9fa 0%, #f0f4ff 100%);
+  border-color: #c0d0ff;
+}
+
+.hr-dependent-card .dependent-header .dependent-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hr-dependent-card .dependent-header .expand-icon {
+  font-size: 0.85rem;
+  color: #667eea;
+  transition: transform 0.2s ease;
+  font-weight: bold;
 }
 
 .hr-dependent-card .info-content {
   background: white;
-  border-radius: 6px;
-  padding: 1rem;
+  border-radius: 8px;
+  padding: 1.5rem;
   border: 1px solid #e0e7ff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* マイナンバー表示/非表示ボタン */
@@ -2758,14 +2793,22 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(1rem, 1.5vw, 1.5rem);
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-inquiry-layout .info-row-pair:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 .info-inquiry-layout .info-row {
   display: flex;
   align-items: flex-start;
   gap: clamp(0.5rem, 1vw, 1rem);
-  min-height: 2rem;
+  min-height: 2.25rem;
 }
 
 /* マイナンバー行の間隔を狭くする（gapを相殺） */
@@ -2778,11 +2821,18 @@
 }
 
 .info-inquiry-layout .info-label {
-  font-weight: 500;
-  color: #666;
+  font-weight: 600;
+  color: #555;
   min-width: clamp(120px, 15vw, 180px);
-  font-size: clamp(0.85rem, 1vw, 1rem);
+  font-size: clamp(0.9rem, 1vw, 1rem);
   flex-shrink: 0;
+}
+
+.info-inquiry-layout .info-value {
+  font-weight: 400;
+  color: #333;
+  font-size: clamp(0.9rem, 1vw, 1rem);
+  line-height: 1.5;
 }
 
 .info-inquiry-layout .info-value {

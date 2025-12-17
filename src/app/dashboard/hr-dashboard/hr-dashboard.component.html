@@ -2054,13 +2054,13 @@
               扶養者が登録されていません。
             </div>
             <div *ngFor="let dependent of dependents; let i = index" class="dependent-card hr-dependent-card">
-              <div class="dependent-header" (click)="toggleDependentExpanded(i)" style="cursor: pointer; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem; transition: background 0.2s ease;">
-                <h4 class="dependent-title" style="margin: 0; font-size: 1rem; font-weight: 600; color: #333; display: flex; align-items: center; justify-content: space-between;">
+              <div class="dependent-header" (click)="toggleDependentExpanded(i)">
+                <h4 class="dependent-title">
                   <span>扶養者 {{ i + 1 }}</span>
-                  <span class="expand-icon" style="font-size: 0.75rem; color: #667eea;">{{ isDependentExpanded(i) ? '▼' : '▶' }}</span>
+                  <span class="expand-icon">{{ isDependentExpanded(i) ? '▼' : '▶' }}</span>
                 </h4>
               </div>
-              <div class="info-content info-inquiry-layout" *ngIf="isDependentExpanded(i)" style="padding: 1rem;">
+              <div class="info-content info-inquiry-layout" *ngIf="isDependentExpanded(i)">
                 <!-- 配偶者の場合 -->
                 <ng-container *ngIf="dependent.relationshipType === '配偶者'">
                   <!-- 続柄（妻/夫） -->
