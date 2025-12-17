@@ -982,15 +982,30 @@ export class KyuyoDashboardComponent {
   }
   
   // 固定的賃金から厚生年金保険料計算用の標準報酬月額を計算
+  // 固定的賃金から厚生年金保険料計算用の標準報酬月額を計算
+  // 健康介護保険の標準報酬月額を計算してから、それを厚生年金保険用の等級表に適用
   calculatePensionStandardMonthlySalary(fixedSalary: number): number {
+    // まず、固定的賃金から健康介護保険の標準報酬月額を計算
+    const healthStandardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
+    if (!healthStandardSalaryInfo) {
+      return 0;
+    }
+    
+    const healthStandardMonthlySalary = healthStandardSalaryInfo.monthlyStandard;
+    
+    // 健康介護保険の標準報酬月額を厚生年金保険用の等級表に適用
+    return this.calculatePensionStandardMonthlySalaryFromStandard(healthStandardMonthlySalary);
+  }
+
+  // 標準報酬月額から厚生年金保険料計算用の標準報酬月額を計算
+  // 健康介護保険の標準報酬月額を厚生年金保険用の等級表に適用
+  calculatePensionStandardMonthlySalaryFromStandard(standardMonthlySalary: number): number {
     if (!this.gradeTable || !this.gradeTable.kouseinenkinReiwa7) {
       // kouseinenkinReiwa7が存在しない場合は、従来のロジック（88000円未満の場合は88000円）を使用
-      const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
-      const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
       return standardMonthlySalary < 88000 ? 88000 : standardMonthlySalary;
     }
     
-    const salary = Number(fixedSalary) || 0;
+    const salary = Number(standardMonthlySalary) || 0;
     const pensionGradeList = this.gradeTable.kouseinenkinReiwa7;
     
     // from ~ to の範囲内に当てはまる等級を検索
@@ -1010,10 +1025,8 @@ export class KyuyoDashboardComponent {
       }
     }
     
-    // フォールバック: 従来のロジック
-    const standardSalaryInfo = this.calculateStandardMonthlySalary(fixedSalary);
-    const standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
-    return standardMonthlySalary < 88000 ? 88000 : standardMonthlySalary;
+    // フォールバック: 従来のロジック（88000円未満の場合は88000円）
+    return salary < 88000 ? 88000 : salary;
   }
 
   // 50円単位で切り上げ/切り捨て（旧方式、賞与計算で使用）
@@ -1224,10 +1237,30 @@ export class KyuyoDashboardComponent {
             
             const latestSalary = relevantSalaries.length > 0 ? relevantSalaries[0] : null;
             const finalFixedSalary = latestSalary ? latestSalary['amount'] : fixedSalary;
-            // 標準報酬月額を計算
+            // 標準報酬月額を計算（健康介護保険の標準報酬月額）
             const standardSalaryInfo = this.calculateStandardMonthlySalary(finalFixedSalary);
             let standardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
-            const grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+            let grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
+            
+            // 標準報酬月額変更情報を取得（健康介護保険用）
+            const standardChange = await this.firestoreService.getStandardMonthlySalaryChange(
+              emp.employeeNumber,
+              currentYear,
+              currentMonth
+            );
+            
+            // 標準報酬月額変更が適用されているかチェック（適用月以降の場合のみ）
+            if (standardChange) {
+              const effectiveYear = Number(standardChange.effectiveYear);
+              const effectiveMonth = Number(standardChange.effectiveMonth);
+              
+              // 現在の年月が適用月以降の場合のみ変更を適用
+              if (currentYear > effectiveYear || 
+                  (currentYear === effectiveYear && currentMonth >= effectiveMonth)) {
+                standardMonthlySalary = standardChange.monthlyStandard;
+                grade = standardChange.grade;
+              }
+            }
             
             // 年齢を計算
             const age = this.calculateAge(emp.birthDate);
@@ -1235,28 +1268,9 @@ export class KyuyoDashboardComponent {
             // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
             const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
             
-            // 厚生年金保険料計算用の標準報酬月額（厚生年金保険用の標準報酬月額変更情報を考慮）
-            // まず、固定的賃金から厚生年金保険用の標準報酬月額を計算
-            let pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalary(finalFixedSalary);
-            
-            // 厚生年金保険用の標準報酬月額変更情報を取得（該当年月以前の最新の変更情報）
-            const pensionStandardChange = await this.firestoreService.getPensionStandardMonthlySalaryChange(
-              emp.employeeNumber,
-              currentYear,
-              currentMonth
-            );
-            
-            // 厚生年金保険用の標準報酬月額変更が適用されているかチェック（適用月以降の場合のみ）
-            if (pensionStandardChange) {
-              const effectiveYear = Number(pensionStandardChange.effectiveYear);
-              const effectiveMonth = Number(pensionStandardChange.effectiveMonth);
-              
-              // 現在の年月が適用月以降の場合のみ変更を適用
-              if (currentYear > effectiveYear || 
-                  (currentYear === effectiveYear && currentMonth >= effectiveMonth)) {
-                pensionStandardMonthlySalary = pensionStandardChange.monthlyStandard;
-              }
-            }
+            // 厚生年金保険料計算用の標準報酬月額
+            // 社会保険一覧表に表示されている標準報酬月額（健康介護保険の標準報酬月額）を基準に厚生年金保険の標準報酬月額を計算
+            const pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalaryFromStandard(standardMonthlySalary);
             
             // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
             // 小数第2位まで保持（表示用）
@@ -1936,31 +1950,12 @@ export class KyuyoDashboardComponent {
             // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
             const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
             
-            // 厚生年金保険料計算用の標準報酬月額（厚生年金保険用の標準報酬月額変更情報を考慮）
+            // 厚生年金保険料計算用の標準報酬月額
+            // 社会保険一覧表に表示されている標準報酬月額（健康介護保険の標準報酬月額）を基準に厚生年金保険の標準報酬月額を計算
             let pensionStandardMonthlySalary = 0;
             
             if (!isVoluntaryContinuation) {
-              // まず、固定的賃金から厚生年金保険用の標準報酬月額を計算
-              pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalary(fixedSalary);
-              
-              // 厚生年金保険用の標準報酬月額変更情報を取得（該当年月以前の最新の変更情報）
-              const pensionStandardChange = await this.firestoreService.getPensionStandardMonthlySalaryChange(
-                item.employeeNumber,
-                filterYear,
-                filterMonth
-              );
-              
-              // 厚生年金保険用の標準報酬月額変更が適用されているかチェック（適用月以降の場合のみ）
-              if (pensionStandardChange) {
-                const effectiveYear = Number(pensionStandardChange.effectiveYear);
-                const effectiveMonth = Number(pensionStandardChange.effectiveMonth);
-                
-                // 選択された年月が適用月以降の場合のみ変更を適用
-                if (filterYear > effectiveYear || 
-                    (filterYear === effectiveYear && filterMonth >= effectiveMonth)) {
-                  pensionStandardMonthlySalary = pensionStandardChange.monthlyStandard;
-                }
-              }
+              pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalaryFromStandard(standardMonthlySalary);
             }
             
             // 各保険料を計算（産前産後休業期間内の場合は0円）
@@ -4990,45 +4985,45 @@ export class KyuyoDashboardComponent {
         const latestSalary = relevantSalaries.length > 0 ? relevantSalaries[0] : null;
         const finalFixedSalary = latestSalary ? latestSalary['amount'] : fixedSalary;
         
-        if (insuranceItem && insuranceItem.grade) {
+        // 健康介護保険の標準報酬月額を計算
+        let healthNursingStandardMonthlySalary = 0;
+        if (insuranceItem && insuranceItem.standardMonthlySalary) {
+          healthNursingStandardMonthlySalary = insuranceItem.standardMonthlySalary;
           healthNursingGrade = insuranceItem.grade;
         } else {
           // 保険料一覧にない場合は、固定的賃金から計算
           const standardSalaryInfo = this.calculateStandardMonthlySalary(finalFixedSalary);
+          healthNursingStandardMonthlySalary = standardSalaryInfo ? standardSalaryInfo.monthlyStandard : 0;
           healthNursingGrade = standardSalaryInfo ? standardSalaryInfo.grade : null;
         }
         
-        // 厚生年金保険等級を計算
-        let pensionGrade: number | null = null;
-        
-        // 厚生年金保険用の標準報酬月額を計算
-        let pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalary(finalFixedSalary);
-        
-        // 厚生年金保険用の標準報酬月額変更情報を取得（フィルターで選択されている年月に応じた情報）
-        const pensionStandardChange = await this.firestoreService.getPensionStandardMonthlySalaryChange(
+        // 健康介護保険の標準報酬月額変更情報を取得
+        const standardChange = await this.firestoreService.getStandardMonthlySalaryChange(
           employeeNumber,
           filterYear,
           filterMonth
         );
         
-        // 厚生年金保険用の標準報酬月額変更が適用されているかチェック（適用月以降の場合のみ）
-        if (pensionStandardChange) {
-          const effectiveYear = Number(pensionStandardChange.effectiveYear);
-          const effectiveMonth = Number(pensionStandardChange.effectiveMonth);
+        // 標準報酬月額変更が適用されているかチェック（適用月以降の場合のみ）
+        if (standardChange) {
+          const effectiveYear = Number(standardChange.effectiveYear);
+          const effectiveMonth = Number(standardChange.effectiveMonth);
           
           // 選択された年月が適用月以降の場合のみ変更を適用
           if (filterYear > effectiveYear || 
               (filterYear === effectiveYear && filterMonth >= effectiveMonth)) {
-            pensionStandardMonthlySalary = pensionStandardChange.monthlyStandard;
-            // 標準報酬月額変更情報に等級が含まれている場合はそれを使用
-            if (pensionStandardChange.grade) {
-              pensionGrade = pensionStandardChange.grade;
-            }
+            healthNursingStandardMonthlySalary = standardChange.monthlyStandard;
+            healthNursingGrade = standardChange.grade;
           }
         }
         
-        // 標準報酬月額から等級を逆引き（等級がまだ取得できていない場合）
-        if (pensionGrade === null && this.gradeTable && this.gradeTable.kouseinenkinReiwa7) {
+        // 厚生年金保険等級を計算
+        // 社会保険一覧表に表示されている標準報酬月額（健康介護保険の標準報酬月額）を基準に厚生年金保険の標準報酬月額を計算
+        let pensionGrade: number | null = null;
+        const pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalaryFromStandard(healthNursingStandardMonthlySalary);
+        
+        // 標準報酬月額から等級を逆引き
+        if (this.gradeTable && this.gradeTable.kouseinenkinReiwa7) {
           const pensionGradeList = this.gradeTable.kouseinenkinReiwa7;
           // 完全一致を探す
           let matchingGrade = pensionGradeList.find((item: any) => item.monthlyStandard === pensionStandardMonthlySalary);
@@ -5041,18 +5036,6 @@ export class KyuyoDashboardComponent {
           }
           
           pensionGrade = matchingGrade ? matchingGrade.grade : null;
-          
-          // デバッグ用ログ
-          console.log('[社員情報モーダル] 厚生年金保険等級計算:', {
-            employeeNumber,
-            filterYear,
-            filterMonth,
-            finalFixedSalary,
-            pensionStandardMonthlySalary,
-            pensionGrade,
-            hasPensionStandardChange: !!pensionStandardChange,
-            pensionStandardChangeGrade: pensionStandardChange?.grade
-          });
         }
         
         // 年度報酬加算額を計算（その年の7月から翌年6月までの賞与合計額を12で割った額）
