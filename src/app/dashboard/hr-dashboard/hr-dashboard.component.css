@@ -1823,6 +1823,13 @@
   color: #ff6b6b;
 }
 
+.hr-only-section .card-title.hr-section-title {
+  color: #ff6b6b;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
 /* 扶養者情報欄 */
 .dependents-container {
   margin-top: 1rem;

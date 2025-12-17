@@ -2048,7 +2048,7 @@
 
       <!-- 扶養者情報欄（人事専用） -->
         <section class="info-card hr-only-section">
-          <h3 class="card-title">扶養者情報（人事専用）</h3>
+          <h3 class="card-title hr-section-title">扶養者情報（人事専用）</h3>
           <div class="info-content info-inquiry-layout">
             <div *ngIf="dependents.length === 0" class="no-data">
               扶養者が登録されていません。
@@ -2107,6 +2107,12 @@
                       <button type="button" (click)="toggleDependentMyNumber(i)" class="my-number-toggle-btn">
                         {{ isDependentMyNumberVisible(i) ? '非表示' : '表示' }}
                       </button>
+                    </div>
+                    <div class="info-row full-width" *ngIf="dependent.myNumberCardFileUrl">
+                      <span class="info-label">マイナンバーカード添付:</span>
+                      <span class="info-value">
+                        <a [href]="dependent.myNumberCardFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.myNumberCardFileUrl, dependent.myNumberCardFileName) }}</a>
+                      </span>
                     </div>
                   </div>
                   
