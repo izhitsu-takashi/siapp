@@ -1064,7 +1064,7 @@ export class KyuyoDashboardComponent {
     return this.cashCollectionEmployees.some(emp => emp.employeeNumber === employeeNumber);
   }
   
-  // 年齢を計算（生年月日から）
+  // 年齢を計算（生年月日から、現在の日付基準）
   calculateAge(birthDate: string | Date | null | undefined): number | null {
     if (!birthDate) return null;
     
@@ -1078,6 +1078,61 @@ export class KyuyoDashboardComponent {
       
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
         age--;
+      }
+      
+      return age;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // 年齢を計算（フィルター年月での年齢）
+  calculateAgeAtDate(birthDate: any, year: number, month: number): number | null {
+    if (!birthDate) return null;
+    
+    try {
+      let birth: Date;
+      if (birthDate instanceof Date) {
+        birth = birthDate;
+      } else if (typeof birthDate === 'string') {
+        birth = new Date(birthDate);
+      } else if (birthDate && typeof birthDate === 'object' && typeof birthDate.toDate === 'function') {
+        // Firestore Timestamp形式の場合
+        birth = birthDate.toDate();
+      } else {
+        return null;
+      }
+      
+      if (isNaN(birth.getTime())) return null;
+      
+      const filterDate = new Date(year, month - 1, 1);
+      const birthYear = birth.getFullYear();
+      const birthMonth = birth.getMonth() + 1; // 1-12の範囲
+      const birthDay = birth.getDate();
+      
+      // 基本年齢 = フィルター年 - 誕生年
+      let age = year - birthYear;
+      
+      // 誕生日が1日の場合
+      if (birthDay === 1) {
+        // 誕生月の前月から年齢を加算（フィルター月 >= 誕生月 - 1なら年齢を加算）
+        if (month >= birthMonth - 1) {
+          // 年齢はそのまま（既に加算済み）
+        } else {
+          // フィルター月 < 誕生月 - 1の場合は1歳減らす
+          age--;
+        }
+      } else {
+        // 誕生日が1日でない場合
+        // 誕生月がフィルターしている年月なら年齢を加算
+        if (month > birthMonth) {
+          // 年齢はそのまま（既に加算済み）
+        } else if (month === birthMonth) {
+          // 誕生月なので年齢を加算（そのまま）
+        } else {
+          // フィルター月 < 誕生月の場合は1歳減らす
+          age--;
+        }
       }
       
       return age;
@@ -1214,16 +1269,16 @@ export class KyuyoDashboardComponent {
             // 給与設定履歴から、現在の年月以前の最新の給与を取得
             // （給与設定は「その年月以降の給与を設定する」という意味）
             const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth() + 1;
+            const nowYear = now.getFullYear();
+            const nowMonth = now.getMonth() + 1;
             
             const relevantSalaries = this.salaryHistory
               .filter((s: any) => s['employeeNumber'] === emp.employeeNumber)
               .filter((s: any) => {
                 const salaryYear = Number(s['year']);
                 const salaryMonth = Number(s['month']);
-                if (salaryYear < currentYear) return true;
-                if (salaryYear === currentYear && salaryMonth <= currentMonth) return true;
+                if (salaryYear < nowYear) return true;
+                if (salaryYear === nowYear && salaryMonth <= nowMonth) return true;
                 return false;
               })
               .sort((a: any, b: any) => {
@@ -1245,8 +1300,8 @@ export class KyuyoDashboardComponent {
             // 標準報酬月額変更情報を取得（健康介護保険用）
             const standardChange = await this.firestoreService.getStandardMonthlySalaryChange(
               emp.employeeNumber,
-              currentYear,
-              currentMonth
+              nowYear,
+              nowMonth
             );
             
             // 標準報酬月額変更が適用されているかチェック（適用月以降の場合のみ）
@@ -1255,25 +1310,28 @@ export class KyuyoDashboardComponent {
               const effectiveMonth = Number(standardChange.effectiveMonth);
               
               // 現在の年月が適用月以降の場合のみ変更を適用
-              if (currentYear > effectiveYear || 
-                  (currentYear === effectiveYear && currentMonth >= effectiveMonth)) {
+              if (nowYear > effectiveYear || 
+                  (nowYear === effectiveYear && nowMonth >= effectiveMonth)) {
                 standardMonthlySalary = standardChange.monthlyStandard;
                 grade = standardChange.grade;
               }
             }
             
-            // 年齢を計算
-            const age = this.calculateAge(emp.birthDate);
+            // 年齢を計算（現在の年月での年齢、loadInsuranceListでは現在の年月を使用）
+            const nowForAge = new Date();
+            const ageYear = nowForAge.getFullYear();
+            const ageMonth = nowForAge.getMonth() + 1;
+            const age = this.calculateAgeAtDate(emp.birthDate, ageYear, ageMonth);
             
-            // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
-            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
+            // 介護保険料は40歳以上65歳未満の従業員のみ対象（40歳未満または65歳以上は0円）
+            const isNursingInsuranceTarget = age !== null && age >= 40 && age < 65;
             
             // 厚生年金保険料計算用の標準報酬月額
             // まず、厚生年金保険用の標準報酬月額変更情報を取得（該当年月以前の最新の変更情報）
             const pensionStandardChange = await this.firestoreService.getPensionStandardMonthlySalaryChange(
               emp.employeeNumber,
-              currentYear,
-              currentMonth
+              nowYear,
+              nowMonth
             );
             
             let pensionStandardMonthlySalary = 0;
@@ -1284,8 +1342,8 @@ export class KyuyoDashboardComponent {
               const effectiveMonth = Number(pensionStandardChange.effectiveMonth);
               
               // 現在の年月が適用月以降の場合のみ変更を適用
-              if (currentYear > effectiveYear || 
-                  (currentYear === effectiveYear && currentMonth >= effectiveMonth)) {
+              if (nowYear > effectiveYear || 
+                  (nowYear === effectiveYear && nowMonth >= effectiveMonth)) {
                 // 標準報酬月額変更情報がある場合は、その標準報酬月額を使用
                 pensionStandardMonthlySalary = pensionStandardChange.monthlyStandard;
                 console.log(`[社会保険料一覧] 社員番号: ${emp.employeeNumber}, 厚生年金保険用標準報酬月額変更情報を適用: ${pensionStandardMonthlySalary}円 (適用年月: ${effectiveYear}年${effectiveMonth}月)`);
@@ -1971,11 +2029,11 @@ export class KyuyoDashboardComponent {
               }
             }
             
-            // 年齢を計算
-            const age = this.calculateAge(item.birthDate);
+            // 年齢を計算（フィルター年月での年齢）
+            const age = this.calculateAgeAtDate(item.birthDate, filterYear, filterMonth);
             
-            // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
-            const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
+            // 介護保険料は40歳以上65歳未満の従業員のみ対象（40歳未満または65歳以上は0円）
+            const isNursingInsuranceTarget = age !== null && age >= 40 && age < 65;
             
             // 厚生年金保険料計算用の標準報酬月額
             let pensionStandardMonthlySalary = 0;
@@ -2012,7 +2070,7 @@ export class KyuyoDashboardComponent {
             
             // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
             const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : standardMonthlySalary * (healthInsuranceRate / 100);
-            // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上64歳以下は徴収）
+            // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
             const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
             const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardMonthlySalary * (pensionInsuranceRate / 100));
             
@@ -2310,7 +2368,8 @@ export class KyuyoDashboardComponent {
               const pensionStandardBonusAmount = isVoluntaryContinuation ? 0 : 
                 Math.min(1500000, standardBonusAmount);
               
-              const age = this.calculateAge(employeeData?.birthDate);
+              // 年齢を計算（フィルター年月での年齢）
+              const age = this.calculateAgeAtDate(employeeData?.birthDate, filterYear, filterMonth);
               
               // 産前産後休業期間内かどうかを判定
               const isInMaternityLeave = this.isInMaternityLeavePeriod(
@@ -2320,12 +2379,12 @@ export class KyuyoDashboardComponent {
                 filterMonth
               );
               
-              // 介護保険料は40歳以上64歳以下の従業員のみ対象（40歳未満または65歳以上は0円）
-              const isNursingInsuranceTarget = age !== null && age >= 40 && age <= 64;
+              // 介護保険料は40歳以上65歳未満の従業員のみ対象（40歳未満または65歳以上は0円）
+              const isNursingInsuranceTarget = age !== null && age >= 40 && age < 65;
               
               // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
               const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : healthNursingStandardBonusAmount * (healthInsuranceRate / 100);
-              // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上64歳以下は徴収）
+              // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
               const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
               const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : pensionStandardBonusAmount * (pensionInsuranceRate / 100));
               
@@ -5076,23 +5135,51 @@ export class KyuyoDashboardComponent {
       const employeeData = await this.firestoreService.getEmployeeData(employeeNumber);
       
       if (employeeData) {
-        // 年齢を計算（生年月日から）
-        let age: number | null = null;
-        if (employeeData.birthDate) {
-          const birthDate = employeeData.birthDate instanceof Date 
-            ? employeeData.birthDate 
-            : (employeeData.birthDate.toDate ? employeeData.birthDate.toDate() : new Date(employeeData.birthDate));
-          const today = new Date();
-          age = today.getFullYear() - birthDate.getFullYear();
-          const monthDiff = today.getMonth() - birthDate.getMonth();
-          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-          }
-        }
-        
         // フィルターで選択されている年月を取得
         const filterYear = Number(this.insuranceListYear);
         const filterMonth = Number(this.insuranceListMonth);
+        
+        // 年齢を計算（フィルター年月での年齢）
+        let age: number | null = null;
+        let birthDate: Date | null = null;
+        if (employeeData.birthDate) {
+          birthDate = employeeData.birthDate instanceof Date 
+            ? employeeData.birthDate 
+            : (employeeData.birthDate.toDate ? employeeData.birthDate.toDate() : new Date(employeeData.birthDate));
+          
+          // フィルター年月の1日を基準に年齢を計算
+          if (birthDate && !isNaN(birthDate.getTime())) {
+            const filterDate = new Date(filterYear, filterMonth - 1, 1);
+            const birthYear = birthDate.getFullYear();
+            const birthMonth = birthDate.getMonth() + 1; // 1-12の範囲
+            const birthDay = birthDate.getDate();
+            
+            // 基本年齢 = フィルター年 - 誕生年
+            age = filterYear - birthYear;
+            
+            // 誕生日が1日の場合
+            if (birthDay === 1) {
+              // 誕生月の前月から年齢を加算（フィルター月 >= 誕生月 - 1なら年齢を加算）
+              if (filterMonth >= birthMonth - 1) {
+                // 年齢はそのまま（既に加算済み）
+              } else {
+                // フィルター月 < 誕生月 - 1の場合は1歳減らす
+                age--;
+              }
+            } else {
+              // 誕生日が1日でない場合
+              // 誕生月がフィルターしている年月なら年齢を加算
+              if (filterMonth > birthMonth) {
+                // 年齢はそのまま（既に加算済み）
+              } else if (filterMonth === birthMonth) {
+                // 誕生月なので年齢を加算（そのまま）
+              } else {
+                // フィルター月 < 誕生月の場合は1歳減らす
+                age--;
+              }
+            }
+          }
+        }
         
         // 保険料一覧から健康介護保険等級を取得
         let healthNursingGrade: number | null = null;
@@ -5247,7 +5334,7 @@ export class KyuyoDashboardComponent {
         
         this.selectedEmployeeInfo = {
           ...employeeData,
-          age: age,
+          age: age, // フィルター年月での年齢
           grade: healthNursingGrade, // 健康介護保険等級（後方互換性のため残す）
           healthNursingGrade: healthNursingGrade, // 健康介護保険等級
           pensionGrade: pensionGrade, // 厚生年金保険等級

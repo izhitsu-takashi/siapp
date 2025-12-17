@@ -771,6 +771,10 @@
               <span class="info-label">雇用形態:</span>
               <span class="info-value">{{ selectedEmployeeInfo.employmentType || '-' }}</span>
             </div>
+            <div class="info-item" *ngIf="selectedEmployeeInfo.age !== null && selectedEmployeeInfo.age !== undefined">
+              <span class="info-label">年齢（{{ insuranceListYear }}年{{ insuranceListMonth }}月時点）:</span>
+              <span class="info-value">{{ selectedEmployeeInfo.age }}歳</span>
+            </div>
             <div class="info-item" *ngIf="selectedEmployeeInfo.healthNursingGrade">
               <span class="info-label">健康介護保険等級:</span>
               <span class="info-value">{{ selectedEmployeeInfo.healthNursingGrade }}</span>
