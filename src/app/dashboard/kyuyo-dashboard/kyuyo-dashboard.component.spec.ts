@@ -123,7 +123,8 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       'saveStandardMonthlySalaryChange',
       'savePensionStandardMonthlySalaryChange',
       'getAllEmployees',
-      'getAllOnboardingEmployees'
+      'getAllOnboardingEmployees',
+      'saveSalariesBatch'
     ]);
     const httpClientSpy = jasmine.createSpyObj('HttpClient', ['get']);
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
@@ -4430,4 +4431,5 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
     });
   });
 });
+      
 

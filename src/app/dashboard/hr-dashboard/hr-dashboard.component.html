@@ -2530,7 +2530,7 @@
               <button 
                 type="submit" 
                 class="status-update-button"
-                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認' || isUpdatingStatus"
+                [disabled]="selectedApplication?.status === '承認済み' || selectedApplication?.status === '承認' || selectedApplication?.status === '取り消し' || isUpdatingStatus"
               >
                 {{ isUpdatingStatus ? '更新中...' : 'ステータスを更新' }}
               </button>
