@@ -4964,20 +4964,33 @@ export class KyuyoDashboardComponent {
       const newGrade = newStandardInfo.grade;
       console.log(`[定時改定] 算出された等級: ${newGrade}, 標準報酬月額: ${newStandardInfo.monthlyStandard}円`);
       
-      // 7月、8月、9月に随時改定が適用されたかチェック
+      // 7月、8月に標準報酬月額変更情報が適用されているかチェック
       // 随時改定は、給与変更月から3か月後に適用されるため、
-      // 7,8,9月に適用される随時改定は、4,5,6月の給与変更によるもの
-      const hasZujijiKaiteiInJulyToSeptember = await this.hasZujijiKaiteiInJulyToSeptember(
+      // 7,8月に適用される随時改定は、4,5月の給与変更によるもの
+      // 7月または8月に変更情報が存在する場合、定時改定をスキップ
+      // 注意: 9月の変更情報は定時改定によって作成される可能性があるため、7月・8月のみをチェック
+      const changesInJulyToAugust = await this.firestoreService.getStandardMonthlySalaryChangesInPeriod(
         employeeNumber,
         fiscalYear,
-        salaryHistory
+        7,
+        fiscalYear,
+        8
       );
       
-      // 随時改定が適用されている場合は、定時改定をスキップ
-      if (hasZujijiKaiteiInJulyToSeptember) {
-        console.log(`[定時改定] 7月、8月、9月に随時改定が適用されているため、定時改定をスキップします。`);
+      console.log(`[定時改定] 7月、8月の変更情報チェック: 取得件数=${changesInJulyToAugust ? changesInJulyToAugust.length : 0}`);
+      if (changesInJulyToAugust && changesInJulyToAugust.length > 0) {
+        console.log(`[定時改定] 7月、8月に標準報酬月額変更情報が適用されているため、定時改定をスキップします。`);
+        console.log(`[定時改定] 検出された変更情報（生データ）:`, changesInJulyToAugust);
+        console.log(`[定時改定] 検出された変更情報:`, changesInJulyToAugust.map((c: any) => ({
+          適用年月: `${c.effectiveYear}年${c.effectiveMonth}月`,
+          等級: c.grade,
+          標準報酬月額: c.monthlyStandard
+        })));
+        console.log(`[定時改定] 定時改定をスキップして処理を終了します。`);
         if (collectChanges) return [];
         return null;
+      } else {
+        console.log(`[定時改定] 7月、8月に標準報酬月額変更情報は存在しません。定時改定を続行します。`);
       }
       
       // 既に9月からの標準報酬月額変更情報が保存されているかチェック
@@ -4987,11 +5000,32 @@ export class KyuyoDashboardComponent {
         9
       );
       
-      // 既に9月からの変更情報がある場合、等級が異なる場合のみ更新
-      if (existingChange && existingChange.grade === newGrade) {
-        console.log(`[定時改定] 既に同じ等級（${newGrade}）が設定されているため、処理をスキップします。`);
-        if (collectChanges) return [];
-        return null; // 既に同じ等級が設定されている場合は処理しない
+      // 9月の変更情報が存在する場合、それが随時改定によるものかどうかを確認
+      // 6月の給与変更がある場合、9月に随時改定が適用される可能性がある
+      if (existingChange) {
+        // 6月の給与変更があるかどうかを確認
+        const hasJuneSalaryChange = salaryHistory.some((s: any) => {
+          const salaryYear = Number(s['year']);
+          const salaryMonth = Number(s['month']);
+          return s['employeeNumber'] === employeeNumber &&
+                 salaryYear === fiscalYear &&
+                 salaryMonth === 6;
+        });
+        
+        if (hasJuneSalaryChange) {
+          // 6月の給与変更がある場合、9月の変更情報は随時改定によるものと判断
+          console.log(`[定時改定] 6月の給与変更があるため、9月の変更情報は随時改定によるものと判断します。定時改定をスキップします。`);
+          console.log(`[定時改定] 既存の9月の変更情報: 等級${existingChange.grade}, 標準報酬月額${existingChange.monthlyStandard}円`);
+          if (collectChanges) return [];
+          return null;
+        }
+        
+        // 6月の給与変更がない場合、既に9月からの変更情報がある場合、等級が異なる場合のみ更新
+        if (existingChange.grade === newGrade) {
+          console.log(`[定時改定] 既に同じ等級（${newGrade}）が設定されているため、処理をスキップします。`);
+          if (collectChanges) return [];
+          return null; // 既に同じ等級が設定されている場合は処理しない
+        }
       }
       
       // 9月から新等級を適用（4.5.6月の平均給与から算出した等級）
