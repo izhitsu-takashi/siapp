@@ -5003,18 +5003,21 @@ export class KyuyoDashboardComponent {
       // 9月の変更情報が存在する場合、それが随時改定によるものかどうかを確認
       // 6月の給与変更がある場合、9月に随時改定が適用される可能性がある
       if (existingChange) {
-        // 6月の給与変更があるかどうかを確認
-        const hasJuneSalaryChange = salaryHistory.some((s: any) => {
+        // 6月の手動給与変更があるかどうかを確認（isManual = true のもののみ）
+        const hasJuneManualSalaryChange = salaryHistory.some((s: any) => {
           const salaryYear = Number(s['year']);
           const salaryMonth = Number(s['month']);
           return s['employeeNumber'] === employeeNumber &&
                  salaryYear === fiscalYear &&
-                 salaryMonth === 6;
+                 salaryMonth === 6 &&
+                 s['isManual'] === true;
         });
         
-        if (hasJuneSalaryChange) {
-          // 6月の給与変更がある場合、9月の変更情報は随時改定によるものと判断
-          console.log(`[定時改定] 6月の給与変更があるため、9月の変更情報は随時改定によるものと判断します。定時改定をスキップします。`);
+        console.log(`[定時改定] 6月の手動給与変更チェック: ${hasJuneManualSalaryChange ? 'あり' : 'なし'}`);
+        
+        if (hasJuneManualSalaryChange) {
+          // 6月の手動給与変更がある場合、9月の変更情報は随時改定によるものと判断
+          console.log(`[定時改定] 6月の手動給与変更があるため、9月の変更情報は随時改定によるものと判断します。定時改定をスキップします。`);
           console.log(`[定時改定] 既存の9月の変更情報: 等級${existingChange.grade}, 標準報酬月額${existingChange.monthlyStandard}円`);
           if (collectChanges) return [];
           return null;
