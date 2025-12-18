@@ -4263,5 +4263,171 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       }
     });
   });
+
+  describe('同年月で資格取得・資格喪失・任意継続開始の場合の社会保険料徴収テスト', () => {
+    beforeEach(() => {
+      // 保険料率を設定
+      component.insuranceRates = {
+        healthInsurance: 9.91,
+        nursingInsurance: 1.59,
+        pensionInsurance: 18.3
+      };
+    });
+
+    it('同年月で資格取得・資格喪失（任意継続なし）の場合、その月の社会保険料を通常通り徴収する', async () => {
+      const employeeNumber = 'same-month-test-1';
+      const employeeData = {
+        employeeNumber: employeeNumber,
+        name: '同年月テスト社員1（任意継続なし）',
+        birthDate: new Date(1982, 0, 1), // 43歳（2025年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'same-month-test-1@example.com',
+        employmentType: '正社員',
+        joinDate: new Date(2025, 11, 1), // 2025年12月1日入社（月は0ベースなので11が12月）
+        resignationDate: new Date(2025, 11, 15), // 2025年12月15日退職
+        healthInsuranceType: '協会けんぽ',
+        socialInsuranceAcquisitionDate: new Date(2025, 11, 1) // 資格取得年月日: 2025年12月1日
+      };
+
+      // 給与設定履歴
+      const salaryHistory = [
+        { employeeNumber, year: 2025, month: 12, amount: 500000, isManual: true }
+      ];
+
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 2025年12月の保険料を確認
+      component.insuranceListYear = 2025;
+      component.insuranceListMonth = 12;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const decemberInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(decemberInsurance).toBeDefined();
+      if (decemberInsurance) {
+        // 期待値: 健康保険料49550円、介護保険料7950円、厚生年金保険料91500円
+        expect(decemberInsurance.healthInsurance).toBeCloseTo(49550, 0);
+        expect(decemberInsurance.nursingInsurance).toBeCloseTo(7950, 0);
+        expect(decemberInsurance.pensionInsurance).toBeCloseTo(91500, 0);
+      }
+    });
+
+    it('同年月で資格取得・資格喪失・任意継続開始の場合、その月は通常の社会保険料＋任意継続保険料を徴収する', async () => {
+      const employeeNumber = 'same-month-test-2';
+      const employeeData = {
+        employeeNumber: employeeNumber,
+        name: '同年月テスト社員2（任意継続あり）',
+        birthDate: new Date(1982, 0, 1), // 43歳（2025年時点、介護保険対象）
+        expectedMonthlySalary: 500000,
+        expectedMonthlySalaryInKind: 0,
+        employmentStatus: '退職',
+        email: 'same-month-test-2@example.com',
+        employmentType: '正社員',
+        joinDate: new Date(2025, 11, 1), // 2025年12月1日入社（月は0ベースなので11が12月）
+        resignationDate: new Date(2025, 11, 15), // 2025年12月15日退職
+        healthInsuranceType: '任意継続被保険者',
+        socialInsuranceAcquisitionDate: new Date(2025, 11, 1), // 資格取得年月日: 2025年12月1日
+        voluntaryInsuranceEndDate: new Date(2027, 11, 15) // 任意継続終了日（2年後、2027年12月15日）
+      };
+
+      // 給与設定履歴
+      const salaryHistory = [
+        { employeeNumber, year: 2025, month: 12, amount: 500000, isManual: true }
+      ];
+
+      firestoreService.getAllEmployees.and.returnValue(Promise.resolve([employeeData]));
+      firestoreService.getAllOnboardingEmployees.and.returnValue(Promise.resolve([]));
+      firestoreService.getEmployeeData.and.returnValue(Promise.resolve(employeeData));
+      firestoreService.getSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getAllSalaryHistory.and.returnValue(Promise.resolve(salaryHistory));
+      firestoreService.getBonusHistory.and.returnValue(Promise.resolve([]));
+      firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+      firestoreService.getSettings.and.returnValue(Promise.resolve({
+        insuranceRates: {
+          healthInsurance: 9.91,
+          nursingInsurance: 1.59,
+          pensionInsurance: 18.3
+        }
+      }));
+
+      // 保険料一覧を読み込む
+      await component.loadInsuranceList();
+
+      // 2025年12月の保険料を確認
+      component.insuranceListYear = 2025;
+      component.insuranceListMonth = 12;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const decemberInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(decemberInsurance).toBeDefined();
+      if (decemberInsurance) {
+        // 期待値: 健康保険料81262円、介護保険料13038円、厚生年金保険料91500円、社員負担額111200円
+        // 通常の社会保険料: 50万円ベース
+        // 健康保険料: 500000 × 9.91% = 49550円
+        // 介護保険料: 500000 × 1.59% = 7950円
+        // 任意継続保険料: 32万円ベース（全額自己負担）
+        // 健康保険料: 320000 × 9.91% = 31712円
+        // 介護保険料: 320000 × 1.59% = 5088円
+        // 合計: 健康保険料49550 + 31712 = 81262円、介護保険料7950 + 5088 = 13038円
+        // 厚生年金保険料: 500000 × 18.3% = 91500円（通常通り）
+        // 社員負担額: (49550 + 7950) / 2 + 91500 / 2 + (31712 + 5088) = 28750 + 45750 + 36800 = 111300円
+        expect(decemberInsurance.healthInsurance).toBeCloseTo(81262, 0);
+        expect(decemberInsurance.nursingInsurance).toBeCloseTo(13038, 0);
+        expect(decemberInsurance.pensionInsurance).toBeCloseTo(91500, 0);
+        expect(decemberInsurance.employeeBurden).toBeCloseTo(111300, 0);
+      }
+
+      // 2026年1月の保険料を確認（任意継続期間中）
+      component.insuranceListYear = 2026;
+      component.insuranceListMonth = 1;
+      component.insuranceListType = 'salary';
+      await component.filterInsuranceListByDate();
+      
+      const januaryInsurance = component.filteredInsuranceList.find((item: any) => 
+        item.employeeNumber === employeeNumber
+      );
+      
+      expect(januaryInsurance).toBeDefined();
+      if (januaryInsurance) {
+        // 期待値: 健康保険料31712円、介護保険料5088円、厚生年金保険料0円、社員負担額36800円
+        // 任意継続被保険者として、32万円ベースで計算（全額自己負担）
+        // 健康保険料: 320000 × 9.91% = 31712円
+        // 介護保険料: 320000 × 1.59% = 5088円
+        // 厚生年金保険料: 0円
+        // 社員負担額: 31712 + 5088 = 36800円
+        expect(januaryInsurance.healthInsurance).toBeCloseTo(31712, 0);
+        expect(januaryInsurance.nursingInsurance).toBeCloseTo(5088, 0);
+        expect(januaryInsurance.pensionInsurance).toBe(0);
+        expect(januaryInsurance.employeeBurden).toBeCloseTo(36800, 0);
+      }
+    });
+  });
 });
 
