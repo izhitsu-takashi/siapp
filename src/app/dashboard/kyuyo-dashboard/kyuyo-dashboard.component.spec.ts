@@ -125,7 +125,10 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       'getAllEmployees',
       'getAllOnboardingEmployees',
       'saveSalariesBatch',
-      'getStandardMonthlySalaryChangesInPeriod'
+      'getStandardMonthlySalaryChangesInPeriod',
+      'getPensionStandardMonthlySalaryChangesInPeriod',
+      'deleteStandardMonthlySalaryChange',
+      'deletePensionStandardMonthlySalaryChange'
     ]);
     const httpClientSpy = jasmine.createSpyObj('HttpClient', ['get']);
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);

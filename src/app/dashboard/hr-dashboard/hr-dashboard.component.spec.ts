@@ -21,6 +21,9 @@ describe('HrDashboardComponent - 海外在住チェックによるフォーム�
   let changeDetectorRef: jasmine.SpyObj<ChangeDetectorRef>;
 
   beforeEach(async () => {
+    // window.confirmをモック（承認済みステータス変更時の確認ダイアログを抑制）
+    spyOn(window, 'confirm').and.returnValue(true);
+    
     const firestoreServiceSpy = jasmine.createSpyObj('FirestoreService', [
       'getAllEmployees',
       'getAllOnboardingEmployees',
@@ -1303,6 +1306,9 @@ describe('HrDashboardComponent - 申請詳細モーダルの実際の表示テ�
   let firestoreService: jasmine.SpyObj<FirestoreService>;
 
   beforeEach(async () => {
+    // window.confirmをモック（承認済みステータス変更時の確認ダイアログを抑制）
+    spyOn(window, 'confirm').and.returnValue(true);
+    
     const firestoreServiceSpy = jasmine.createSpyObj('FirestoreService', [
         'getAllEmployees',
         'getAllOnboardingEmployees',

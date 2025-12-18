@@ -767,7 +767,7 @@ export class KyuyoDashboardComponent {
     }
     return sorted;
   }
-
+  
   // kenpo-rates.jsonをダウンロード
   downloadKenpoRates() {
     try {
@@ -1133,7 +1133,7 @@ export class KyuyoDashboardComponent {
           }
         } else {
           // 古い形式: 直接オブジェクト
-          this.gradeTable = response;
+        this.gradeTable = response;
         }
       }
     } catch (error) {
@@ -1170,7 +1170,7 @@ export class KyuyoDashboardComponent {
           }
         } else {
           // 古い形式: 直接オブジェクト
-          this.gradeTable = data;
+        this.gradeTable = data;
         }
       }
     } catch (error) {
@@ -1237,7 +1237,7 @@ export class KyuyoDashboardComponent {
     const lastGrade = this.gradeTable.kouseinenkinReiwa7[this.gradeTable.kouseinenkinReiwa7.length - 1];
     return lastGrade.monthlyStandard;
   }
-
+  
   // 固定的賃金から厚生年金保険料計算用の標準報酬月額を計算
   // 固定的賃金から厚生年金保険料計算用の標準報酬月額を計算
   // 健康介護保険の標準報酬月額を計算してから、それを厚生年金保険用の等級表に適用
@@ -1613,7 +1613,7 @@ export class KyuyoDashboardComponent {
                   if (maxStandardInfo) {
                     grade = maxStandardInfo.grade;
                   } else {
-                    grade = standardChange.grade;
+                grade = standardChange.grade;
                   }
                 } else {
                   grade = standardChange.grade;
@@ -2323,15 +2323,15 @@ export class KyuyoDashboardComponent {
                   // isVoluntaryContinuationはfalseのまま（通常の社会保険料を計算）
                 } else {
                   // 任意継続開始日は退職日の翌日。徴収はその日が属する月から開始
-                  // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
-                  if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
-                    if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
-                      isVoluntaryContinuation = true;
-                    }
-                  } else {
-                    // 加入月から終了月の前日まで徴収
-                    if (selectedDate >= voluntaryStartMonth && selectedDate < endDateMonthStart) {
-                      isVoluntaryContinuation = true;
+                // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
+                if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
+                  if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
+                    isVoluntaryContinuation = true;
+                  }
+                } else {
+                  // 加入月から終了月の前日まで徴収
+                  if (selectedDate >= voluntaryStartMonth && selectedDate < endDateMonthStart) {
+                    isVoluntaryContinuation = true;
                     }
                   }
                 }
@@ -2415,7 +2415,7 @@ export class KyuyoDashboardComponent {
                 if (maxStandardInfo) {
                   grade = maxStandardInfo.grade;
                 } else {
-                  grade = standardChange.grade;
+              grade = standardChange.grade;
                 }
               } else {
                 grade = standardChange.grade;
@@ -2436,8 +2436,8 @@ export class KyuyoDashboardComponent {
                 const lossMonth = nextDay.getMonth() + 1;
                 
                 // 資格喪失年月日の前月以前の最新の給与設定を取得
-                const relevantSalariesForResignation = this.salaryHistory
-                  .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
+              const relevantSalariesForResignation = this.salaryHistory
+                .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
                   .filter((s: any) => {
                     const salaryYear = Number(s['year']);
                     const salaryMonth = Number(s['month']);
@@ -2445,14 +2445,14 @@ export class KyuyoDashboardComponent {
                     if (salaryYear === lossYear && salaryMonth < lossMonth) return true;
                     return false;
                   })
-                  .sort((a: any, b: any) => {
-                    if (a['year'] !== b['year']) return b['year'] - a['year'];
-                    return b['month'] - a['month'];
-                  });
-                
+                .sort((a: any, b: any) => {
+                  if (a['year'] !== b['year']) return b['year'] - a['year'];
+                  return b['month'] - a['month'];
+                });
+              
                 latestSalaryBeforeResignation = relevantSalariesForResignation.length > 0 
-                  ? relevantSalariesForResignation[0]['amount'] 
-                  : item.fixedSalary;
+                ? relevantSalariesForResignation[0]['amount'] 
+                : item.fixedSalary;
               }
               
               const standardSalaryInfo = this.calculateStandardMonthlySalary(latestSalaryBeforeResignation);
@@ -5082,9 +5082,9 @@ export class KyuyoDashboardComponent {
         
         // 6月の給与変更がない場合、既に9月からの変更情報がある場合、等級が異なる場合のみ更新
         if (existingChange.grade === newGrade) {
-          console.log(`[定時改定] 既に同じ等級（${newGrade}）が設定されているため、処理をスキップします。`);
-          if (collectChanges) return [];
-          return null; // 既に同じ等級が設定されている場合は処理しない
+        console.log(`[定時改定] 既に同じ等級（${newGrade}）が設定されているため、処理をスキップします。`);
+        if (collectChanges) return [];
+        return null; // 既に同じ等級が設定されている場合は処理しない
         }
       }
       
@@ -5886,7 +5886,7 @@ export class KyuyoDashboardComponent {
               if (maxStandardInfo) {
                 healthNursingGrade = maxStandardInfo.grade;
               } else {
-                healthNursingGrade = standardChange.grade;
+            healthNursingGrade = standardChange.grade;
               }
             } else {
               healthNursingGrade = standardChange.grade;
@@ -5924,7 +5924,7 @@ export class KyuyoDashboardComponent {
               // 等級も再計算
               pensionGrade = null; // 等級を再計算するためnullに設定
             } else {
-              pensionGrade = pensionStandardChange.grade;
+            pensionGrade = pensionStandardChange.grade;
             }
             pensionStandardMonthlySalary = changeStandard;
           } else {
@@ -5950,7 +5950,7 @@ export class KyuyoDashboardComponent {
               (current.grade > prev.grade) ? current : prev
             );
           } else {
-            // 完全一致が見つからない場合、最も近い値を探す（±1円の範囲内）
+          // 完全一致が見つからない場合、最も近い値を探す（±1円の範囲内）
             const nearMatchingGrades = pensionGradeList.filter((item: any) => 
               Math.abs(item.monthlyStandard - pensionStandardMonthlySalary) <= 1
             );
@@ -5958,7 +5958,7 @@ export class KyuyoDashboardComponent {
               // 等級番号が大きい（より新しい）等級を優先
               matchingGrade = nearMatchingGrades.reduce((prev: any, current: any) => 
                 (current.grade > prev.grade) ? current : prev
-              );
+            );
             }
           }
           
