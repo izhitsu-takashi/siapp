@@ -61,6 +61,8 @@ export class KyuyoDashboardComponent {
   
   // 健康保険料率データ
   kenpoRates: any[] = [];
+  // コメント要素（ダウンロード時に保持するため）
+  kenpoRatesComment: any = null;
   
   // 協会けんぽ保険料率ファイル管理
   selectedKenpoRatesFile: File | null = null;
@@ -391,14 +393,25 @@ export class KyuyoDashboardComponent {
       // まずFirestoreから設定を読み込んで、kenpoRatesが保存されているか確認
       const settings = await this.firestoreService.getSettings();
       if (settings && settings.kenpoRates && Array.isArray(settings.kenpoRates) && settings.kenpoRates.length > 0) {
+        // kenpoRatesを読み込む（コメント要素は既に除外されている）
         this.kenpoRates = settings.kenpoRates;
+        // コメント要素があれば読み込む
+        if (settings.kenpoRatesComment) {
+          this.kenpoRatesComment = settings.kenpoRatesComment;
+        }
         return;
       }
       
       // Firestoreに保存されていない場合は、assetsから読み込む
       const data = await this.http.get<any[]>('/assets/kenpo-rates.json').toPromise();
       if (data) {
-        this.kenpoRates = data;
+        // _comment要素を分離
+        const commentItem = data.find((item: any) => item._comment !== undefined);
+        if (commentItem) {
+          this.kenpoRatesComment = commentItem;
+        }
+        // _comment要素を除外して読み込む
+        this.kenpoRates = data.filter((item: any) => item._comment === undefined);
       }
     } catch (error) {
       // エラーをログに出力しない（プリレンダリング時のエラーは無視）
@@ -734,7 +747,15 @@ export class KyuyoDashboardComponent {
   // kenpo-rates.jsonをダウンロード
   downloadKenpoRates() {
     try {
-      const jsonData = JSON.stringify(this.kenpoRates, null, 2);
+      // コメント要素がある場合は先頭に追加
+      const downloadData: any[] = [];
+      if (this.kenpoRatesComment) {
+        downloadData.push(this.kenpoRatesComment);
+      }
+      // 保険料率データを追加
+      downloadData.push(...this.kenpoRates);
+      
+      const jsonData = JSON.stringify(downloadData, null, 2);
       const blob = new Blob([jsonData], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -780,22 +801,43 @@ export class KyuyoDashboardComponent {
         return;
       }
       
-      // 各要素の形式を検証
+      // 各要素の形式を検証（_comment要素をスキップ）
+      const validData: any[] = [];
+      let commentData: any = null;
+      
       for (const item of parsedData) {
+        // _commentプロパティを持つ要素はコメント要素として保存
+        if (item._comment !== undefined) {
+          commentData = item;
+          continue;
+        }
+        
+        // 必須フィールドの検証
         if (!item.prefecture || typeof item.healthRate !== 'number' || typeof item.careRate !== 'number') {
           alert('JSONファイルの形式が正しくありません。各要素にprefecture、healthRate、careRateが必要です。');
           return;
         }
+        
+        validData.push(item);
       }
       
-      // kenpoRatesを更新
-      this.kenpoRates = parsedData;
+      // 有効なデータが存在することを確認
+      if (validData.length === 0) {
+        alert('有効な保険料率データが見つかりませんでした。');
+        return;
+      }
       
-      // Firestoreに保存（kenpoRatesをsettingsに保存）
+      // kenpoRatesを更新（コメント要素を除外したデータのみ）
+      this.kenpoRates = validData;
+      // コメント要素を別途保存
+      this.kenpoRatesComment = commentData;
+      
+      // Firestoreに保存（kenpoRatesとkenpoRatesCommentをsettingsに保存）
       const currentSettings = await this.firestoreService.getSettings() || {};
       await this.firestoreService.saveSettings({
         ...currentSettings,
-        kenpoRates: this.kenpoRates
+        kenpoRates: this.kenpoRates,
+        kenpoRatesComment: this.kenpoRatesComment
       });
       
       // 現在選択されている都道府県の保険料率を再適用
