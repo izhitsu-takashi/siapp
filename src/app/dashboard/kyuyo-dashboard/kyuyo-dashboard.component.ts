@@ -1602,8 +1602,23 @@ export class KyuyoDashboardComponent {
               // 現在の年月が適用月以降の場合のみ変更を適用
               if (nowYear > effectiveYear || 
                   (nowYear === effectiveYear && nowMonth >= effectiveMonth)) {
-                standardMonthlySalary = standardChange.monthlyStandard;
-                grade = standardChange.grade;
+                // 標準報酬月額変更情報がある場合は、その標準報酬月額を使用
+                // ただし、等級表の最大値を超えている場合は、等級表の最大値に制限
+                let changeStandard = standardChange.monthlyStandard;
+                const maxHealthStandard = this.getMaxHealthStandardMonthlySalary();
+                if (changeStandard > maxHealthStandard) {
+                  changeStandard = maxHealthStandard;
+                  // 等級も再計算
+                  const maxStandardInfo = this.calculateStandardMonthlySalary(maxHealthStandard);
+                  if (maxStandardInfo) {
+                    grade = maxStandardInfo.grade;
+                  } else {
+                    grade = standardChange.grade;
+                  }
+                } else {
+                  grade = standardChange.grade;
+                }
+                standardMonthlySalary = changeStandard;
               }
             }
             
@@ -2390,8 +2405,22 @@ export class KyuyoDashboardComponent {
             
             if (useStandardChange && !isVoluntaryContinuation) {
               // 標準報酬月額変更が適用されている場合（任意継続被保険者以外）
-              standardMonthlySalary = standardChange.monthlyStandard;
-              grade = standardChange.grade;
+              // ただし、等級表の最大値を超えている場合は、等級表の最大値に制限
+              let changeStandard = standardChange.monthlyStandard;
+              const maxHealthStandard = this.getMaxHealthStandardMonthlySalary();
+              if (changeStandard > maxHealthStandard) {
+                changeStandard = maxHealthStandard;
+                // 等級も再計算
+                const maxStandardInfo = this.calculateStandardMonthlySalary(maxHealthStandard);
+                if (maxStandardInfo) {
+                  grade = maxStandardInfo.grade;
+                } else {
+                  grade = standardChange.grade;
+                }
+              } else {
+                grade = standardChange.grade;
+              }
+              standardMonthlySalary = changeStandard;
             } else if (isVoluntaryContinuation) {
               // 任意継続被保険者の場合、退職時の標準報酬月額を使用（最大32万円）
               // 32万円以下の場合はその値を採用し、32万円を超える場合は32万円に制限
@@ -5725,8 +5754,23 @@ export class KyuyoDashboardComponent {
           // 選択された年月が適用月以降の場合のみ変更を適用
           if (filterYear > effectiveYear || 
               (filterYear === effectiveYear && filterMonth >= effectiveMonth)) {
-            healthNursingStandardMonthlySalary = standardChange.monthlyStandard;
-            healthNursingGrade = standardChange.grade;
+            // 標準報酬月額変更情報がある場合は、その標準報酬月額を使用
+            // ただし、等級表の最大値を超えている場合は、等級表の最大値に制限
+            let changeStandard = standardChange.monthlyStandard;
+            const maxHealthStandard = this.getMaxHealthStandardMonthlySalary();
+            if (changeStandard > maxHealthStandard) {
+              changeStandard = maxHealthStandard;
+              // 等級も再計算
+              const maxStandardInfo = this.calculateStandardMonthlySalary(maxHealthStandard);
+              if (maxStandardInfo) {
+                healthNursingGrade = maxStandardInfo.grade;
+              } else {
+                healthNursingGrade = standardChange.grade;
+              }
+            } else {
+              healthNursingGrade = standardChange.grade;
+            }
+            healthNursingStandardMonthlySalary = changeStandard;
           }
         }
         
