@@ -124,7 +124,8 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
       'savePensionStandardMonthlySalaryChange',
       'getAllEmployees',
       'getAllOnboardingEmployees',
-      'saveSalariesBatch'
+      'saveSalariesBatch',
+      'getStandardMonthlySalaryChangesInPeriod'
     ]);
     const httpClientSpy = jasmine.createSpyObj('HttpClient', ['get']);
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
@@ -1572,6 +1573,7 @@ describe('KyuyoDashboardComponent - 給与・賞与計算テスト', () => {
         firestoreService.savePensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve());
         firestoreService.getStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
         firestoreService.getPensionStandardMonthlySalaryChange.and.returnValue(Promise.resolve(null));
+        firestoreService.getStandardMonthlySalaryChangesInPeriod.and.returnValue(Promise.resolve([]));
       }
     });
 

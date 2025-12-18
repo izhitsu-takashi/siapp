@@ -3590,6 +3590,63 @@ export class KyuyoDashboardComponent {
       
       console.log(`[給与設定] 給与設定完了。${this.salaryYear}年${this.salaryMonth}月から2028年12月まで設定しました。`);
       
+      // その社員のstandardMonthlySalaryChangesを全て削除
+      // 給与設定によって標準報酬月額を再計算するため、既存の標準報酬月額変更情報を削除
+      this.salarySaveProgress = { message: '標準報酬月額変更情報を削除しています...', progress: 32 };
+      
+      // その社員の全ての標準報酬月額変更情報を取得（2025年1月から2099年12月まで）
+      const allStandardChanges = await this.firestoreService.getStandardMonthlySalaryChangesInPeriod(
+        this.selectedSalaryEmployee,
+        2025,
+        1,
+        2099,
+        12
+      );
+      
+      // 全ての標準報酬月額変更情報を削除
+      for (const change of allStandardChanges) {
+        const effectiveYear = Number(change.effectiveYear);
+        const effectiveMonth = Number(change.effectiveMonth);
+        try {
+          await this.firestoreService.deleteStandardMonthlySalaryChange(
+            this.selectedSalaryEmployee,
+            effectiveYear,
+            effectiveMonth
+          );
+          console.log(`[給与設定] 社員番号: ${this.selectedSalaryEmployee}, ${effectiveYear}年${effectiveMonth}月の標準報酬月額変更情報を削除しました`);
+        } catch (error) {
+          console.error(`[給与設定] 社員番号: ${this.selectedSalaryEmployee}, ${effectiveYear}年${effectiveMonth}月の標準報酬月額変更情報の削除に失敗しました:`, error);
+        }
+      }
+      
+      // その社員の全ての厚生年金保険用標準報酬月額変更情報も削除
+      // その社員の全ての厚生年金保険用標準報酬月額変更情報を取得（2025年1月から2099年12月まで）
+      const allPensionChanges = await this.firestoreService.getPensionStandardMonthlySalaryChangesInPeriod(
+        this.selectedSalaryEmployee,
+        2025,
+        1,
+        2099,
+        12
+      );
+      
+      // 全ての厚生年金保険用標準報酬月額変更情報を削除
+      for (const change of allPensionChanges) {
+        const effectiveYear = Number(change.effectiveYear);
+        const effectiveMonth = Number(change.effectiveMonth);
+        try {
+          await this.firestoreService.deletePensionStandardMonthlySalaryChange(
+            this.selectedSalaryEmployee,
+            effectiveYear,
+            effectiveMonth
+          );
+          console.log(`[給与設定] 社員番号: ${this.selectedSalaryEmployee}, ${effectiveYear}年${effectiveMonth}月の厚生年金保険用標準報酬月額変更情報を削除しました`);
+        } catch (error) {
+          console.error(`[給与設定] 社員番号: ${this.selectedSalaryEmployee}, ${effectiveYear}年${effectiveMonth}月の厚生年金保険用標準報酬月額変更情報の削除に失敗しました:`, error);
+        }
+      }
+      
+      console.log(`[給与設定] 標準報酬月額変更情報の削除完了。健康介護保険: ${allStandardChanges.length}件、厚生年金保険: ${allPensionChanges.length}件の標準報酬月額変更情報を削除しました。`);
+      
       // 給与設定履歴を再読み込み（標準報酬月額変更チェックの前に必要）
       // 定時改定・随時改定の計算には、すべての給与（自動設定含む）が必要なため、getAllSalaryHistoryを使用
       this.salarySaveProgress = { message: '給与設定履歴を読み込んでいます...', progress: 35 };

@@ -1367,6 +1367,52 @@ export class FirestoreService {
     await deleteDoc(changeRef);
   }
 
+  async deletePensionStandardMonthlySalaryChange(
+    employeeNumber: string,
+    effectiveYear: number,
+    effectiveMonth: number
+  ): Promise<void> {
+    const changeRef = doc(this.db, 'pensionStandardMonthlySalaryChanges', `${employeeNumber}_${effectiveYear}_${effectiveMonth}`);
+    await deleteDoc(changeRef);
+  }
+
+  async getPensionStandardMonthlySalaryChangesInPeriod(
+    employeeNumber: string,
+    startYear: number,
+    startMonth: number,
+    endYear: number,
+    endMonth: number
+  ): Promise<any[]> {
+    // 指定期間内に適用された厚生年金保険用標準報酬月額変更情報を取得
+    const changesRef = collection(this.db, 'pensionStandardMonthlySalaryChanges');
+    const snapshot = await getDocs(changesRef);
+    
+    const changes = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter((change: any) => {
+        if (change.employeeNumber !== employeeNumber) return false;
+        const effectiveYear = Number(change.effectiveYear);
+        const effectiveMonth = Number(change.effectiveMonth);
+        
+        // 期間内かどうかをチェック
+        if (effectiveYear < startYear) return false;
+        if (effectiveYear === startYear && effectiveMonth < startMonth) return false;
+        if (effectiveYear > endYear) return false;
+        if (effectiveYear === endYear && effectiveMonth > endMonth) return false;
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        const aYear = Number(a.effectiveYear);
+        const bYear = Number(b.effectiveYear);
+        const aMonth = Number(a.effectiveMonth);
+        const bMonth = Number(b.effectiveMonth);
+        if (aYear !== bYear) return aYear - bYear;
+        return aMonth - bMonth;
+      });
+    
+    return changes;
+  }
+
   async getStandardMonthlySalaryChange(employeeNumber: string, year: number, month: number): Promise<any | null> {
     // 該当年月以前の最新の変更情報を取得
     const changesRef = collection(this.db, 'standardMonthlySalaryChanges');
