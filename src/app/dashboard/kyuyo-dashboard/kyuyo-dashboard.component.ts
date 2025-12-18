@@ -1486,7 +1486,8 @@ export class KyuyoDashboardComponent {
               resignationDate: emp.resignationDate || null, // 退職日
               healthInsuranceType: emp.healthInsuranceType || '', // 健康保険者種別
               voluntaryInsuranceEndDate: emp.voluntaryInsuranceEndDate || null, // 任意継続終了日
-              joinDate: emp.joinDate || null // 入社年月日
+              joinDate: emp.joinDate || null, // 入社年月日
+              socialInsuranceAcquisitionDate: emp.socialInsuranceAcquisitionDate || null // 資格取得年月日
             };
           })
         );
@@ -1678,7 +1679,7 @@ export class KyuyoDashboardComponent {
   }
   
   // 退職済み社員を表示すべきかどうかを判定
-  shouldShowResignedEmployee(employmentStatus: string, resignationDate: any, healthInsuranceType: string, year: number, month: number, voluntaryInsuranceEndDate?: any): boolean {
+  shouldShowResignedEmployee(employmentStatus: string, resignationDate: any, healthInsuranceType: string, year: number, month: number, voluntaryInsuranceEndDate?: any, socialInsuranceAcquisitionDate?: any): boolean {
     // 在籍中の場合は表示
     if (employmentStatus !== '退職' && employmentStatus !== '退職済み') {
       return true;
@@ -1710,6 +1711,36 @@ export class KyuyoDashboardComponent {
     nextDay.setDate(nextDay.getDate() + 1);
     const lossYear = nextDay.getFullYear();
     const lossMonth = nextDay.getMonth() + 1;
+    
+    // 資格取得年月日を取得
+    let acquisitionDate: Date | null = null;
+    if (socialInsuranceAcquisitionDate) {
+      if (socialInsuranceAcquisitionDate instanceof Date) {
+        acquisitionDate = socialInsuranceAcquisitionDate;
+      } else if (socialInsuranceAcquisitionDate && typeof socialInsuranceAcquisitionDate.toDate === 'function') {
+        acquisitionDate = socialInsuranceAcquisitionDate.toDate();
+      } else if (typeof socialInsuranceAcquisitionDate === 'string') {
+        acquisitionDate = new Date(socialInsuranceAcquisitionDate);
+      }
+      
+      if (acquisitionDate && isNaN(acquisitionDate.getTime())) {
+        acquisitionDate = null;
+      }
+    }
+    
+    // 資格取得年月日と資格喪失年月日が同年月の場合、その月も徴収する
+    if (acquisitionDate && !isNaN(acquisitionDate.getTime())) {
+      const acquisitionYear = acquisitionDate.getFullYear();
+      const acquisitionMonth = acquisitionDate.getMonth() + 1;
+      
+      // 資格取得年月日と資格喪失年月日が同年月の場合
+      if (acquisitionYear === lossYear && acquisitionMonth === lossMonth) {
+        // その月も表示する（通常通り徴収する）
+        if (year === lossYear && month === lossMonth) {
+          return true;
+        }
+      }
+    }
     
     // 選択された年月が資格喪失年月日の前月以前の場合は表示（在籍中として）
     // 資格喪失年月日の前月まで社会保険料を徴収する
@@ -1876,7 +1907,8 @@ export class KyuyoDashboardComponent {
               item.healthInsuranceType || '',
               filterYear,
               filterMonth,
-              item.voluntaryInsuranceEndDate
+              item.voluntaryInsuranceEndDate,
+              item.socialInsuranceAcquisitionDate
             );
             
             if (!shouldShow) return false;
@@ -1965,8 +1997,47 @@ export class KyuyoDashboardComponent {
             // 任意継続被保険者の保険料徴収は退職日の翌日から任意継続終了日まで
             const resignationDate = item.resignationDate;
             const voluntaryInsuranceEndDate = item.voluntaryInsuranceEndDate;
+            const socialInsuranceAcquisitionDate = item.socialInsuranceAcquisitionDate;
             let resignation: Date | null = null;
             let isVoluntaryContinuation = false;
+            let isSameMonthAcquisitionAndLoss = false; // 資格取得年月日と資格喪失年月日が同年月かどうか
+            
+            // 資格取得年月日と資格喪失年月日が同年月かどうかを判定
+            if (resignationDate && socialInsuranceAcquisitionDate) {
+              let resignationDateObj: Date | null = null;
+              if (resignationDate instanceof Date) {
+                resignationDateObj = resignationDate;
+              } else if (resignationDate && typeof resignationDate.toDate === 'function') {
+                resignationDateObj = resignationDate.toDate();
+              } else if (typeof resignationDate === 'string') {
+                resignationDateObj = new Date(resignationDate);
+              }
+              
+              let acquisitionDateObj: Date | null = null;
+              if (socialInsuranceAcquisitionDate instanceof Date) {
+                acquisitionDateObj = socialInsuranceAcquisitionDate;
+              } else if (socialInsuranceAcquisitionDate && typeof socialInsuranceAcquisitionDate.toDate === 'function') {
+                acquisitionDateObj = socialInsuranceAcquisitionDate.toDate();
+              } else if (typeof socialInsuranceAcquisitionDate === 'string') {
+                acquisitionDateObj = new Date(socialInsuranceAcquisitionDate);
+              }
+              
+              if (resignationDateObj && acquisitionDateObj && !isNaN(resignationDateObj.getTime()) && !isNaN(acquisitionDateObj.getTime())) {
+                // 資格喪失年月日を計算（退職日の翌日）
+                const lossDate = new Date(resignationDateObj);
+                lossDate.setDate(lossDate.getDate() + 1);
+                const lossYear = lossDate.getFullYear();
+                const lossMonth = lossDate.getMonth() + 1;
+                
+                const acquisitionYear = acquisitionDateObj.getFullYear();
+                const acquisitionMonth = acquisitionDateObj.getMonth() + 1;
+                
+                // 資格取得年月日と資格喪失年月日が同年月の場合
+                if (acquisitionYear === lossYear && acquisitionMonth === lossMonth) {
+                  isSameMonthAcquisitionAndLoss = true;
+                }
+              }
+            }
             
             if (item.healthInsuranceType === '任意継続被保険者' && 
                 (item.employmentStatus === '退職' || item.employmentStatus === '退職済み') &&
@@ -2020,16 +2091,23 @@ export class KyuyoDashboardComponent {
                 // 任意継続終了日の月の1日を計算（終了月の前日まで徴収するため）
                 const endDateMonthStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
                 
-                // 任意継続開始日は退職日の翌日。徴収はその日が属する月から開始
-                // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
-                if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
-                  if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
-                    isVoluntaryContinuation = true;
-                  }
+                // 資格取得年月日と資格喪失年月日が同年月で、かつ任意継続被保険者の場合
+                // その月は通常の社会保険料も徴収するため、isVoluntaryContinuationはfalseのまま
+                if (isSameMonthAcquisitionAndLoss && selectedDate.getTime() === voluntaryStartMonth.getTime()) {
+                  // 同年月で任意継続の場合、その月は通常の社会保険料も徴収する
+                  // isVoluntaryContinuationはfalseのまま（通常の社会保険料を計算）
                 } else {
-                  // 加入月から終了月の前日まで徴収
-                  if (selectedDate >= voluntaryStartMonth && selectedDate < endDateMonthStart) {
-                    isVoluntaryContinuation = true;
+                  // 任意継続開始日は退職日の翌日。徴収はその日が属する月から開始
+                  // 加入月と終了月が同じ場合は、その月のみ任意継続保険料を徴収
+                  if (voluntaryStartMonth.getTime() === endDateMonthStart.getTime()) {
+                    if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
+                      isVoluntaryContinuation = true;
+                    }
+                  } else {
+                    // 加入月から終了月の前日まで徴収
+                    if (selectedDate >= voluntaryStartMonth && selectedDate < endDateMonthStart) {
+                      isVoluntaryContinuation = true;
+                    }
                   }
                 }
               }
@@ -2219,16 +2297,75 @@ export class KyuyoDashboardComponent {
             // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
             // 健康保険料：75歳以上の場合は0円
             const isHealthInsuranceTarget = age !== null && age < 75;
-            const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isHealthInsuranceTarget ? standardMonthlySalary * (healthInsuranceRate / 100) : 0);
+            let healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isHealthInsuranceTarget ? standardMonthlySalary * (healthInsuranceRate / 100) : 0);
             // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
-            const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
+            let nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
             // 厚生年金保険料：70歳以上の場合は0円
             const isPensionInsuranceTarget = age !== null && age < 70;
-            const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : (isPensionInsuranceTarget ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0));
+            let pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : (isPensionInsuranceTarget ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0));
+            
+            // 同年月で任意継続の場合、任意継続保険料も加算
+            let voluntaryHealthInsurance = 0;
+            let voluntaryNursingInsurance = 0;
+            if (isSameMonthAcquisitionAndLoss && item.healthInsuranceType === '任意継続被保険者' && resignation && !isNaN(resignation.getTime())) {
+              // 任意継続開始日は退職日の翌日
+              const nextDay = new Date(resignation);
+              nextDay.setDate(nextDay.getDate() + 1);
+              const voluntaryStartDate = nextDay;
+              const voluntaryStartMonth = new Date(voluntaryStartDate.getFullYear(), voluntaryStartDate.getMonth(), 1);
+              const selectedDate = new Date(filterYear, filterMonth - 1, 1);
+              
+              // 選択年月が任意継続開始月の場合、任意継続保険料も計算
+              if (selectedDate.getTime() === voluntaryStartMonth.getTime()) {
+                // 退職時の固定的賃金を取得（資格喪失年月日の前月以前の最新の給与設定）
+                const lossDate = new Date(resignation);
+                lossDate.setDate(lossDate.getDate() + 1);
+                const lossYear = lossDate.getFullYear();
+                const lossMonth = lossDate.getMonth() + 1;
+                
+                const preResignationSalaries = this.salaryHistory
+                  .filter((s: any) => s['employeeNumber'] === item.employeeNumber)
+                  .filter((s: any) => {
+                    const salaryYear = Number(s['year']);
+                    const salaryMonth = Number(s['month']);
+                    if (salaryYear < lossYear) return true;
+                    if (salaryYear === lossYear && salaryMonth < lossMonth) return true;
+                    return false;
+                  })
+                  .sort((a: any, b: any) => {
+                    if (a['year'] !== b['year']) return b['year'] - a['year'];
+                    return b['month'] - a['month'];
+                  });
+                
+                const latestSalaryBeforeResignation = preResignationSalaries.length > 0 
+                  ? preResignationSalaries[0]['amount'] 
+                  : item.fixedSalary;
+                
+                // 任意継続保険料用の標準報酬月額を計算（最大32万円）
+                const voluntaryStandardInfo = this.calculateStandardMonthlySalary(latestSalaryBeforeResignation);
+                let voluntaryStandardMonthlySalary = voluntaryStandardInfo ? voluntaryStandardInfo.monthlyStandard : 0;
+                
+                // 最大32万円に制限
+                if (voluntaryStandardMonthlySalary > 320000) {
+                  voluntaryStandardMonthlySalary = 320000;
+                }
+                
+                // 任意継続保険料を計算（全額自己負担）
+                voluntaryHealthInsurance = isHealthInsuranceTarget ? voluntaryStandardMonthlySalary * (healthInsuranceRate / 100) : 0;
+                voluntaryNursingInsurance = isNursingInsuranceTarget ? voluntaryStandardMonthlySalary * (nursingInsuranceRate / 100) : 0;
+              }
+            }
+            
+            // 同年月で任意継続の場合、通常の社会保険料と任意継続保険料の両方を加算
+            if (isSameMonthAcquisitionAndLoss && item.healthInsuranceType === '任意継続被保険者') {
+              healthInsuranceRaw += voluntaryHealthInsurance;
+              nursingInsuranceRaw += voluntaryNursingInsurance;
+              // 厚生年金保険料は通常通り（任意継続でも0にはしない）
+            }
             
             // 社員負担額を計算
             let employeeBurden = 0;
-            if (!isInMaternityLeave || isVoluntaryContinuation) {
+            if (!isInMaternityLeave || isVoluntaryContinuation || isSameMonthAcquisitionAndLoss) {
               // 現金徴収する社員かどうかを判定
               const isCashCollection = this.isCashCollectionEmployee(item.employeeNumber);
               const roundFunction = isCashCollection ? this.roundHalfCash.bind(this) : this.roundHalf.bind(this);
@@ -2238,6 +2375,22 @@ export class KyuyoDashboardComponent {
                 // 端数処理（現金徴収の場合は50未満なら切り捨て、50以上なら切り上げ）
                 const healthNursingTotal = healthInsuranceRaw + nursingInsuranceRaw;
                 employeeBurden = roundFunction(healthNursingTotal);
+              } else if (isSameMonthAcquisitionAndLoss && item.healthInsuranceType === '任意継続被保険者') {
+                // 同年月で任意継続の場合、通常の社会保険料（会社と折半）＋任意継続保険料（全額自己負担）
+                // 通常の社会保険料（会社と折半）
+                const normalHealthNursingHalf = (healthInsuranceRaw - voluntaryHealthInsurance + nursingInsuranceRaw - voluntaryNursingInsurance) / 2;
+                const normalHealthNursingBurden = roundFunction(normalHealthNursingHalf);
+                
+                // 厚生年金保険料 ÷ 2 の端数処理
+                const pensionHalf = pensionInsuranceRaw / 2;
+                const pensionBurden = roundFunction(pensionHalf);
+                
+                // 任意継続保険料（全額自己負担）
+                const voluntaryTotal = voluntaryHealthInsurance + voluntaryNursingInsurance;
+                const voluntaryBurden = roundFunction(voluntaryTotal);
+                
+                // 社員負担額（合計）
+                employeeBurden = normalHealthNursingBurden + pensionBurden + voluntaryBurden;
               } else {
                 // (健康保険料 + 介護保険料) ÷ 2 の端数処理
                 const healthNursingHalf = (healthInsuranceRaw + nursingInsuranceRaw) / 2;
@@ -2380,7 +2533,8 @@ export class KyuyoDashboardComponent {
                 employeeData?.healthInsuranceType || '',
                 filterYear,
                 filterMonth,
-                employeeData?.voluntaryInsuranceEndDate
+                employeeData?.voluntaryInsuranceEndDate,
+                employeeData?.socialInsuranceAcquisitionDate
               );
               
               if (!shouldShow) {
