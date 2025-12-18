@@ -3512,7 +3512,7 @@
           >
           <div *ngIf="resignationForm.get('resignationDate')?.invalid && resignationForm.get('resignationDate')?.touched" class="error-message">
             <span *ngIf="resignationForm.get('resignationDate')?.errors?.['required']">退職日を入力してください</span>
-            <span *ngIf="resignationForm.get('resignationDate')?.errors?.['pastDate']">退職日は今日以降の日付を入力してください</span>
+            <span *ngIf="resignationForm.get('resignationDate')?.errors?.['pastDate']">退職日は入社日以降の日付を入力してください</span>
           </div>
         </div>
       </section>
@@ -5967,7 +5967,7 @@
                   <input type="date" formControlName="resignationDate" class="form-input" [min]="minResignationDate">
                   <div *ngIf="resignationForm.get('resignationDate')?.invalid && resignationForm.get('resignationDate')?.touched" class="error-message">
                     <span *ngIf="resignationForm.get('resignationDate')?.errors?.['required']">退職日を入力してください</span>
-                    <span *ngIf="resignationForm.get('resignationDate')?.errors?.['pastDate']">退職日は今日以降の日付を入力してください</span>
+                    <span *ngIf="resignationForm.get('resignationDate')?.errors?.['pastDate']">退職日は入社日以降の日付を入力してください</span>
                   </div>
                 </div>
               </div>

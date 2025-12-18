@@ -243,12 +243,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
       this.employeeNumber = storedEmployeeNumber;
       this.employeeName = storedEmployeeName || '';
       
-      // 退職日の最小日付を設定（今日）
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      this.minResignationDate = `${year}-${month}-${day}`;
+      // 退職日の最小日付はloadEmployeeDataで設定（入社日以降）
       
       // 非同期処理を並列実行（エラーハンドリングを追加）
       Promise.all([
@@ -359,6 +354,43 @@ export class EmployeeDashboardComponent implements OnDestroy {
           myNumberCardFileUrl: myNumberCardFileUrl,
           myNumberCardFile: myNumberCardFile
         };
+        
+        // 退職日の最小日付を設定（入社日以降）
+        if (data.joinDate) {
+          let joinDate: Date;
+          if (data.joinDate instanceof Date) {
+            joinDate = data.joinDate;
+          } else if (data.joinDate && typeof data.joinDate.toDate === 'function') {
+            joinDate = data.joinDate.toDate();
+          } else if (typeof data.joinDate === 'string') {
+            joinDate = new Date(data.joinDate);
+          } else {
+            // 入社日が取得できない場合は今日を設定
+            joinDate = new Date();
+          }
+          
+          if (!isNaN(joinDate.getTime())) {
+            const year = joinDate.getFullYear();
+            const month = String(joinDate.getMonth() + 1).padStart(2, '0');
+            const day = String(joinDate.getDate()).padStart(2, '0');
+            this.minResignationDate = `${year}-${month}-${day}`;
+          } else {
+            // 入社日が無効な場合は今日を設定
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            this.minResignationDate = `${year}-${month}-${day}`;
+          }
+        } else {
+          // 入社日が設定されていない場合は今日を設定
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          this.minResignationDate = `${year}-${month}-${day}`;
+        }
+        
         this.populateForm(data);
         // 保険・扶養ページ用データを設定
         this.loadInsuranceAndDependentsData(data);
@@ -5039,16 +5071,31 @@ export class EmployeeDashboardComponent implements OnDestroy {
     return null;
   }
 
-  // 未来の日付のみを許可するバリデーター
+  // 入社日以降の日付のみを許可するバリデーター
   futureDateValidator(control: AbstractControl): ValidationErrors | null {
     if (!control.value) {
       return null; // 空の場合は他のバリデーターで処理
     }
     const selectedDate = new Date(control.value);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    selectedDate.setHours(0, 0, 0, 0); // 時刻を0時にリセット
     
-    if (selectedDate < today) {
+    // 入社日を取得
+    let joinDate: Date | null = null;
+    if (this.employeeData?.joinDate) {
+      if (this.employeeData.joinDate instanceof Date) {
+        joinDate = this.employeeData.joinDate;
+      } else if (this.employeeData.joinDate && typeof this.employeeData.joinDate.toDate === 'function') {
+        joinDate = this.employeeData.joinDate.toDate();
+      } else if (typeof this.employeeData.joinDate === 'string') {
+        joinDate = new Date(this.employeeData.joinDate);
+      }
+    }
+    
+    // 入社日が取得できない場合は今日を使用
+    const minDate = joinDate && !isNaN(joinDate.getTime()) ? joinDate : new Date();
+    minDate.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    
+    if (selectedDate < minDate) {
       return { pastDate: true };
     }
     return null;
