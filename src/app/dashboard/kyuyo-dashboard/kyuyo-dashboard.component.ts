@@ -49,6 +49,8 @@ export class KyuyoDashboardComponent {
   
   // 標準報酬月額等級表
   gradeTable: any = null;
+  // コメント要素（ダウンロード時に保持するため）
+  gradeTableComment: any = null;
   
   // 設定ページ用データ
   settingsForm!: FormGroup;
@@ -744,6 +746,28 @@ export class KyuyoDashboardComponent {
     }
   }
   
+  // オブジェクトのプロパティを特定の順序で並べ替えるヘルパー関数
+  private sortObjectProperties(obj: any, propertyOrder: string[]): any {
+    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
+      return obj;
+    }
+    
+    const sorted: any = {};
+    // 指定された順序でプロパティを追加
+    for (const prop of propertyOrder) {
+      if (prop in obj) {
+        sorted[prop] = obj[prop];
+      }
+    }
+    // 残りのプロパティを追加（順序指定されていないもの）
+    for (const key in obj) {
+      if (!propertyOrder.includes(key)) {
+        sorted[key] = obj[key];
+      }
+    }
+    return sorted;
+  }
+
   // kenpo-rates.jsonをダウンロード
   downloadKenpoRates() {
     try {
@@ -752,15 +776,18 @@ export class KyuyoDashboardComponent {
       if (this.kenpoRatesComment) {
         downloadData.push(this.kenpoRatesComment);
       }
-      // 保険料率データを追加
-      downloadData.push(...this.kenpoRates);
+      // 保険料率データを追加（プロパティ順序を固定）
+      const sortedRates = this.kenpoRates.map((item: any) => 
+        this.sortObjectProperties(item, ['prefecture', 'careRate', 'healthRate'])
+      );
+      downloadData.push(...sortedRates);
       
       const jsonData = JSON.stringify(downloadData, null, 2);
       const blob = new Blob([jsonData], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'kenpo-rates.json';
+      link.download = '健康介護保険料率.json';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -891,7 +918,41 @@ export class KyuyoDashboardComponent {
   // 等級.jsonをダウンロード
   downloadGradeTable() {
     try {
-      const jsonData = JSON.stringify(this.gradeTable, null, 2);
+      if (!this.gradeTable) {
+        alert('等級表データが読み込まれていません');
+        return;
+      }
+      
+      // 新しい形式に変換（配列形式）
+      const downloadData: any[] = [];
+      
+      // コメント要素がある場合は先頭に追加
+      if (this.gradeTableComment) {
+        downloadData.push(this.gradeTableComment);
+      }
+      
+      // データ要素を新しい形式に変換（プロパティ順序を固定）
+      const dataElement: any = {};
+      
+      // 健康介護保険等級表を追加（プロパティ順序を固定）
+      if (this.gradeTable.hyouzyungetugakuReiwa7) {
+        dataElement['健康介護保険等級表'] = this.gradeTable.hyouzyungetugakuReiwa7.map((item: any) =>
+          this.sortObjectProperties(item, ['grade', 'from', 'to', 'monthlyStandard'])
+        );
+      }
+      
+      // 厚生年金保険等級表を追加（プロパティ順序を固定）
+      if (this.gradeTable.kouseinenkinReiwa7) {
+        dataElement['厚生年金保険等級表'] = this.gradeTable.kouseinenkinReiwa7.map((item: any) =>
+          this.sortObjectProperties(item, ['grade', 'from', 'to', 'monthlyStandard'])
+        );
+      }
+      
+      // データ要素を追加（プロパティ順序を固定）
+      const sortedDataElement = this.sortObjectProperties(dataElement, ['健康介護保険等級表', '厚生年金保険等級表']);
+      downloadData.push(sortedDataElement);
+      
+      const jsonData = JSON.stringify(downloadData, null, 2);
       const blob = new Blob([jsonData], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -931,20 +992,45 @@ export class KyuyoDashboardComponent {
       const fileContent = await this.readFileAsText(this.selectedGradeTableFile);
       const parsedData = JSON.parse(fileContent);
       
-      // データの形式を検証
-      if (!parsedData || typeof parsedData !== 'object') {
-        alert('JSONファイルの形式が正しくありません。オブジェクト形式である必要があります。');
+      // 新しい形式（配列）か古い形式（オブジェクト）かを判定
+      let gradeTableData: any = null;
+      let commentData: any = null;
+      
+      if (Array.isArray(parsedData)) {
+        // 新しい形式: 配列の最初の要素がコメント、2番目がデータ
+        for (const item of parsedData) {
+          if (item._comment !== undefined) {
+            commentData = item;
+          } else if (item['健康介護保険等級表'] || item['厚生年金保険等級表']) {
+            // データ要素を内部形式に変換
+            gradeTableData = {
+              hyouzyungetugakuReiwa7: item['健康介護保険等級表'] || [],
+              kouseinenkinReiwa7: item['厚生年金保険等級表'] || []
+            };
+          }
+        }
+      } else if (parsedData && typeof parsedData === 'object') {
+        // 古い形式: 直接オブジェクト
+        gradeTableData = parsedData;
+      } else {
+        alert('JSONファイルの形式が正しくありません。配列形式またはオブジェクト形式である必要があります。');
+        return;
+      }
+      
+      // データが存在することを確認
+      if (!gradeTableData) {
+        alert('JSONファイルの形式が正しくありません。等級表データが見つかりませんでした。');
         return;
       }
       
       // hyouzyungetugakuReiwa7が存在するか確認
-      if (!parsedData.hyouzyungetugakuReiwa7 || !Array.isArray(parsedData.hyouzyungetugakuReiwa7)) {
-        alert('JSONファイルの形式が正しくありません。hyouzyungetugakuReiwa7プロパティが必要です。');
+      if (!gradeTableData.hyouzyungetugakuReiwa7 || !Array.isArray(gradeTableData.hyouzyungetugakuReiwa7)) {
+        alert('JSONファイルの形式が正しくありません。健康介護保険等級表が必要です。');
         return;
       }
       
       // 各要素の形式を検証（hyouzyungetugakuReiwa7）
-      for (const item of parsedData.hyouzyungetugakuReiwa7) {
+      for (const item of gradeTableData.hyouzyungetugakuReiwa7) {
         if (typeof item.grade !== 'number' || 
             typeof item.monthlyStandard !== 'number' || 
             typeof item.from !== 'number' || 
@@ -955,14 +1041,14 @@ export class KyuyoDashboardComponent {
       }
       
       // kouseinenkinReiwa7が存在するか確認（オプション、存在しない場合は警告のみ）
-      if (parsedData.kouseinenkinReiwa7) {
-        if (!Array.isArray(parsedData.kouseinenkinReiwa7)) {
+      if (gradeTableData.kouseinenkinReiwa7) {
+        if (!Array.isArray(gradeTableData.kouseinenkinReiwa7)) {
           alert('JSONファイルの形式が正しくありません。kouseinenkinReiwa7は配列である必要があります。');
           return;
         }
         
         // 各要素の形式を検証（kouseinenkinReiwa7）
-        for (const item of parsedData.kouseinenkinReiwa7) {
+        for (const item of gradeTableData.kouseinenkinReiwa7) {
           if (typeof item.grade !== 'number' || 
               typeof item.monthlyStandard !== 'number' || 
               typeof item.from !== 'number' || 
@@ -973,15 +1059,21 @@ export class KyuyoDashboardComponent {
         }
       }
       
-      // gradeTableを更新
-      this.gradeTable = parsedData;
+      // gradeTableを更新（内部形式で保存）
+      this.gradeTable = gradeTableData;
+      // コメント要素を別途保存
+      this.gradeTableComment = commentData;
       
-      // Firestoreに保存（gradeTableをsettingsに保存）
+      // Firestoreに保存（gradeTableとgradeTableCommentをsettingsに保存）
       const currentSettings = await this.firestoreService.getSettings() || {};
       await this.firestoreService.saveSettings({
         ...currentSettings,
-        gradeTable: this.gradeTable
+        gradeTable: this.gradeTable,
+        gradeTableComment: this.gradeTableComment
       });
+      
+      // 等級表を再読み込みして、確実に最新のデータを使用する
+      await this.loadGradeTable();
       
       alert('等級表を適用しました');
       
@@ -1013,14 +1105,36 @@ export class KyuyoDashboardComponent {
       // まずFirestoreから設定を読み込んで、gradeTableが保存されているか確認
       const settings = await this.firestoreService.getSettings();
       if (settings && settings.gradeTable && settings.gradeTable.hyouzyungetugakuReiwa7) {
+        // gradeTableを読み込む（内部形式で保存されている）
         this.gradeTable = settings.gradeTable;
+        // コメント要素があれば読み込む
+        if (settings.gradeTableComment) {
+          this.gradeTableComment = settings.gradeTableComment;
+        }
         return;
       }
       
       // Firestoreに保存されていない場合は、assetsから読み込む
       const response = await this.http.get<any>('/assets/grade-table.json').toPromise();
       if (response) {
-        this.gradeTable = response;
+        // 新しい形式（配列）か古い形式（オブジェクト）かを判定
+        if (Array.isArray(response)) {
+          // 新しい形式: 配列の最初の要素がコメント、2番目がデータ
+          for (const item of response) {
+            if (item._comment !== undefined) {
+              this.gradeTableComment = item;
+            } else if (item['健康介護保険等級表'] || item['厚生年金保険等級表']) {
+              // データ要素を内部形式に変換
+              this.gradeTable = {
+                hyouzyungetugakuReiwa7: item['健康介護保険等級表'] || [],
+                kouseinenkinReiwa7: item['厚生年金保険等級表'] || []
+              };
+            }
+          }
+        } else {
+          // 古い形式: 直接オブジェクト
+          this.gradeTable = response;
+        }
       }
     } catch (error) {
       // エラーをログに出力しない（プリレンダリング時のエラーは無視）
@@ -1040,7 +1154,24 @@ export class KyuyoDashboardComponent {
       const response = await fetch('/assets/grade-table.json');
       if (response.ok) {
         const data = await response.json();
-        this.gradeTable = data;
+        // 新しい形式（配列）か古い形式（オブジェクト）かを判定
+        if (Array.isArray(data)) {
+          // 新しい形式: 配列の最初の要素がコメント、2番目がデータ
+          for (const item of data) {
+            if (item._comment !== undefined) {
+              this.gradeTableComment = item;
+            } else if (item['健康介護保険等級表'] || item['厚生年金保険等級表']) {
+              // データ要素を内部形式に変換
+              this.gradeTable = {
+                hyouzyungetugakuReiwa7: item['健康介護保険等級表'] || [],
+                kouseinenkinReiwa7: item['厚生年金保険等級表'] || []
+              };
+            }
+          }
+        } else {
+          // 古い形式: 直接オブジェクト
+          this.gradeTable = data;
+        }
       }
     } catch (error) {
       // エラーをログに出力しない（プリレンダリング時のエラーは無視）
@@ -1087,6 +1218,26 @@ export class KyuyoDashboardComponent {
     }
   }
   
+  // 健康介護保険等級表の最大標準報酬月額を取得
+  getMaxHealthStandardMonthlySalary(): number {
+    if (!this.gradeTable || !this.gradeTable.hyouzyungetugakuReiwa7 || this.gradeTable.hyouzyungetugakuReiwa7.length === 0) {
+      // フォールバック: デフォルト値139万円
+      return 1390000;
+    }
+    const lastGrade = this.gradeTable.hyouzyungetugakuReiwa7[this.gradeTable.hyouzyungetugakuReiwa7.length - 1];
+    return lastGrade.monthlyStandard;
+  }
+
+  // 厚生年金保険等級表の最大標準報酬月額を取得
+  getMaxPensionStandardMonthlySalary(): number {
+    if (!this.gradeTable || !this.gradeTable.kouseinenkinReiwa7 || this.gradeTable.kouseinenkinReiwa7.length === 0) {
+      // フォールバック: デフォルト値65万円
+      return 650000;
+    }
+    const lastGrade = this.gradeTable.kouseinenkinReiwa7[this.gradeTable.kouseinenkinReiwa7.length - 1];
+    return lastGrade.monthlyStandard;
+  }
+
   // 固定的賃金から厚生年金保険料計算用の標準報酬月額を計算
   // 固定的賃金から厚生年金保険料計算用の標準報酬月額を計算
   // 健康介護保険の標準報酬月額を計算してから、それを厚生年金保険用の等級表に適用
@@ -1114,11 +1265,23 @@ export class KyuyoDashboardComponent {
     const salary = Number(standardMonthlySalary) || 0;
     const pensionGradeList = this.gradeTable.kouseinenkinReiwa7;
     
-    // from ~ to の範囲内に当てはまる等級を検索
-    for (const gradeItem of pensionGradeList) {
-      if (salary >= gradeItem.from && salary <= gradeItem.to) {
-        return gradeItem.monthlyStandard;
-      }
+    // 範囲内に当てはまる等級を全て収集（範囲が重複している場合があるため）
+    const matchingGrades = pensionGradeList.filter((gradeItem: any) => 
+      salary >= gradeItem.from && salary <= gradeItem.to
+    );
+    
+    if (matchingGrades.length > 0) {
+      // 複数の等級が該当する場合、範囲が最も狭い（to - fromが最小）等級を優先
+      // 範囲が同じ場合は、等級番号が大きい（より新しい）等級を優先
+      matchingGrades.sort((a: any, b: any) => {
+        const rangeA = a.to - a.from;
+        const rangeB = b.to - b.from;
+        if (rangeA !== rangeB) {
+          return rangeA - rangeB; // 範囲が狭い順
+        }
+        return b.grade - a.grade; // 範囲が同じ場合は等級番号が大きい順
+      });
+      return matchingGrades[0].monthlyStandard;
     }
     
     // 範囲外の場合は、最小値（最初の要素のmonthlyStandard）または最大値（最後の要素のmonthlyStandard）を返す
@@ -1472,8 +1635,13 @@ export class KyuyoDashboardComponent {
               if (nowYear > effectiveYear || 
                   (nowYear === effectiveYear && nowMonth >= effectiveMonth)) {
                 // 標準報酬月額変更情報がある場合は、その標準報酬月額を使用
-                pensionStandardMonthlySalary = pensionStandardChange.monthlyStandard;
-                console.log(`[社会保険料一覧] 社員番号: ${emp.employeeNumber}, 厚生年金保険用標準報酬月額変更情報を適用: ${pensionStandardMonthlySalary}円 (適用年月: ${effectiveYear}年${effectiveMonth}月)`);
+                // ただし、等級表の最大値を超えている場合は、等級表の最大値に制限
+                let changeStandard = pensionStandardChange.monthlyStandard;
+                const maxPensionStandard = this.getMaxPensionStandardMonthlySalary();
+                if (changeStandard > maxPensionStandard) {
+                  changeStandard = maxPensionStandard;
+                }
+                pensionStandardMonthlySalary = changeStandard;
               } else {
                 // 適用月以前の場合は、健康介護保険の標準報酬月額を基準に計算
                 pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalaryFromStandard(standardMonthlySalary);
@@ -2263,7 +2431,6 @@ export class KyuyoDashboardComponent {
               grade = standardSalaryInfo ? standardSalaryInfo.grade : 0;
               
               // 最大32万円に制限（32万円以下の場合はその値を採用）
-              // 標準報酬月額変更情報があっても、32万円の上限を優先する
               if (standardMonthlySalary > 320000) {
                 standardMonthlySalary = 320000;
                 // 32万円に対応する等級を再計算
@@ -2323,8 +2490,13 @@ export class KyuyoDashboardComponent {
                 if (filterYear > effectiveYear || 
                     (filterYear === effectiveYear && filterMonth >= effectiveMonth)) {
                   // 標準報酬月額変更情報がある場合は、その標準報酬月額を使用
-                  pensionStandardMonthlySalary = pensionStandardChange.monthlyStandard;
-                  console.log(`[社会保険料一覧（フィルター）] 社員番号: ${item.employeeNumber}, 厚生年金保険用標準報酬月額変更情報を適用: ${pensionStandardMonthlySalary}円 (適用年月: ${effectiveYear}年${effectiveMonth}月, フィルター年月: ${filterYear}年${filterMonth}月)`);
+                  // ただし、等級表の最大値を超えている場合は、等級表の最大値に制限
+                  let changeStandard = pensionStandardChange.monthlyStandard;
+                  const maxPensionStandard = this.getMaxPensionStandardMonthlySalary();
+                  if (changeStandard > maxPensionStandard) {
+                    changeStandard = maxPensionStandard;
+                  }
+                  pensionStandardMonthlySalary = changeStandard;
                 } else {
                   // 適用月以前の場合は、健康介護保険の標準報酬月額を基準に計算
                   pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalaryFromStandard(standardMonthlySalary);
@@ -5579,9 +5751,17 @@ export class KyuyoDashboardComponent {
           if (filterYear > effectiveYear || 
               (filterYear === effectiveYear && filterMonth >= effectiveMonth)) {
             // 標準報酬月額変更情報がある場合は、その標準報酬月額と等級を使用
-            pensionStandardMonthlySalary = pensionStandardChange.monthlyStandard;
-            pensionGrade = pensionStandardChange.grade;
-            console.log(`[社員情報モーダル] 厚生年金保険用標準報酬月額変更情報を適用: ${pensionStandardMonthlySalary}円, 等級: ${pensionGrade} (適用年月: ${effectiveYear}年${effectiveMonth}月)`);
+            // ただし、等級表の最大値を超えている場合は、等級表の最大値に制限
+            let changeStandard = pensionStandardChange.monthlyStandard;
+            const maxPensionStandard = this.getMaxPensionStandardMonthlySalary();
+            if (changeStandard > maxPensionStandard) {
+              changeStandard = maxPensionStandard;
+              // 等級も再計算
+              pensionGrade = null; // 等級を再計算するためnullに設定
+            } else {
+              pensionGrade = pensionStandardChange.grade;
+            }
+            pensionStandardMonthlySalary = changeStandard;
           } else {
             // 適用月以前の場合は、健康介護保険の標準報酬月額を基準に計算
             pensionStandardMonthlySalary = this.calculatePensionStandardMonthlySalaryFromStandard(healthNursingStandardMonthlySalary);
@@ -5595,14 +5775,26 @@ export class KyuyoDashboardComponent {
         // 標準報酬月額から等級を逆引き（等級がまだ取得できていない場合）
         if (pensionGrade === null && this.gradeTable && this.gradeTable.kouseinenkinReiwa7) {
           const pensionGradeList = this.gradeTable.kouseinenkinReiwa7;
-          // 完全一致を探す
-          let matchingGrade = pensionGradeList.find((item: any) => item.monthlyStandard === pensionStandardMonthlySalary);
+          // 完全一致を探す（複数の等級が同じmonthlyStandardを持つ場合、等級番号が大きいものを優先）
+          const matchingGrades = pensionGradeList.filter((item: any) => item.monthlyStandard === pensionStandardMonthlySalary);
           
-          // 完全一致が見つからない場合、最も近い値を探す（±1円の範囲内）
-          if (!matchingGrade) {
-            matchingGrade = pensionGradeList.find((item: any) => 
+          let matchingGrade: any = null;
+          if (matchingGrades.length > 0) {
+            // 等級番号が大きい（より新しい）等級を優先
+            matchingGrade = matchingGrades.reduce((prev: any, current: any) => 
+              (current.grade > prev.grade) ? current : prev
+            );
+          } else {
+            // 完全一致が見つからない場合、最も近い値を探す（±1円の範囲内）
+            const nearMatchingGrades = pensionGradeList.filter((item: any) => 
               Math.abs(item.monthlyStandard - pensionStandardMonthlySalary) <= 1
             );
+            if (nearMatchingGrades.length > 0) {
+              // 等級番号が大きい（より新しい）等級を優先
+              matchingGrade = nearMatchingGrades.reduce((prev: any, current: any) => 
+                (current.grade > prev.grade) ? current : prev
+              );
+            }
           }
           
           pensionGrade = matchingGrade ? matchingGrade.grade : null;
