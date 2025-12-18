@@ -1319,8 +1319,15 @@ export class HrDashboardComponent {
     if (this.applicationStatusFilter !== 'すべて') {
       filtered = this.allApplications.filter(app => {
         const status = app.status || '';
-        return status === this.applicationStatusFilter || 
-               (this.applicationStatusFilter === '承認済み' && (status === '承認済み' || status === '承認'));
+        if (this.applicationStatusFilter === '承認済み') {
+          // 承認済みの場合は承認済みと承認の両方を表示
+          return status === '承認済み' || status === '承認';
+        } else if (this.applicationStatusFilter === '差し戻し') {
+          // 差し戻しの場合は差し戻しと却下の両方を表示
+          return status === '差し戻し' || status === '却下';
+        } else {
+          return status === this.applicationStatusFilter;
+        }
       });
     }
     
@@ -6185,8 +6192,8 @@ export class HrDashboardComponent {
     this.currentTab = '申請管理';
     // ステータスに応じてフィルターを設定
     if (status === '却下・差し戻し') {
-      // 却下・差し戻しの場合は「すべて」に設定（フィルター処理で対応）
-      this.applicationStatusFilter = 'すべて';
+      // 却下・差し戻しの場合は「差し戻し」に設定（フィルター処理で却下と差し戻しの両方を表示）
+      this.applicationStatusFilter = '差し戻し';
     } else if (status === '承認済み') {
       // 承認済みの場合は「承認済み」に設定（承認済みと承認を表示）
       this.applicationStatusFilter = '承認済み';
