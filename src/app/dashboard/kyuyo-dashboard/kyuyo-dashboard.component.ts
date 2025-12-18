@@ -4392,14 +4392,24 @@ export class KyuyoDashboardComponent {
       console.log(`[厚生年金随時改定] 変更年月: ${changeYear}年${changeMonth}月`);
       console.log(`[厚生年金随時改定] 給与額: ${newSalary}円`);
       
-      // 変更前の厚生年金保険用標準報酬月額を取得（変更月の時点での等級）
+      // 変更前の厚生年金保険用標準報酬月額を取得（変更月+3か月以前に適用される最新の等級）
+      // 変更月の給与設定によって決定される適用年月は変更月+3か月なので、
+      // 変更月+3か月以前に適用される最新の変更情報を取得する必要がある
+      let targetYearForPrevious = changeYear;
+      let targetMonthForPrevious = changeMonth + 3;
+      while (targetMonthForPrevious > 12) {
+        targetMonthForPrevious -= 12;
+        targetYearForPrevious += 1;
+      }
+      
       const pensionStandardChangeBeforeChange = await this.firestoreService.getPensionStandardMonthlySalaryChange(
         employeeNumber,
-        changeYear,
-        changeMonth
+        targetYearForPrevious,
+        targetMonthForPrevious
       );
       
       console.log(`[厚生年金随時改定] ---------- 前の等級の取得 ----------`);
+      console.log(`[厚生年金随時改定] 変更月+3か月: ${targetYearForPrevious}年${targetMonthForPrevious}月`);
       console.log(`[厚生年金随時改定] 変更前の標準報酬月額変更情報: ${pensionStandardChangeBeforeChange ? '存在' : '不存在'}`);
       if (pensionStandardChangeBeforeChange) {
         console.log(`[厚生年金随時改定] 変更情報の適用年月: ${pensionStandardChangeBeforeChange.effectiveYear}年${pensionStandardChangeBeforeChange.effectiveMonth}月`);
@@ -4409,13 +4419,13 @@ export class KyuyoDashboardComponent {
       
       let previousPensionGrade: number | null = null;
       
-      // 変更月以前に厚生年金保険用標準報酬月額変更情報がある場合、その等級を使用
+      // 変更月+3か月以前に厚生年金保険用標準報酬月額変更情報がある場合、その等級を使用
       if (pensionStandardChangeBeforeChange) {
         const effectiveYearBefore = Number(pensionStandardChangeBeforeChange.effectiveYear);
         const effectiveMonthBefore = Number(pensionStandardChangeBeforeChange.effectiveMonth);
-        const isBeforeChange = effectiveYearBefore < changeYear || (effectiveYearBefore === changeYear && effectiveMonthBefore < changeMonth);
-        console.log(`[厚生年金随時改定] 変更情報の適用年月が変更月以前か: ${isBeforeChange}`);
-        if (isBeforeChange) {
+        const isBeforeTarget = effectiveYearBefore < targetYearForPrevious || (effectiveYearBefore === targetYearForPrevious && effectiveMonthBefore < targetMonthForPrevious);
+        console.log(`[厚生年金随時改定] 変更情報の適用年月が変更月+3か月以前か: ${isBeforeTarget}`);
+        if (isBeforeTarget) {
           previousPensionGrade = pensionStandardChangeBeforeChange.grade;
           console.log(`[厚生年金随時改定] 変更情報から前の等級を取得: ${previousPensionGrade}`);
         }
@@ -4588,23 +4598,37 @@ export class KyuyoDashboardComponent {
       console.log(`[厚生年金随時改定] 新しい標準報酬月額: ${newPensionStandard}`);
       console.log(`[厚生年金随時改定] 等級差: ${previousPensionGrade !== null ? Math.abs(newPensionGrade - previousPensionGrade) : 'N/A'}`);
       
+      // 厚生年金等級の変更をログ出力
+      if (previousPensionGrade !== null && previousPensionGrade !== newPensionGrade) {
+        console.log(`[厚生年金等級変更] 前の等級: ${previousPensionGrade}等級 → 新しい等級: ${newPensionGrade}等級（等級差: ${Math.abs(newPensionGrade - previousPensionGrade)}）`);
+      } else if (previousPensionGrade === null) {
+        console.log(`[厚生年金等級変更] 前の等級が存在しないため、等級変更の判定は行いません（初回設定の可能性）`);
+      } else {
+        console.log(`[厚生年金等級変更] 等級に変更はありません（前の等級: ${previousPensionGrade}等級、新しい等級: ${newPensionGrade}等級）`);
+      }
+      
       // 随時改定を適用する条件：
       // 1. 等級差が2以上の場合（前の等級が存在する場合のみ）
       // 2. または、前の等級が2等級で新しい等級が1等級の場合（下限到達）- 1等級差でも改定
       // 3. または、前の等級が31等級で新しい等級が32等級の場合（上限到達）- 1等級差でも改定
       // 4. または、前の等級が1等級で新しい等級が2等級の場合（下限から離れる）- 1等級差でも改定
       // 5. または、前の等級が32等級で新しい等級が31等級の場合（上限から離れる）- 1等級差でも改定
+      // 注意：上限・下限以外の1等級差の変更は随時改定を適用しない
       const gradeDifference = previousPensionGrade !== null ? Math.abs(newPensionGrade - previousPensionGrade) : 0;
       const isLowerBoundReached = previousPensionGrade !== null && previousPensionGrade === 2 && newPensionGrade === 1;
       const isUpperBoundReached = previousPensionGrade !== null && previousPensionGrade === 31 && newPensionGrade === 32;
       const isLowerBoundLeaving = previousPensionGrade !== null && previousPensionGrade === 1 && newPensionGrade === 2;
       const isUpperBoundLeaving = previousPensionGrade !== null && previousPensionGrade === 32 && newPensionGrade === 31;
       
+      // 境界条件の判定（上限・下限の境界での改定かどうか）
+      const isBoundaryCondition = isLowerBoundReached || isUpperBoundReached || isLowerBoundLeaving || isUpperBoundLeaving;
+      
       console.log(`[厚生年金随時改定] ---------- 境界条件の判定 ----------`);
       console.log(`[厚生年金随時改定] isLowerBoundReached (2→1): ${isLowerBoundReached}`);
       console.log(`[厚生年金随時改定] isUpperBoundReached (31→32): ${isUpperBoundReached}`);
       console.log(`[厚生年金随時改定] isLowerBoundLeaving (1→2): ${isLowerBoundLeaving}`);
       console.log(`[厚生年金随時改定] isUpperBoundLeaving (32→31): ${isUpperBoundLeaving}`);
+      console.log(`[厚生年金随時改定] isBoundaryCondition: ${isBoundaryCondition}`);
       console.log(`[厚生年金随時改定] gradeDifference >= 2: ${gradeDifference >= 2}`);
       console.log(`[厚生年金随時改定] previousPensionGrade !== null: ${previousPensionGrade !== null}`);
       
@@ -4616,17 +4640,18 @@ export class KyuyoDashboardComponent {
       //   ・前の等級が1等級で新しい等級が2等級の場合（下限から離れる）
       //   ・前の等級が32等級で新しい等級が31等級の場合（上限から離れる）
       // 注意：上限・下限の境界での改定は、前の等級が存在する場合のみ適用（1等級差でも改定）
+      // 注意：上限・下限以外の1等級差の変更は随時改定を適用しない（バグ修正）
       // 注意：健康介護保険等級は変更しないため、社会保険料一覧表には健康介護保険等級に応じた標準報酬月額を表示する
       const shouldApplyRevision = previousPensionGrade !== null && (
         gradeDifference >= 2 || 
-        isLowerBoundReached || 
-        isUpperBoundReached ||
-        isLowerBoundLeaving ||
-        isUpperBoundLeaving
+        isBoundaryCondition
       );
       
       console.log(`[厚生年金随時改定] ---------- 改定判定結果 ----------`);
       console.log(`[厚生年金随時改定] shouldApplyRevision: ${shouldApplyRevision}`);
+      if (!shouldApplyRevision && previousPensionGrade !== null && gradeDifference === 1) {
+        console.log(`[厚生年金随時改定] ⚠️ 等級差が1で上限・下限の境界条件に該当しないため、随時改定を適用しません（前の等級: ${previousPensionGrade}等級、新しい等級: ${newPensionGrade}等級）`);
+      }
       console.log(`[厚生年金随時改定] ====================================`);
       
       if (shouldApplyRevision) {
@@ -4654,7 +4679,7 @@ export class KyuyoDashboardComponent {
         console.log(`[厚生年金随時改定] ✅ 改定を適用します`);
         console.log(`[厚生年金随時改定] 理由: ${reasonMessage}`);
         console.log(`[厚生年金随時改定] 適用年月: ${effectiveYear}年${effectiveMonth}月`);
-        console.log(`[厚生年金随時改定] 適用等級: ${newPensionGrade}等級`);
+        console.log(`[厚生年金随時改定] 適用等級: ${newPensionGrade}等級（前の等級: ${previousPensionGrade}等級 → 新しい等級: ${newPensionGrade}等級）`);
         console.log(`[厚生年金随時改定] 適用標準報酬月額: ${newPensionStandard}円`);
         
         // 厚生年金保険用標準報酬月額変更情報を保存
@@ -4671,6 +4696,8 @@ export class KyuyoDashboardComponent {
         console.log(`[厚生年金随時改定] ❌ 改定を適用しません`);
         if (previousPensionGrade === null) {
           console.log(`[厚生年金随時改定] 理由: 前の等級が存在しないため（初回設定の可能性）`);
+        } else if (gradeDifference === 1 && !isBoundaryCondition) {
+          console.log(`[厚生年金随時改定] 理由: 等級差が1（${previousPensionGrade}等級 → ${newPensionGrade}等級）で上限・下限の境界条件に該当しないため、随時改定を適用しません`);
         } else if (gradeDifference < 2) {
           console.log(`[厚生年金随時改定] 理由: 等級差が2未満（${gradeDifference}等級）かつ上限・下限の境界条件に該当しないため`);
         } else {
