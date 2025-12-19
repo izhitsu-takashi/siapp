@@ -3994,11 +3994,18 @@ export class EmployeeDashboardComponent implements OnDestroy {
       }
       
       // データをフォームに設定
+      // relationshipが「その他」の選択肢リストに含まれていない場合、それを「その他」として扱う
+      const relationshipOptions = ['実子・養子', '実子・養子以外の子', '父母・養父母', '義父母', '弟妹', '兄姉', '祖父母', '曽祖父母', '孫'];
+      const isOtherRelationship = application.relationshipType === '配偶者以外' && 
+                                   application.relationship && 
+                                   !relationshipOptions.includes(application.relationship) && 
+                                   application.relationship !== 'その他';
+      
       this.dependentApplicationForm.patchValue({
         relationshipType: application.relationshipType || '',
         spouseType: application.spouseType || '',
-        relationship: application.relationship || '',
-        relationshipOther: application.relationshipOther || '',
+        relationship: isOtherRelationship ? 'その他' : (application.relationship || ''),
+        relationshipOther: isOtherRelationship ? application.relationship : (application.relationshipOther || ''),
         lastName: application.lastName || '',
         firstName: application.firstName || '',
         lastNameKana: application.lastNameKana || '',
@@ -4011,6 +4018,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
         occupation: application.occupation || '',
         occupationOther: application.occupationOther || '',
         studentYear: application.studentYear || '',
+        
+        // occupationが「その他」でoccupationOtherが有効な選択肢の場合、正しい値に修正
+        // （既存データの互換性のため）
         annualIncome: application.annualIncome || '',
         monthlyIncome: application.monthlyIncome || '',
         dependentStartDate: application.dependentStartDate || '',
@@ -4076,12 +4086,21 @@ export class EmployeeDashboardComponent implements OnDestroy {
       }
       
       // occupationが「その他」の選択肢に一致しない場合（occupationOtherの値が直接保存されている場合）
-      const validOccupations = ['無職', 'パート', '年金受給者', 'その他'];
+      const validOccupations = ['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'];
       if (application.occupation && !validOccupations.includes(application.occupation)) {
         // occupationOtherの値がoccupationに保存されている場合
         this.dependentApplicationForm.patchValue({
           occupation: 'その他',
           occupationOther: application.occupation
+        });
+      }
+      
+      // occupationが「その他」でoccupationOtherが有効な選択肢の場合、正しい値に修正
+      // （既存データの互換性のため）
+      if (application.occupation === 'その他' && application.occupationOther && validOccupations.includes(application.occupationOther)) {
+        this.dependentApplicationForm.patchValue({
+          occupation: application.occupationOther,
+          occupationOther: ''
         });
       }
       
@@ -4656,6 +4675,8 @@ export class EmployeeDashboardComponent implements OnDestroy {
           applicationData = {
             ...formValue,
             relationshipType: relationshipType,
+            // 配偶者以外の場合の続柄処理（「その他」の場合はrelationshipOtherの値をrelationshipに保存）
+            relationship: relationshipType === '配偶者以外' ? (formValue.relationship === 'その他' ? formValue.relationshipOther : formValue.relationship) : formValue.relationship,
             basicPensionNumber: basicPensionNumber || null,
             basicPensionNumberDocFileUrl: basicPensionNumberDocFileUrl,
             basicPensionNumberDocFileName: basicPensionNumberDocFileName,

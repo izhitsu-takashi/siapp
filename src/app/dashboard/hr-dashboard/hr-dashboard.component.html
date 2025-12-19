@@ -2610,11 +2610,11 @@
             </div>
             <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外'">
               <span class="detail-label">続柄:</span>
-              <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
+              <span class="detail-value">{{ (selectedApplication.relationship === 'その他' || selectedApplication.relationshipOther || !['実子・養子', '実子・養子以外の子', '父母・養父母', '義父母', '弟妹', '兄姉', '祖父母', '曽祖父母', '孫'].includes(selectedApplication.relationship) ? 'その他' : selectedApplication.relationship) || '-' }}</span>
             </div>
-            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外' && selectedApplication.relationship === 'その他'">
+            <div class="detail-item" *ngIf="selectedApplication.relationshipType === '配偶者以外' && (selectedApplication.relationship === 'その他' || selectedApplication.relationshipOther || !['実子・養子', '実子・養子以外の子', '父母・養父母', '義父母', '弟妹', '兄姉', '祖父母', '曽祖父母', '孫'].includes(selectedApplication.relationship))">
               <span class="detail-label">その他:</span>
-              <span class="detail-value">{{ selectedApplication.relationshipOther || '-' }}</span>
+              <span class="detail-value">{{ selectedApplication.relationshipOther || (selectedApplication.relationship === 'その他' ? '' : (!['実子・養子', '実子・養子以外の子', '父母・養父母', '義父母', '弟妹', '兄姉', '祖父母', '曽祖父母', '孫'].includes(selectedApplication.relationship) ? selectedApplication.relationship : '')) || '-' }}</span>
             </div>
           </div>
         </section>
@@ -2805,15 +2805,15 @@
             <div class="detail-grid">
               <div class="detail-item">
                 <span class="detail-label">職業:</span>
-                <span class="detail-value">{{ (selectedApplication.occupation && !['無職', 'パート', '年金受給者', 'その他'].includes(selectedApplication.occupation)) ? 'その他' : (selectedApplication.occupation || '-') }}</span>
+                <span class="detail-value">{{ (selectedApplication.occupation === 'その他' && selectedApplication.occupationOther && ['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupationOther)) ? selectedApplication.occupationOther : ((selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation)) ? 'その他' : (selectedApplication.occupation || '-')) }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.occupation && !['無職', 'パート', '年金受給者', 'その他'].includes(selectedApplication.occupation)">
+              <div class="detail-item" *ngIf="(selectedApplication.occupation === 'その他' && selectedApplication.occupationOther && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupationOther)) || (selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation))">
                 <span class="detail-label">その他:</span>
-                <span class="detail-value">{{ selectedApplication.occupation || '-' }}</span>
+                <span class="detail-value">{{ selectedApplication.occupationOther || (selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation) ? selectedApplication.occupation : '') || '-' }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.occupation === 'その他' && selectedApplication.occupationOther">
-                <span class="detail-label">その他:</span>
-                <span class="detail-value">{{ selectedApplication.occupationOther || '-' }}</span>
+              <div class="detail-item" *ngIf="selectedApplication.occupation === '大学生' || (selectedApplication.occupation === 'その他' && selectedApplication.occupationOther === '大学生')">
+                <span class="detail-label">学年:</span>
+                <span class="detail-value">{{ selectedApplication.studentYear || '-' }}</span>
               </div>
             </div>
           </section>
@@ -2870,21 +2870,6 @@
         
         <!-- 配偶者以外の場合のフォーム -->
         <ng-container *ngIf="selectedApplication.relationshipType === '配偶者以外'">
-          <!-- 続柄 -->
-          <section class="detail-section">
-            <h3 class="section-title">続柄</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">続柄:</span>
-                <span class="detail-value">{{ selectedApplication.relationship || '-' }}</span>
-              </div>
-              <div class="detail-item" *ngIf="selectedApplication.relationship === 'その他'">
-                <span class="detail-label">その他:</span>
-                <span class="detail-value">{{ selectedApplication.relationshipOther || '-' }}</span>
-              </div>
-            </div>
-          </section>
-          
           <!-- 氏名 -->
           <section class="detail-section">
             <h3 class="section-title">氏名</h3>
@@ -3026,17 +3011,13 @@
             <div class="detail-grid">
               <div class="detail-item">
                 <span class="detail-label">職業:</span>
-                <span class="detail-value">{{ (selectedApplication.occupation && !['無職', 'パート', '年金受給者', 'その他'].includes(selectedApplication.occupation)) ? 'その他' : (selectedApplication.occupation || '-') }}</span>
+                <span class="detail-value">{{ (selectedApplication.occupation === 'その他' && selectedApplication.occupationOther && ['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupationOther)) ? selectedApplication.occupationOther : ((selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation)) ? 'その他' : (selectedApplication.occupation || '-')) }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.occupation && !['無職', 'パート', '年金受給者', 'その他'].includes(selectedApplication.occupation)">
+              <div class="detail-item" *ngIf="(selectedApplication.occupation === 'その他' && selectedApplication.occupationOther && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupationOther)) || (selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation))">
                 <span class="detail-label">その他:</span>
-                <span class="detail-value">{{ selectedApplication.occupation || '-' }}</span>
+                <span class="detail-value">{{ selectedApplication.occupationOther || (selectedApplication.occupation && !['無職', 'パート', '年金受給者', '小中学生', '高校生', '大学生', 'その他'].includes(selectedApplication.occupation) ? selectedApplication.occupation : '') || '-' }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedApplication.occupation === 'その他' && selectedApplication.occupationOther">
-                <span class="detail-label">その他:</span>
-                <span class="detail-value">{{ selectedApplication.occupationOther || '-' }}</span>
-              </div>
-              <div class="detail-item" *ngIf="selectedApplication.occupation === '大学生'">
+              <div class="detail-item" *ngIf="selectedApplication.occupation === '大学生' || (selectedApplication.occupation === 'その他' && selectedApplication.occupationOther === '大学生')">
                 <span class="detail-label">学年:</span>
                 <span class="detail-value">{{ selectedApplication.studentYear || '-' }}</span>
               </div>

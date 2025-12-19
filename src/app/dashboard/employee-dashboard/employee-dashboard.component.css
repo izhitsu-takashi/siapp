@@ -2312,6 +2312,7 @@ select.form-input {
 .info-inquiry-layout .info-content {
   display: flex;
   flex-direction: column;
+  padding-bottom: 1rem;
   gap: clamp(0.75rem, 1vw, 1rem);
 }
 

@@ -98,6 +98,32 @@
         </button>
       </div>
       
+      <!-- ========== 扶養家族追加申請の詳細 ========== -->
+      @if (application.applicationType === '扶養家族追加') {
+        <!-- 続柄欄 -->
+        <section class="detail-section">
+          <h3 class="section-title">続柄</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">続柄種別:</span>
+              <span class="detail-value">{{ application.relationshipType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="application.relationshipType === '配偶者'">
+              <span class="detail-label">続柄（妻/夫）:</span>
+              <span class="detail-value">{{ application.spouseType || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="application.relationshipType === '配偶者以外'">
+              <span class="detail-label">続柄:</span>
+              <span class="detail-value">{{ (application.relationship === 'その他' || application.relationshipOther || !['実子・養子', '実子・養子以外の子', '父母・養父母', '義父母', '弟妹', '兄姉', '祖父母', '曽祖父母', '孫'].includes(application.relationship) ? 'その他' : application.relationship) || '-' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="application.relationshipType === '配偶者以外' && (application.relationship === 'その他' || application.relationshipOther || !['実子・養子', '実子・養子以外の子', '父母・養父母', '義父母', '弟妹', '兄姉', '祖父母', '曽祖父母', '孫'].includes(application.relationship))">
+              <span class="detail-label">その他:</span>
+              <span class="detail-value">{{ application.relationshipOther || (application.relationship === 'その他' ? '' : (!['実子・養子', '実子・養子以外の子', '父母・養父母', '義父母', '弟妹', '兄姉', '祖父母', '曽祖父母', '孫'].includes(application.relationship) ? application.relationship : '')) || '-' }}</span>
+            </div>
+          </div>
+        </section>
+      }
+      
       <!-- ========== その他の申請タイプの詳細セクション（今後実装予定） ========== -->
       <!-- 実装済みの申請タイプ以外の場合に表示（現在は空のセクション） -->
       @if (isOtherApplicationType(application.applicationType)) {

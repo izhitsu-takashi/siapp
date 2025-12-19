@@ -1421,19 +1421,24 @@ export class HrDashboardComponent {
       return;
     }
     
+    // 申請情報を事前に保存（updateApplicationStatus後にnullになる可能性があるため）
+    const applicationId = this.selectedApplication.id;
+    const applicationType = this.selectedApplication.applicationType;
+    const employeeNumber = this.selectedApplication.employeeNumber;
+    
     this.isUpdatingStatus = true;
     try {
       await this.firestoreService.updateApplicationStatus(
-        this.selectedApplication.id, 
+        applicationId, 
         '取り消し',
         ''
       );
       
       // 退職申請が取り消された場合、ログを出力（従業員側の申請一覧は自動的に更新される）
-      if (this.selectedApplication.applicationType === '退職申請') {
+      if (applicationType === '退職申請') {
         console.log('[退職申請取り消し] 退職申請が取り消されました:', {
-          employeeNumber: this.selectedApplication.employeeNumber,
-          applicationId: this.selectedApplication.id,
+          employeeNumber: employeeNumber,
+          applicationId: applicationId,
           applicationStatus: '取り消し',
           timestamp: new Date().toISOString()
         });
