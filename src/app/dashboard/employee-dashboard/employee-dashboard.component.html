@@ -2815,9 +2815,8 @@
       
       <!-- 被扶養者ではなくなった日 -->
       <section class="form-section">
-        <h3 class="section-title">被扶養者ではなくなった日</h3>
+        <h3 class="section-title">被扶養者ではなくなった日 <span class="required">*</span></h3>
         <div class="form-group">
-          <label for="removalDate">被扶養者ではなくなった日 <span class="required">*</span></label>
           <input 
             type="date" 
             id="removalDate" 
@@ -2832,9 +2831,8 @@
       
       <!-- 理由 -->
       <section class="form-section">
-        <h3 class="section-title">理由</h3>
+        <h3 class="section-title">理由 <span class="required">*</span></h3>
         <div class="form-group">
-          <label for="removalReason">理由 <span class="required">*</span></label>
           <select 
             id="removalReason" 
             formControlName="removalReason" 
@@ -2884,9 +2882,8 @@
       
       <!-- 海外居住者または海外から国内に転入したか -->
       <section class="form-section">
-        <h3 class="section-title">海外居住者または海外から国内に転入したか</h3>
+        <h3 class="section-title">海外居住者または海外から国内に転入したか <span class="required">*</span></h3>
         <div class="form-group">
-          <label>海外居住者または海外から国内に転入したか <span class="required">*</span></label>
           <div>
             <label class="radio-label">
               <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onRemovalOverseasResidentChange()">
@@ -2963,9 +2960,8 @@
       
       <!-- 資格証明書発行が必要か -->
       <section class="form-section">
-        <h3 class="section-title">資格証明書発行が必要か</h3>
+        <h3 class="section-title">資格証明書発行が必要か <span class="required">*</span></h3>
         <div class="form-group">
-          <label>資格証明書発行が必要か <span class="required">*</span></label>
           <div>
             <label class="radio-label">
               <input type="radio" formControlName="needsQualificationConfirmation" value="はい">
