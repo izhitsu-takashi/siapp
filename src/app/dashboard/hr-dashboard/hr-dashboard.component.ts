@@ -2446,7 +2446,7 @@ export class HrDashboardComponent {
       lastNameKana: ['', Validators.required],
       firstNameKana: ['', Validators.required],
       birthDate: ['', Validators.required],
-      gender: ['', Validators.required],
+      gender: [{value: '', disabled: true}, Validators.required],
       email: ['', [Validators.required, Validators.email]],
       
       // マイナンバー
@@ -2499,7 +2499,7 @@ export class HrDashboardComponent {
       // 口座情報
       bankAccount: this.fb.group({
         bankName: [''],
-        accountType: [''],
+        accountType: [{value: '', disabled: true}],
         accountHolder: [''],
         branchName: [''],
         accountNumber: ['']
@@ -2517,7 +2517,7 @@ export class HrDashboardComponent {
       expectedMonthlySalary: ['', Validators.required], // 見込み月給額（給与）
       expectedMonthlySalaryInKind: ['', Validators.required], // 見込み月給額（現物）
       hasDependents: [''], // 被扶養者（有/無）
-      dependentStatus: ['', Validators.required], // 被扶養者ステータス（必須）
+      dependentStatus: [{value: '', disabled: true}, Validators.required], // 被扶養者ステータス（必須・編集不可）
       qualificationCertificateRequired: ['', Validators.required], // 資格確認書発行要否（必須）
       
       // 人事専用情報（給与）
@@ -5597,8 +5597,8 @@ export class HrDashboardComponent {
         ];
         const spouseMyNumber = spouseMyNumberParts.join('') || null;
 
-        // フォームデータを準備
-        const formValue = this.onboardingEmployeeEditForm.value;
+        // フォームデータを準備（disabled状態のフィールドも含めるため、getRawValue()を使用）
+        const formValue = this.onboardingEmployeeEditForm.getRawValue();
         
         // 氏名を結合（後方互換性のため）
         const lastName = formValue.lastName || '';
@@ -5989,11 +5989,12 @@ export class HrDashboardComponent {
       
       if (onboardingApplication) {
         // 新入社員データから申請データに反映する情報を準備
+        // undefinedの値をnullまたは空文字列に変換（Firestoreではundefinedを保存できない）
         const applicationUpdateData: any = {
           name: onboardingData.name,
           nameKana: onboardingData.nameKana || '',
           birthDate: onboardingData.birthDate,
-          gender: onboardingData.gender,
+          gender: onboardingData.gender || null,
           email: onboardingData.email,
           myNumber: onboardingData.myNumber || null,
           postalCode: onboardingData.postalCode || '',
@@ -6010,8 +6011,15 @@ export class HrDashboardComponent {
           basicPensionNumber: onboardingData.basicPensionNumber || null,
           pensionHistoryStatus: onboardingData.pensionHistoryStatus || '',
           pensionHistory: onboardingData.pensionHistory || '',
-          dependentStatus: onboardingData.dependentStatus || ''
+          dependentStatus: onboardingData.dependentStatus || null
         };
+        
+        // undefinedの値を削除（Firestoreではundefinedを保存できない）
+        Object.keys(applicationUpdateData).forEach(key => {
+          if (applicationUpdateData[key] === undefined) {
+            delete applicationUpdateData[key];
+          }
+        });
 
         // 申請データを更新
         await this.firestoreService.updateApplicationData(

@@ -2089,9 +2089,8 @@
         
         <!-- 身分証明書添付 -->
         <section class="form-section">
-          <h3 class="section-title">身分証明書添付</h3>
+          <h3 class="section-title">身分証明書添付 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentIdentityDoc">身分証明書添付</label>
             <input 
               type="file" 
               id="dependentIdentityDoc" 
@@ -2105,9 +2104,8 @@
         
         <!-- 生年月日 -->
         <section class="form-section">
-          <h3 class="section-title">生年月日</h3>
+          <h3 class="section-title">生年月日 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
             <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
           </div>
         </section>
@@ -2209,9 +2207,8 @@
         
         <!-- 外国籍か -->
         <section class="form-section">
-          <h3 class="section-title">外国籍か</h3>
+          <h3 class="section-title">外国籍か <span class="required">*</span></h3>
           <div class="form-group">
-            <label>外国籍か <span class="required">*</span></label>
             <div>
               <label class="radio-label">
                 <input type="radio" formControlName="isForeignNational" value="はい" (change)="onForeignNationalChange()">
@@ -2240,9 +2237,8 @@
         
         <!-- 住所 -->
         <section class="form-section">
-          <h3 class="section-title">住所</h3>
+          <h3 class="section-title">住所 <span class="required">*</span></h3>
           <div class="form-group">
-            <label>住所 <span class="required">*</span></label>
             <div>
               <label class="radio-label">
                 <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
@@ -2332,18 +2328,16 @@
         
         <!-- 被扶養者になった日 -->
         <section class="form-section">
-          <h3 class="section-title">被扶養者になった日</h3>
+          <h3 class="section-title">被扶養者になった日 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentStartDate">被扶養者になった日 <span class="required">*</span></label>
             <input type="date" id="dependentStartDate" formControlName="dependentStartDate" class="form-input">
           </div>
         </section>
         
         <!-- 理由 -->
         <section class="form-section">
-          <h3 class="section-title">理由</h3>
+          <h3 class="section-title">理由 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentReason">理由 <span class="required">*</span></label>
             <select 
               id="dependentReason" 
               formControlName="dependentReason" 
@@ -2369,9 +2363,8 @@
         
         <!-- 職業 -->
         <section class="form-section">
-          <h3 class="section-title">職業</h3>
+          <h3 class="section-title">職業 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="occupation">職業 <span class="required">*</span></label>
             <select 
               id="occupation" 
               formControlName="occupation" 
@@ -2396,18 +2389,16 @@
         
         <!-- 年収見込み額 -->
         <section class="form-section">
-          <h3 class="section-title">年収見込み額</h3>
+          <h3 class="section-title">年収見込み額 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentAnnualIncome">年収見込み額 <span class="required">*</span></label>
             <input type="number" id="dependentAnnualIncome" formControlName="annualIncome" class="form-input" placeholder="円">
           </div>
         </section>
         
         <!-- 海外居住者または海外から国内に転入した -->
         <section class="form-section">
-          <h3 class="section-title">海外居住者または海外から国内に転入した</h3>
+          <h3 class="section-title">海外居住者または海外から国内に転入した <span class="required">*</span></h3>
           <div class="form-group">
-            <label>海外居住者または海外から国内に転入した <span class="required">*</span></label>
             <div>
               <label class="radio-label">
                 <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onDependentOverseasResidentChange()">
@@ -2452,9 +2443,8 @@
         
         <!-- 資格確認書発行が必要か -->
         <section class="form-section">
-          <h3 class="section-title">資格確認書発行が必要か</h3>
+          <h3 class="section-title">資格確認書発行が必要か <span class="required">*</span></h3>
           <div class="form-group">
-            <label>資格確認書発行が必要か <span class="required">*</span></label>
             <div>
               <label class="radio-label">
                 <input type="radio" formControlName="needsQualificationConfirmation" value="はい" (change)="dependentApplicationForm.get('needsQualificationConfirmation')?.updateValueAndValidity()">
@@ -2499,9 +2489,8 @@
         
         <!-- 身分証明書添付 -->
         <section class="form-section">
-          <h3 class="section-title">身分証明書添付</h3>
+          <h3 class="section-title">身分証明書添付 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentIdentityDoc">身分証明書添付</label>
             <input 
               type="file" 
               id="dependentIdentityDoc" 
@@ -2515,9 +2504,8 @@
         
         <!-- 生年月日 -->
         <section class="form-section">
-          <h3 class="section-title">生年月日</h3>
+          <h3 class="section-title">生年月日 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
             <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
           </div>
         </section>
@@ -2595,9 +2583,8 @@
         
         <!-- 住所 -->
         <section class="form-section">
-          <h3 class="section-title">住所</h3>
+          <h3 class="section-title">住所 <span class="required">*</span></h3>
           <div class="form-group">
-            <label>住所 <span class="required">*</span></label>
             <div>
               <label class="radio-label">
                 <input type="radio" formControlName="livingTogether" value="同居" (change)="onLivingTogetherChange()">
@@ -2634,9 +2621,8 @@
         
         <!-- 海外居住者、または海外から国内に転入した -->
         <section class="form-section">
-          <h3 class="section-title">海外居住者、または海外から国内に転入した</h3>
+          <h3 class="section-title">海外居住者、または海外から国内に転入した <span class="required">*</span></h3>
           <div class="form-group">
-            <label>海外居住者、または海外から国内に転入した <span class="required">*</span></label>
             <div>
               <label class="radio-label">
                 <input type="radio" formControlName="isOverseasResident" value="はい" (change)="onDependentOverseasResidentChange()">
@@ -2675,18 +2661,16 @@
         
         <!-- 被扶養者になった日 -->
         <section class="form-section">
-          <h3 class="section-title">被扶養者になった日</h3>
+          <h3 class="section-title">被扶養者になった日 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentStartDate">被扶養者になった日 <span class="required">*</span></label>
             <input type="date" id="dependentStartDate" formControlName="dependentStartDate" class="form-input">
           </div>
         </section>
         
         <!-- 職業 -->
         <section class="form-section">
-          <h3 class="section-title">職業</h3>
+          <h3 class="section-title">職業 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="occupation">職業 <span class="required">*</span></label>
             <select 
               id="occupation" 
               formControlName="occupation" 
@@ -2718,18 +2702,16 @@
         
         <!-- 年収見込み額 -->
         <section class="form-section">
-          <h3 class="section-title">年収見込み額</h3>
+          <h3 class="section-title">年収見込み額 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentAnnualIncome">年収見込み額 <span class="required">*</span></label>
             <input type="number" id="dependentAnnualIncome" formControlName="annualIncome" class="form-input" placeholder="円">
           </div>
         </section>
         
         <!-- 理由 -->
         <section class="form-section">
-          <h3 class="section-title">理由</h3>
+          <h3 class="section-title">理由 <span class="required">*</span></h3>
           <div class="form-group">
-            <label for="dependentReason">理由 <span class="required">*</span></label>
             <select 
               id="dependentReason" 
               formControlName="dependentReason" 
@@ -2755,9 +2737,8 @@
         
         <!-- 資格確認書発行が必要か -->
         <section class="form-section">
-          <h3 class="section-title">資格確認書発行が必要か</h3>
+          <h3 class="section-title">資格確認書発行が必要か <span class="required">*</span></h3>
           <div class="form-group">
-            <label>資格確認書発行が必要か <span class="required">*</span></label>
             <div>
               <label class="radio-label">
                 <input type="radio" formControlName="needsQualificationConfirmation" value="はい" (change)="dependentApplicationForm.get('needsQualificationConfirmation')?.updateValueAndValidity()">

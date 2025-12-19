@@ -522,11 +522,19 @@ export class FirestoreService {
         throw new Error('Application not found');
       }
       
-      const applicationRef = doc(this.db, 'applications', targetDocId);
-      await updateDoc(applicationRef, {
+      // undefinedの値を削除（Firestoreではundefinedを保存できない）
+      const cleanedData: any = {
         ...applicationData,
         updatedAt: new Date()
+      };
+      Object.keys(cleanedData).forEach(key => {
+        if (cleanedData[key] === undefined) {
+          delete cleanedData[key];
+        }
       });
+      
+      const applicationRef = doc(this.db, 'applications', targetDocId);
+      await updateDoc(applicationRef, cleanedData);
     } catch (error) {
       console.error('Error updating application data:', error);
       throw error;

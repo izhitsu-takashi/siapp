@@ -1030,9 +1030,25 @@ export class EmployeeDashboardComponent implements OnDestroy {
     const value = input.value;
     // 半角数字以外を削除
     const filteredValue = value.replace(/[^0-9]/g, '');
-    if (value !== filteredValue) {
-      input.value = filteredValue;
-      this.onboardingApplicationForm.get(part)?.setValue(filteredValue, { emitEvent: false });
+    // 最大4桁に制限
+    const limitedValue = filteredValue.length > 4 ? filteredValue.substring(0, 4) : filteredValue;
+    if (value !== limitedValue) {
+      input.value = limitedValue;
+      this.onboardingApplicationForm.get(part)?.setValue(limitedValue, { emitEvent: false });
+    } else if (value !== filteredValue) {
+      input.value = limitedValue;
+      this.onboardingApplicationForm.get(part)?.setValue(limitedValue, { emitEvent: false });
+    }
+    
+    // 自動的に次のフィールドにフォーカス
+    if (limitedValue.length === 4) {
+      const partNumber = parseInt(part.replace('myNumberPart', ''));
+      if (partNumber < 3) {
+        const nextInput = document.getElementById(`onboarding-myNumberPart${partNumber + 1}`);
+        if (nextInput) {
+          nextInput.focus();
+        }
+      }
     }
   }
 

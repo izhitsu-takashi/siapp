@@ -3619,6 +3619,7 @@
               id="onboarding-lastName" 
               formControlName="lastName" 
               class="form-input"
+              readonly
             >
           </div>
           <div class="form-group">
@@ -3628,6 +3629,7 @@
               id="onboarding-firstName" 
               formControlName="firstName" 
               class="form-input"
+              readonly
             >
           </div>
           <div class="form-group">
@@ -3637,10 +3639,8 @@
               id="onboarding-lastNameKana" 
               formControlName="lastNameKana" 
               class="form-input"
+              readonly
             >
-            <div *ngIf="onboardingEmployeeEditForm.get('lastNameKana')?.invalid && onboardingEmployeeEditForm.get('lastNameKana')?.touched" class="error-message">
-              姓（ヨミガナ）を入力してください
-            </div>
           </div>
           <div class="form-group">
             <label for="onboarding-firstNameKana">名（ヨミガナ） <span class="required">*</span></label>
@@ -3649,10 +3649,8 @@
               id="onboarding-firstNameKana" 
               formControlName="firstNameKana" 
               class="form-input"
+              readonly
             >
-            <div *ngIf="onboardingEmployeeEditForm.get('firstNameKana')?.invalid && onboardingEmployeeEditForm.get('firstNameKana')?.touched" class="error-message">
-              名（ヨミガナ）を入力してください
-            </div>
           </div>
           <div class="form-group">
             <label for="onboarding-birthDate">生年月日 <span class="required">*</span></label>
@@ -3662,7 +3660,7 @@
                 id="onboarding-birthDate" 
                 formControlName="birthDate" 
                 class="form-input"
-                (change)="onOnboardingBirthDateChange()"
+                readonly
               >
               <span *ngIf="onboardingAge !== null" class="age-display">（{{ onboardingAge }}歳）</span>
             </div>
@@ -3673,6 +3671,7 @@
               id="onboarding-gender" 
               formControlName="gender" 
               class="form-input"
+              disabled
             >
               <option value="">選択してください</option>
               <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
@@ -3685,22 +3684,18 @@
               id="onboarding-email" 
               formControlName="email" 
               class="form-input"
+              readonly
             >
           </div>
           <div class="form-group full-width">
             <label for="onboarding-idDocument">本人確認書類添付</label>
-            <input 
-              type="file" 
-              id="onboarding-idDocument" 
-              class="form-input"
-              accept=".pdf,.jpg,.jpeg,.png"
-              (change)="onFileSelected($event, 'idDocument')"
-            >
-            <div *ngIf="idDocumentFile" class="file-name">{{ idDocumentFile.name }}</div>
-            <div *ngIf="!idDocumentFile && selectedOnboardingEmployee?.applicationData?.idDocumentFileUrl" class="file-info" style="margin-top: 0.5rem;">
+            <div *ngIf="selectedOnboardingEmployee?.applicationData?.idDocumentFileUrl" class="file-info" style="margin-top: 0.5rem;">
               <a [href]="selectedOnboardingEmployee.applicationData.idDocumentFileUrl" target="_blank" class="file-link">
                 {{ selectedOnboardingEmployee.applicationData.idDocumentFile || '本人確認書類を開く' }}
               </a>
+            </div>
+            <div *ngIf="!selectedOnboardingEmployee?.applicationData?.idDocumentFileUrl" class="file-info" style="margin-top: 0.5rem; color: #666;">
+              添付書類がありません。
             </div>
           </div>
         </div>
@@ -3720,9 +3715,8 @@
                   formControlName="myNumberPart1" 
                   class="form-input my-number-part"
                   [type]="onboardingShowMyNumber ? 'text' : 'password'"
-                  [readonly]="!onboardingShowMyNumber"
+                  readonly
                   maxlength="4"
-                  (input)="formatMyNumberInput($event, 1)"
                   placeholder="0000"
                 >
                 <span class="my-number-separator">-</span>
@@ -3732,9 +3726,8 @@
                   formControlName="myNumberPart2" 
                   class="form-input my-number-part"
                   [type]="onboardingShowMyNumber ? 'text' : 'password'"
-                  [readonly]="!onboardingShowMyNumber"
+                  readonly
                   maxlength="4"
-                  (input)="formatMyNumberInput($event, 2)"
                   placeholder="0000"
                 >
                 <span class="my-number-separator">-</span>
@@ -3744,9 +3737,8 @@
                   formControlName="myNumberPart3" 
                   class="form-input my-number-part"
                   [type]="onboardingShowMyNumber ? 'text' : 'password'"
-                  [readonly]="!onboardingShowMyNumber"
+                  readonly
                   maxlength="4"
-                  (input)="formatMyNumberInput($event, 3)"
                   placeholder="0000"
                 >
               </div>
@@ -3761,18 +3753,13 @@
           </div>
           <div class="form-group full-width">
             <label for="onboardingMyNumberCard">マイナンバーカード添付</label>
-            <input 
-              type="file" 
-              id="onboardingMyNumberCard" 
-              class="form-input"
-              accept=".pdf,.jpg,.jpeg,.png"
-              (change)="onFileSelected($event, 'onboardingMyNumberCard')"
-            >
-            <div *ngIf="onboardingMyNumberCardFile" class="file-name">{{ onboardingMyNumberCardFile.name }}</div>
-            <div *ngIf="!onboardingMyNumberCardFile && selectedOnboardingEmployee?.applicationData?.myNumberCardFileUrl" class="file-info" style="margin-top: 0.5rem;">
+            <div *ngIf="selectedOnboardingEmployee?.applicationData?.myNumberCardFileUrl" class="file-info" style="margin-top: 0.5rem;">
               <a [href]="selectedOnboardingEmployee.applicationData.myNumberCardFileUrl" target="_blank" class="file-link">
                 {{ selectedOnboardingEmployee.applicationData.myNumberCardFile || 'マイナンバーカードを開く' }}
               </a>
+            </div>
+            <div *ngIf="!selectedOnboardingEmployee?.applicationData?.myNumberCardFileUrl" class="file-info" style="margin-top: 0.5rem; color: #666;">
+              添付書類がありません。
             </div>
           </div>
         </div>
@@ -3894,6 +3881,7 @@
                 type="checkbox" 
                 formControlName="isOverseasResident"
                 [checked]="onboardingEmployeeEditForm.get('isOverseasResident')?.value"
+                disabled
               >
               海外に在住
             </label>
@@ -3906,12 +3894,8 @@
               formControlName="postalCode" 
               class="form-input"
               placeholder="例: 1234567"
-              maxlength="7"
-              pattern="[0-9]{7}"
-              title="7桁の数字を入力してください"
-              (input)="formatOnboardingPostalCode($event)"
+              readonly
             >
-            <small class="form-hint">7桁の数字で入力してください</small>
           </div>
           <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('isOverseasResident')?.value">
             <label for="onboarding-currentAddress">現住所</label>
@@ -3920,6 +3904,7 @@
               formControlName="currentAddress" 
               class="form-input" 
               rows="2"
+              readonly
             ></textarea>
           </div>
           <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('isOverseasResident')?.value">
@@ -3929,6 +3914,7 @@
               formControlName="currentAddressKana" 
               class="form-input" 
               rows="2"
+              readonly
             ></textarea>
           </div>
           <div class="form-group full-width" *ngIf="onboardingEmployeeEditForm.get('isOverseasResident')?.value">
@@ -3948,6 +3934,7 @@
               id="onboarding-phoneNumber" 
               formControlName="phoneNumber" 
               class="form-input"
+              readonly
             >
           </div>
         </div>
@@ -3963,6 +3950,7 @@
                 type="checkbox" 
                 formControlName="skipResidentAddress"
                 [checked]="onboardingEmployeeEditForm.get('skipResidentAddress')?.value"
+                disabled
               >
               住民票住所を記載しない
             </label>
@@ -3992,8 +3980,7 @@
               <input 
                 type="checkbox" 
                 [checked]="onboardingSameAsCurrentAddress" 
-                (change)="onOnboardingSameAddressChange($event)"
-                [disabled]="true"
+                disabled
               >
               住所（現住所と同じ）
             </label>
@@ -4006,12 +3993,8 @@
               formControlName="residentPostalCode" 
               class="form-input"
               placeholder="例: 1234567"
-              maxlength="7"
-              pattern="[0-9]{7}"
-              title="7桁の数字を入力してください"
               readonly
             >
-            <small class="form-hint">7桁の数字で入力してください</small>
           </div>
           <div class="form-group full-width" *ngIf="!onboardingEmployeeEditForm.get('skipResidentAddress')?.value">
             <label for="onboarding-residentAddress">住所</label>
@@ -4042,34 +4025,24 @@
         <div class="form-grid">
           <div class="form-group full-width">
             <label for="onboarding-resume">履歴書添付</label>
-            <input 
-              type="file" 
-              id="onboarding-resume" 
-              class="form-input"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              (change)="onFileSelected($event, 'resume')"
-            >
-            <div *ngIf="resumeFile" class="file-name">{{ resumeFile.name }}</div>
-            <div *ngIf="!resumeFile && selectedOnboardingEmployee?.applicationData?.resumeFileUrl" class="file-info" style="margin-top: 0.5rem;">
+            <div *ngIf="selectedOnboardingEmployee?.applicationData?.resumeFileUrl" class="file-info" style="margin-top: 0.5rem;">
               <a [href]="selectedOnboardingEmployee.applicationData.resumeFileUrl" target="_blank" class="file-link">
                 {{ selectedOnboardingEmployee.applicationData.resumeFile || '履歴書を開く' }}
               </a>
             </div>
+            <div *ngIf="!selectedOnboardingEmployee?.applicationData?.resumeFileUrl" class="file-info" style="margin-top: 0.5rem; color: #666;">
+              添付書類がありません。
+            </div>
           </div>
           <div class="form-group full-width">
             <label for="onboarding-careerHistory">職務経歴書添付</label>
-            <input 
-              type="file" 
-              id="onboarding-careerHistory" 
-              class="form-input"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              (change)="onFileSelected($event, 'careerHistory')"
-            >
-            <div *ngIf="careerHistoryFile" class="file-name">{{ careerHistoryFile.name }}</div>
-            <div *ngIf="!careerHistoryFile && selectedOnboardingEmployee?.applicationData?.careerHistoryFileUrl" class="file-info" style="margin-top: 0.5rem;">
+            <div *ngIf="selectedOnboardingEmployee?.applicationData?.careerHistoryFileUrl" class="file-info" style="margin-top: 0.5rem;">
               <a [href]="selectedOnboardingEmployee.applicationData.careerHistoryFileUrl" target="_blank" class="file-link">
                 {{ selectedOnboardingEmployee.applicationData.careerHistoryFile || '職務経歴書を開く' }}
               </a>
+            </div>
+            <div *ngIf="!selectedOnboardingEmployee?.applicationData?.careerHistoryFileUrl" class="file-info" style="margin-top: 0.5rem; color: #666;">
+              添付書類がありません。
             </div>
           </div>
         </div>
@@ -4087,6 +4060,7 @@
                 id="onboarding-emergencyName" 
                 formControlName="name" 
                 class="form-input"
+                readonly
               >
             </div>
             <div class="form-group">
@@ -4096,6 +4070,7 @@
                 id="onboarding-emergencyNameKana" 
                 formControlName="nameKana" 
                 class="form-input"
+                readonly
               >
             </div>
             <div class="form-group">
@@ -4105,6 +4080,7 @@
                 id="onboarding-emergencyRelationship" 
                 formControlName="relationship" 
                 class="form-input"
+                readonly
               >
             </div>
             <div class="form-group">
@@ -4114,6 +4090,7 @@
                 id="onboarding-emergencyPhone" 
                 formControlName="phone" 
                 class="form-input"
+                readonly
               >
             </div>
             <div class="form-group full-width">
@@ -4123,6 +4100,7 @@
                 formControlName="address" 
                 class="form-input" 
                 rows="2"
+                readonly
               ></textarea>
             </div>
             <div class="form-group full-width">
@@ -4132,6 +4110,7 @@
                 formControlName="addressKana" 
                 class="form-input" 
                 rows="2"
+                readonly
               ></textarea>
             </div>
           </div>
@@ -4150,6 +4129,7 @@
                 id="onboarding-bankName" 
                 formControlName="bankName" 
                 class="form-input"
+                readonly
               >
             </div>
             <div class="form-group">
@@ -4158,6 +4138,7 @@
                 id="onboarding-accountType" 
                 formControlName="accountType" 
                 class="form-input"
+                disabled
               >
                 <option value="">選択してください</option>
                 <option value="普通">普通</option>
@@ -4172,6 +4153,7 @@
                 id="onboarding-accountHolder" 
                 formControlName="accountHolder" 
                 class="form-input"
+                readonly
               >
             </div>
             <div class="form-group">
@@ -4181,6 +4163,7 @@
                 id="onboarding-branchName" 
                 formControlName="branchName" 
                 class="form-input"
+                readonly
               >
             </div>
             <div class="form-group">
@@ -4190,6 +4173,7 @@
                 id="onboarding-accountNumber" 
                 formControlName="accountNumber" 
                 class="form-input"
+                readonly
               >
             </div>
           </div>
@@ -4227,7 +4211,7 @@
                 formControlName="basicPensionNumberPart1" 
                 class="form-input basic-pension-part"
                 maxlength="4"
-                (input)="formatBasicPensionNumberInput($event, 1)"
+                readonly
                 placeholder="0000"
               >
               <span class="basic-pension-separator">-</span>
@@ -4237,12 +4221,9 @@
                 formControlName="basicPensionNumberPart2" 
                 class="form-input basic-pension-part"
                 maxlength="6"
-                (input)="formatBasicPensionNumberInput($event, 2)"
+                readonly
                 placeholder="000000"
               >
-            </div>
-            <div *ngIf="(onboardingEmployeeEditForm.get('basicPensionNumberPart1')?.invalid || onboardingEmployeeEditForm.get('basicPensionNumberPart2')?.invalid) && (onboardingEmployeeEditForm.get('basicPensionNumberPart1')?.touched || onboardingEmployeeEditForm.get('basicPensionNumberPart2')?.touched)" class="error-message">
-              基礎年金番号を入力してください
             </div>
           </div>
           <div class="form-group">
@@ -4314,18 +4295,13 @@
           </div>
           <div class="form-group full-width">
             <label for="onboarding-basicPensionNumberDoc">基礎年金番号確認書類添付</label>
-            <input 
-              type="file" 
-              id="onboarding-basicPensionNumberDoc" 
-              class="form-input"
-              accept=".pdf,.jpg,.jpeg,.png"
-              (change)="onFileSelected($event, 'basicPensionNumberDoc')"
-            >
-            <div *ngIf="basicPensionNumberDocFile" class="file-name">{{ basicPensionNumberDocFile.name }}</div>
-            <div *ngIf="!basicPensionNumberDocFile && selectedOnboardingEmployee?.applicationData?.basicPensionNumberDocFileUrl" class="file-info" style="margin-top: 0.5rem;">
+            <div *ngIf="selectedOnboardingEmployee?.applicationData?.basicPensionNumberDocFileUrl" class="file-info" style="margin-top: 0.5rem;">
               <a [href]="selectedOnboardingEmployee.applicationData.basicPensionNumberDocFileUrl" target="_blank" class="file-link">
                 {{ selectedOnboardingEmployee.applicationData.basicPensionNumberDocFile || '基礎年金番号がわかる書類を開く' }}
               </a>
+            </div>
+            <div *ngIf="!selectedOnboardingEmployee?.applicationData?.basicPensionNumberDocFileUrl" class="file-info" style="margin-top: 0.5rem; color: #666;">
+              添付書類がありません。
             </div>
           </div>
         </div>
@@ -4541,14 +4517,12 @@
               id="onboarding-dependentStatus" 
               formControlName="dependentStatus" 
               class="form-input"
+              disabled
             >
               <option value="">選択してください</option>
               <option value="有">有</option>
               <option value="無">無</option>
             </select>
-            <div *ngIf="onboardingEmployeeEditForm.get('dependentStatus')?.invalid && onboardingEmployeeEditForm.get('dependentStatus')?.touched" class="error-message">
-              被扶養者（有/無）を選択してください
-            </div>
           </div>
         </div>
       </section>
