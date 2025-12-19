@@ -3866,26 +3866,17 @@ export class KyuyoDashboardComponent {
           }
           
           if (salaryAmount > 0) {
-            // その時点での給与設定履歴を取得
-            const historyUpToThisBonus = sortedHistory.filter((s: any) => {
-              const sYear = Number(s['year']);
-              const sMonth = Number(s['month']);
-              if (s['employeeNumber'] !== this.selectedSalaryEmployee) return false;
-              if (sYear < bonusYear) return true;
-              if (sYear === bonusYear && sMonth <= bonusMonth) return true;
-              return false;
-            });
-            
             // 4回目以降の賞与が支給された月について随時改定を計算
+            // 3か月平均を計算する際に、変更月以降の給与設定も必要なので、全ての給与設定履歴を渡す
+            // ただし、各月の時点での給与設定を正しく取得するため、asOfYear/asOfMonthは使用しない
             await this.checkAndUpdateStandardMonthlySalary(
               this.selectedSalaryEmployee,
               bonusYear,
               bonusMonth,
               salaryAmount,
-              historyUpToThisBonus,
-              bonusList,
-              bonusYear,
-              bonusMonth
+              sortedHistory,  // 全ての給与設定履歴を渡す
+              bonusList
+              // asOfYear/asOfMonthは指定しない（各月の時点での給与設定を取得するため）
             );
             
             console.log(`[給与設定] ${bonusYear}年${bonusMonth}月の4回目以降の賞与について随時改定を計算完了`);
