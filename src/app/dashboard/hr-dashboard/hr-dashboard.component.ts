@@ -383,6 +383,10 @@ export class HrDashboardComponent {
             // 新入社員コレクションから削除
             await this.firestoreService.deleteOnboardingEmployee(employeeNumber);
             
+            // 新入社員一覧から即座に削除
+            this.onboardingEmployees = this.onboardingEmployees.filter(emp => emp.employeeNumber !== employeeNumber);
+            this.allOnboardingEmployees = this.allOnboardingEmployees.filter(emp => emp.employeeNumber !== employeeNumber);
+            
             // 扶養者情報欄が「有」になっている場合、扶養家族追加申請の依頼を作成
             if (employeeData.dependentStatus === '有') {
               try {
@@ -409,8 +413,10 @@ export class HrDashboardComponent {
         }
       }
 
-      // 新入社員一覧と社員一覧を再読み込み
-      await this.loadOnboardingEmployees();
+      // フィルターとソートを再適用（既にonboardingEmployeesから削除済み）
+      this.filterAndSortOnboardingEmployees();
+      
+      // 社員一覧を再読み込み
       await this.loadEmployees();
       
       // readyEmployeesも更新（入社処理実行モーダル用）
@@ -5802,8 +5808,23 @@ export class HrDashboardComponent {
   // 新入社員のステータス変更時の処理
   onOnboardingStatusChange(newStatus: string) {
     if (!this.selectedOnboardingEmployee) return;
+    
+    // 準備完了に変更しようとする場合、必須項目をチェック
+    if (newStatus === '準備完了') {
+      const validation = this.checkRequiredFieldsForReadyStatus();
+      if (!validation.isValid) {
+        // 必須項目が不足している場合は、選択を元に戻す
+        alert(`「準備完了」を選択するには、以下の必須項目を入力してください：\n${validation.missingFields.join('\n')}`);
+        // プルダウンの表示を元のステータスに戻す
+        this.pendingOnboardingStatus = this.selectedOnboardingEmployee.status;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
+        return;
+      }
+    }
+    
     // プルダウンの値のみ一時変数に保存（実際のステータス変更は「ステータスを更新」ボタンで行う）
-    // 準備完了に変更しようとする場合でも、pendingOnboardingStatusは設定する（ボタンのdisabled制御のため）
     this.pendingOnboardingStatus = newStatus;
   }
 

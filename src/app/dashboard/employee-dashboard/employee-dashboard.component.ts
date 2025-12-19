@@ -1954,7 +1954,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
   
   createResignationForm(): FormGroup {
     const form = this.fb.group({
-      resignationDate: ['', [Validators.required, this.futureDateValidator]],
+      resignationDate: ['', [Validators.required, this.futureDateValidator.bind(this)]],
       lastWorkDate: ['', [Validators.required, this.lastWorkDateValidator.bind(this)]],
       resignationReason: ['', Validators.required], // 退職理由（必須）
       separationNotice: ['', Validators.required],

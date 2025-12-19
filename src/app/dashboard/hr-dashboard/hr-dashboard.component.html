@@ -3576,7 +3576,8 @@
               <option *ngIf="(pendingOnboardingStatus || selectedOnboardingEmployee?.status) !== '申請待ち'" value="申請待ち" disabled>申請待ち</option>
               <option value="申請済み">申請済み</option>
               <option value="差し戻し">差し戻し</option>
-              <option value="準備完了">準備完了</option>
+              <option *ngIf="onboardingEmployeeEditForm.valid" value="準備完了">準備完了</option>
+              <option *ngIf="!onboardingEmployeeEditForm.valid" value="準備完了" disabled>準備完了（必須項目未入力）</option>
             </select>
             <div *ngIf="(pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '準備完了' && onboardingEmployeeEditForm.invalid" class="error-message" style="margin-top: 0.5rem;">
               必須項目を入力してください
@@ -3598,10 +3599,11 @@
           <button 
             type="button" 
             class="status-button status-update"
-            [disabled]="((pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '準備完了' && (onboardingEmployeeEditForm.invalid || onboardingIsSaving)) || onboardingIsSaving"
+            [disabled]="((pendingOnboardingStatus || selectedOnboardingEmployee?.status) === '準備完了' && onboardingEmployeeEditForm.invalid) || onboardingIsSaving"
             (click)="updateOnboardingEmployeeStatus(pendingOnboardingStatus || selectedOnboardingEmployee?.status)"
           >
-            {{ onboardingIsSaving ? '更新中...' : 'ステータスを更新' }}
+            <span *ngIf="onboardingIsSaving">更新中...</span>
+            <span *ngIf="!onboardingIsSaving">ステータスを更新</span>
           </button>
         </div>
       </section>
