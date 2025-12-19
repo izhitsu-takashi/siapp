@@ -3801,26 +3801,17 @@ export class KyuyoDashboardComponent {
           
           console.log(`[給与設定] ${salaryYear}年${salaryMonth}月の給与設定（${salaryAmount}円）について随時改定を計算します。`);
           
-          // その時点での給与設定履歴を取得（その給与設定月以前の給与設定のみ）
-          const historyUpToThisSalary = sortedHistory.filter((s: any) => {
-            const sYear = Number(s['year']);
-            const sMonth = Number(s['month']);
-            if (s['employeeNumber'] !== this.selectedSalaryEmployee) return false;
-            if (sYear < salaryYear) return true;
-            if (sYear === salaryYear && sMonth <= salaryMonth) return true;
-            return false;
-          });
-          
           // その給与設定月について随時改定を計算
+          // 3か月平均を計算する際に、変更月以降の給与設定も必要なので、全ての給与設定履歴を渡す
+          // ただし、各月の時点での給与設定を正しく取得するため、asOfYear/asOfMonthは使用しない
           await this.checkAndUpdateStandardMonthlySalary(
             this.selectedSalaryEmployee,
             salaryYear,
             salaryMonth,
             salaryAmount,
-            historyUpToThisSalary,
-            bonusList,
-            salaryYear,
-            salaryMonth
+            sortedHistory,  // 全ての給与設定履歴を渡す
+            bonusList
+            // asOfYear/asOfMonthは指定しない（各月の時点での給与設定を取得するため）
           );
           
           console.log(`[給与設定] ${salaryYear}年${salaryMonth}月の給与設定について随時改定を計算完了`);
