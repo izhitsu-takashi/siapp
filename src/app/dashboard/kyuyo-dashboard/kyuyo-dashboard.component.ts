@@ -3463,8 +3463,9 @@ export class KyuyoDashboardComponent {
     this.salaryMonth = Number(this.salaryMonth);
     
     // 社員の入社日を取得して、入社月以降の給与しか設定できないようにする
+    let employeeData: any = null;
     try {
-      const employeeData = await this.firestoreService.getEmployeeData(this.selectedSalaryEmployee);
+      employeeData = await this.firestoreService.getEmployeeData(this.selectedSalaryEmployee);
       if (employeeData && employeeData.socialInsuranceAcquisitionDate) {
         const acquisitionDate = new Date(employeeData.socialInsuranceAcquisitionDate);
         const acquisitionYear = acquisitionDate.getFullYear();
@@ -3701,38 +3702,200 @@ export class KyuyoDashboardComponent {
         amount: s['amount']
       })));
       
-      // 各手動設定された給与について、その時点での給与設定履歴を使用して随時改定を計算
-      for (const manualSalary of manualSalaries) {
-        const salaryYear = Number(manualSalary['year']);
-        const salaryMonth = Number(manualSalary['month']);
-        const salaryAmount = Number(manualSalary['amount']);
+      // 社員データが取得できていない場合は再取得（4回目以降の賞与による随時改定で使用）
+      if (!employeeData) {
+        try {
+          employeeData = await this.firestoreService.getEmployeeData(this.selectedSalaryEmployee);
+        } catch (error) {
+          console.error('Error getting employee data for recalculateAllZujijiKaitei:', error);
+        }
+      }
+      
+      // 4回目以降の賞与が支給された月を取得（時系列順に統合するため）
+      const employeeBonuses = bonusList.filter((b: any) => b['employeeNumber'] === this.selectedSalaryEmployee);
+      const bonusByFiscalYear = new Map<number, any[]>();
+      
+      employeeBonuses.forEach((bonus: any) => {
+        const bonusYear = bonus['year'];
+        const bonusMonth = bonus['month'];
         
-        console.log(`[給与設定] ${salaryYear}年${salaryMonth}月の給与設定（${salaryAmount}円）について随時改定を計算します。`);
+        // 年度を判定（7月～翌年6月が1年度）
+        let fiscalYear: number;
+        if (bonusMonth >= 7) {
+          fiscalYear = bonusYear;
+        } else {
+          fiscalYear = bonusYear - 1;
+        }
         
-        // その時点での給与設定履歴を取得（その給与設定月以前の給与設定のみ）
-        const historyUpToThisSalary = sortedHistory.filter((s: any) => {
-          const sYear = Number(s['year']);
-          const sMonth = Number(s['month']);
-          if (s['employeeNumber'] !== this.selectedSalaryEmployee) return false;
-          if (sYear < salaryYear) return true;
-          if (sYear === salaryYear && sMonth <= salaryMonth) return true;
-          return false;
+        if (!bonusByFiscalYear.has(fiscalYear)) {
+          bonusByFiscalYear.set(fiscalYear, []);
+        }
+        bonusByFiscalYear.get(fiscalYear)!.push(bonus);
+      });
+      
+      // 4回目以降の賞与が支給された月をリストアップ
+      const bonusMonthsForRecalc: { year: number; month: number; type: 'bonus' }[] = [];
+      for (const [fiscalYear, bonuses] of bonusByFiscalYear.entries()) {
+        const sortedBonuses = bonuses.sort((a: any, b: any) => {
+          if (a['year'] !== b['year']) return a['year'] - b['year'];
+          if (a['month'] !== b['month']) return a['month'] - b['month'];
+          const aId = a['id'] || '';
+          const bId = b['id'] || '';
+          return aId.localeCompare(bId);
         });
         
-        // その給与設定月について随時改定を計算
-        await this.checkAndUpdateStandardMonthlySalary(
-          this.selectedSalaryEmployee,
-          salaryYear,
-          salaryMonth,
-          salaryAmount,
-          historyUpToThisSalary,
-          bonusList,
-          salaryYear,
-          salaryMonth
-        );
-        
-        console.log(`[給与設定] ${salaryYear}年${salaryMonth}月の給与設定について随時改定を計算完了`);
+        if (sortedBonuses.length >= 4) {
+          const bonusMonths = new Map<string, { year: number; month: number }>();
+          for (let i = 3; i < sortedBonuses.length; i++) {
+            const bonus = sortedBonuses[i];
+            const bonusYear = bonus['year'];
+            const bonusMonth = bonus['month'];
+            const key = `${bonusYear}_${bonusMonth}`;
+            
+            if (!bonusMonths.has(key)) {
+              bonusMonths.set(key, { year: bonusYear, month: bonusMonth });
+            }
+          }
+          
+          for (const bonusMonth of bonusMonths.values()) {
+            bonusMonthsForRecalc.push({ year: bonusMonth.year, month: bonusMonth.month, type: 'bonus' });
+          }
+        }
       }
+      
+      // 手動設定された給与の随時改定対象月をリストアップ
+      const salaryMonthsForRecalc: { year: number; month: number; type: 'salary'; amount: number }[] = manualSalaries.map((s: any) => ({
+        year: Number(s['year']),
+        month: Number(s['month']),
+        type: 'salary' as const,
+        amount: Number(s['amount'])
+      }));
+      
+      // 全ての随時改定対象月を時系列順にソート
+      const allMonthsForRecalc = [...salaryMonthsForRecalc, ...bonusMonthsForRecalc].sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.month - b.month;
+      });
+      
+      console.log(`[給与設定] 時系列順に統合した随時改定対象月:`, allMonthsForRecalc.map((m: any) => ({
+        year: m.year,
+        month: m.month,
+        type: m.type
+      })));
+      
+      // 時系列順に随時改定を実行
+      for (let i = 0; i < allMonthsForRecalc.length; i++) {
+        const monthData = allMonthsForRecalc[i];
+        const progress = 40 + Math.floor((i / allMonthsForRecalc.length) * 10); // 40-50%
+        
+        if (monthData.type === 'salary') {
+          // 手動設定された給与による随時改定
+          const salaryYear = monthData.year;
+          const salaryMonth = monthData.month;
+          const salaryAmount = monthData.amount;
+          
+          this.salarySaveProgress = { 
+            message: `随時改定を計算しています... (${salaryYear}年${salaryMonth}月の給与設定)`, 
+            progress: progress 
+          };
+          
+          console.log(`[給与設定] ${salaryYear}年${salaryMonth}月の給与設定（${salaryAmount}円）について随時改定を計算します。`);
+          
+          // その時点での給与設定履歴を取得（その給与設定月以前の給与設定のみ）
+          const historyUpToThisSalary = sortedHistory.filter((s: any) => {
+            const sYear = Number(s['year']);
+            const sMonth = Number(s['month']);
+            if (s['employeeNumber'] !== this.selectedSalaryEmployee) return false;
+            if (sYear < salaryYear) return true;
+            if (sYear === salaryYear && sMonth <= salaryMonth) return true;
+            return false;
+          });
+          
+          // その給与設定月について随時改定を計算
+          await this.checkAndUpdateStandardMonthlySalary(
+            this.selectedSalaryEmployee,
+            salaryYear,
+            salaryMonth,
+            salaryAmount,
+            historyUpToThisSalary,
+            bonusList,
+            salaryYear,
+            salaryMonth
+          );
+          
+          console.log(`[給与設定] ${salaryYear}年${salaryMonth}月の給与設定について随時改定を計算完了`);
+        } else if (monthData.type === 'bonus') {
+          // 4回目以降の賞与による随時改定
+          const bonusYear = monthData.year;
+          const bonusMonth = monthData.month;
+          
+          this.salarySaveProgress = { 
+            message: `随時改定を計算しています... (${bonusYear}年${bonusMonth}月の4回目以降の賞与)`, 
+            progress: progress 
+          };
+          
+          console.log(`[給与設定] ${bonusYear}年${bonusMonth}月の4回目以降の賞与について随時改定を計算します。`);
+          
+          // その時点での給与額を取得
+          const relevantSalaries = sortedHistory
+            .filter((s: any) => s['employeeNumber'] === this.selectedSalaryEmployee)
+            .filter((s: any) => {
+              const salaryYear = Number(s['year']);
+              const salaryMonth = Number(s['month']);
+              if (salaryYear < bonusYear) return true;
+              if (salaryYear === bonusYear && salaryMonth <= bonusMonth) return true;
+              return false;
+            })
+            .sort((a: any, b: any) => {
+              const aYear = Number(a['year']);
+              const bYear = Number(b['year']);
+              const aMonth = Number(a['month']);
+              const bMonth = Number(b['month']);
+              if (aYear !== bYear) return bYear - aYear;
+              return bMonth - bMonth;
+            });
+          
+          let salaryAmount = 0;
+          if (relevantSalaries.length > 0) {
+            salaryAmount = Number(relevantSalaries[0]['amount']);
+          } else if (employeeData) {
+            // 給与設定がない場合、入社時の給与見込み額から計算
+            const expectedSalary = employeeData.expectedSalary || 0;
+            const expectedBenefits = employeeData.expectedBenefits || 0;
+            salaryAmount = expectedSalary + expectedBenefits;
+          }
+          
+          if (salaryAmount > 0) {
+            // その時点での給与設定履歴を取得
+            const historyUpToThisBonus = sortedHistory.filter((s: any) => {
+              const sYear = Number(s['year']);
+              const sMonth = Number(s['month']);
+              if (s['employeeNumber'] !== this.selectedSalaryEmployee) return false;
+              if (sYear < bonusYear) return true;
+              if (sYear === bonusYear && sMonth <= bonusMonth) return true;
+              return false;
+            });
+            
+            // 4回目以降の賞与が支給された月について随時改定を計算
+            await this.checkAndUpdateStandardMonthlySalary(
+              this.selectedSalaryEmployee,
+              bonusYear,
+              bonusMonth,
+              salaryAmount,
+              historyUpToThisBonus,
+              bonusList,
+              bonusYear,
+              bonusMonth
+            );
+            
+            console.log(`[給与設定] ${bonusYear}年${bonusMonth}月の4回目以降の賞与について随時改定を計算完了`);
+          } else {
+            console.log(`[給与設定] ${bonusYear}年${bonusMonth}月の4回目以降の賞与について、給与設定がないためスキップします。`);
+          }
+        }
+      }
+      
+      console.log(`[給与設定] 時系列順の随時改定計算完了`);
       
       // 定時改定の処理（2028年12月までのすべての年度で定時改定をチェック）
       // 2025年度から2028年度まで、すべての年度について定時改定をチェック
