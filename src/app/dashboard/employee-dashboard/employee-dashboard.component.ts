@@ -1778,8 +1778,8 @@ export class EmployeeDashboardComponent implements OnDestroy {
       // 共通基本情報
       lastName: ['', Validators.required],
       firstName: ['', Validators.required],
-      lastNameKana: ['', Validators.required],
-      firstNameKana: ['', Validators.required],
+      lastNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
+      firstNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
       birthDate: ['', Validators.required],
       
       // 配偶者の場合の追加フィールド
@@ -2555,6 +2555,20 @@ export class EmployeeDashboardComponent implements OnDestroy {
     }
     event.target.value = value;
     this.dependentApplicationForm.get('postalCode')?.setValue(value, { emitEvent: false });
+  }
+
+  // カタカナ入力制限（カタカナ以外をフィルタリング）
+  formatDependentKana(event: any, fieldName: string) {
+    const input = event.target;
+    let value = input.value;
+    // カタカナ、長音記号、スペース以外を削除
+    const katakanaPattern = /[ァ-ヶー\s]/;
+    const filteredValue = value.split('').filter((char: string) => katakanaPattern.test(char)).join('');
+    
+    if (value !== filteredValue) {
+      input.value = filteredValue;
+      this.dependentApplicationForm.get(fieldName)?.setValue(filteredValue, { emitEvent: false });
+    }
   }
 
   // ファイル名を取得するヘルパーメソッド（保存されたファイル名があればそれを使用、なければURLから抽出）

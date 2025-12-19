@@ -2099,6 +2099,16 @@
                     </div>
                   </div>
                   
+                  <!-- 身分証明書添付 -->
+                  <div class="info-row-pair" *ngIf="dependent.identityDocFileUrl">
+                    <div class="info-row full-width">
+                      <span class="info-label">身分証明書添付:</span>
+                      <span class="info-value">
+                        <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
+                      </span>
+                    </div>
+                  </div>
+                  
                   <!-- マイナンバー -->
                   <div class="info-row-pair" *ngIf="dependent.myNumber || (dependent.myNumberPart1 && dependent.myNumberPart2 && dependent.myNumberPart3)">
                     <div class="info-row">
