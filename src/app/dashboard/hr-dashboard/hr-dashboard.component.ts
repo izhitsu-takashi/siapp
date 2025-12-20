@@ -463,11 +463,13 @@ export class HrDashboardComponent {
   allApplications: any[] = [];
   filteredApplications: any[] = [];
   applicationStatusFilter: string = 'すべて';
-  applicationStatuses = ['すべて', '承認待ち', '確認中', '差し戻し', '承認済み'];
+  applicationStatuses = ['すべて', '承認待ち', '確認中', '差し戻し', '承認済み', '取り消し'];
   
   // 社員情報管理用フィルター
   employeeStatusFilter: string = 'すべて';
   employeeStatuses = ['すべて', '必須情報不足', '扶養者情報不足', '入力完了'];
+  employmentStatusFilter: string = 'すべて';
+  employmentStatusFilterOptions = ['すべて', '在籍中', '退職済み'];
   
   // 保険証管理用データ
   insuranceCards: any[] = [];
@@ -6285,8 +6287,18 @@ export class HrDashboardComponent {
     
     // フィルター適用
     let filtered = this.employees;
+    
+    // 在籍状況フィルター適用
+    if (this.employmentStatusFilter !== 'すべて') {
+      filtered = filtered.filter(emp => {
+        const employmentStatus = this.getEmploymentStatusDisplay(emp.employmentStatus);
+        return employmentStatus === this.employmentStatusFilter;
+      });
+    }
+    
+    // ステータスフィルター適用
     if (this.employeeStatusFilter !== 'すべて') {
-      filtered = this.employees.filter(emp => {
+      filtered = filtered.filter(emp => {
         return emp.status === this.employeeStatusFilter;
       });
     }
@@ -6326,6 +6338,11 @@ export class HrDashboardComponent {
   
   // 社員情報管理表のステータスフィルター変更
   onEmployeeStatusFilterChange() {
+    this.filterAndSortEmployees();
+  }
+  
+  // 社員情報管理表の在籍状況フィルター変更
+  onEmploymentStatusFilterChange() {
     this.filterAndSortEmployees();
   }
   

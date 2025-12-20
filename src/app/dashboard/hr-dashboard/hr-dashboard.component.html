@@ -929,7 +929,16 @@
         <ng-container *ngIf="currentTab === '社員情報管理'">
           <div class="employee-management-page">
             <div class="filter-section">
-              <label for="employeeStatusFilter">ステータスフィルター:</label>
+              <label for="employmentStatusFilter">在籍状況:</label>
+              <select 
+                id="employmentStatusFilter" 
+                [(ngModel)]="employmentStatusFilter" 
+                (change)="onEmploymentStatusFilterChange()"
+                class="status-filter-select"
+              >
+                <option *ngFor="let status of employmentStatusFilterOptions" [value]="status">{{ status }}</option>
+              </select>
+              <label for="employeeStatusFilter">ステータス:</label>
               <select 
                 id="employeeStatusFilter" 
                 [(ngModel)]="employeeStatusFilter" 
