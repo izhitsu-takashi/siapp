@@ -1029,6 +1029,35 @@ export class HrDashboardComponent {
     return null;
   }
 
+  // 今日の日付をYYYY-MM-DD形式で取得
+  getTodayDateString(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // 生年月日用バリデーター（未来の日付を防ぐ）
+  birthDateValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // 空の場合は他のバリデーターで処理
+    }
+    
+    const selectedDate = new Date(control.value);
+    selectedDate.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    
+    // 未来の日付の場合はエラー
+    if (selectedDate > today) {
+      return { 'futureDate': true };
+    }
+    
+    return null;
+  }
+
   // 社員番号重複チェックバリデーター
   employeeNumberDuplicateValidator(control: AbstractControl): ValidationErrors | null {
     if (!control.value) {
@@ -1098,6 +1127,7 @@ export class HrDashboardComponent {
       employeeNumber: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9]+$/), this.employeeNumberDuplicateValidator.bind(this)]],
       email: ['', [Validators.required, Validators.email, this.emailDuplicateValidator.bind(this)]],
       employmentType: ['', Validators.required],
+      joinDate: ['', Validators.required], // 入社年月日（必須）
       initialPassword: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
@@ -1911,13 +1941,33 @@ export class HrDashboardComponent {
             const addressUpdateData: any = {
               isOverseasResident: isOverseasResident,
               newAddress: this.selectedApplication.newAddress,
-              residentAddress: this.selectedApplication.residentAddress
+              residentAddress: this.selectedApplication.residentAddress,
+              skipResidentAddress: this.selectedApplication.skipResidentAddress || false,
+              residentAddressSkipReason: this.selectedApplication.residentAddressSkipReason || '',
+              residentAddressSkipReasonOther: this.selectedApplication.residentAddressSkipReasonOther || ''
             };
             
             // 海外在住の場合は、住民票住所を記載しないに設定
             if (isOverseasResident) {
               addressUpdateData.skipResidentAddress = true;
               addressUpdateData.residentAddressSkipReason = '海外在住';
+              addressUpdateData.residentAddressSkipReasonOther = '';
+            } else if (this.selectedApplication.skipResidentAddress) {
+              // 申請で住民票住所を記載しないが選択されている場合
+              // 既に設定されている値を使用（変更なし）
+            } else if (this.selectedApplication.residentAddress) {
+              // 海外在住でない場合、申請に住民票住所が入力されているかチェック
+              const hasResidentAddress = this.selectedApplication.residentAddress.address || 
+                                        this.selectedApplication.residentAddress.postalCode ||
+                                        (this.selectedApplication.residentAddress.sameAsNewAddress && 
+                                         this.selectedApplication.newAddress.address);
+              
+              // 申請に住民票住所が入力されている場合は、住民票住所を記載しないを解除
+              if (hasResidentAddress) {
+                addressUpdateData.skipResidentAddress = false;
+                addressUpdateData.residentAddressSkipReason = '';
+                addressUpdateData.residentAddressSkipReasonOther = '';
+              }
             }
             
             await this.firestoreService.updateEmployeeAddress(employeeNumber, addressUpdateData);
@@ -2352,6 +2402,7 @@ export class HrDashboardComponent {
               firstNameKana: employee.firstNameKana || '',
               email: employee.email,
               employmentType: employee.employmentType,
+              joinDate: employee.joinDate || '', // 入社年月日
               password: employee.initialPassword, // パスワードを保存（後でハッシュ化推奨）
               isInitialPassword: true // 初期パスワードフラグ
             });
@@ -2452,7 +2503,7 @@ export class HrDashboardComponent {
       firstName: ['', Validators.required],
       lastNameKana: ['', Validators.required],
       firstNameKana: ['', Validators.required],
-      birthDate: ['', Validators.required],
+      birthDate: ['', [Validators.required, this.birthDateValidator.bind(this)]],
       gender: [{value: '', disabled: true}, Validators.required],
       email: ['', [Validators.required, Validators.email]],
       
@@ -2539,15 +2590,15 @@ export class HrDashboardComponent {
       pensionInsuranceType: [''], // 厚生年金保険者種別
       
       // 坑内員（人事専用）
-      isMiner: ['', Validators.required], // はい/いいえ（必須）
+      isMiner: ['いいえ', Validators.required], // はい/いいえ（必須、デフォルト: いいえ）
       
       // 入社時申請の情報
       pensionFundMembership: ['', Validators.required], // 年金基金加入（必須）
       
       // その他資格情報（人事専用）
-      multipleWorkplaceAcquisition: ['', Validators.required], // 二以上事業所勤務者の取得か（はい/いいえ、必須）
-      reemploymentAfterRetirement: ['', Validators.required], // 退職後の継続再雇用者の取得か（はい/いいえ、必須）
-      otherQualificationAcquisition: ['', Validators.required], // その他（はい/いいえ、必須）
+      multipleWorkplaceAcquisition: ['いいえ', Validators.required], // 二以上事業所勤務者の取得か（はい/いいえ、必須、デフォルト: いいえ）
+      reemploymentAfterRetirement: ['いいえ', Validators.required], // 退職後の継続再雇用者の取得か（はい/いいえ、必須、デフォルト: いいえ）
+      otherQualificationAcquisition: ['いいえ', Validators.required], // その他（はい/いいえ、必須、デフォルト: いいえ）
       otherQualificationReason: [''] // その他の理由（バリデーションは動的に変更）
     });
   }
@@ -2560,7 +2611,7 @@ export class HrDashboardComponent {
       firstName: ['', Validators.required],
       lastNameKana: ['', Validators.required],
       firstNameKana: ['', Validators.required],
-      birthDate: ['', Validators.required],
+      birthDate: ['', [Validators.required, this.birthDateValidator.bind(this)]],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       
@@ -2845,6 +2896,21 @@ export class HrDashboardComponent {
     this.employeeEditForm.get('firstNameKana')?.disable();
     this.employeeEditForm.get('birthDate')?.disable();
     
+    // 現住所と連絡先セクションのフィールドを変更不可にする
+    this.employeeEditForm.get('isOverseasResident')?.disable();
+    this.employeeEditForm.get('postalCode')?.disable();
+    this.employeeEditForm.get('currentAddress')?.disable();
+    this.employeeEditForm.get('currentAddressKana')?.disable();
+    this.employeeEditForm.get('overseasAddress')?.disable();
+    this.employeeEditForm.get('phoneNumber')?.disable();
+    
+    // 住民票住所セクションのフィールドを変更不可にする
+    this.employeeEditForm.get('skipResidentAddress')?.disable();
+    this.employeeEditForm.get('sameAsCurrentAddress')?.disable();
+    this.employeeEditForm.get('residentPostalCode')?.disable();
+    this.employeeEditForm.get('residentAddress')?.disable();
+    this.employeeEditForm.get('residentAddressKana')?.disable();
+    
     // マイナンバーを分割
     if (data.myNumber && data.myNumber.length === 12) {
       this.employeeEditForm.patchValue({
@@ -2885,22 +2951,21 @@ export class HrDashboardComponent {
           residentAddress: data.residentAddress || data.currentAddress,
           residentAddressKana: data.residentAddressKana || data.currentAddressKana || ''
         });
-        // コントロールを無効化
-        this.employeeEditForm.get('residentPostalCode')?.disable();
-        this.employeeEditForm.get('residentAddress')?.disable();
-        this.employeeEditForm.get('residentAddressKana')?.disable();
       } else if (data.residentAddress) {
         this.employeeEditForm.patchValue({
           residentPostalCode: data.residentPostalCode || '',
           residentAddress: data.residentAddress,
           residentAddressKana: data.residentAddressKana || ''
         });
-        // コントロールを有効化
-        this.employeeEditForm.get('residentPostalCode')?.enable();
-        this.employeeEditForm.get('residentAddress')?.enable();
-        this.employeeEditForm.get('residentAddressKana')?.enable();
       }
     }
+    
+    // 住民票住所セクションのフィールドを変更不可にする（データ設定後に実行）
+    this.employeeEditForm.get('skipResidentAddress')?.disable();
+    this.employeeEditForm.get('sameAsCurrentAddress')?.disable();
+    this.employeeEditForm.get('residentPostalCode')?.disable();
+    this.employeeEditForm.get('residentAddress')?.disable();
+    this.employeeEditForm.get('residentAddressKana')?.disable();
 
     // 緊急連絡先住所が現住所と同じかチェック
     if (data.sameAsCurrentAddressForEmergency !== undefined) {
@@ -5053,6 +5118,14 @@ export class HrDashboardComponent {
       });
     }
     
+    // 入社年月日を設定（新規社員追加時に設定された値を使用）
+    if (data.joinDate) {
+      this.onboardingEmployeeEditForm.patchValue({
+        joinDate: data.joinDate,
+        socialInsuranceAcquisitionDate: data.joinDate // 入社年月日を社会保険の資格取得年月日にも設定
+      });
+    }
+    
     // 見込み月給額を設定
     if (data.expectedMonthlySalary !== undefined) {
       this.onboardingEmployeeEditForm.patchValue({
@@ -5152,29 +5225,17 @@ export class HrDashboardComponent {
       }
     }
     
-    // 坑内員情報を設定
-    if (data.isMiner) {
-      this.onboardingEmployeeEditForm.patchValue({
-        isMiner: data.isMiner
-      });
-    }
+    // 坑内員情報を設定（値が存在しない場合はデフォルト「いいえ」）
+    this.onboardingEmployeeEditForm.patchValue({
+      isMiner: data.isMiner || 'いいえ'
+    });
     
-    // その他資格情報を設定
-    if (data.multipleWorkplaceAcquisition) {
-      this.onboardingEmployeeEditForm.patchValue({
-        multipleWorkplaceAcquisition: data.multipleWorkplaceAcquisition
-      });
-    }
-    if (data.reemploymentAfterRetirement) {
-      this.onboardingEmployeeEditForm.patchValue({
-        reemploymentAfterRetirement: data.reemploymentAfterRetirement
-      });
-    }
-    if (data.otherQualificationAcquisition) {
-      this.onboardingEmployeeEditForm.patchValue({
-        otherQualificationAcquisition: data.otherQualificationAcquisition
-      });
-    }
+    // その他資格情報を設定（値が存在しない場合はデフォルト「いいえ」）
+    this.onboardingEmployeeEditForm.patchValue({
+      multipleWorkplaceAcquisition: data.multipleWorkplaceAcquisition || 'いいえ',
+      reemploymentAfterRetirement: data.reemploymentAfterRetirement || 'いいえ',
+      otherQualificationAcquisition: data.otherQualificationAcquisition || 'いいえ'
+    });
     if (data.otherQualificationReason) {
       this.onboardingEmployeeEditForm.patchValue({
         otherQualificationReason: data.otherQualificationReason
@@ -5297,6 +5358,33 @@ export class HrDashboardComponent {
     
     // 残りのフィールドを設定
     this.onboardingEmployeeEditForm.patchValue(data);
+    
+    // 入社年月日が設定されている場合、社会保険の資格取得年月日にも設定
+    const joinDate = this.onboardingEmployeeEditForm.get('joinDate')?.value;
+    if (joinDate && !this.onboardingEmployeeEditForm.get('socialInsuranceAcquisitionDate')?.value) {
+      this.onboardingEmployeeEditForm.patchValue({
+        socialInsuranceAcquisitionDate: joinDate
+      });
+    }
+    
+    // 坑内員とその他資格情報のフィールドが空文字列の場合はデフォルト「いいえ」を設定
+    const isMinerValue = this.onboardingEmployeeEditForm.get('isMiner')?.value;
+    const multipleWorkplaceValue = this.onboardingEmployeeEditForm.get('multipleWorkplaceAcquisition')?.value;
+    const reemploymentValue = this.onboardingEmployeeEditForm.get('reemploymentAfterRetirement')?.value;
+    const otherQualificationValue = this.onboardingEmployeeEditForm.get('otherQualificationAcquisition')?.value;
+    
+    if (!isMinerValue || isMinerValue === '') {
+      this.onboardingEmployeeEditForm.patchValue({ isMiner: 'いいえ' });
+    }
+    if (!multipleWorkplaceValue || multipleWorkplaceValue === '') {
+      this.onboardingEmployeeEditForm.patchValue({ multipleWorkplaceAcquisition: 'いいえ' });
+    }
+    if (!reemploymentValue || reemploymentValue === '') {
+      this.onboardingEmployeeEditForm.patchValue({ reemploymentAfterRetirement: 'いいえ' });
+    }
+    if (!otherQualificationValue || otherQualificationValue === '') {
+      this.onboardingEmployeeEditForm.patchValue({ otherQualificationAcquisition: 'いいえ' });
+    }
     
     // 入社時申請の情報を設定（海外在住、住民票住所を記載しない理由、年金基金加入）
     if (data.isOverseasResident !== undefined) {

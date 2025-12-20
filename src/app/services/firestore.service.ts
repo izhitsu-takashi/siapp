@@ -936,8 +936,52 @@ export class FirestoreService {
 
       // 住所情報を更新（undefinedをnullまたは空文字列に変換）
       const isOverseasResident = addressData.isOverseasResident ?? employeeData.isOverseasResident ?? false;
-      const skipResidentAddress = addressData.skipResidentAddress ?? employeeData.skipResidentAddress ?? false;
-      const residentAddressSkipReason = addressData.residentAddressSkipReason ?? employeeData.residentAddressSkipReason ?? '';
+      
+      // 住民票住所の値を決定
+      let residentPostalCode = '';
+      let residentAddress = '';
+      let residentAddressKana = '';
+      let skipResidentAddress = false;
+      let sameAsCurrentAddress = false;
+      
+      if (isOverseasResident) {
+        // 海外在住の場合は、住民票住所を記載しない
+        skipResidentAddress = true;
+        sameAsCurrentAddress = false;
+      } else if (addressData.residentAddress) {
+        // 申請に住民票住所が入力されている場合
+        if (addressData.residentAddress.sameAsNewAddress && addressData.newAddress) {
+          // 変更後の住所と同じの場合
+          residentPostalCode = addressData.newAddress.postalCode || '';
+          residentAddress = addressData.newAddress.address || '';
+          residentAddressKana = addressData.newAddress.addressKana || '';
+          sameAsCurrentAddress = true;
+        } else {
+          // 手動入力の場合
+          residentPostalCode = addressData.residentAddress.postalCode || '';
+          residentAddress = addressData.residentAddress.address || '';
+          residentAddressKana = addressData.residentAddress.addressKana || '';
+          sameAsCurrentAddress = false;
+        }
+        
+        // 申請に住民票住所が入力されている場合は、住民票住所を記載しないを解除
+        if (residentAddress || residentPostalCode) {
+          skipResidentAddress = false;
+        } else {
+          // 申請に住民票住所が入力されていない場合は、既存の値を維持
+          skipResidentAddress = addressData.skipResidentAddress ?? employeeData.skipResidentAddress ?? false;
+          sameAsCurrentAddress = employeeData.sameAsCurrentAddress ?? false;
+        }
+      } else {
+        // 申請に住民票住所が含まれていない場合は、既存の値を維持
+        skipResidentAddress = addressData.skipResidentAddress ?? employeeData.skipResidentAddress ?? false;
+        sameAsCurrentAddress = employeeData.sameAsCurrentAddress ?? false;
+        residentPostalCode = employeeData.residentPostalCode || '';
+        residentAddress = employeeData.residentAddress || '';
+        residentAddressKana = employeeData.residentAddressKana || '';
+      }
+      
+      const residentAddressSkipReason = skipResidentAddress ? (addressData.residentAddressSkipReason ?? employeeData.residentAddressSkipReason ?? '') : '';
       
       const updatedData: any = {
         ...employeeData,
@@ -949,9 +993,11 @@ export class FirestoreService {
         currentHouseholdHead: addressData.newAddress?.householdHead ?? employeeData.currentHouseholdHead ?? '',
         currentHouseholdHeadName: addressData.newAddress?.householdHeadName ?? employeeData.currentHouseholdHeadName ?? '',
         skipResidentAddress: skipResidentAddress,
-        residentAddressSkipReason: skipResidentAddress ? residentAddressSkipReason : '',
-        residentAddress: skipResidentAddress ? '' : (addressData.residentAddress?.address ?? employeeData.residentAddress ?? ''),
-        residentAddressKana: skipResidentAddress ? '' : (addressData.residentAddress?.addressKana ?? employeeData.residentAddressKana ?? ''),
+        residentAddressSkipReason: residentAddressSkipReason,
+        sameAsCurrentAddress: sameAsCurrentAddress,
+        residentPostalCode: skipResidentAddress ? '' : residentPostalCode,
+        residentAddress: skipResidentAddress ? '' : residentAddress,
+        residentAddressKana: skipResidentAddress ? '' : residentAddressKana,
         residentHouseholdHead: addressData.residentAddress?.householdHead ?? employeeData.residentHouseholdHead ?? '',
         residentHouseholdHeadName: addressData.residentAddress?.householdHeadName ?? employeeData.residentHouseholdHeadName ?? '',
         updatedAt: new Date()

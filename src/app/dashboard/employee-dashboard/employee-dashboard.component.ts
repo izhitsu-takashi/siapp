@@ -314,10 +314,10 @@ export class EmployeeDashboardComponent implements OnDestroy {
             return -1; // bを後ろに
           }
           
-          // どちらも同じ優先度の場合は、申請IDでソート（古い順）
+          // どちらも同じ優先度の場合は、申請IDでソート（新しい順）
           const idA = a.applicationId || 0;
           const idB = b.applicationId || 0;
-          return idA - idB;
+          return idB - idA;
         });
         
         // 変更検知をトリガー
@@ -1257,7 +1257,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
       firstName: ['', Validators.required],
       lastNameKana: [''],
       firstNameKana: [''],
-      birthDate: ['', Validators.required],
+      birthDate: ['', [Validators.required, this.birthDateValidator.bind(this)]],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       
@@ -1697,7 +1697,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
       firstName: ['', Validators.required],
       lastNameKana: ['', [Validators.required, this.katakanaValidator]],
       firstNameKana: ['', [Validators.required, this.katakanaValidator]],
-      birthDate: ['', Validators.required],
+      birthDate: ['', [Validators.required, this.birthDateValidator.bind(this)]],
       gender: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       
@@ -1780,7 +1780,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
       firstName: ['', Validators.required],
       lastNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
       firstNameKana: ['', [Validators.required, this.katakanaValidator.bind(this)]],
-      birthDate: ['', Validators.required],
+      birthDate: ['', [Validators.required, this.birthDateValidator.bind(this)]],
       
       // 配偶者の場合の追加フィールド
       isForeignNational: [''], // 外国籍か（はい/いいえ）- 配偶者のみ必須
@@ -1875,6 +1875,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
       newAddress: ['', Validators.required],
       newAddressKana: [''],
       // 新しい住民票住所
+      skipResidentAddress: [false],
+      residentAddressSkipReason: [''],
+      residentAddressSkipReasonOther: [''],
       residentPostalCode: ['', Validators.pattern(/^[0-9]{7}$/)],
       residentAddress: [''],
       residentAddressKana: ['']
@@ -2107,6 +2110,63 @@ export class EmployeeDashboardComponent implements OnDestroy {
     }
   }
   
+  // 住所変更申請の住民票住所を記載しないチェックボックスの変更処理
+  onAddressChangeSkipResidentAddressChange(event: any) {
+    const skipResident = event.target.checked;
+    const residentPostalCodeControl = this.addressChangeForm.get('residentPostalCode');
+    const residentAddressControl = this.addressChangeForm.get('residentAddress');
+    const residentAddressKanaControl = this.addressChangeForm.get('residentAddressKana');
+    const residentAddressSkipReasonControl = this.addressChangeForm.get('residentAddressSkipReason');
+    const residentAddressSkipReasonOtherControl = this.addressChangeForm.get('residentAddressSkipReasonOther');
+
+    if (skipResident) {
+      // 住民票住所を記載しない場合：バリデーションを削除
+      residentPostalCodeControl?.clearValidators();
+      residentAddressControl?.clearValidators();
+      residentAddressKanaControl?.clearValidators();
+      // 理由のバリデーションを追加
+      residentAddressSkipReasonControl?.setValidators([Validators.required]);
+      // 値をクリア
+      residentPostalCodeControl?.setValue('');
+      residentAddressControl?.setValue('');
+      residentAddressKanaControl?.setValue('');
+      // 変更後の住所と同じチェックも解除
+      this.sameAsNewAddress = false;
+    } else {
+      // 住民票住所を記載する場合：バリデーションを削除（任意入力のため）
+      residentPostalCodeControl?.clearValidators();
+      residentAddressControl?.clearValidators();
+      residentAddressKanaControl?.clearValidators();
+      // 理由のバリデーションを削除
+      residentAddressSkipReasonControl?.clearValidators();
+      residentAddressSkipReasonOtherControl?.clearValidators();
+      // 値をクリア
+      residentAddressSkipReasonControl?.setValue('');
+      residentAddressSkipReasonOtherControl?.setValue('');
+    }
+    residentPostalCodeControl?.updateValueAndValidity();
+    residentAddressControl?.updateValueAndValidity();
+    residentAddressKanaControl?.updateValueAndValidity();
+    residentAddressSkipReasonControl?.updateValueAndValidity();
+    residentAddressSkipReasonOtherControl?.updateValueAndValidity();
+  }
+
+  // 住所変更申請の住民票住所を記載しない理由の変更処理
+  onAddressChangeResidentAddressSkipReasonChange(event: any) {
+    const reason = event.target.value;
+    const residentAddressSkipReasonOtherControl = this.addressChangeForm.get('residentAddressSkipReasonOther');
+    
+    if (reason === 'その他') {
+      // その他の場合：理由入力欄のバリデーションを追加
+      residentAddressSkipReasonOtherControl?.setValidators([Validators.required]);
+    } else {
+      // その他以外の場合：理由入力欄のバリデーションを削除
+      residentAddressSkipReasonOtherControl?.clearValidators();
+      residentAddressSkipReasonOtherControl?.setValue('');
+    }
+    residentAddressSkipReasonOtherControl?.updateValueAndValidity();
+  }
+
   // 住民票住所欄のコントロールを更新
   updateResidentAddressControls(disabled: boolean) {
     const residentPostalCodeControl = this.addressChangeForm.get('residentPostalCode');
@@ -2997,11 +3057,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
         let residentAddress = '';
         let residentAddressKana = '';
         
-        if (this.sameAsOldAddress) {
-          // 変更前住所と同じ
-          residentPostalCode = this.currentAddressInfo.postalCode || '';
-          residentAddress = this.currentAddressInfo.address || '';
-          residentAddressKana = this.currentAddressInfo.addressKana || '';
+        if (formValue.skipResidentAddress) {
+          // 住民票住所を記載しない場合
+          residentPostalCode = '';
+          residentAddress = '';
+          residentAddressKana = '';
         } else if (this.sameAsNewAddress) {
           // 変更後の住所と同じ
           residentPostalCode = formValue.newPostalCode || '';
@@ -3025,8 +3085,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
             addressKana: formValue.isOverseasResident ? '' : (formValue.newAddressKana || ''),
             overseasAddress: formValue.isOverseasResident ? (formValue.overseasAddress || '') : ''
           },
+          skipResidentAddress: formValue.skipResidentAddress || false,
+          residentAddressSkipReason: formValue.skipResidentAddress ? formValue.residentAddressSkipReason : '',
+          residentAddressSkipReasonOther: formValue.skipResidentAddress && formValue.residentAddressSkipReason === 'その他' ? formValue.residentAddressSkipReasonOther : '',
           residentAddress: {
-            sameAsOldAddress: this.sameAsOldAddress,
+            sameAsOldAddress: false,
             sameAsNewAddress: this.sameAsNewAddress,
             postalCode: residentPostalCode,
             address: residentAddress,
@@ -4455,8 +4518,12 @@ export class EmployeeDashboardComponent implements OnDestroy {
       }
     } else if (application.applicationType === '住所変更申請') {
       this.addressChangeForm = this.createAddressChangeForm();
-      this.sameAsOldAddress = application.residentAddress?.sameAsOldAddress || false;
+      this.sameAsOldAddress = false;
       this.sameAsNewAddress = application.residentAddress?.sameAsNewAddress || false;
+      
+      const skipResidentAddress = application.skipResidentAddress || false;
+      const residentAddressSkipReason = application.residentAddressSkipReason || '';
+      const residentAddressSkipReasonOther = application.residentAddressSkipReasonOther || '';
       
       this.addressChangeForm.patchValue({
         moveDate: application.moveDate || '',
@@ -4465,6 +4532,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
         newAddress: application.newAddress?.address || '',
         newAddressKana: application.newAddress?.addressKana || '',
         overseasAddress: application.newAddress?.overseasAddress || '',
+        skipResidentAddress: skipResidentAddress,
+        residentAddressSkipReason: residentAddressSkipReason,
+        residentAddressSkipReasonOther: residentAddressSkipReasonOther,
         residentPostalCode: application.residentAddress?.postalCode || '',
         residentAddress: application.residentAddress?.address || '',
         residentAddressKana: application.residentAddress?.addressKana || ''
@@ -4475,10 +4545,14 @@ export class EmployeeDashboardComponent implements OnDestroy {
         this.onAddressChangeOverseasResidentChange({ target: { checked: true } });
       }
       
-      // チェックボックスの状態に応じてコントロールを更新
-      if (this.sameAsOldAddress) {
-        this.updateResidentAddressControls(true);
+      // 住民票住所を記載しないの場合、バリデーションを更新
+      if (skipResidentAddress) {
+        this.onAddressChangeSkipResidentAddressChange({ target: { checked: true } });
+        if (residentAddressSkipReason === 'その他') {
+          this.onAddressChangeResidentAddressSkipReasonChange({ target: { value: 'その他' } });
+        }
       } else if (this.sameAsNewAddress) {
+        // チェックボックスの状態に応じてコントロールを更新
         this.updateResidentAddressControls(true);
       } else {
         this.updateResidentAddressControls(false);
@@ -4506,6 +4580,14 @@ export class EmployeeDashboardComponent implements OnDestroy {
         maternityLeaveEndDate: application.maternityLeaveEndDate || application.postMaternityLeaveEndDate || '',
         stayAddress: application.stayAddress || ''
       });
+      
+      // expectedDeliveryDateが設定されている場合、産前産後休業期間を自動計算
+      // （既存の値がある場合はそれを優先し、ない場合は自動計算）
+      const expectedDeliveryDate = application.expectedDeliveryDate || '';
+      const isMultipleBirth = application.isMultipleBirth || '';
+      if (expectedDeliveryDate && (!application.maternityLeaveStartDate && !application.preMaternityLeaveStartDate)) {
+        this.setMaternityLeavePeriod(this.maternityLeaveForm, expectedDeliveryDate, isMultipleBirth);
+      }
       
       // バリデーションを再実行
       this.maternityLeaveForm.updateValueAndValidity();
@@ -4750,11 +4832,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
           let residentAddress = '';
           let residentAddressKana = '';
           
-          if (this.sameAsOldAddress) {
-            // 変更前住所と同じ
-            residentPostalCode = this.currentAddressInfo.postalCode || '';
-            residentAddress = this.currentAddressInfo.address || '';
-            residentAddressKana = this.currentAddressInfo.addressKana || '';
+          if (formValue.skipResidentAddress) {
+            // 住民票住所を記載しない場合
+            residentPostalCode = '';
+            residentAddress = '';
+            residentAddressKana = '';
           } else if (this.sameAsNewAddress) {
             // 変更後の住所と同じ
             residentPostalCode = formValue.isOverseasResident ? '' : (formValue.newPostalCode || '');
@@ -4778,8 +4860,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
               addressKana: formValue.isOverseasResident ? '' : (formValue.newAddressKana || ''),
               overseasAddress: formValue.isOverseasResident ? (formValue.overseasAddress || '') : ''
             },
+            skipResidentAddress: formValue.skipResidentAddress || false,
+            residentAddressSkipReason: formValue.skipResidentAddress ? formValue.residentAddressSkipReason : '',
+            residentAddressSkipReasonOther: formValue.skipResidentAddress && formValue.residentAddressSkipReason === 'その他' ? formValue.residentAddressSkipReasonOther : '',
             residentAddress: {
-              sameAsOldAddress: this.sameAsOldAddress,
+              sameAsOldAddress: false,
               sameAsNewAddress: this.sameAsNewAddress,
               postalCode: residentPostalCode,
               address: residentAddress,
@@ -5123,6 +5208,35 @@ export class EmployeeDashboardComponent implements OnDestroy {
   }
 
   // 入社日以降の日付のみを許可するバリデーター
+  // 今日の日付をYYYY-MM-DD形式で取得
+  getTodayDateString(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // 生年月日用バリデーター（未来の日付を防ぐ）
+  birthDateValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null; // 空の場合は他のバリデーターで処理
+    }
+    
+    const selectedDate = new Date(control.value);
+    selectedDate.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 時刻を0時にリセット
+    
+    // 未来の日付の場合はエラー
+    if (selectedDate > today) {
+      return { 'futureDate': true };
+    }
+    
+    return null;
+  }
+
   futureDateValidator(control: AbstractControl): ValidationErrors | null {
     if (!control.value) {
       return null; // 空の場合は他のバリデーターで処理

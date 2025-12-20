@@ -786,11 +786,16 @@
                       </div>
                       
                       <!-- 身分証明書添付 -->
-                      <div class="info-row-pair" *ngIf="dependent.identityDocFileUrl" style="margin-bottom: 0.5rem;">
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
                         <div class="info-row full-width">
                           <span class="info-label">身分証明書添付:</span>
                           <span class="info-value">
-                            <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
+                            <ng-container *ngIf="dependent.identityDocFileUrl; else noIdentityDoc">
+                              <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
+                            </ng-container>
+                            <ng-template #noIdentityDoc>
+                              <span>-</span>
+                            </ng-template>
                           </span>
                         </div>
                       </div>
@@ -992,12 +997,13 @@
                       </div>
                       
                       <!-- 身分証明書添付 -->
-                      <div class="info-row-pair" *ngIf="dependent.identityDocFileUrl" style="margin-bottom: 0.5rem;">
+                      <div class="info-row-pair" style="margin-bottom: 0.5rem;">
                         <div class="info-row full-width">
                           <span class="info-label">身分証明書添付:</span>
-                          <span class="info-value">
+                          <span class="info-value" *ngIf="dependent.identityDocFileUrl">
                             <a [href]="dependent.identityDocFileUrl" target="_blank" class="file-link">{{ getFileNameFromUrl(dependent.identityDocFileUrl, dependent.identityDocFileName) }}</a>
                           </span>
+                          <span class="info-value" *ngIf="!dependent.identityDocFileUrl">-</span>
                         </div>
                       </div>
                       
@@ -1335,9 +1341,11 @@
               id="onboarding-birthDate" 
               formControlName="birthDate" 
               class="form-input"
+              [max]="getTodayDateString()"
             >
             <div *ngIf="onboardingApplicationForm.get('birthDate')?.invalid && onboardingApplicationForm.get('birthDate')?.touched" class="error-message">
-              生年月日を入力してください
+              <span *ngIf="onboardingApplicationForm.get('birthDate')?.errors?.['required']">生年月日を入力してください</span>
+              <span *ngIf="onboardingApplicationForm.get('birthDate')?.errors?.['futureDate']">未来の日付は入力できません</span>
             </div>
           </div>
           <div class="form-group">
@@ -2134,7 +2142,11 @@
         <section class="form-section">
           <h3 class="section-title">生年月日 <span class="required">*</span></h3>
           <div class="form-group">
-            <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+            <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input" [max]="getTodayDateString()">
+            <div *ngIf="dependentApplicationForm.get('birthDate')?.invalid && dependentApplicationForm.get('birthDate')?.touched" class="error-message">
+              <span *ngIf="dependentApplicationForm.get('birthDate')?.errors?.['required']">生年月日を入力してください</span>
+              <span *ngIf="dependentApplicationForm.get('birthDate')?.errors?.['futureDate']">未来の日付は入力できません</span>
+            </div>
           </div>
         </section>
         
@@ -2552,7 +2564,11 @@
         <section class="form-section">
           <h3 class="section-title">生年月日 <span class="required">*</span></h3>
           <div class="form-group">
-            <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+            <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input" [max]="getTodayDateString()">
+            <div *ngIf="dependentApplicationForm.get('birthDate')?.invalid && dependentApplicationForm.get('birthDate')?.touched" class="error-message">
+              <span *ngIf="dependentApplicationForm.get('birthDate')?.errors?.['required']">生年月日を入力してください</span>
+              <span *ngIf="dependentApplicationForm.get('birthDate')?.errors?.['futureDate']">未来の日付は入力できません</span>
+            </div>
           </div>
         </section>
         
@@ -3134,19 +3150,49 @@
       </section>
       
       <!-- 新しい住民票住所欄 -->
-      <section class="form-section" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
+      <section class="form-section">
         <h3 class="section-title">新しい住民票住所</h3>
-        <div class="form-group">
+        <div class="form-group full-width">
           <label class="checkbox-label">
             <input 
               type="checkbox" 
-              [checked]="sameAsOldAddress"
-              (change)="onSameAsOldAddressChange($event)"
+              formControlName="skipResidentAddress"
+              (change)="onAddressChangeSkipResidentAddressChange($event)"
             >
-            変更前住所と同じ
+            住民票住所を記載しない
           </label>
         </div>
-        <div class="form-group">
+        <div class="form-group full-width" *ngIf="addressChangeForm.get('skipResidentAddress')?.value">
+          <label for="addressChange-residentAddressSkipReason">理由 <span class="required">*</span></label>
+          <select 
+            id="addressChange-residentAddressSkipReason" 
+            formControlName="residentAddressSkipReason" 
+            class="form-input"
+            (change)="onAddressChangeResidentAddressSkipReasonChange($event)"
+          >
+            <option value="">選択してください</option>
+            <option value="海外在住">海外在住</option>
+            <option value="短期留学">短期留学</option>
+            <option value="その他">その他</option>
+          </select>
+          <div *ngIf="addressChangeForm.get('residentAddressSkipReason')?.invalid && addressChangeForm.get('residentAddressSkipReason')?.touched" class="error-message">
+            理由を選択してください
+          </div>
+        </div>
+        <div class="form-group full-width" *ngIf="addressChangeForm.get('skipResidentAddress')?.value && addressChangeForm.get('residentAddressSkipReason')?.value === 'その他'">
+          <label for="addressChange-residentAddressSkipReasonOther">理由（その他） <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="addressChange-residentAddressSkipReasonOther" 
+            formControlName="residentAddressSkipReasonOther" 
+            class="form-input"
+            placeholder="理由を入力してください"
+          >
+          <div *ngIf="addressChangeForm.get('residentAddressSkipReasonOther')?.invalid && addressChangeForm.get('residentAddressSkipReasonOther')?.touched" class="error-message">
+            理由を入力してください
+          </div>
+        </div>
+        <div class="form-group" *ngIf="!addressChangeForm.get('skipResidentAddress')?.value">
           <label class="checkbox-label">
             <input 
               type="checkbox" 
@@ -3156,7 +3202,7 @@
             変更後の住所と同じ
           </label>
         </div>
-        <div class="form-grid" *ngIf="!sameAsOldAddress && !sameAsNewAddress">
+        <div class="form-grid" *ngIf="!addressChangeForm.get('skipResidentAddress')?.value && !sameAsNewAddress">
           <div class="form-group">
             <label for="residentPostalCode">郵便番号</label>
             <input 
@@ -3321,9 +3367,9 @@
     <form [formGroup]="myNumberChangeForm" (ngSubmit)="submitMyNumberChangeApplication()" class="application-form">
       <!-- マイナンバー変更した日 -->
       <section class="form-section">
-        <h3 class="section-title">マイナンバー変更した日</h3>
+        <h3 class="section-title">マイナンバーを変更した日</h3>
         <div class="form-group">
-          <label for="changeDate">マイナンバー変更した日 <span class="required">*</span></label>
+          <label for="changeDate">マイナンバーを変更した日 <span class="required">*</span></label>
           <input 
             type="date" 
             id="changeDate" 
@@ -3331,7 +3377,7 @@
             class="form-input"
           >
           <div *ngIf="myNumberChangeForm.get('changeDate')?.invalid && myNumberChangeForm.get('changeDate')?.touched" class="error-message">
-            マイナンバー変更した日を入力してください
+            マイナンバーを変更した日を入力してください
           </div>
         </div>
       </section>
@@ -3974,7 +4020,7 @@
             <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
               <div class="form-group">
                 <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
-                <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+                <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input" [max]="getTodayDateString()">
               </div>
             </div>
           </section>
@@ -4615,7 +4661,7 @@
             <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
               <div class="form-group">
                 <label for="dependentBirthDate">生年月日 <span class="required">*</span></label>
-                <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input">
+                <input type="date" id="dependentBirthDate" formControlName="birthDate" class="form-input" [max]="getTodayDateString()">
               </div>
             </div>
           </section>
@@ -5135,7 +5181,7 @@
           <div class="detail-grid">
             <div class="detail-item full-width">
               <!-- 表示モード -->
-              <span class="detail-label" *ngIf="selectedApplication.removalReason === 'その他'">理由:</span>
+              <span class="detail-label" *ngIf="selectedApplication.removalReason === 'その他' || selectedApplication.removalReason === '死亡' || (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason))">理由:</span>
               <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
                 {{ (selectedApplication.removalReason && !['死亡', '離婚', '就職・収入増加', '75歳到達', '障害認定', 'その他'].includes(selectedApplication.removalReason)) ? 'その他' : (selectedApplication.removalReason || '-') }}
                 <span *ngIf="selectedApplication.removalReason === '死亡' && selectedApplication.deathDate">
@@ -5144,7 +5190,7 @@
               </span>
               <!-- 編集モード -->
               <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
-                <label *ngIf="dependentRemovalForm.get('removalReason')?.value === 'その他'">理由:</label>
+                <label *ngIf="dependentRemovalForm.get('removalReason')?.value === 'その他' || dependentRemovalForm.get('removalReason')?.value === '死亡'">理由:</label>
                 <select formControlName="removalReason" class="form-input" (change)="onRemovalReasonChange()">
                   <option value="">選択してください</option>
                   <option value="死亡">死亡</option>
@@ -5159,16 +5205,11 @@
                 </div>
               </div>
             </div>
-            <!-- 死亡選択時：死亡年月日 -->
-            <ng-container *ngIf="(isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('removalReason')?.value === '死亡') || ((!isEditModeForReapplication || selectedApplication.status !== '差し戻し') && (selectedApplication.removalReason === '死亡' || selectedApplication.deathDate))">
+            <!-- 死亡選択時：死亡年月日（編集モードのみ表示、表示モードでは理由に含まれているので非表示） -->
+            <ng-container *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し' && dependentRemovalForm.get('removalReason')?.value === '死亡'">
               <div class="detail-item">
                 <span class="detail-label">死亡年月日:</span>
-                <!-- 表示モード -->
-                <span class="detail-value" *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
-                  {{ selectedApplication.deathDate || '-' }}
-                </span>
-                <!-- 編集モード -->
-                <div *ngIf="isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="detail-edit-input">
+                <div class="detail-edit-input">
                   <input type="date" formControlName="deathDate" class="form-input">
                   <div *ngIf="dependentRemovalForm.get('deathDate')?.invalid && dependentRemovalForm.get('deathDate')?.touched" class="error-message">
                     死亡年月日を入力してください
@@ -5412,30 +5453,68 @@
           </section>
           
           <!-- 新しい住民票住所 -->
-          <section class="detail-section" *ngIf="!addressChangeForm.get('isOverseasResident')?.value">
+          <section class="detail-section">
             <h3 class="section-title">新しい住民票住所</h3>
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  [checked]="sameAsOldAddress"
-                  (change)="onSameAsOldAddressChange($event)"
-                >
-                変更前住所と同じ
-              </label>
-            </div>
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  [checked]="sameAsNewAddress"
-                  (change)="onSameAsNewAddressChange($event)"
-                >
-                変更後の住所と同じ
-              </label>
-            </div>
-            <div class="detail-grid" *ngIf="!sameAsOldAddress && !sameAsNewAddress">
-              <div class="detail-item">
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">住民票住所を記載しない:</span>
+                <div class="detail-edit-input">
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      formControlName="skipResidentAddress"
+                      (change)="onAddressChangeSkipResidentAddressChange($event)"
+                    >
+                    住民票住所を記載しない
+                  </label>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="addressChangeForm.get('skipResidentAddress')?.value">
+                <span class="detail-label">理由 <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <select 
+                    formControlName="residentAddressSkipReason" 
+                    class="form-input"
+                    (change)="onAddressChangeResidentAddressSkipReasonChange($event)"
+                  >
+                    <option value="">選択してください</option>
+                    <option value="海外在住">海外在住</option>
+                    <option value="短期留学">短期留学</option>
+                    <option value="その他">その他</option>
+                  </select>
+                  <div *ngIf="addressChangeForm.get('residentAddressSkipReason')?.invalid && addressChangeForm.get('residentAddressSkipReason')?.touched" class="error-message">
+                    理由を選択してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item full-width" *ngIf="addressChangeForm.get('skipResidentAddress')?.value && addressChangeForm.get('residentAddressSkipReason')?.value === 'その他'">
+                <span class="detail-label">理由（その他） <span class="required">*</span>:</span>
+                <div class="detail-edit-input">
+                  <input 
+                    type="text" 
+                    formControlName="residentAddressSkipReasonOther" 
+                    class="form-input"
+                    placeholder="理由を入力してください"
+                  >
+                  <div *ngIf="addressChangeForm.get('residentAddressSkipReasonOther')?.invalid && addressChangeForm.get('residentAddressSkipReasonOther')?.touched" class="error-message">
+                    理由を入力してください
+                  </div>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="!addressChangeForm.get('skipResidentAddress')?.value">
+                <span class="detail-label">変更後の住所と同じ:</span>
+                <div class="detail-edit-input">
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      [checked]="sameAsNewAddress"
+                      (change)="onSameAsNewAddressChange($event)"
+                    >
+                    変更後の住所と同じ
+                  </label>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="!addressChangeForm.get('skipResidentAddress')?.value && !sameAsNewAddress">
                 <span class="detail-label">郵便番号:</span>
                 <div class="detail-edit-input">
                   <input 
@@ -5449,13 +5528,13 @@
                   >
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!addressChangeForm.get('skipResidentAddress')?.value && !sameAsNewAddress">
                 <span class="detail-label">住所:</span>
                 <div class="detail-edit-input">
                   <textarea formControlName="residentAddress" class="form-input" rows="2"></textarea>
                 </div>
               </div>
-              <div class="detail-item full-width">
+              <div class="detail-item full-width" *ngIf="!addressChangeForm.get('skipResidentAddress')?.value && !sameAsNewAddress">
                 <span class="detail-label">住所（ヨミガナ）:</span>
                 <div class="detail-edit-input">
                   <textarea formControlName="residentAddressKana" class="form-input" rows="2"></textarea>
@@ -5506,28 +5585,36 @@
           </section>
           
           <!-- 新しい住民票住所 -->
-          <section class="detail-section" *ngIf="selectedApplication.residentAddress && !selectedApplication.isOverseasResident">
+          <section class="detail-section">
             <h3 class="section-title">新しい住民票住所</h3>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="detail-label">変更前住所と同じ:</span>
-                <span class="detail-value">{{ selectedApplication.residentAddress.sameAsOldAddress ? 'はい' : 'いいえ' }}</span>
+                <span class="detail-label">住民票住所を記載しない:</span>
+                <span class="detail-value">{{ selectedApplication.skipResidentAddress ? 'はい' : 'いいえ' }}</span>
               </div>
-              <div class="detail-item">
+              <div class="detail-item" *ngIf="selectedApplication.skipResidentAddress">
+                <span class="detail-label">理由:</span>
+                <span class="detail-value">{{ selectedApplication.residentAddressSkipReason || '-' }}</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="selectedApplication.skipResidentAddress && selectedApplication.residentAddressSkipReason === 'その他'">
+                <span class="detail-label">理由（その他）:</span>
+                <span class="detail-value">{{ selectedApplication.residentAddressSkipReasonOther || '-' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="!selectedApplication.skipResidentAddress">
                 <span class="detail-label">変更後の住所と同じ:</span>
-                <span class="detail-value">{{ selectedApplication.residentAddress.sameAsNewAddress ? 'はい' : 'いいえ' }}</span>
+                <span class="detail-value">{{ selectedApplication.residentAddress?.sameAsNewAddress ? 'はい' : 'いいえ' }}</span>
               </div>
-              <div class="detail-item" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
+              <div class="detail-item" *ngIf="!selectedApplication.skipResidentAddress && !selectedApplication.residentAddress?.sameAsNewAddress">
                 <span class="detail-label">郵便番号:</span>
-                <span class="detail-value">{{ selectedApplication.residentAddress.postalCode || '-' }}</span>
+                <span class="detail-value">{{ selectedApplication.residentAddress?.postalCode || '-' }}</span>
               </div>
-              <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.skipResidentAddress && !selectedApplication.residentAddress?.sameAsNewAddress">
                 <span class="detail-label">住所:</span>
-                <span class="detail-value">{{ selectedApplication.residentAddress.address || '-' }}</span>
+                <span class="detail-value">{{ selectedApplication.residentAddress?.address || '-' }}</span>
               </div>
-              <div class="detail-item full-width" *ngIf="!selectedApplication.residentAddress.sameAsOldAddress && !selectedApplication.residentAddress.sameAsNewAddress">
+              <div class="detail-item full-width" *ngIf="!selectedApplication.skipResidentAddress && !selectedApplication.residentAddress?.sameAsNewAddress">
                 <span class="detail-label">住所（ヨミガナ）:</span>
-                <span class="detail-value">{{ selectedApplication.residentAddress.addressKana || '-' }}</span>
+                <span class="detail-value">{{ selectedApplication.residentAddress?.addressKana || '-' }}</span>
               </div>
             </div>
           </section>
@@ -5571,14 +5658,14 @@
         <form [formGroup]="myNumberChangeForm" (ngSubmit)="submitReapplication()" *ngIf="myNumberChangeForm && isEditModeForReapplication && selectedApplication.status === '差し戻し'" class="application-detail-form" [class.form-disabled]="isSubmittingReapplication">
           <!-- マイナンバー変更した日 -->
           <section class="detail-section">
-            <h3 class="section-title">マイナンバー変更した日 <span class="required">*</span></h3>
+            <h3 class="section-title">マイナンバーを変更した日 <span class="required">*</span></h3>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="detail-label">マイナンバー変更した日:</span>
+                <span class="detail-label">マイナンバーを変更した日:</span>
                 <div class="detail-edit-input">
                   <input type="date" formControlName="changeDate" class="form-input">
                   <div *ngIf="myNumberChangeForm.get('changeDate')?.invalid && myNumberChangeForm.get('changeDate')?.touched" class="error-message">
-                    マイナンバー変更した日を入力してください
+                    マイナンバーを変更した日を入力してください
                   </div>
                 </div>
               </div>
@@ -5670,10 +5757,10 @@
         <ng-container *ngIf="!isEditModeForReapplication || selectedApplication.status !== '差し戻し'">
           <!-- マイナンバー変更した日 -->
           <section class="detail-section">
-            <h3 class="section-title">マイナンバー変更した日</h3>
+            <h3 class="section-title">マイナンバーを変更した日</h3>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="detail-label">マイナンバー変更した日:</span>
+                <span class="detail-label">マイナンバーを変更した日:</span>
                 <span class="detail-value">{{ selectedApplication.changeDate || '-' }}</span>
               </div>
             </div>

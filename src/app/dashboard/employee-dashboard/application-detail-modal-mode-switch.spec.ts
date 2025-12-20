@@ -175,7 +175,7 @@ describe('EmployeeDashboardComponent - Application Detail Modal Mode Switch Test
         employeeNumber: mockEmployeeNumber,
         applicationType: '扶養家族追加',
         status: '差し戻し',
-        relationshipType: '配偶者以外',
+        relationshipType: '配偶者', // 配偶者の場合のみoverseasSpecialRequirementDateが保持される
         relationship: '実子・養子',
         lastName: '鈴木',
         firstName: '次郎',
@@ -588,8 +588,9 @@ describe('EmployeeDashboardComponent - Application Detail Modal Mode Switch Test
         status: '差し戻し',
         expectedDeliveryDate: '2024-12-01',
         isMultipleBirth: 'いいえ',
-        maternityLeaveStartDate: '2024-11-15',
-        maternityLeaveEndDate: '2025-03-15',
+        // 既存の値が設定されている場合はそれを優先（自動計算されない）
+        maternityLeaveStartDate: '2024-10-20',
+        maternityLeaveEndDate: '2025-01-25',
         stayAddress: '東京都港区1-2-3'
       };
 
@@ -604,11 +605,11 @@ describe('EmployeeDashboardComponent - Application Detail Modal Mode Switch Test
       expect(component.maternityLeaveForm).toBeDefined();
       expect(component.isEditModeForReapplication).toBe(true);
 
-      // データが正しく保持されていることを確認
+      // データが正しく保持されていることを確認（既存の値が優先される）
       expect(component.maternityLeaveForm.get('expectedDeliveryDate')?.value).toBe('2024-12-01');
       expect(component.maternityLeaveForm.get('isMultipleBirth')?.value).toBe('いいえ');
-      expect(component.maternityLeaveForm.get('maternityLeaveStartDate')?.value).toBe('2024-11-15');
-      expect(component.maternityLeaveForm.get('maternityLeaveEndDate')?.value).toBe('2025-03-15');
+      expect(component.maternityLeaveForm.get('maternityLeaveStartDate')?.value).toBe('2024-10-20');
+      expect(component.maternityLeaveForm.get('maternityLeaveEndDate')?.value).toBe('2025-01-25');
       expect(component.maternityLeaveForm.get('stayAddress')?.value).toBe('東京都港区1-2-3');
     });
   });
