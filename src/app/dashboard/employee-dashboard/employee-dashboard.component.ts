@@ -1889,8 +1889,8 @@ export class EmployeeDashboardComponent implements OnDestroy {
       changeDate: ['', Validators.required],
       newLastName: ['', Validators.required],
       newFirstName: ['', Validators.required],
-      newLastNameKana: ['', Validators.required],
-      newFirstNameKana: ['', Validators.required]
+      newLastNameKana: ['', [Validators.required, this.katakanaValidator]],
+      newFirstNameKana: ['', [Validators.required, this.katakanaValidator]]
     });
   }
   

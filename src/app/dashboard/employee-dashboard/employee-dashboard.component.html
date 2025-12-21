@@ -3311,7 +3311,8 @@
               class="form-input"
             >
             <div *ngIf="nameChangeForm.get('newLastNameKana')?.invalid && nameChangeForm.get('newLastNameKana')?.touched" class="error-message">
-              姓（ヨミガナ）を入力してください
+              <span *ngIf="nameChangeForm.get('newLastNameKana')?.errors?.['required']">姓（ヨミガナ）を入力してください</span>
+              <span *ngIf="nameChangeForm.get('newLastNameKana')?.errors?.['katakana']">カタカナで入力してください</span>
             </div>
           </div>
           <div class="form-group">
@@ -3323,7 +3324,8 @@
               class="form-input"
             >
             <div *ngIf="nameChangeForm.get('newFirstNameKana')?.invalid && nameChangeForm.get('newFirstNameKana')?.touched" class="error-message">
-              名（ヨミガナ）を入力してください
+              <span *ngIf="nameChangeForm.get('newFirstNameKana')?.errors?.['required']">名（ヨミガナ）を入力してください</span>
+              <span *ngIf="nameChangeForm.get('newFirstNameKana')?.errors?.['katakana']">カタカナで入力してください</span>
             </div>
           </div>
         </div>
@@ -5849,7 +5851,8 @@
                 <div class="detail-edit-input">
                   <input type="text" formControlName="newLastNameKana" class="form-input">
                   <div *ngIf="nameChangeForm.get('newLastNameKana')?.invalid && nameChangeForm.get('newLastNameKana')?.touched" class="error-message">
-                    姓（ヨミガナ）を入力してください
+                    <span *ngIf="nameChangeForm.get('newLastNameKana')?.errors?.['required']">姓（ヨミガナ）を入力してください</span>
+                    <span *ngIf="nameChangeForm.get('newLastNameKana')?.errors?.['katakana']">カタカナで入力してください</span>
                   </div>
                 </div>
               </div>
@@ -5858,7 +5861,8 @@
                 <div class="detail-edit-input">
                   <input type="text" formControlName="newFirstNameKana" class="form-input">
                   <div *ngIf="nameChangeForm.get('newFirstNameKana')?.invalid && nameChangeForm.get('newFirstNameKana')?.touched" class="error-message">
-                    名（ヨミガナ）を入力してください
+                    <span *ngIf="nameChangeForm.get('newFirstNameKana')?.errors?.['required']">名（ヨミガナ）を入力してください</span>
+                    <span *ngIf="nameChangeForm.get('newFirstNameKana')?.errors?.['katakana']">カタカナで入力してください</span>
                   </div>
                 </div>
               </div>
