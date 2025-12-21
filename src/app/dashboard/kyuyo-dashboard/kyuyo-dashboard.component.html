@@ -471,6 +471,7 @@
                     <th>産前産後休業開始日</th>
                     <th>産前産後休業終了日</th>
                     <th>在籍状況</th>
+                    <th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -482,9 +483,18 @@
                     <td>{{ item.maternityLeaveStartDate ? formatDate(item.maternityLeaveStartDate) : '-' }}</td>
                     <td>{{ item.maternityLeaveEndDate ? formatDate(item.maternityLeaveEndDate) : '-' }}</td>
                     <td>{{ item.employmentStatus || '在籍' }}</td>
+                    <td>
+                      <button 
+                        type="button" 
+                        class="edit-button" 
+                        (click)="openMaternityLeaveModal(item, $event)"
+                      >
+                        期間編集
+                      </button>
+                    </td>
                   </tr>
                   <tr *ngIf="filteredLeaveVoluntaryList.length === 0">
-                    <td colspan="5" class="empty-message">データがありません</td>
+                    <td colspan="6" class="empty-message">データがありません</td>
                   </tr>
                 </tbody>
               </table>
@@ -1134,6 +1144,82 @@
       >
         {{ isSavingVoluntaryEnd ? '保存中...' : '保存' }}
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- 産前産後休業期間編集モーダル -->
+<div class="modal-overlay" *ngIf="showMaternityLeaveModal" (click)="closeMaternityLeaveModal()">
+  <div class="modal-content voluntary-end-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">産前産後休業期間編集</h2>
+      <button class="modal-close-button" (click)="closeMaternityLeaveModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="selectedMaternityEmployee" class="voluntary-end-container">
+        <div class="info-section">
+          <div class="info-item">
+            <span class="info-label">社員番号:</span>
+            <span class="info-value">{{ selectedMaternityEmployee.employeeNumber }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">氏名:</span>
+            <span class="info-value">{{ selectedMaternityEmployee.name }}</span>
+          </div>
+        </div>
+        
+        <form [formGroup]="maternityLeaveForm" class="voluntary-end-form">
+          <div class="form-group">
+            <label for="maternityLeaveStartDate">産前産後休業開始日 <span class="required">*</span></label>
+            <input 
+              type="date" 
+              id="maternityLeaveStartDate" 
+              formControlName="maternityLeaveStartDate" 
+              class="form-input"
+            >
+            <div *ngIf="maternityLeaveForm.get('maternityLeaveStartDate')?.invalid && maternityLeaveForm.get('maternityLeaveStartDate')?.touched" class="error-message">
+              <span *ngIf="maternityLeaveForm.get('maternityLeaveStartDate')?.errors?.['required']">産前産後休業開始日を入力してください</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="maternityLeaveEndDate">産前産後休業終了日 <span class="required">*</span></label>
+            <input 
+              type="date" 
+              id="maternityLeaveEndDate" 
+              formControlName="maternityLeaveEndDate" 
+              class="form-input"
+            >
+            <div *ngIf="maternityLeaveForm.get('maternityLeaveEndDate')?.invalid && maternityLeaveForm.get('maternityLeaveEndDate')?.touched" class="error-message">
+              <span *ngIf="maternityLeaveForm.get('maternityLeaveEndDate')?.errors?.['required']">産前産後休業終了日を入力してください</span>
+            </div>
+            <div *ngIf="maternityLeaveForm.get('maternityLeaveStartDate')?.value && maternityLeaveForm.get('maternityLeaveEndDate')?.value && 
+                        new Date(maternityLeaveForm.get('maternityLeaveStartDate')?.value) > new Date(maternityLeaveForm.get('maternityLeaveEndDate')?.value)" 
+                 class="error-message">
+              産前産後休業開始日は終了日より前である必要があります
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button 
+              type="button" 
+              class="submit-button" 
+              (click)="saveMaternityLeavePeriod()"
+              [disabled]="maternityLeaveForm.invalid || isSavingMaternityLeave"
+            >
+              {{ isSavingMaternityLeave ? '保存中...' : '保存' }}
+            </button>
+            <button 
+              type="button" 
+              class="cancel-button" 
+              (click)="closeMaternityLeaveModal()"
+              [disabled]="isSavingMaternityLeave"
+            >
+              キャンセル
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

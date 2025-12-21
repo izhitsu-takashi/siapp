@@ -280,6 +280,78 @@
   font-size: 0.875rem;
 }
 
+/* フォームアクションボタン */
+.voluntary-end-form .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.voluntary-end-form .form-actions .submit-button {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+}
+
+.voluntary-end-form .form-actions .submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(86, 171, 47, 0.4);
+  background: linear-gradient(135deg, #4a9a2a 0%, #96d055 100%);
+}
+
+.voluntary-end-form .form-actions .submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
+}
+
+.voluntary-end-form .form-actions .submit-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.voluntary-end-form .form-actions .cancel-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.voluntary-end-form .form-actions .cancel-button:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.4);
+}
+
+.voluntary-end-form .form-actions .cancel-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.voluntary-end-form .form-actions .cancel-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* フィルターと切り替えコントロール */
 .insurance-list-controls {
   display: flex;
@@ -1521,6 +1593,37 @@
 .delete-button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+/* 編集ボタン */
+.edit-button {
+  padding: 0.4rem 0.8rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.edit-button:hover {
+  background-color: #1976D2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(33, 150, 243, 0.4);
+}
+
+.edit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.edit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .no-data-message {

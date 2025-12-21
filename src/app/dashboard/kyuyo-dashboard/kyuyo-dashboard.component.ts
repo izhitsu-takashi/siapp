@@ -139,6 +139,12 @@ export class KyuyoDashboardComponent {
   selectedVoluntaryEmployee: any = null;
   voluntaryEndForm!: FormGroup;
   isSavingVoluntaryEnd = false;
+  
+  // 産前産後休業期間編集モーダル
+  showMaternityLeaveModal = false;
+  selectedMaternityEmployee: any = null;
+  maternityLeaveForm!: FormGroup;
+  isSavingMaternityLeave = false;
 
   constructor(
     private router: Router,
@@ -149,6 +155,7 @@ export class KyuyoDashboardComponent {
   ) {
     this.settingsForm = this.createSettingsForm();
     this.voluntaryEndForm = this.createVoluntaryEndForm();
+    this.maternityLeaveForm = this.createMaternityLeaveForm();
     
     // 年月フィルター用の選択肢を初期化（2025年から2028年まで）
     const currentYear = new Date().getFullYear();
@@ -230,6 +237,14 @@ export class KyuyoDashboardComponent {
   createVoluntaryEndForm(): FormGroup {
     return this.fb.group({
       voluntaryEndDate: ['', Validators.required]
+    });
+  }
+  
+  // 産前産後休業期間編集フォームを作成
+  createMaternityLeaveForm(): FormGroup {
+    return this.fb.group({
+      maternityLeaveStartDate: ['', Validators.required],
+      maternityLeaveEndDate: ['', Validators.required]
     });
   }
   
@@ -397,6 +412,122 @@ export class KyuyoDashboardComponent {
       alert('任意継続終了日の設定に失敗しました');
     } finally {
       this.isSavingVoluntaryEnd = false;
+    }
+  }
+  
+  // 産前産後休業期間編集モーダルを開く
+  openMaternityLeaveModal(employee: any, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.selectedMaternityEmployee = employee;
+    
+    // フォームに現在の値を設定
+    const startDate = employee.maternityLeaveStartDate 
+      ? (employee.maternityLeaveStartDate instanceof Date 
+          ? this.formatDateForInput(employee.maternityLeaveStartDate)
+          : employee.maternityLeaveStartDate instanceof Object && employee.maternityLeaveStartDate.toDate
+          ? this.formatDateForInput(employee.maternityLeaveStartDate.toDate())
+          : employee.maternityLeaveStartDate)
+      : '';
+    
+    const endDate = employee.maternityLeaveEndDate 
+      ? (employee.maternityLeaveEndDate instanceof Date 
+          ? this.formatDateForInput(employee.maternityLeaveEndDate)
+          : employee.maternityLeaveEndDate instanceof Object && employee.maternityLeaveEndDate.toDate
+          ? this.formatDateForInput(employee.maternityLeaveEndDate.toDate())
+          : employee.maternityLeaveEndDate)
+      : '';
+    
+    this.maternityLeaveForm.patchValue({
+      maternityLeaveStartDate: startDate,
+      maternityLeaveEndDate: endDate
+    });
+    
+    this.showMaternityLeaveModal = true;
+  }
+  
+  // 日付をinput[type="date"]用の形式（YYYY-MM-DD）に変換
+  formatDateForInput(date: Date | string): string {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  
+  // 産前産後休業期間編集モーダルを閉じる
+  closeMaternityLeaveModal() {
+    this.showMaternityLeaveModal = false;
+    this.selectedMaternityEmployee = null;
+    this.maternityLeaveForm.reset();
+  }
+  
+  // 産前産後休業期間を保存
+  async saveMaternityLeavePeriod() {
+    if (this.maternityLeaveForm.invalid || !this.selectedMaternityEmployee) {
+      return;
+    }
+    
+    this.isSavingMaternityLeave = true;
+    try {
+      const startDate = this.maternityLeaveForm.get('maternityLeaveStartDate')?.value;
+      const endDate = this.maternityLeaveForm.get('maternityLeaveEndDate')?.value;
+      
+      if (!startDate || !endDate) {
+        alert('産前産後休業開始日と終了日を入力してください');
+        this.isSavingMaternityLeave = false;
+        return;
+      }
+      
+      // 開始日が終了日より後でないかチェック
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (start > end) {
+        alert('産前産後休業開始日は終了日より前である必要があります');
+        this.isSavingMaternityLeave = false;
+        return;
+      }
+      
+      // 社員データを取得
+      const employeeData = await this.firestoreService.getEmployeeData(this.selectedMaternityEmployee.employeeNumber);
+      
+      if (!employeeData) {
+        alert('社員データが見つかりませんでした');
+        this.isSavingMaternityLeave = false;
+        return;
+      }
+      
+      // 産前産後休業期間を設定（文字列として保存）
+      const updatedData: any = {
+        ...employeeData,
+        maternityLeaveStartDate: startDate,
+        maternityLeaveEndDate: endDate,
+        updatedAt: new Date()
+      };
+      
+      // 社員データを更新
+      await this.firestoreService.saveEmployeeData(this.selectedMaternityEmployee.employeeNumber, updatedData);
+      
+      console.log('産前産後休業期間を保存しました:', { startDate, endDate });
+      alert('産前産後休業期間を更新しました');
+      
+      // モーダルを閉じる
+      this.closeMaternityLeaveModal();
+      
+      // 一覧を再読み込み
+      await this.loadLeaveVoluntaryList();
+      
+      // 社会保険料一覧も再読み込み（期間変更により保険料が変わる可能性があるため）
+      await this.loadInsuranceList();
+    } catch (error) {
+      console.error('Error saving maternity leave period:', error);
+      alert('産前産後休業期間の更新に失敗しました');
+    } finally {
+      this.isSavingMaternityLeave = false;
     }
   }
   
@@ -2351,21 +2482,31 @@ export class KyuyoDashboardComponent {
       return false;
     }
     
-    // 開始月と終了月を取得
+    // 開始月を取得
     const startYear = startDate.getFullYear();
     const startMonth = startDate.getMonth() + 1;
-    const endYear = endDate.getFullYear();
-    const endMonth = endDate.getMonth() + 1;
     
-    // 終了月の前月までが免除対象
-    let exemptEndYear = endYear;
-    let exemptEndMonth = endMonth - 1;
+    // 終了日の翌日を計算
+    const nextDayAfterEnd = new Date(endDate);
+    nextDayAfterEnd.setDate(nextDayAfterEnd.getDate() + 1);
+    const nextDayYear = nextDayAfterEnd.getFullYear();
+    const nextDayMonth = nextDayAfterEnd.getMonth() + 1;
+    
+    // 休業開始日と休業終了日の翌日が同じ月の場合は、保険料を徴収する（免除しない）
+    if (startYear === nextDayYear && startMonth === nextDayMonth) {
+      return false;
+    }
+    
+    // 免除対象期間：開始月から終了日の翌日が属する月の前月まで
+    // 終了日の翌日が属する月の前月を計算
+    let exemptEndYear = nextDayYear;
+    let exemptEndMonth = nextDayMonth - 1;
     if (exemptEndMonth < 1) {
       exemptEndMonth = 12;
       exemptEndYear--;
     }
     
-    // 選択された年月が開始月から終了月の前月までの範囲内かどうかを判定
+    // 選択された年月が開始月から終了日の翌日が属する月の前月までの範囲内かどうかを判定
     if (year < startYear || (year === startYear && month < startMonth)) {
       return false;
     }
