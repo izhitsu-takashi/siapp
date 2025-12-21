@@ -1416,3 +1416,173 @@
   font-weight: 500;
 }
 
+/* 保険料免除設定フォーム */
+.exemption-form {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.exemption-form-section {
+  margin-bottom: 1.5rem;
+}
+
+.exemption-form-section:last-child {
+  margin-bottom: 0;
+}
+
+.form-section-title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #56ab2f;
+}
+
+.exemption-period-grid {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.exemption-period-group {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+.exemption-period-group .form-group {
+  flex: 1;
+}
+
+.exemption-list {
+  margin-top: 2rem;
+}
+
+.exemption-list h5 {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.exemption-table-container {
+  overflow-x: auto;
+}
+
+.exemption-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.exemption-table th,
+.exemption-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.exemption-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.exemption-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.exemption-row-highlight {
+  background-color: #fff9e6 !important;
+}
+
+.exemption-row-highlight:hover {
+  background-color: #fff4d6 !important;
+}
+
+.delete-button {
+  padding: 0.4rem 0.8rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+  background-color: #d32f2f;
+}
+
+.delete-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.no-data-message {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-style: italic;
+}
+
+/* フォーム無効化スタイル */
+.exemption-form.form-disabled {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.exemption-form.form-disabled * {
+  cursor: not-allowed;
+}
+
+/* ローディングオーバーレイ */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  border-radius: 8px;
+  backdrop-filter: blur(2px);
+}
+
+.loading-message {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #56ab2f;
+  padding: 1rem 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-message::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid #56ab2f;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+

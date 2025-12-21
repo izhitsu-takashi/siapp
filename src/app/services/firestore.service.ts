@@ -1735,6 +1735,79 @@ export class FirestoreService {
   }
 
   /**
+   * 保険料免除設定を保存
+   */
+  async saveInsuranceExemption(exemptionData: any): Promise<string> {
+    try {
+      const timestamp = Date.now();
+      const docId = `${exemptionData.employeeNumber}_${exemptionData.startYear}_${exemptionData.startMonth}_${timestamp}`;
+      const docRef = doc(this.db, 'insuranceExemptions', docId);
+      
+      await setDoc(docRef, {
+        employeeNumber: exemptionData.employeeNumber,
+        startYear: exemptionData.startYear,
+        startMonth: exemptionData.startMonth,
+        endYear: exemptionData.endYear,
+        endMonth: exemptionData.endMonth,
+        healthInsuranceExempt: exemptionData.healthInsuranceExempt || false,
+        pensionInsuranceExempt: exemptionData.pensionInsuranceExempt || false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      return docId;
+    } catch (error) {
+      console.error('Error saving insurance exemption:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 保険料免除設定を取得
+   */
+  async getInsuranceExemptions(employeeNumber?: string): Promise<any[]> {
+    try {
+      const collectionRef = collection(this.db, 'insuranceExemptions');
+      let q;
+      
+      if (employeeNumber) {
+        q = query(collectionRef, where('employeeNumber', '==', employeeNumber));
+      } else {
+        q = collectionRef;
+      }
+      
+      const snapshot = await getDocs(q);
+      const exemptions: any[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        exemptions.push({
+          id: doc.id,
+          ...data
+        });
+      });
+      
+      return exemptions;
+    } catch (error) {
+      console.error('Error getting insurance exemptions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 保険料免除設定を削除
+   */
+  async deleteInsuranceExemption(exemptionId: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'insuranceExemptions', exemptionId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('Error deleting insurance exemption:', error);
+      throw error;
+    }
+  }
+
+  /**
    * ファイルをFirebase StorageにアップロードしてURLを取得
    */
   async uploadFile(file: File, path: string): Promise<string> {

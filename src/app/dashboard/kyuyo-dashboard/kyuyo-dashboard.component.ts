@@ -61,6 +61,18 @@ export class KyuyoDashboardComponent {
   cashCollectionEmployees: any[] = []; // 現金徴収する社員のリスト
   selectedCashCollectionEmployee: string = ''; // 選択された社員番号（追加用）
   
+  // 保険料免除設定
+  insuranceExemptions: any[] = []; // 保険料免除設定のリスト
+  selectedExemptionEmployee: string = ''; // 選択された社員番号（追加用）
+  exemptionStartYear: number = new Date().getFullYear(); // 免除開始年
+  exemptionStartMonth: number = new Date().getMonth() + 1; // 免除開始月
+  exemptionEndYear: number = new Date().getFullYear(); // 免除終了年
+  exemptionEndMonth: number = new Date().getMonth() + 1; // 免除終了月
+  exemptionHealthInsurance: boolean = false; // 健康保険免除
+  exemptionPensionInsurance: boolean = false; // 厚生年金保険免除
+  isSavingExemption = false; // 免除設定追加中フラグ
+  isDeletingExemption = false; // 免除設定削除中フラグ
+  
   // 健康保険料率データ
   kenpoRates: any[] = [];
   // コメント要素（ダウンロード時に保持するため）
@@ -172,6 +184,9 @@ export class KyuyoDashboardComponent {
     
     // 社員情報を読み込む
     await this.loadEmployees();
+    
+    // 保険料免除設定を読み込む
+    await this.loadInsuranceExemptions();
     
     // 給与設定履歴を読み込む
     const history = await this.firestoreService.getSalaryHistory();
@@ -708,6 +723,235 @@ export class KyuyoDashboardComponent {
       console.error('Error saving cash collection employees:', error);
       alert('現金徴収社員設定の保存中にエラーが発生しました');
     }
+  }
+  
+  // 保険料免除設定を読み込む
+  async loadInsuranceExemptions() {
+    try {
+      const exemptions = await this.firestoreService.getInsuranceExemptions();
+      
+      // 社員名を追加
+      for (const exemption of exemptions) {
+        const employee = this.employees.find((e: any) => e.employeeNumber === exemption.employeeNumber);
+        if (employee) {
+          exemption.name = employee.name;
+        }
+      }
+      
+      // 開始年月でソート（新しい順）
+      this.insuranceExemptions = exemptions.sort((a: any, b: any) => {
+        if (a.startYear !== b.startYear) {
+          return b.startYear - a.startYear;
+        }
+        return b.startMonth - a.startMonth;
+      });
+    } catch (error) {
+      console.error('Error loading insurance exemptions:', error);
+    }
+  }
+  
+  // 期間が重複しているかチェック
+  isPeriodOverlapping(startYear: number, startMonth: number, endYear: number, endMonth: number, existingStartYear: number, existingStartMonth: number, existingEndYear: number, existingEndMonth: number): boolean {
+    // 新しい期間の開始年月と終了年月
+    const newStartYear = Number(startYear);
+    const newStartMonth = Number(startMonth);
+    const newEndYear = Number(endYear);
+    const newEndMonth = Number(endMonth);
+    
+    // 既存期間の開始年月と終了年月
+    const existingStartYearNum = Number(existingStartYear);
+    const existingStartMonthNum = Number(existingStartMonth);
+    const existingEndYearNum = Number(existingEndYear);
+    const existingEndMonthNum = Number(existingEndMonth);
+    
+    // 期間が重複する条件：
+    // 1. 新しい開始年月が既存期間内にある
+    // 2. 新しい終了年月が既存期間内にある
+    // 3. 新しい期間が既存期間を完全に含む
+    
+    // 新しい開始年月が既存期間内にあるか
+    const newStartInExisting = (newStartYear > existingStartYearNum || (newStartYear === existingStartYearNum && newStartMonth >= existingStartMonthNum)) &&
+                                (newStartYear < existingEndYearNum || (newStartYear === existingEndYearNum && newStartMonth <= existingEndMonthNum));
+    
+    // 新しい終了年月が既存期間内にあるか
+    const newEndInExisting = (newEndYear > existingStartYearNum || (newEndYear === existingStartYearNum && newEndMonth >= existingStartMonthNum)) &&
+                              (newEndYear < existingEndYearNum || (newEndYear === existingEndYearNum && newEndMonth <= existingEndMonthNum));
+    
+    // 新しい期間が既存期間を完全に含むか
+    const newContainsExisting = (newStartYear < existingStartYearNum || (newStartYear === existingStartYearNum && newStartMonth <= existingStartMonthNum)) &&
+                                 (newEndYear > existingEndYearNum || (newEndYear === existingEndYearNum && newEndMonth >= existingEndMonthNum));
+    
+    return newStartInExisting || newEndInExisting || newContainsExisting;
+  }
+  
+  // 保険料免除設定を追加
+  async addInsuranceExemption() {
+    if (!this.selectedExemptionEmployee) {
+      alert('社員を選択してください');
+      return;
+    }
+    
+    if (!this.exemptionHealthInsurance && !this.exemptionPensionInsurance) {
+      alert('健康保険または厚生年金保険のいずれかを選択してください');
+      return;
+    }
+    
+    // 期間の妥当性チェック
+    const startDate = new Date(this.exemptionStartYear, this.exemptionStartMonth - 1);
+    const endDate = new Date(this.exemptionEndYear, this.exemptionEndMonth - 1);
+    
+    if (endDate < startDate) {
+      alert('終了年月は開始年月以降を選択してください');
+      return;
+    }
+    
+    // 同じ社員の既存の免除設定と期間が重複していないかチェック
+    const existingExemptions = this.insuranceExemptions.filter((e: any) => e.employeeNumber === this.selectedExemptionEmployee);
+    for (const existing of existingExemptions) {
+      if (this.isPeriodOverlapping(
+        this.exemptionStartYear,
+        this.exemptionStartMonth,
+        this.exemptionEndYear,
+        this.exemptionEndMonth,
+        existing.startYear,
+        existing.startMonth,
+        existing.endYear,
+        existing.endMonth
+      )) {
+        alert(`既存の免除設定（${existing.startYear}年${existing.startMonth}月 ～ ${existing.endYear}年${existing.endMonth}月）と期間が重複しています。重複した期間の設定はできません。`);
+        return;
+      }
+    }
+    
+    try {
+      this.isSavingExemption = true;
+      
+      await this.firestoreService.saveInsuranceExemption({
+        employeeNumber: this.selectedExemptionEmployee,
+        startYear: this.exemptionStartYear,
+        startMonth: this.exemptionStartMonth,
+        endYear: this.exemptionEndYear,
+        endMonth: this.exemptionEndMonth,
+        healthInsuranceExempt: this.exemptionHealthInsurance,
+        pensionInsuranceExempt: this.exemptionPensionInsurance
+      });
+      
+      // フォームをリセット
+      this.selectedExemptionEmployee = '';
+      this.exemptionStartYear = new Date().getFullYear();
+      this.exemptionStartMonth = new Date().getMonth() + 1;
+      this.exemptionEndYear = new Date().getFullYear();
+      this.exemptionEndMonth = new Date().getMonth() + 1;
+      this.exemptionHealthInsurance = false;
+      this.exemptionPensionInsurance = false;
+      
+      // 免除設定を再読み込み
+      await this.loadInsuranceExemptions();
+      
+      // 社会保険料一覧を再読み込み
+      await this.loadInsuranceList();
+      
+      alert('保険料免除設定を追加しました');
+    } catch (error) {
+      console.error('Error adding insurance exemption:', error);
+      alert('保険料免除設定の追加中にエラーが発生しました');
+    } finally {
+      this.isSavingExemption = false;
+    }
+  }
+  
+  // 保険料免除設定を削除
+  async deleteInsuranceExemption(exemptionId: string) {
+    if (!confirm('この保険料免除設定を削除しますか？')) {
+      return;
+    }
+    
+    try {
+      this.isDeletingExemption = true;
+      
+      await this.firestoreService.deleteInsuranceExemption(exemptionId);
+      
+      // 免除設定を再読み込み
+      await this.loadInsuranceExemptions();
+      
+      // 社会保険料一覧を再読み込み
+      await this.loadInsuranceList();
+      
+      alert('保険料免除設定を削除しました');
+    } catch (error) {
+      console.error('Error deleting insurance exemption:', error);
+      alert('保険料免除設定の削除中にエラーが発生しました');
+    } finally {
+      this.isDeletingExemption = false;
+    }
+  }
+  
+  // 保険料免除設定の期間表示を取得
+  getExemptionPeriodDisplay(exemption: any): string {
+    const startStr = `${exemption.startYear}年${exemption.startMonth}月`;
+    const endStr = `${exemption.endYear}年${exemption.endMonth}月`;
+    return `${startStr} ～ ${endStr}`;
+  }
+  
+  // 保険料免除設定の種類表示を取得
+  getExemptionTypeDisplay(exemption: any): string {
+    const types: string[] = [];
+    if (exemption.healthInsuranceExempt) {
+      types.push('健康保険');
+    }
+    if (exemption.pensionInsuranceExempt) {
+      types.push('厚生年金保険');
+    }
+    return types.join('・') || '-';
+  }
+  
+  // 指定された年月で保険料が免除されているかチェック
+  isExempted(employeeNumber: string, year: number, month: number, type: 'health' | 'pension'): boolean {
+    const exemption = this.insuranceExemptions.find((e: any) => {
+      if (e.employeeNumber !== employeeNumber) {
+        return false;
+      }
+      
+      // 対象年月が開始年月以降かつ終了年月以前であるかチェック（年月の比較のみ）
+      // 開始年月 <= 対象年月 <= 終了年月
+      const startYear = Number(e.startYear);
+      const startMonth = Number(e.startMonth);
+      const endYear = Number(e.endYear);
+      const endMonth = Number(e.endMonth);
+      const targetYear = Number(year);
+      const targetMonth = Number(month);
+      
+      // 開始年月より前の場合は除外
+      if (targetYear < startYear || (targetYear === startYear && targetMonth < startMonth)) {
+        return false;
+      }
+      
+      // 終了年月より後の場合は除外
+      if (targetYear > endYear || (targetYear === endYear && targetMonth > endMonth)) {
+        return false;
+      }
+      
+      if (type === 'health') {
+        return e.healthInsuranceExempt === true;
+      } else {
+        return e.pensionInsuranceExempt === true;
+      }
+    });
+    
+    return !!exemption;
+  }
+  
+  // 免除期間が有効かどうかをチェック
+  isExemptionPeriodValid(): boolean {
+    if (!this.exemptionStartYear || !this.exemptionStartMonth || !this.exemptionEndYear || !this.exemptionEndMonth) {
+      return false;
+    }
+    
+    const startDate = new Date(this.exemptionStartYear, this.exemptionStartMonth - 1);
+    const endDate = new Date(this.exemptionEndYear, this.exemptionEndMonth - 1);
+    
+    // 終了年月が開始年月以降である必要がある
+    return endDate >= startDate;
   }
   
   // 保険料率設定を保存
@@ -1669,14 +1913,17 @@ export class KyuyoDashboardComponent {
             
             // 各保険料を計算（標準報酬月額 × 保険料率 / 100）
             // 小数第2位まで保持（表示用）
-            // 健康保険料：75歳以上の場合は0円
+            // 注意: loadInsuranceListでは現在の年月で計算するが、実際の表示はfilterInsuranceListByDateで再計算される
+            // 健康保険料：75歳以上の場合は0円、免除設定がある場合は0円
             const isHealthInsuranceTarget = age !== null && age < 75;
-            const healthInsuranceRaw = isHealthInsuranceTarget ? standardMonthlySalary * (healthInsuranceRate / 100) : 0;
-            // 介護保険料：40歳未満または65歳以上の場合は0円
-            const nursingInsuranceRaw = isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0;
-            // 厚生年金保険料：70歳以上の場合は0円
+            const isHealthExempted = this.isExempted(emp.employeeNumber, nowYear, nowMonth, 'health');
+            const healthInsuranceRaw = (isHealthInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (healthInsuranceRate / 100) : 0;
+            // 介護保険料：40歳未満または65歳以上の場合は0円（健康保険が免除されている場合は0円）
+            const nursingInsuranceRaw = (isNursingInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0;
+            // 厚生年金保険料：70歳以上の場合は0円、免除設定がある場合は0円
             const isPensionInsuranceTarget = age !== null && age < 70;
-            const pensionInsuranceRaw = isPensionInsuranceTarget ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0;
+            const isPensionExempted = this.isExempted(emp.employeeNumber, nowYear, nowMonth, 'pension');
+            const pensionInsuranceRaw = (isPensionInsuranceTarget && !isPensionExempted) ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0;
             
             // 社員負担額を計算
             // 現金徴収する社員かどうかを判定
@@ -2538,14 +2785,16 @@ export class KyuyoDashboardComponent {
             }
             
             // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
-            // 健康保険料：75歳以上の場合は0円
+            // 健康保険料：75歳以上の場合は0円、免除設定がある場合は0円
             const isHealthInsuranceTarget = age !== null && age < 75;
-            let healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isHealthInsuranceTarget ? standardMonthlySalary * (healthInsuranceRate / 100) : 0);
-            // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
-            let nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
-            // 厚生年金保険料：70歳以上の場合は0円
+            const isHealthExempted = this.isExempted(item.employeeNumber, filterYear, filterMonth, 'health');
+            let healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isHealthInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (healthInsuranceRate / 100) : 0);
+            // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）、健康保険が免除されている場合は0円
+            let nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isNursingInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
+            // 厚生年金保険料：70歳以上の場合は0円、免除設定がある場合は0円
             const isPensionInsuranceTarget = age !== null && age < 70;
-            let pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : (isPensionInsuranceTarget ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0));
+            const isPensionExempted = this.isExempted(item.employeeNumber, filterYear, filterMonth, 'pension');
+            let pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : ((isPensionInsuranceTarget && !isPensionExempted) ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0));
             
             // 同年月で任意継続の場合、任意継続保険料も加算
             let voluntaryHealthInsurance = 0;
@@ -2926,14 +3175,16 @@ export class KyuyoDashboardComponent {
               const isNursingInsuranceTarget = age !== null && age >= 40 && age < 65;
               
               // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
-              // 健康保険料：75歳以上の場合は0円
+              // 健康保険料：75歳以上の場合は0円、免除設定がある場合は0円
               const isHealthInsuranceTarget = age !== null && age < 75;
-              const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isHealthInsuranceTarget ? healthNursingStandardBonusAmount * (healthInsuranceRate / 100) : 0);
-              // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）
-              const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isNursingInsuranceTarget ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
-              // 厚生年金保険料：70歳以上の場合は0円
+              const isHealthExempted = this.isExempted(bonusGroup.employeeNumber, filterYear, filterMonth, 'health');
+              const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isHealthInsuranceTarget && !isHealthExempted) ? healthNursingStandardBonusAmount * (healthInsuranceRate / 100) : 0);
+              // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）、健康保険が免除されている場合は0円
+              const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isNursingInsuranceTarget && !isHealthExempted) ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
+              // 厚生年金保険料：70歳以上の場合は0円、免除設定がある場合は0円
               const isPensionInsuranceTarget = age !== null && age < 70;
-              const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : (isPensionInsuranceTarget ? pensionStandardBonusAmount * (pensionInsuranceRate / 100) : 0));
+              const isPensionExempted = this.isExempted(bonusGroup.employeeNumber, filterYear, filterMonth, 'pension');
+              const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : ((isPensionInsuranceTarget && !isPensionExempted) ? pensionStandardBonusAmount * (pensionInsuranceRate / 100) : 0));
               
               // 社員負担額を計算
               let employeeBurden = 0;

@@ -8,7 +8,7 @@
       <span class="user-info">
         <span class="user-name">{{ userName }}</span>
       </span>
-      <button class="logout-button" (click)="logout()" [disabled]="isSavingSalary || isSavingBonus">ログアウト</button>
+      <button class="logout-button" (click)="logout()" [disabled]="isSavingSalary || isSavingBonus || isSavingExemption || isDeletingExemption">ログアウト</button>
     </div>
   </header>
 
@@ -21,7 +21,7 @@
           *ngFor="let tab of tabs"
           class="sidebar-item"
           [class.active]="currentTab === tab.name"
-          [disabled]="isSavingSalary || isSavingBonus"
+          [disabled]="isSavingSalary || isSavingBonus || isSavingExemption || isDeletingExemption"
           (click)="switchTab(tab.name)"
         >
           {{ tab.name }}
@@ -736,6 +736,193 @@
                     <button type="button" class="save-section-button" (click)="saveCashCollectionEmployees()">
                       現金徴収社員設定を保存
                     </button>
+                  </div>
+                </section>
+
+                <!-- 保険料免除設定 -->
+                <section class="settings-section">
+                  <h4 class="section-title">保険料免除設定</h4>
+                  <div class="form-description">
+                    <p>社員を選択して、指定期間の社会保険料（健康保険・厚生年金保険）を免除できます。</p>
+                  </div>
+                  
+                  <!-- ローディングオーバーレイ -->
+                  <div class="loading-overlay" *ngIf="isSavingExemption || isDeletingExemption">
+                    <div class="loading-message">
+                      <span *ngIf="isSavingExemption">設定中...</span>
+                      <span *ngIf="isDeletingExemption">削除中...</span>
+                    </div>
+                  </div>
+                  
+                  <!-- 免除設定追加フォーム -->
+                  <div class="exemption-form" [class.form-disabled]="isSavingExemption || isDeletingExemption">
+                    <!-- 社員選択セクション -->
+                    <div class="exemption-form-section">
+                      <h5 class="form-section-title">社員選択</h5>
+                      <div class="form-group">
+                        <label for="exemptionEmployee">社員 <span class="required">*</span></label>
+                        <select 
+                          id="exemptionEmployee" 
+                          [(ngModel)]="selectedExemptionEmployee" 
+                          [ngModelOptions]="{standalone: true}"
+                          class="form-input"
+                          [disabled]="isSavingExemption || isDeletingExemption"
+                        >
+                          <option value="">社員を選択してください</option>
+                          <option *ngFor="let emp of employees" [value]="emp.employeeNumber">
+                            {{ emp.employeeNumber }} - {{ emp.name }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <!-- 期間選択セクション -->
+                    <div class="exemption-form-section">
+                      <h5 class="form-section-title">免除期間</h5>
+                      <div class="exemption-period-grid">
+                        <div class="exemption-period-group">
+                          <div class="form-group">
+                            <label for="exemptionStartYear">開始年 <span class="required">*</span></label>
+                            <select 
+                              id="exemptionStartYear" 
+                              [(ngModel)]="exemptionStartYear" 
+                              [ngModelOptions]="{standalone: true}"
+                              (change)="onExemptionStartDateChange()"
+                              class="form-input"
+                              [disabled]="isSavingExemption || isDeletingExemption"
+                            >
+                              <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
+                            </select>
+                          </div>
+                          
+                          <div class="form-group">
+                            <label for="exemptionStartMonth">開始月 <span class="required">*</span></label>
+                            <select 
+                              id="exemptionStartMonth" 
+                              [(ngModel)]="exemptionStartMonth" 
+                              [ngModelOptions]="{standalone: true}"
+                              (change)="onExemptionStartDateChange()"
+                              class="form-input"
+                              [disabled]="isSavingExemption || isDeletingExemption"
+                            >
+                              <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div class="exemption-period-group">
+                          <div class="form-group">
+                            <label for="exemptionEndYear">終了年 <span class="required">*</span></label>
+                            <select 
+                              id="exemptionEndYear" 
+                              [(ngModel)]="exemptionEndYear" 
+                              [ngModelOptions]="{standalone: true}"
+                              class="form-input"
+                              [disabled]="isSavingExemption || isDeletingExemption"
+                            >
+                              <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
+                            </select>
+                          </div>
+                          
+                          <div class="form-group">
+                            <label for="exemptionEndMonth">終了月 <span class="required">*</span></label>
+                            <select 
+                              id="exemptionEndMonth" 
+                              [(ngModel)]="exemptionEndMonth" 
+                              [ngModelOptions]="{standalone: true}"
+                              class="form-input"
+                              [disabled]="isSavingExemption || isDeletingExemption"
+                            >
+                              <option *ngFor="let month of availableMonths" [value]="month">{{ month }}</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- 免除種類選択セクション -->
+                    <div class="exemption-form-section">
+                      <h5 class="form-section-title">免除種類</h5>
+                      <div class="form-grid">
+                        <div class="form-group">
+                          <label class="checkbox-label">
+                            <input 
+                              type="checkbox" 
+                              [(ngModel)]="exemptionHealthInsurance" 
+                              [ngModelOptions]="{standalone: true}"
+                              [disabled]="isSavingExemption || isDeletingExemption"
+                            >
+                            健康保険を免除
+                          </label>
+                        </div>
+                        
+                        <div class="form-group">
+                          <label class="checkbox-label">
+                            <input 
+                              type="checkbox" 
+                              [(ngModel)]="exemptionPensionInsurance" 
+                              [ngModelOptions]="{standalone: true}"
+                              [disabled]="isSavingExemption || isDeletingExemption"
+                            >
+                            厚生年金保険を免除
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- 追加ボタン -->
+                    <div class="exemption-form-section">
+                      <div class="form-group form-group-button">
+                        <button 
+                          type="button" 
+                          class="submit-button" 
+                          (click)="addInsuranceExemption()"
+                          [disabled]="isSavingExemption || isDeletingExemption || !selectedExemptionEmployee || (!exemptionHealthInsurance && !exemptionPensionInsurance) || !isExemptionPeriodValid()"
+                        >
+                          {{ isSavingExemption ? '設定中...' : '免除設定を追加' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- 免除設定一覧 -->
+                  <div class="exemption-list" *ngIf="insuranceExemptions.length > 0">
+                    <h5>免除設定一覧</h5>
+                    <div class="exemption-table-container">
+                      <table class="exemption-table">
+                        <thead>
+                          <tr>
+                            <th>社員番号</th>
+                            <th>氏名</th>
+                            <th>期間</th>
+                            <th>免除種類</th>
+                            <th>操作</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let exemption of insuranceExemptions" [class.exemption-row-highlight]="true">
+                            <td>{{ exemption.employeeNumber }}</td>
+                            <td>{{ exemption.name || '-' }}</td>
+                            <td>{{ getExemptionPeriodDisplay(exemption) }}</td>
+                            <td>{{ getExemptionTypeDisplay(exemption) }}</td>
+                            <td>
+                              <button 
+                                type="button" 
+                                class="delete-button" 
+                                (click)="deleteInsuranceExemption(exemption.id)"
+                                [disabled]="isSavingExemption || isDeletingExemption"
+                              >
+                                {{ isDeletingExemption ? '削除中...' : '削除' }}
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  <div class="exemption-list" *ngIf="insuranceExemptions.length === 0">
+                    <p class="no-data-message">免除設定がありません</p>
                   </div>
                 </section>
               </div>
