@@ -840,6 +840,24 @@
                       </div>
                     </div>
                     
+                    <!-- 免除対象選択セクション -->
+                    <div class="exemption-form-section">
+                      <h5 class="form-section-title">免除対象 <span class="required">*</span></h5>
+                      <div class="form-group">
+                        <select 
+                          id="exemptionType" 
+                          [(ngModel)]="exemptionType" 
+                          [ngModelOptions]="{standalone: true}"
+                          class="form-input"
+                          [disabled]="isSavingExemption || isDeletingExemption"
+                        >
+                          <option value="both">給与・賞与</option>
+                          <option value="salary">給与のみ</option>
+                          <option value="bonus">賞与のみ</option>
+                        </select>
+                      </div>
+                    </div>
+                    
                     <!-- 免除種類選択セクション -->
                     <div class="exemption-form-section">
                       <h5 class="form-section-title">免除種類</h5>
@@ -895,6 +913,7 @@
                             <th>社員番号</th>
                             <th>氏名</th>
                             <th>期間</th>
+                            <th>対象</th>
                             <th>免除種類</th>
                             <th>操作</th>
                           </tr>
@@ -904,6 +923,7 @@
                             <td>{{ exemption.employeeNumber }}</td>
                             <td>{{ exemption.name || '-' }}</td>
                             <td>{{ getExemptionPeriodDisplay(exemption) }}</td>
+                            <td>{{ getExemptionTargetDisplay(exemption) }}</td>
                             <td>{{ getExemptionTypeDisplay(exemption) }}</td>
                             <td>
                               <button 

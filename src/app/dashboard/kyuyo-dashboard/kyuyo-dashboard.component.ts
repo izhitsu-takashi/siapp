@@ -70,6 +70,7 @@ export class KyuyoDashboardComponent {
   exemptionEndMonth: number = new Date().getMonth() + 1; // 免除終了月
   exemptionHealthInsurance: boolean = false; // 健康保険免除
   exemptionPensionInsurance: boolean = false; // 厚生年金保険免除
+  exemptionType: 'salary' | 'bonus' | 'both' = 'both'; // 給与/賞与の免除対象
   isSavingExemption = false; // 免除設定追加中フラグ
   isDeletingExemption = false; // 免除設定削除中フラグ
   
@@ -833,7 +834,8 @@ export class KyuyoDashboardComponent {
         endYear: this.exemptionEndYear,
         endMonth: this.exemptionEndMonth,
         healthInsuranceExempt: this.exemptionHealthInsurance,
-        pensionInsuranceExempt: this.exemptionPensionInsurance
+        pensionInsuranceExempt: this.exemptionPensionInsurance,
+        exemptionType: this.exemptionType
       });
       
       // フォームをリセット
@@ -844,6 +846,7 @@ export class KyuyoDashboardComponent {
       this.exemptionEndMonth = new Date().getMonth() + 1;
       this.exemptionHealthInsurance = false;
       this.exemptionPensionInsurance = false;
+      this.exemptionType = 'both';
       
       // 免除設定を再読み込み
       await this.loadInsuranceExemptions();
@@ -905,8 +908,24 @@ export class KyuyoDashboardComponent {
     return types.join('・') || '-';
   }
   
+  // 保険料免除設定の対象（給与/賞与）表示を取得
+  getExemptionTargetDisplay(exemption: any): string {
+    const exemptionType = exemption.exemptionType || 'both';
+    switch (exemptionType) {
+      case 'salary':
+        return '給与';
+      case 'bonus':
+        return '賞与';
+      case 'both':
+        return '給与・賞与';
+      default:
+        return '給与・賞与';
+    }
+  }
+  
   // 指定された年月で保険料が免除されているかチェック
-  isExempted(employeeNumber: string, year: number, month: number, type: 'health' | 'pension'): boolean {
+  // exemptionTarget: 'salary' | 'bonus' - 給与か賞与かを指定
+  isExempted(employeeNumber: string, year: number, month: number, type: 'health' | 'pension', exemptionTarget: 'salary' | 'bonus'): boolean {
     const exemption = this.insuranceExemptions.find((e: any) => {
       if (e.employeeNumber !== employeeNumber) {
         return false;
@@ -929,6 +948,17 @@ export class KyuyoDashboardComponent {
       // 終了年月より後の場合は除外
       if (targetYear > endYear || (targetYear === endYear && targetMonth > endMonth)) {
         return false;
+      }
+      
+      // 給与/賞与の対象チェック
+      const exemptionType = e.exemptionType || 'both';
+      if (exemptionType !== 'both') {
+        if (exemptionTarget === 'salary' && exemptionType !== 'salary') {
+          return false;
+        }
+        if (exemptionTarget === 'bonus' && exemptionType !== 'bonus') {
+          return false;
+        }
       }
       
       if (type === 'health') {
@@ -1916,13 +1946,13 @@ export class KyuyoDashboardComponent {
             // 注意: loadInsuranceListでは現在の年月で計算するが、実際の表示はfilterInsuranceListByDateで再計算される
             // 健康保険料：75歳以上の場合は0円、免除設定がある場合は0円
             const isHealthInsuranceTarget = age !== null && age < 75;
-            const isHealthExempted = this.isExempted(emp.employeeNumber, nowYear, nowMonth, 'health');
+            const isHealthExempted = this.isExempted(emp.employeeNumber, nowYear, nowMonth, 'health', 'salary');
             const healthInsuranceRaw = (isHealthInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (healthInsuranceRate / 100) : 0;
             // 介護保険料：40歳未満または65歳以上の場合は0円（健康保険が免除されている場合は0円）
             const nursingInsuranceRaw = (isNursingInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0;
             // 厚生年金保険料：70歳以上の場合は0円、免除設定がある場合は0円
             const isPensionInsuranceTarget = age !== null && age < 70;
-            const isPensionExempted = this.isExempted(emp.employeeNumber, nowYear, nowMonth, 'pension');
+            const isPensionExempted = this.isExempted(emp.employeeNumber, nowYear, nowMonth, 'pension', 'salary');
             const pensionInsuranceRaw = (isPensionInsuranceTarget && !isPensionExempted) ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0;
             
             // 社員負担額を計算
@@ -2787,13 +2817,13 @@ export class KyuyoDashboardComponent {
             // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
             // 健康保険料：75歳以上の場合は0円、免除設定がある場合は0円
             const isHealthInsuranceTarget = age !== null && age < 75;
-            const isHealthExempted = this.isExempted(item.employeeNumber, filterYear, filterMonth, 'health');
+            const isHealthExempted = this.isExempted(item.employeeNumber, filterYear, filterMonth, 'health', 'salary');
             let healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isHealthInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (healthInsuranceRate / 100) : 0);
             // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）、健康保険が免除されている場合は0円
             let nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isNursingInsuranceTarget && !isHealthExempted) ? standardMonthlySalary * (nursingInsuranceRate / 100) : 0);
             // 厚生年金保険料：70歳以上の場合は0円、免除設定がある場合は0円
             const isPensionInsuranceTarget = age !== null && age < 70;
-            const isPensionExempted = this.isExempted(item.employeeNumber, filterYear, filterMonth, 'pension');
+            const isPensionExempted = this.isExempted(item.employeeNumber, filterYear, filterMonth, 'pension', 'salary');
             let pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : ((isPensionInsuranceTarget && !isPensionExempted) ? pensionStandardMonthlySalary * (pensionInsuranceRate / 100) : 0));
             
             // 同年月で任意継続の場合、任意継続保険料も加算
@@ -3177,13 +3207,13 @@ export class KyuyoDashboardComponent {
               // 各保険料を計算（産前産後休業期間内の場合は0円、ただし任意継続被保険者の場合は免除しない）
               // 健康保険料：75歳以上の場合は0円、免除設定がある場合は0円
               const isHealthInsuranceTarget = age !== null && age < 75;
-              const isHealthExempted = this.isExempted(bonusGroup.employeeNumber, filterYear, filterMonth, 'health');
+              const isHealthExempted = this.isExempted(bonusGroup.employeeNumber, filterYear, filterMonth, 'health', 'bonus');
               const healthInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isHealthInsuranceTarget && !isHealthExempted) ? healthNursingStandardBonusAmount * (healthInsuranceRate / 100) : 0);
               // 介護保険料：40歳未満または65歳以上の場合は0円（任意継続被保険者でも40歳以上65歳未満は徴収）、健康保険が免除されている場合は0円
               const nursingInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : ((isNursingInsuranceTarget && !isHealthExempted) ? healthNursingStandardBonusAmount * (nursingInsuranceRate / 100) : 0);
               // 厚生年金保険料：70歳以上の場合は0円、免除設定がある場合は0円
               const isPensionInsuranceTarget = age !== null && age < 70;
-              const isPensionExempted = this.isExempted(bonusGroup.employeeNumber, filterYear, filterMonth, 'pension');
+              const isPensionExempted = this.isExempted(bonusGroup.employeeNumber, filterYear, filterMonth, 'pension', 'bonus');
               const pensionInsuranceRaw = (isInMaternityLeave && !isVoluntaryContinuation) ? 0 : (isVoluntaryContinuation ? 0 : ((isPensionInsuranceTarget && !isPensionExempted) ? pensionStandardBonusAmount * (pensionInsuranceRate / 100) : 0));
               
               // 社員負担額を計算
